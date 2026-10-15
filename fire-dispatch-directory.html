@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FDEC Fire Dispatch Directory</title>
+<style>
+  :root {
+    --navy: #20262d;
+    --red: #C8102E;
+    --red-hover: #9E0C24;
+    --bg: #eef1f4;
+    --text: #1b1f24;
+    --border: #dfe3e8;
+    --tint: #eef1f4;
+    --card: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--text); margin: 0; padding: 0; line-height: 1.4;
+  }
+  .masthead {
+    background: var(--navy); border-bottom: 5px solid var(--red);
+    color: #fff; padding: 16px 20px;
+  }
+  .masthead .company { font-size: 1.05rem; font-weight: 700; letter-spacing: .04em; margin: 0; }
+  .masthead .doctype { font-size: .85rem; color: #aeb6bf; margin: 3px 0 0; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 14px 14px 60px; }
+  .toolbar {
+    position: sticky; top: 0; z-index: 10; background: var(--bg);
+    padding: 12px 0 10px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  }
+  #search {
+    flex: 1; min-width: 180px; padding: 11px 13px; font-size: 16px;
+    border: 1px solid var(--border); border-radius: 8px; background: #fff; color: #0f172a;
+  }
+  #search:focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px rgba(27,42,74,.14); }
+  .count { font-size: 11px; color: #64707f; white-space: nowrap; }
+
+  .grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+  }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-left: 4px solid var(--navy);
+    border-radius: 8px; padding: 10px 12px; box-shadow: 0 1px 4px rgba(27,42,74,.06);
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .card.edited { border-left-color: var(--red); }
+  .card .city { font-weight: 600; color: var(--navy); font-size: 13px; }
+  .card .dispatch a { color: var(--red); font-weight: 600; text-decoration: none; font-size: 13px; white-space: nowrap; }
+  .card .dispatch a:hover { text-decoration: underline; }
+  .card .dispatch .plain { font-size: 13px; color: var(--text); }
+  .card .notes { color: #55606e; font-size: 11px; }
+  .card .notes:empty { display: none; }
+  .card-actions { margin-top: 4px; }
+  .edit-btn {
+    background: none; border: none; color: #8a94a3; font-size: 11px; cursor: pointer;
+    padding: 2px 0; text-decoration: underline;
+  }
+  .edit-btn:hover { color: var(--navy); }
+  .edited-tag { font-size: 10px; color: var(--red); margin-left: 6px; }
+
+  /* edit mode */
+  .card.editing { border-left-color: var(--red); background: var(--tint); }
+  .edit-row { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+  .edit-row label { font-size: 10px; color: #64707f; text-transform: uppercase; letter-spacing: .04em; }
+  .edit-row input, .edit-row textarea {
+    width: 100%; padding: 7px 9px; font-size: 13px; border: 1px solid var(--border);
+    border-radius: 6px; color: #0f172a; font-family: inherit;
+  }
+  .edit-row textarea { min-height: 48px; resize: vertical; }
+  .edit-row input:focus, .edit-row textarea:focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 2px rgba(27,42,74,.12); }
+  .edit-controls { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .btn { font-size: 12px; font-weight: 600; border-radius: 6px; cursor: pointer; padding: 7px 12px; border: 1px solid transparent; }
+  .btn-save { background: var(--red); color: #fff; }
+  .btn-save:hover { background: var(--red-hover); }
+  .btn-cancel { background: #fff; color: var(--navy); border-color: var(--navy); }
+  .btn-cancel:hover { background: #eef1f4; }
+  .btn-reset { background: #fff; color: #8a94a3; border-color: var(--border); margin-left: auto; }
+  .btn-reset:hover { color: var(--red); border-color: var(--red); }
+
+  .no-results { text-align: center; color: #8a94a3; padding: 40px 0; font-size: .95rem; display: none; grid-column: 1 / -1; }
+  mark { background: #ffe9a8; color: inherit; padding: 0 1px; border-radius: 2px; }
+  .foot { text-align: center; color: #8a94a3; font-size: 11px; margin-top: 18px; line-height: 1.5; }
+
+  @media (max-width: 620px) {
+    .grid { grid-template-columns: 1fr; }
+    .wrap { padding: 10px 10px 48px; }
+  }
+  @media print {
+    .toolbar, .edit-btn, .card-actions { display: none; }
+    .masthead { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .grid { grid-template-columns: repeat(2, 1fr); }
+    body { background: #fff; }
+  }
+</style>
+</head>
+<body>
+  <div class="masthead">
+    <p class="company">FIRE DEFENSE EQUIPMENT CO., INC.</p>
+    <p class="doctype">Fire Department Dispatch Directory</p>
+  </div>
+  <div class="wrap">
+    <div class="toolbar">
+      <input type="text" id="search" placeholder="Search city or number..." autocomplete="off">
+      <span class="count" id="count"></span>
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="no-results" id="noResults">No matching city or dispatch number.</div>
+    <p class="foot">
+      Source list dated October 8, 2026. Tap a dispatch number to call from a mobile device.<br>
+      Edits save in this browser only &mdash; they are not shared between devices or other technicians.
+    </p>
+  </div>
+
+<script>
+(function () {
+  "use strict";
+  var DATA = [{"city": "Adrian", "dispatch": "(517) 263-0524", "notes": ""}, {"city": "Albion", "dispatch": "(269) 781-0911", "notes": ""}, {"city": "Algonac", "dispatch": "(810) 985-8115", "notes": "St. Clair County Sheriff Dispatch's"}, {"city": "Allen Park", "dispatch": "(734) 324-4438", "notes": ""}, {"city": "Alpena", "dispatch": "(989) 354-9111", "notes": ""}, {"city": "Ann Arbor", "dispatch": "(734) 477-6550", "notes": "(734) 994-4111"}, {"city": "Auburn", "dispatch": "(989) 892-9551", "notes": "Bay County Dispatch's"}, {"city": "Auburn Hills", "dispatch": "(248) 370-9444", "notes": ""}, {"city": "Bad Axe", "dispatch": "(989) 269-6421", "notes": "Huron County Dispatch's"}, {"city": "Bangor Twp.", "dispatch": "(989) 892-9551", "notes": ""}, {"city": "Battlecreek", "dispatch": "(269) 781-0912", "notes": ""}, {"city": "Bay City", "dispatch": "(989) 892-9551", "notes": "Fire Operations Division (989) 892-8571"}, {"city": "Beaverton", "dispatch": "(989) 426-9284", "notes": ""}, {"city": "Berkley", "dispatch": "(248) 658-3380", "notes": ""}, {"city": "Beverly Hills", "dispatch": "(248) 540-3400", "notes": ""}, {"city": "Big Rapids", "dispatch": "(231) 796-4811", "notes": "Mecosta County Dispatch's"}, {"city": "Birmingham", "dispatch": "(248) 644-3405", "notes": ""}, {"city": "Bloomfield Hills", "dispatch": "(248) 644-4200", "notes": "(248) 433-7755"}, {"city": "Bloomfield Twp.", "dispatch": "(248) 433-7755", "notes": ""}, {"city": "Bridgeport", "dispatch": "(989) 797-4580", "notes": ""}, {"city": "Brighton", "dispatch": "(517) 546-9111", "notes": "Livingston County Dispatch's"}, {"city": "Brownstown Twp.", "dispatch": "(734) 675-1300", "notes": ""}, {"city": "Bunea Vista Twp.", "dispatch": "(989) 755-4103", "notes": "Saginaw Dispatch's"}, {"city": "Burton", "dispatch": "(810) 732-9911", "notes": ""}, {"city": "Cadillac", "dispatch": "(231) 779-9211", "notes": "Wexford County"}, {"city": "Caledonia", "dispatch": "(800) 249-0911", "notes": "(616) 336-3113"}, {"city": "Canton", "dispatch": "(734) 394-5400", "notes": "Press Prompt For Dispatch"}, {"city": "Carleton", "dispatch": "(734) 243-7070", "notes": "Monroe County Sheriff"}, {"city": "Caro", "dispatch": "(989) 673-8738", "notes": "Tuscola County Dispatch's"}, {"city": "Cascade", "dispatch": "(616) 949-1320", "notes": ""}, {"city": "Cedar Springs", "dispatch": "(616) 336-3113", "notes": "Fire Deparment (616) 696-0020"}, {"city": "Charlevoix", "dispatch": "(231) 439-3300", "notes": "Local Dispatch (800) 577-7911"}, {"city": "Charlotte", "dispatch": "(517) 372-8217", "notes": "Press #2 Eaton County Dispatch's"}, {"city": "Chelsea", "dispatch": "(734) 475-1339", "notes": "Chelsea Police Dispatch"}, {"city": "Chesterfield", "dispatch": "(586) 949-2322", "notes": ""}, {"city": "Clare", "dispatch": "(989) 539-1336", "notes": "Clare County Dispatch's"}, {"city": "Clarkston", "dispatch": "(248) 858-4911", "notes": ""}, {"city": "Clawson", "dispatch": "(248) 524-3477", "notes": "Troy Dispatch's For The City Of Clawson"}, {"city": "Clay County", "dispatch": "(810) 794-9381", "notes": "Dispatch's For Algonac"}, {"city": "Clinton", "dispatch": "(517) 263-0524", "notes": "Press #1 - Lenawee Co. Sheriff Dispatch"}, {"city": "Clinton Twp.", "dispatch": "(586) 263-8447", "notes": ""}, {"city": "Clio", "dispatch": "(810) 686-5010", "notes": "Clio Fire Department Direct (810) 687-8506"}, {"city": "Coldwater", "dispatch": "(517) 278-3091", "notes": ""}, {"city": "Commerce Twp.", "dispatch": "(248) 858-4911", "notes": "Oakland County Sheriff Dispatch's"}, {"city": "Davison", "dispatch": "(810) 732-9911", "notes": "Genesse County"}, {"city": "Dearborn", "dispatch": "(313) 943-2870", "notes": "or (313) 943-2201"}, {"city": "Dearborn Heights", "dispatch": "(313) 277-7400", "notes": ""}, {"city": "Dehli Twp.", "dispatch": "(517) 272-6026", "notes": ""}, {"city": "Delta Twp", "dispatch": "(517) 372-8217", "notes": "Eaton Co. Dispatch's, Call Both Police Dispatch & The Fire Department"}, {"city": "Detroit", "dispatch": "(313) 596-1660", "notes": ""}, {"city": "DeWitt", "dispatch": "(989) 224-6792", "notes": "Clinton County Dispatch's"}, {"city": "Dexter", "dispatch": "(734) 973-0911", "notes": ""}, {"city": "Dundee", "dispatch": "(734) 243-7070", "notes": ""}, {"city": "East Pointe", "dispatch": "(586) 777-6700", "notes": ""}, {"city": "Eaton Co.", "dispatch": "(517) 372-8217", "notes": ""}, {"city": "Escanaba", "dispatch": "(906) 786-5911", "notes": ""}, {"city": "Essexville", "dispatch": "(989) 892-9551", "notes": "Bay County Dispatch's"}, {"city": "Farmington", "dispatch": "(248) 474-4700", "notes": "Press #1"}, {"city": "Farmington Hills", "dispatch": "(248) 871-2600", "notes": "Direct (248) 477-0911"}, {"city": "Fenton", "dispatch": "(810) 629-2242", "notes": "Press #5"}, {"city": "Ferndale", "dispatch": "(248) 541-3650", "notes": ""}, {"city": "Flint", "dispatch": "(810) 232-2222", "notes": "or (810) 732-9911"}, {"city": "Flint Twp.", "dispatch": "(810) 732-4413 or 4720", "notes": ""}, {"city": "Flushing", "dispatch": "(810) 732-9911", "notes": ""}, {"city": "Fort Gratiot", "dispatch": "(810) 985-8115", "notes": "Port Huron Dispatch's For Fort Gratiot & Fort Gratiot Twp."}, {"city": "Fowlerville", "dispatch": "(517) 272-6026", "notes": ""}, {"city": "Frankenmuth", "dispatch": "(989) 652-9901", "notes": "Fire Chief After Hours His Cell (989)-213-1538"}, {"city": "Franklin", "dispatch": "(248) 858-4951", "notes": "Oakland Co Sheriff Dispatch"}, {"city": "Fraser", "dispatch": "(586) 293-1425", "notes": "Press #2"}, {"city": "Fremont", "dispatch": "(888)-254-5026", "notes": ""}, {"city": "Garden City", "dispatch": "(734) 467-5632", "notes": ""}, {"city": "Gaylord", "dispatch": "(989) 732-5141", "notes": "or (989) 732-7858 Ostego County Dispatch's"}, {"city": "Genesee County", "dispatch": "(810) 732-9911", "notes": ""}, {"city": "Gladwin", "dispatch": "(989) 426-9284", "notes": ""}, {"city": "Grand Blanc", "dispatch": "(810) 732-9911", "notes": ""}, {"city": "Grand Haven", "dispatch": "(800) 249-0911", "notes": "Ottawa County"}, {"city": "Grand Ledge", "dispatch": "(517) 372-8217", "notes": "Press #2 Eaton County Dispatch's"}, {"city": "Grand Rapids", "dispatch": "(616) 456-3400", "notes": "Press #1 Twice For Direct Dispatch or (616) 632-6359"}, {"city": "Grandville", "dispatch": "(616) 632-6100", "notes": "Press #1"}, {"city": "Grayling", "dispatch": "(989) 348-6341", "notes": "Crawford County Dispatch's"}, {"city": "Gregory", "dispatch": "(734)-973-0911", "notes": ""}, {"city": "Grosse Pointe Public Safety", "dispatch": "(313) 417-1183", "notes": "(248) 886-3200 Ex.1"}, {"city": "Grosse Pointe Woods Public Safety", "dispatch": "(313) 343-2400", "notes": ""}, {"city": "Hale", "dispatch": "(989) 362-1430", "notes": "Iosco County Dispatch's"}, {"city": "Hamtramck", "dispatch": "(313) 876-7778", "notes": ""}, {"city": "Harbor Beach", "dispatch": "(989) 269-6421", "notes": ""}, {"city": "Harper Woods", "dispatch": "(313) 343-2530", "notes": ""}, {"city": "Harrison", "dispatch": "(989) 539-1336", "notes": "Clare County Dispatch's"}, {"city": "Harrison Twp.", "dispatch": "(586) 469-5502", "notes": "Macomb County Dispatch's"}, {"city": "Hartland Twp.", "dispatch": "(517) 546-9111", "notes": "Livingston County Dispatch's"}, {"city": "Hazel Park", "dispatch": "(248) 542-6000", "notes": ""}, {"city": "Highland Park", "dispatch": "(313) 852-7338", "notes": ""}, {"city": "Hillman", "dispatch": "(989) 785-4238", "notes": "Montmorency County Sheriff's Department In Atlanta MI Dispatch's"}, {"city": "Hillsdale", "dispatch": "(517) 523-9913", "notes": ""}, {"city": "Holland", "dispatch": "(800) 249-0911", "notes": "Ottawa County Dispatch's"}, {"city": "Holly", "dispatch": "(248) 858-4911", "notes": ""}, {"city": "Holt", "dispatch": "(517) 272-6026", "notes": "Delhi Twp. Dispatch's"}, {"city": "Howell", "dispatch": "(517) 546-9111", "notes": "Livingston County Dispatch's"}, {"city": "Hudsonville", "dispatch": "(616) 832-6359", "notes": ""}, {"city": "Huntington Woods", "dispatch": "(248) 541-1180", "notes": ""}, {"city": "Imlay City", "dispatch": "(810) 667-0292", "notes": ""}, {"city": "Independence Twp.", "dispatch": "(248) 858-4950", "notes": "Press Ex. #8 For Oakland County Sheriff Office"}, {"city": "Inkster", "dispatch": "(734) 722-9600", "notes": "Fire dispatch for Wayne, Westland & Inkster"}, {"city": "Jackson", "dispatch": "(517) 788-4377", "notes": ""}, {"city": "Kalamazoo", "dispatch": "(269) 337-8994", "notes": "(269) 383-8824 or Non Emergency Dispatch (269) 488-8911"}, {"city": "Kawkawlin", "dispatch": "(989) 892-9551", "notes": "Bay County Dispatch's"}, {"city": "Kawkawlin Twp.", "dispatch": "(989) 686-1120", "notes": ""}, {"city": "Kentwood", "dispatch": "(616) 632-6359", "notes": ""}, {"city": "Lake Orion", "dispatch": "(248) 858-4911", "notes": "(248) 391-0304 Ex.2000"}, {"city": "Lansing", "dispatch": "(517) 272-6002", "notes": "24 Hour Fire Dispatch Eaton County (517) 543-3510"}, {"city": "Lapeer", "dispatch": "(810) 667-0292", "notes": ""}, {"city": "Lenawee Co. Sheriff Dispatch", "dispatch": "(517) 263-0524", "notes": "Then Press #1"}, {"city": "Lincoln Park", "dispatch": "(734) 324-4438", "notes": ""}, {"city": "Linden Twp.", "dispatch": "(734) 973-0911", "notes": ""}, {"city": "Livingston Co. Fire Dispatch", "dispatch": "(517) 546-9111", "notes": "Dispatches For All Livingston County"}, {"city": "Livonia", "dispatch": "(734) 421-1313", "notes": "(734) 466-2373"}, {"city": "Ludington", "dispatch": "(231) 869-5858", "notes": ""}, {"city": "Lyon Twp.", "dispatch": "(248) 858-4911", "notes": ""}, {"city": "Macomb", "dispatch": "(586) 469-5502", "notes": ""}, {"city": "Macomb Twp.", "dispatch": "(586) 469-5502", "notes": "Macomb County Sheriff Dept. Dispatch's"}, {"city": "Madison Heights", "dispatch": "(248) 585-6111", "notes": "(248) 585-2100 - Follow Prompts Then Press #1"}, {"city": "Marine City", "dispatch": "(810) 985-8115", "notes": "St. Clair County Dispatch's"}, {"city": "Marion", "dispatch": "(888) 960-1630", "notes": "Osceola County Dispatch's"}, {"city": "Marquette", "dispatch": "(906) 475-9922", "notes": ""}, {"city": "Marysville", "dispatch": "(810) 985-8115", "notes": "St. Clair County Dispatch's"}, {"city": "Mason", "dispatch": "(517) 272-6002", "notes": ""}, {"city": "Melvindale", "dispatch": "(313) 429-1070", "notes": "Then Press #2"}, {"city": "Midland", "dispatch": "(989) 839-6466", "notes": ""}, {"city": "Milan", "dispatch": "(734) 439-1551", "notes": ""}, {"city": "Milford", "dispatch": "(248) 858-4911", "notes": "Police - (248) 684-1815"}, {"city": "Mio", "dispatch": "(989) 826-3214", "notes": "Oscoda County Dispatch's"}, {"city": "Monroe", "dispatch": "(734) 243-7070", "notes": "Monroe County Sheriff"}, {"city": "Mt. Clemens", "dispatch": "(586) 263-8447", "notes": ""}, {"city": "Mt. Morris", "dispatch": "(810) 732-9911", "notes": "Genessee County Central Dispatch"}, {"city": "Mt. Pleasant", "dispatch": "(989) 773-1000", "notes": ""}, {"city": "Muskegan", "dispatch": "(231) 722-3524", "notes": "Then Press #1, Then Press #2"}, {"city": "New Baltimore", "dispatch": "(586) 949-2322", "notes": ""}, {"city": "New Haven", "dispatch": "(586) 469-5502", "notes": ""}, {"city": "Northville", "dispatch": "(248) 349-9400", "notes": ""}, {"city": "Norton Shores", "dispatch": "(231) 722-3524", "notes": "Then Press #1"}, {"city": "Novi", "dispatch": "(248) 347-0575", "notes": "Fire Marshall - (248) 735-5674"}, {"city": "Oak Park Public Safety", "dispatch": "(248) 691-7447", "notes": ""}, {"city": "Oakland County Sheriff", "dispatch": "(248) 858-4911", "notes": ""}, {"city": "Okemos", "dispatch": "(517) 272-6013", "notes": ""}, {"city": "Orion Twp.", "dispatch": "(248) 858-4911", "notes": "or (248) 391-0304 Ex. 2000"}, {"city": "Oscoda", "dispatch": "(989) 362-1430", "notes": ""}, {"city": "Owosso", "dispatch": "(989) 743-9111", "notes": ""}, {"city": "Oxford", "dispatch": "(248) 628-2525", "notes": "Then Press #0"}, {"city": "Petoskey", "dispatch": "(231) 439-3300 or 3500", "notes": "(231) 347-5911"}, {"city": "Pinckney", "dispatch": "(517) 546-9111", "notes": ""}, {"city": "Pittsfield Twp.", "dispatch": "(734) 944-7218", "notes": ""}, {"city": "Plymouth Twp.", "dispatch": "(734) 354-3250", "notes": ""}, {"city": "Pontiac", "dispatch": "(248) 618-7550", "notes": ""}, {"city": "Port Huron", "dispatch": "(810) 985-8115", "notes": "St. Clair County Sheriff Dispatch's"}, {"city": "Port Huron Twp.", "dispatch": "(810) 985-8115", "notes": ""}, {"city": "Portage", "dispatch": "(269) 488-8911", "notes": "Fire Division (269) 329-4487"}, {"city": "Redford", "dispatch": "(313) 387-2552 or 2553", "notes": "After Hours (313) 387-2551"}, {"city": "Richmond", "dispatch": "(586) 727-4000", "notes": ""}, {"city": "Rochester", "dispatch": "(248) 651-4470", "notes": ""}, {"city": "Rochester Hills", "dispatch": "(248) 656-4650", "notes": "Then Press #9"}, {"city": "Rockford", "dispatch": "(616) 632-6100", "notes": "Then Press #1"}, {"city": "Romeo", "dispatch": "(586) 752-3587", "notes": ""}, {"city": "Roscommon", "dispatch": "(989) 275-0911", "notes": "Roscommon County Dispatch's"}, {"city": "Roseville", "dispatch": "(586) 777-6700", "notes": ""}, {"city": "Royal Oak", "dispatch": "(248) 246-3500", "notes": ""}, {"city": "Royal Oak Twp.", "dispatch": "Oakland County Sheriff", "notes": "Ferndale Fire Dept. responds to fires"}, {"city": "Saginaw", "dispatch": "(989) 797-4580", "notes": ""}, {"city": "Saginaw Twp.", "dispatch": "(989) 792-9691", "notes": "They Don't Care They Will Send The Trucks"}, {"city": "Saline", "dispatch": "(734) 994-4111", "notes": "Washtenaw County Dispatch's"}, {"city": "Sandusky", "dispatch": "(810) 648-2000", "notes": "Sanilac County Dispatch's"}, {"city": "Sanford", "dispatch": "(989) 839-6466", "notes": "Midland County Dispatch's"}, {"city": "Sault St. Marie", "dispatch": "(906) 495-7488", "notes": ""}, {"city": "Shelby Twp.", "dispatch": "(586) 731-2121", "notes": "Then Press #0 & Then Press #3"}, {"city": "South Haven", "dispatch": "(269) 637-5151", "notes": ""}, {"city": "South Lyon", "dispatch": "(248) 412-8697", "notes": ""}, {"city": "Southfield", "dispatch": "(248) 354-1010", "notes": ""}, {"city": "Southgate", "dispatch": "(734) 324-4438", "notes": ""}, {"city": "Springfield", "dispatch": "(269) 781-0911", "notes": "Calhoun County Dispatch's"}, {"city": "Springfield Twp.", "dispatch": "(248) 858-4951", "notes": "Oakland County Sheriff Dispatch's"}, {"city": "St. Clair Shores", "dispatch": "(586) 777-6700", "notes": ""}, {"city": "St. Johns", "dispatch": "(989) 224-6792", "notes": "Clinton County Dispatch's"}, {"city": "Standish", "dispatch": "(989) 846-4561", "notes": "Arenac County Dispatch's"}, {"city": "Sterling Heights", "dispatch": "(586) 469-5502", "notes": ""}, {"city": "Stevensville", "dispatch": "(269) 429-2444", "notes": "(616) 791-6800"}, {"city": "Sturgis", "dispatch": "(269) 467-4195", "notes": "St. Joseph County"}, {"city": "Swartz Creek", "dispatch": "(810) 732-9911", "notes": "Genessee County Dispatch's"}, {"city": "Sylvan Lake", "dispatch": "(248) 682-2104", "notes": ""}, {"city": "Tawas City", "dispatch": "(989) 362-1430", "notes": ""}, {"city": "Taylor", "dispatch": "(734) 287-6611", "notes": "Then Press #6"}, {"city": "Tecumseh", "dispatch": "(517) 263-0524", "notes": "Then Press #1- Lenawee County Sheriff Dispatch's"}, {"city": "Three Rivers", "dispatch": "(269) 467-4195", "notes": "St. Joseph County"}, {"city": "Traverse City", "dispatch": "(231) 922-4556", "notes": "(231) 922-4554"}, {"city": "Troy", "dispatch": "(248) 524-3478", "notes": "(248) 524-3477 Then Press #1"}, {"city": "Utica", "dispatch": "(586) 469-5151", "notes": ""}, {"city": "Walled Lake", "dispatch": "(248) 858-4911", "notes": "Oakland County Sheriff Dispatch's"}, {"city": "Warren", "dispatch": "(586) 574-4727", "notes": ""}, {"city": "Washington Twp.", "dispatch": "(586) 469-5502", "notes": "Macomb County Sheriff Dispatch's"}, {"city": "Waterford", "dispatch": "(248) 618-7550", "notes": ""}, {"city": "Wayne", "dispatch": "(734) 722-9600", "notes": "Fire Dispatch's For Wayne, Westland & Inkster"}, {"city": "West Bloomfield", "dispatch": "(248) 975-9200", "notes": "Then Press #0"}, {"city": "West Branch", "dispatch": "(989) 345-9911", "notes": "Ogemaw Coiunty Dispatch's"}, {"city": "Westland", "dispatch": "(313) 943-2201", "notes": ""}, {"city": "White Lake", "dispatch": "(248) 698-4400", "notes": "White Lake Police Dispatch's For Both"}, {"city": "Whitehall", "dispatch": "(231) 722-3524", "notes": ""}, {"city": "Williamston", "dispatch": "(517) 272-6026", "notes": ""}, {"city": "Wixom", "dispatch": "(248) 858-4930", "notes": ""}, {"city": "Wyoming", "dispatch": "(269) 983-3060", "notes": ""}, {"city": "Ypsilanti", "dispatch": "(734) 477-6445", "notes": "or 6446"}, {"city": "Ypsilanti Twp.", "dispatch": "(734) 973-0911", "notes": ""}];
+  var STORE_KEY = "fdec_dispatch_edits_v1";
+  var grid = document.getElementById("grid");
+  var search = document.getElementById("search");
+  var countEl = document.getElementById("count");
+  var noResults = document.getElementById("noResults");
+  var editingKey = null;
+
+  // key each record by city (unique in source)
+  DATA.forEach(function (r, i) { r._k = r.city + "|" + i; });
+
+  function loadEdits() {
+    try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
+    catch (e) { return {}; }
+  }
+  function saveEdits(obj) {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(obj)); return true; }
+    catch (e) { return false; }
+  }
+  var edits = loadEdits();
+
+  function effective(r) {
+    var e = edits[r._k] || {};
+    return {
+      dispatch: e.dispatch != null ? e.dispatch : r.dispatch,
+      notes: e.notes != null ? e.notes : r.notes,
+      isEdited: e.dispatch != null || e.notes != null
+    };
+  }
+  function telHref(s) {
+    var digits = (s.match(/\d/g) || []).join("");
+    return digits.length >= 10 ? "tel:" + digits : null;
+  }
+  function esc(s) { return (s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  function highlight(text, q) {
+    text = text || "";
+    if (!q) return esc(text);
+    var i = text.toLowerCase().indexOf(q.toLowerCase());
+    if (i < 0) return esc(text);
+    return esc(text.slice(0,i)) + "<mark>" + esc(text.slice(i,i+q.length)) + "</mark>" + esc(text.slice(i+q.length));
+  }
+  function dispatchHtml(s, q) {
+    if (!s) return '<span class="plain">&mdash;</span>';
+    var href = telHref(s), inner = highlight(s, q);
+    return href ? '<a href="' + href + '">' + inner + "</a>" : '<span class="plain">' + inner + "</span>";
+  }
+
+  function cardHtml(r, q) {
+    var ef = effective(r);
+    if (editingKey === r._k) {
+      return '<div class="card editing" data-k="' + esc(r._k) + '">' +
+        '<div class="city">' + esc(r.city) + '</div>' +
+        '<div class="edit-row"><label>Dispatch Number</label>' +
+          '<input type="text" class="ed-dispatch" value="' + esc(ef.dispatch) + '"></div>' +
+        '<div class="edit-row"><label>Note</label>' +
+          '<textarea class="ed-notes">' + esc(ef.notes) + '</textarea></div>' +
+        '<div class="edit-controls">' +
+          '<button class="btn btn-save" data-act="save">Save</button>' +
+          '<button class="btn btn-cancel" data-act="cancel">Cancel</button>' +
+          (ef.isEdited ? '<button class="btn btn-reset" data-act="reset">Reset</button>' : '') +
+        '</div></div>';
+    }
+    return '<div class="card' + (ef.isEdited ? ' edited' : '') + '" data-k="' + esc(r._k) + '">' +
+      '<div class="city">' + highlight(r.city, q) + (ef.isEdited ? '<span class="edited-tag">edited</span>' : '') + '</div>' +
+      '<div class="dispatch">' + dispatchHtml(ef.dispatch, q) + '</div>' +
+      '<div class="notes">' + highlight(ef.notes, q) + '</div>' +
+      '<div class="card-actions"><button class="edit-btn" data-act="edit">Edit</button></div>' +
+      '</div>';
+  }
+
+  function render(q) {
+    q = (q || "").trim();
+    var ql = q.toLowerCase();
+    var rows = DATA.filter(function (r) {
+      if (!ql) return true;
+      var ef = effective(r);
+      return r.city.toLowerCase().indexOf(ql) >= 0 ||
+             (ef.dispatch || "").toLowerCase().indexOf(ql) >= 0 ||
+             (ef.notes || "").toLowerCase().indexOf(ql) >= 0;
+    });
+    grid.innerHTML = rows.map(function (r) { return cardHtml(r, q); }).join("") ||
+      '<div class="no-results" style="display:block">No matching city or dispatch number.</div>';
+    countEl.textContent = rows.length + " of " + DATA.length + " listed";
+  }
+
+  grid.addEventListener("click", function (ev) {
+    var btn = ev.target.closest("[data-act]");
+    if (!btn) return;
+    var card = ev.target.closest(".card");
+    var k = card && card.getAttribute("data-k");
+    var act = btn.getAttribute("data-act");
+    if (act === "edit") { editingKey = k; render(search.value); }
+    else if (act === "cancel") { editingKey = null; render(search.value); }
+    else if (act === "save") {
+      var disp = card.querySelector(".ed-dispatch").value.trim();
+      var note = card.querySelector(".ed-notes").value.trim();
+      var orig = DATA.find(function (r) { return r._k === k; });
+      var e = {};
+      if (disp !== orig.dispatch) e.dispatch = disp;
+      if (note !== orig.notes) e.notes = note;
+      if (Object.keys(e).length) edits[k] = e; else delete edits[k];
+      if (!saveEdits(edits)) alert("Could not save to this browser's storage.");
+      editingKey = null; render(search.value);
+    }
+    else if (act === "reset") {
+      delete edits[k]; saveEdits(edits); editingKey = null; render(search.value);
+    }
+  });
+
+  search.addEventListener("input", function () {
+    if (editingKey !== null) editingKey = null;
+    render(search.value);
+  });
+  render("");
+})();
+</script>
+</body>
+</html>

@@ -224,6 +224,7 @@
     <button data-tab="sop">SOP</button>
     <button data-tab="confined">Confined Space Permitting</button>
     <button data-tab="lifts">Scissor &amp; Boom Lift</button>
+    <button data-tab="incident">Incident Reporting</button>
   </nav>
 </header>
 
@@ -396,7 +397,7 @@
     </details>
 
     <details class="sop">
-      <summary><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M9 6l6 6-6 6"/></svg> End-of-Day Documentation (ServiceTrade) <span class="cat admin">Admin</span></summary>
+      <summary><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M9 6l6 6-6 6"/></svg> End-of-Day Documentation (ServiceTrade) <span class="cat field">Field</span></summary>
       <div class="body">
         <ul>
           <li>Record all work performed, test results, and readings on the correct job and asset.</li>
@@ -629,6 +630,12 @@
   </form>
 </section>
 
+<!-- ============ INCIDENT REPORTING ============ -->
+<section class="tab" id="incident">
+  <p class="lead">Report any injury, near-miss, vehicle or equipment event, or property damage. Submitting opens your email with the report addressed to the department manager.</p>
+  <iframe id="incidentFrame" src="incident-report.html" title="FDEC Incident Report" style="width:100%;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);min-height:1000px;background:#fff" loading="lazy"></iframe>
+</section>
+
 </main>
 
 <footer>
@@ -643,6 +650,7 @@
   // Edit the url for each tool below. Leave blank to show "URL not set".
   var LINKS = [
     {name:'ITM Inspection Reports',  cat:'Field',   access:'',             url:'https://302stang86.github.io/FDEC-ITM-REPORTS-V1/', desc:'NFPA 25 inspection report forms with PDF output.'},
+    {name:'Local Dispatch Numbers',  cat:'Field',   access:'',             url:'fire-dispatch-directory.html', desc:'Fire department dispatch numbers by city — searchable, tap to call.'},
     {name:'Quoting & Proposal Suite',cat:'Quoting', access:'Manager only', url:'https://302stang86.github.io/SP-FDEC-Quoting-2026/', desc:'Sprinkler ITM quoting and proposal verbiage.'},
     {name:'Fire Alarm Quoting Suite',cat:'Quoting', access:'Manager only', url:'', desc:'Fire alarm ITM quoting and proposal verbiage.'},
     {name:'Time-Off Requests',       cat:'Team',    access:'Everyone',     url:'https://302stang86.github.io/On-Call-Rotation/timeoff.html', desc:'Submit paid time-off (PTO) requests and track balances.'},
@@ -681,6 +689,7 @@
       document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});
       b.classList.add('active');
       document.getElementById(b.dataset.tab).classList.add('active');
+      if(b.dataset.tab === 'incident') fitIncident();
       window.scrollTo({top:0,behavior:'smooth'});
     });
   });
@@ -839,6 +848,24 @@
 
   restoreForm('csForm');
   restoreForm('liftForm');
+
+  // ---------- Incident report frame auto-size ----------
+  var incFrame = document.getElementById('incidentFrame');
+  function fitIncident(){
+    if(!incFrame) return;
+    try{
+      var d = incFrame.contentWindow.document;
+      var h = Math.max(d.body.scrollHeight, d.documentElement.scrollHeight);
+      if(h > 0) incFrame.style.height = (h + 2) + 'px';
+    }catch(e){}
+  }
+  if(incFrame){
+    incFrame.addEventListener('load', fitIncident);
+    window.addEventListener('resize', function(){
+      var sec = document.getElementById('incident');
+      if(sec && sec.classList.contains('active')) fitIncident();
+    });
+  }
 })();
 </script>
 </body>

@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FDEC Incident Report</title>
+<style>
+  :root {
+    --navy: #20262d;
+    --red: #C8102E;
+    --red-hover: #9E0C24;
+    --bg: #eef1f4;
+    --text: #1b1f24;
+    --border: #dfe3e8;
+    --tint: #eef1f4;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    margin: 0;
+    padding: 24px 16px;
+  }
+
+  .sheet {
+    max-width: 720px;
+    margin: 0 auto;
+    background: #ffffff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 6px 18px rgba(27, 42, 74, 0.14);
+  }
+
+  .masthead {
+    background: var(--navy);
+    border-bottom: 5px solid var(--red);
+    color: #ffffff;
+    padding: 22px 32px;
+  }
+
+  .masthead .company {
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    margin: 0;
+  }
+
+  .masthead .doctype {
+    font-size: 0.95rem;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    margin: 4px 0 0;
+    color: #aeb6bf;
+  }
+
+  .body-pad { padding: 28px 32px 32px; }
+
+  .intro {
+    font-size: 0.9rem;
+    color: #55606e;
+    margin: 0 0 22px;
+  }
+
+  .form-group { margin-bottom: 18px; }
+
+  .form-row { display: flex; gap: 16px; }
+  .form-row .form-group { flex: 1; }
+
+  label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+    color: var(--navy);
+  }
+
+  label.req::after { content: " *"; color: var(--red); }
+
+  input[type="text"],
+  input[type="datetime-local"],
+  select,
+  textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 1rem;
+    color: #0f172a;
+    background: #fff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--navy);
+    box-shadow: 0 0 0 3px rgba(27, 42, 74, 0.14);
+  }
+
+  textarea { resize: vertical; min-height: 96px; }
+
+  .btn-row { display: flex; gap: 12px; margin-top: 26px; }
+
+  button {
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    padding: 13px 22px;
+    transition: background-color 0.2s, color 0.2s;
+  }
+
+  .btn-primary {
+    background-color: var(--red);
+    color: #fff;
+    border: none;
+    flex: 1;
+  }
+  .btn-primary:hover { background-color: var(--red-hover); }
+
+  .btn-ghost {
+    background-color: #fff;
+    color: var(--navy);
+    border: 1px solid var(--navy);
+  }
+  .btn-ghost:hover { background-color: var(--tint); }
+
+  .foot-note {
+    font-size: 0.78rem;
+    color: #7a8493;
+    margin-top: 20px;
+    text-align: center;
+  }
+
+  #toast {
+    visibility: hidden;
+    min-width: 280px;
+    background-color: var(--navy);
+    border-left: 5px solid var(--red);
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 16px 18px;
+    position: fixed;
+    z-index: 10;
+    left: 50%;
+    bottom: 30px;
+    transform: translateX(-50%);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    font-size: 0.92rem;
+  }
+  #toast.show {
+    visibility: visible;
+    animation: fadein 0.4s, fadeout 0.5s 3.5s;
+  }
+  @keyframes fadein { from { bottom: 0; opacity: 0; } to { bottom: 30px; opacity: 1; } }
+  @keyframes fadeout { from { bottom: 30px; opacity: 1; } to { bottom: 0; opacity: 0; } }
+
+  @media (max-width: 560px) {
+    .form-row { flex-direction: column; gap: 0; }
+    .btn-row { flex-direction: column; }
+  }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    .sheet { box-shadow: none; max-width: 100%; }
+    .btn-row, .foot-note, #toast { display: none; }
+    .masthead { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sheet">
+  <div class="masthead">
+    <p class="company">FIRE DEFENSE EQUIPMENT CO., INC.</p>
+    <p class="doctype">Incident Report</p>
+  </div>
+
+  <div class="body-pad">
+    <p class="intro">
+      Complete all required fields. Submitting forwards the report to the department manager.
+      Report any event as soon as it is safe to do so.
+    </p>
+
+    <form id="incidentForm">
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="reporterName" class="req">Reported By</label>
+          <input type="text" id="reporterName" required placeholder="First and last name">
+        </div>
+        <div class="form-group">
+          <label for="reporterContact">Email / Phone</label>
+          <input type="text" id="reporterContact" placeholder="Where you can be reached">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="incidentType" class="req">Incident Type</label>
+          <select id="incidentType" required>
+            <option value="" disabled selected>Select type...</option>
+            <option value="Injury / Near Miss">Injury / Near Miss</option>
+            <option value="Vehicle / Equipment">Vehicle / Equipment</option>
+            <option value="Property Damage">Property Damage</option>
+            <option value="Customer Property Damage">Customer Property Damage</option>
+            <option value="Fire Protection System">Fire Protection System</option>
+            <option value="Security / Theft">Security / Theft</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="incidentDateTime" class="req">Date &amp; Time of Incident</label>
+          <input type="datetime-local" id="incidentDateTime" required>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="location" class="req">Job Site / Location</label>
+          <input type="text" id="location" required placeholder="Customer name and address">
+        </div>
+        <div class="form-group">
+          <label for="jobNumber">Job / ServiceTrade Number</label>
+          <input type="text" id="jobNumber" placeholder="If known">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="involved">Person(s) / Equipment Involved</label>
+        <input type="text" id="involved" placeholder="Names, vehicles, or equipment involved">
+      </div>
+
+      <div class="form-group">
+        <label for="description" class="req">Description of Event</label>
+        <textarea id="description" required placeholder="Describe what happened, in order, from start to finish."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="actionTaken">Immediate Action Taken</label>
+        <textarea id="actionTaken" placeholder="Describe any action taken at the scene to make the area safe."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="witnesses">Witnesses</label>
+        <input type="text" id="witnesses" placeholder="Names and contact information, where applicable">
+      </div>
+
+      <div class="btn-row">
+        <button type="submit" class="btn-primary">Submit Incident Report</button>
+        <button type="button" class="btn-ghost" onclick="window.print()">Print / Save PDF</button>
+      </div>
+
+      <p class="foot-note">
+        Submitting opens your email application with the report addressed to the department manager.
+        Send that message to complete the report.
+      </p>
+
+    </form>
+  </div>
+</div>
+
+<div id="toast">Email application opened &mdash; send the message to complete your report.</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var MANAGER_EMAIL = "mp1@firedefense.com";
+
+  function val(id) {
+    var el = document.getElementById(id);
+    return el && el.value ? el.value.trim() : "";
+  }
+
+  document.getElementById("incidentForm").addEventListener("submit", function (event) {
+    event.preventDefault();
+
+    var reportedBy = val("reporterName");
+    var incidentType = val("incidentType");
+
+    var lines = [
+      "FIRE DEFENSE EQUIPMENT CO., INC. - INCIDENT REPORT",
+      "",
+      "Reported By:            " + reportedBy,
+      "Email / Phone:          " + val("reporterContact"),
+      "Incident Type:          " + incidentType,
+      "Date & Time:            " + val("incidentDateTime"),
+      "Job Site / Location:    " + val("location"),
+      "Job / ServiceTrade No:  " + val("jobNumber"),
+      "Person(s)/Equipment:    " + val("involved"),
+      "",
+      "Description of Event:",
+      val("description"),
+      "",
+      "Immediate Action Taken:",
+      val("actionTaken"),
+      "",
+      "Witnesses:",
+      val("witnesses"),
+      "",
+      "Submitted: " + new Date().toLocaleString()
+    ];
+
+    var subject = "Incident Report - " + (incidentType || "General") +
+      (reportedBy ? " - " + reportedBy : "");
+    var body = lines.join("\r\n");
+
+    var mailto = "mailto:" + MANAGER_EMAIL +
+      "?subject=" + encodeURIComponent(subject) +
+      "&body=" + encodeURIComponent(body);
+
+    window.location.href = mailto;
+
+    var toast = document.getElementById("toast");
+    toast.className = "show";
+    setTimeout(function () {
+      toast.className = toast.className.replace("show", "");
+    }, 4000);
+  });
+})();
+</script>
+
+</body>
+</html>
