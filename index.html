@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quick Hub — FDEC Employee Hub</title>
+<style>
+  :root{
+    --fdec-red:#C8102E;
+    --fdec-red-dark:#9E0C24;
+    --ink:#1b1f24;
+    --ink-soft:#4a5560;
+    --line:#dfe3e8;
+    --bg:#eef1f4;
+    --card:#ffffff;
+    --good:#1f7a3d;
+    --warn:#b4690e;
+    --bad:#b3261e;
+    --shadow:0 1px 3px rgba(16,24,40,.08),0 1px 2px rgba(16,24,40,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.5;-webkit-text-size-adjust:100%;
+  }
+  a{color:var(--fdec-red)}
+
+  /* Header */
+  header{background:linear-gradient(160deg,#20262d 0%,#12161a 100%);color:#fff;padding:20px 18px 0}
+  .brandrow{display:flex;align-items:center;gap:14px;max-width:1100px;margin:0 auto}
+  .mark{
+    width:46px;height:46px;flex:0 0 46px;border-radius:9px;background:var(--fdec-red);
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;
+    box-shadow:0 2px 0 var(--fdec-red-dark);letter-spacing:-1px;
+  }
+  .brandtext h1{margin:0;font-size:22px;letter-spacing:.3px}
+  .brandtext .sub{margin:2px 0 0;font-size:12.5px;color:#aeb6bf;letter-spacing:.4px;text-transform:uppercase}
+  .brandtext .sub strong{color:#fff;font-weight:600}
+
+  /* Tabs */
+  nav.tabs{max-width:1100px;margin:16px auto 0;display:flex;gap:2px;overflow-x:auto}
+  nav.tabs button{
+    appearance:none;border:0;background:transparent;color:#c3cbd4;cursor:pointer;
+    padding:13px 16px;font-size:14.5px;font-weight:600;white-space:nowrap;
+    border-bottom:3px solid transparent;transition:.15s;font-family:inherit;
+  }
+  nav.tabs button:hover{color:#fff}
+  nav.tabs button.active{color:#fff;border-bottom-color:var(--fdec-red)}
+
+  /* Layout */
+  main{max-width:1100px;margin:0 auto;padding:22px 18px 70px}
+  .tab{display:none}
+  .tab.active{display:block;animation:fade .2s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  .lead{font-size:15px;color:var(--ink-soft);margin:0 0 18px;max-width:760px}
+  h2.section{font-size:20px;margin:26px 0 12px;display:flex;align-items:center;gap:9px}
+  h2.section:first-child{margin-top:4px}
+  h3{font-size:15.5px;margin:0 0 8px}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:18px;margin-bottom:16px}
+
+  .notice{
+    border-left:4px solid var(--warn);background:#fff8ec;border-radius:8px;
+    padding:12px 14px;font-size:13.5px;color:#5c4a22;margin-bottom:18px;
+  }
+  .notice.alert{border-left-color:var(--bad);background:#fdecec;color:#6b211d}
+  .notice.info{border-left-color:#1565c0;background:#eef5fd;color:#1b3a5c}
+  .notice strong{font-weight:700}
+
+  /* SOP */
+  .searchwrap{position:relative;margin-bottom:14px}
+  .searchwrap input{
+    width:100%;padding:12px 14px 12px 38px;font-size:15px;border:1px solid var(--line);
+    border-radius:10px;font-family:inherit;background:#fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%238a949e' stroke-width='2' viewBox='0 0 24 24'><circle cx='11' cy='11' r='7'/><path d='M21 21l-4.3-4.3'/></svg>") no-repeat 12px center;
+  }
+  .sop{border:1px solid var(--line);border-radius:10px;margin-bottom:9px;overflow:hidden;background:#fff}
+  .sop summary{
+    list-style:none;cursor:pointer;padding:14px 16px;display:flex;align-items:center;gap:11px;
+    font-weight:600;font-size:15px;
+  }
+  .sop summary::-webkit-details-marker{display:none}
+  .sop summary .cat{
+    font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:#fff;background:var(--ink-soft);
+    padding:3px 8px;border-radius:20px;font-weight:700;margin-left:auto;flex:0 0 auto;
+  }
+  .sop summary .cat.safety{background:var(--fdec-red)}
+  .sop summary .cat.field{background:#1565c0}
+  .sop summary .cat.admin{background:#5b6570}
+  .sop summary .chev{transition:.2s;color:#9aa4ad;flex:0 0 auto}
+  .sop[open] summary .chev{transform:rotate(90deg)}
+  .sop .body{padding:2px 16px 16px;border-top:1px solid var(--line);font-size:14px;color:var(--ink-soft)}
+  .sop .body p{margin:10px 0}
+  .sop .body ol,.sop .body ul{margin:8px 0;padding-left:20px}
+  .sop .body li{margin:5px 0}
+  .noresult{padding:26px;text-align:center;color:#9aa4ad;font-size:14px;display:none}
+
+  /* Home / hub */
+  code{background:#eef1f4;padding:1px 6px;border-radius:5px;font-size:12.5px;font-family:ui-monospace,Menlo,Consolas,monospace;color:#334}
+  .hubgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:680px){.hubgrid{grid-template-columns:1fr}}
+  a.hublink{
+    display:flex;flex-direction:column;gap:7px;text-decoration:none;color:inherit;
+    background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);
+    padding:16px;transition:.15s;
+  }
+  a.hublink:hover{border-color:var(--fdec-red);transform:translateY(-1px);box-shadow:0 4px 12px rgba(16,24,40,.1)}
+  a.hublink .htop{display:flex;align-items:center;gap:9px}
+  a.hublink .hname{font-weight:700;font-size:15.5px;color:var(--ink)}
+  a.hublink .hcat{margin-left:auto;font-size:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;color:#fff;background:var(--ink-soft);padding:3px 8px;border-radius:20px;flex:0 0 auto}
+  a.hublink .hcat.quoting{background:#1565c0}
+  a.hublink .hcat.team{background:var(--fdec-red)}
+  a.hublink .hcat.shop{background:#5b6570}
+  a.hublink .hdesc{font-size:13px;color:var(--ink-soft);margin:0}
+  a.hublink.unset{opacity:.8;cursor:default;border-style:dashed}
+  a.hublink.unset:hover{transform:none;border-color:var(--line);box-shadow:var(--shadow)}
+  a.hublink.unset .hname::after{content:' — URL not set';color:var(--warn);font-weight:600;font-size:12px}
+  a.hublink .haccess{align-self:flex-start;font-size:11px;font-weight:700;letter-spacing:.3px;padding:3px 10px;border-radius:20px;margin-top:2px}
+  a.hublink .haccess.everyone{background:#e7f4ec;color:var(--good)}
+  a.hublink .haccess.manager{background:#fff3df;color:var(--warn)}
+
+  /* Featured document link */
+  a.doclink{
+    display:flex;align-items:center;gap:13px;text-decoration:none;color:inherit;
+    background:var(--card);border:1px solid var(--line);border-left:4px solid var(--fdec-red);
+    border-radius:11px;box-shadow:var(--shadow);padding:14px 16px;margin-bottom:14px;transition:.15s;
+  }
+  a.doclink:hover{border-color:var(--fdec-red);transform:translateY(-1px);box-shadow:0 4px 12px rgba(16,24,40,.1)}
+  a.doclink .docicon{width:40px;height:40px;flex:0 0 40px;border-radius:9px;background:#fdecec;color:var(--fdec-red);display:flex;align-items:center;justify-content:center}
+  a.doclink .doctext{display:flex;flex-direction:column;gap:2px;min-width:0}
+  a.doclink .docname{font-weight:800;font-size:15.5px;color:var(--ink);letter-spacing:.2px}
+  a.doclink .docdesc{font-size:12.5px;color:var(--ink-soft)}
+  a.doclink .docgo{margin-left:auto;flex:0 0 auto;font-size:13px;font-weight:700;color:var(--fdec-red)}
+  @media(max-width:520px){a.doclink .docgo{display:none}}
+
+  /* Reference blocks */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:680px){.grid2{grid-template-columns:1fr}}
+  .ref h3{color:var(--fdec-red)}
+  .ref ul{margin:6px 0 0;padding-left:18px;font-size:13.5px;color:var(--ink-soft)}
+  .ref li{margin:5px 0}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;margin:0 0 10px}
+  .pill.osha{background:#eef5fd;color:#1565c0}
+  .pill.ansi{background:#f0ecfb;color:#5b3fb0}
+
+  table.vals{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:6px}
+  table.vals th,table.vals td{border:1px solid var(--line);padding:8px 10px;text-align:left}
+  table.vals th{background:#f6f8fa;font-weight:600}
+  .ok{color:var(--good);font-weight:700}
+
+  /* Forms / permits */
+  .formgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
+  @media(max-width:680px){.formgrid{grid-template-columns:1fr}}
+  .fld{display:flex;flex-direction:column;gap:4px}
+  .fld.full{grid-column:1/-1}
+  .fld label{font-size:12px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px}
+  .fld input,.fld textarea,.fld select{
+    padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-family:inherit;background:#fff;color:var(--ink);
+  }
+  .fld textarea{resize:vertical;min-height:62px}
+  .fld input:focus,.fld textarea:focus,.fld select:focus{outline:2px solid rgba(200,16,46,.3);border-color:var(--fdec-red)}
+
+  .checkrow{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid #f0f2f4;font-size:14px}
+  .checkrow:last-child{border-bottom:0}
+  .checkrow input[type=checkbox]{width:19px;height:19px;flex:0 0 19px;margin-top:1px;accent-color:var(--fdec-red)}
+  .checkrow .q{flex:1}
+  .checkrow .na{display:flex;gap:10px;flex:0 0 auto;font-size:12px;color:var(--ink-soft)}
+  .checkrow .na label{display:flex;align-items:center;gap:4px;cursor:pointer}
+
+  .atmo{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+  .atmo th,.atmo td{border:1px solid var(--line);padding:6px;text-align:center}
+  .atmo th{background:#f6f8fa;font-weight:600;font-size:11.5px}
+  .atmo input{width:100%;border:0;text-align:center;font-size:13px;font-family:inherit;padding:4px 2px;background:transparent}
+  .atmo input:focus{outline:1px solid var(--fdec-red);border-radius:4px}
+
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  button.act{
+    appearance:none;border:0;border-radius:9px;padding:11px 18px;font-size:14px;font-weight:600;
+    cursor:pointer;font-family:inherit;transition:.15s;
+  }
+  button.primary{background:var(--fdec-red);color:#fff}
+  button.primary:hover{background:var(--fdec-red-dark)}
+  button.ghost{background:#eef1f4;color:var(--ink)}
+  button.ghost:hover{background:#e1e6eb}
+  .savednote{font-size:12px;color:var(--good);margin-left:4px;align-self:center;opacity:0;transition:.3s}
+  .savednote.show{opacity:1}
+
+  .sign{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:6px}
+  @media(max-width:680px){.sign{grid-template-columns:1fr}}
+  .sigline{border-top:1px solid var(--ink);padding-top:5px;font-size:12px;color:var(--ink-soft);margin-top:30px}
+
+  footer{max-width:1100px;margin:0 auto;padding:18px;color:#8a949e;font-size:12px;text-align:center;border-top:1px solid var(--line)}
+
+  /* Print */
+  .printhead{display:none}
+  @media print{
+    body{background:#fff}
+    header,nav.tabs,footer,.no-print,.notice{display:none !important}
+    main{padding:0;max-width:none}
+    .tab:not(.active){display:none}
+    .tab.active{display:block}
+    .card{box-shadow:none;border:1px solid #bbb;page-break-inside:avoid}
+    .printhead{display:block;margin-bottom:12px;border-bottom:3px solid var(--fdec-red);padding-bottom:8px}
+    .printhead h1{margin:0;font-size:18px}
+    .printhead .ph-sub{font-size:11px;color:#555}
+    .sop,details{display:none !important}
+    a{color:#000;text-decoration:none}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brandrow">
+    <div class="mark">FD</div>
+    <div class="brandtext">
+      <h1>Quick Hub</h1>
+      <p class="sub"><strong>Fire Defense Equipment Company</strong> &nbsp;·&nbsp; Employee Hub</p>
+    </div>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button class="active" data-tab="home">Home</button>
+    <button data-tab="sop">SOP</button>
+    <button data-tab="confined">Confined Space Permitting</button>
+    <button data-tab="lifts">Scissor &amp; Boom Lift</button>
+  </nav>
+</header>
+
+<main>
+
+<!-- ============ HOME ============ -->
+<section class="tab active" id="home">
+  <p class="lead">The front door to FDEC's internal tools. Pick a tool below, or use the tabs above for standard operating procedures and field safety permits.</p>
+
+  <div class="notice info no-print">
+    <strong>Set the links once:</strong> open this file and edit the <code>LINKS</code> list near the bottom of the file — paste each tool's GitHub Pages address into its <code>url</code>. Any card without a URL shows as "URL not set" until you add one.
+  </div>
+
+  <div class="hubgrid" id="hubLinks"></div>
+</section>
+
+<!-- ============ SOP ============ -->
+<section class="tab" id="sop">
+  <div class="printhead"><h1>FDEC Standard Operating Procedures</h1><div class="ph-sub">Quick Hub — Employee Hub</div></div>
+
+  <p class="lead">Standard operating procedures for FDEC field and shop personnel. Open any procedure to read it, or search by keyword.</p>
+
+  <div class="notice alert no-print">
+    <strong>Draft content — pending review.</strong> The procedures below are industry-standard starting templates. Each one needs FDEC management review, edits for how we actually operate, and sign-off before it governs the work. They do not replace official company policy, manufacturer instructions, or the applicable code.
+  </div>
+
+  <div class="searchwrap no-print">
+    <input type="text" id="sopSearch" placeholder="Search procedures — e.g. impairment, PPE, ladder, LOTO...">
+  </div>
+
+  <div id="sopList">
+
+    <a class="doclink" href="fdec-itm-sop.html" target="_blank" rel="noopener">
+      <span class="docicon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8"/></svg></span>
+      <span class="doctext">
+        <span class="docname">ITM-SOP</span>
+        <span class="docdesc">NFPA 25 (2026) inspection, testing &amp; maintenance field procedures</span>
+      </span>
+      <span class="docgo">Open &rarr;</span>
+    </a>
+
+    <details class="sop">
+      <summary><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M9 6l6 6-6 6"/></svg> Job Site Arrival &amp; Check-In <span class="cat field">Field</span></summary>
+      <div class="body">
+        <p>Establishes a consistent arrival process on every customer site.</p>
+        <ol>
+          <li>Park in a legal, non-obstructing spot. Never block a fire lane, Fire Department Connection (FDC), or hydrant.</li>
+          <li>Check in with the site contact before starting. Confirm scope, system areas, and any site-specific safety rules.</li>
+          <li>Identify the nearest exits, the fire alarm panel, and the system risers.</li>
+          <li>Open the job in ServiceTrade and confirm the correct location and asset list.</li>
+          <li>Complete a two (2) minute job hazard scan before touching any equipment.</li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="sop">
+      <summary><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M9 6l6 6-6 6"/></svg> Personal Protective Equipment (PPE) <span class="cat safety">Safety</span></summary>
+      <div class="body">
+        <p>Minimum PPE expected on FDEC job sites.</p>
+        <ul>
+          <li>Safety glasses — any overhead work, cutting, grinding, or drilling.</li>
+          <li>Hard hat — active construction sites and any overhead hazard.</li>
+          <li>Cut-resistant gloves — handling pipe, fittings, and sharp edges.</li>
+          <li>Steel or composite toe boots — all field work.</li>
+          <li>High-visibility vest — parking areas, roadways, and construction sites.</li>
+          <li>Hearing protection — sustained exposure to loud equipment.</li>
+        </ul>
+        <p>Inspect PPE before each use. Remove damaged items from service and replace them.</p>
+      </div>
+    </details>
+
+    <details class="sop">
+      <summary><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M9 6l6 6-6 6"/></svg> System Impairment &amp; Fire Watch <span class="cat safety">Safety</span></summary>
+      <div class="body">
+        <p>Governs any work that takes a fire protection system, or part of one, out of service, per National Fire Protection Association (NFPA) 25 impairment procedures.</p>
+        <ol>
+          <li>Notify the building owner or designated representative before the impairment begins.</li>
+          <li>Determine the extent and expected duration. Plan to restore the system the same day where applicable.</li>
+          <li>Notify the supervising station (monitoring company) and the Authority Having Jurisdiction (AHJ) where required.</li>
+          <li>Tag the impaired system and hang the impairment tag at the main control valve.</li>
+          <li>Arrange a fire watch or other approved interim protection for the affected area while the system is down.</li>
+          <li>Verify no hot work or other ignition sources are active in the protected area.</li>
+          <li>On completion, test to confirm the system is operational, remove the tag, and notify all parties that protection is restored.</li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="sop">
+      <summary><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M9 6l6 6-6 6"/></svg> Ladder Safety <span class="cat safety">Safety</span></summary>
+      <div class="body">
+        <ul>
+          <li>Inspect the ladder before use. Remove damaged ladders from service.</li>
+          <li>Set extension ladders at the four-to-one (4:1) angle — one (1) foot of base out for every four (4) feet of height.</li>
+          <li>Maintain three (3) points of contact when climbing.</li>
+          <li>Do not stand on the top two (2) rungs or the top cap.</li>
+          <li>Face the ladder. Do not overreach — reposition instead.</li>
+          <li>Use a ladder rated for the combined weight of the worker and tools.</li>
+          <li>For extended overhead work, evaluate whether a scissor or boom lift is the safer option.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="sop">
+      <summary><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M9 6l6 6-6 6"/></svg> Hot Work — Cutting, Welding &amp; Grinding <span class="cat safety">Safety</span></summary>
+      <div class="body">
+        <p>Applies to any spark- or flame-producing work.</p>
+        <ol>
+          <li>Obtain a hot work permit from the site where one is required.</li>
+          <li>Clear combustibles within thirty-five (35) feet, or shield them.</li>
+          <li>Keep a charged fire extinguisher within reach.</li>
+          <li>Confirm the sprinkler system protecting the area is in service, or provide an approved fire watch.</li>
+          <li>Maintain a fire watch during the work and for at least thirty (30) minutes afterward.</li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="sop">
+      <summary><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M9 6l6 6-6 6"/></svg> Lockout / Tagout (LOTO) <span class="cat safety">Safety</span></summary>
+      <div class="body">
+        <p>Controls hazardous energy before servicing equipment such as fire pumps, controllers, and electrically operated valves.</p>
+        <ol>
+          <li>Identify all energy sources — electrical, pneumatic, hydraulic, and stored water pressure.</li>
+          <li>Notify affected personnel before shutdown.</li>
+          <li>Shut down, isolate, lock, and tag each energy source.</li>
+          <li>Release or relieve stored energy, including trapped water pressure.</li>
+          <li>Verify zero energy before starting work.</li>
+          <li>Only the person who applied a lock removes it.</li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="sop">
+      <summary><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M9 6l6 6-6 6"/></svg> Company Vehicle Operation &amp; Daily Inspection <span class="cat field">Field</span></summary>
+      <div class="body">
+        <ul>
+          <li>Hold a valid driver license and operate only vehicles you are authorized to drive.</li>
+          <li>Complete a walk-around before the first trip each day — tires, lights, fluids, and secured load.</li>
+          <li>Secure all pipe, tools, and compressed gas cylinders before driving.</li>
+          <li>No handheld phone use while driving.</li>
+          <li>Report any accident, damage, or mechanical issue to the office the same day.</li>
+          <li>Keep the vehicle clean and stocked for the next assignment.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="sop">
+      <summary><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M9 6l6 6-6 6"/></svg> Injury &amp; Near-Miss Reporting <span class="cat safety">Safety</span></summary>
+      <div class="body">
+        <ol>
+          <li>Address immediate medical needs first. Call 911 for any serious injury.</li>
+          <li>Report every injury and every near-miss to your supervisor the same day, no matter how minor.</li>
+          <li>Do not disturb the scene of a serious incident beyond what is needed to make it safe.</li>
+          <li>Complete the incident report while details are fresh.</li>
+          <li>Near-misses are reported so we can fix the hazard before it causes an injury.</li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="sop">
+      <summary><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M9 6l6 6-6 6"/></svg> Customer Communication &amp; Conduct <span class="cat field">Field</span></summary>
+      <div class="body">
+        <ul>
+          <li>Represent FDEC professionally in appearance, language, and conduct.</li>
+          <li>Explain what you found and what the work involves in plain terms the customer understands.</li>
+          <li>Route pricing, scope changes, and commitments through the office — do not quote on the spot unless authorized.</li>
+          <li>Document deficiencies clearly with photos so the office can build an accurate scope and quote.</li>
+          <li>Leave the work area as clean as or cleaner than you found it.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="sop">
+      <summary><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M9 6l6 6-6 6"/></svg> End-of-Day Documentation (ServiceTrade) <span class="cat admin">Admin</span></summary>
+      <div class="body">
+        <ul>
+          <li>Record all work performed, test results, and readings on the correct job and asset.</li>
+          <li>Attach photos of completed work and any deficiencies found.</li>
+          <li>Note every deficiency with enough detail for the office to quote the repair.</li>
+          <li>Capture required signatures before leaving the site.</li>
+          <li>Submit paperwork the same day so inspections and billing are not delayed.</li>
+        </ul>
+      </div>
+    </details>
+
+  </div>
+  <div class="noresult" id="sopNone">No procedures match that search.</div>
+</section>
+
+<!-- ============ CONFINED SPACE ============ -->
+<section class="tab" id="confined">
+  <div class="printhead"><h1>Permit-Required Confined Space Entry Permit</h1><div class="ph-sub">Fire Defense Equipment Company — Quick Hub</div></div>
+
+  <p class="lead">Reference guidance and a fillable entry permit for permit-required confined spaces, built on the Occupational Safety and Health Administration (OSHA) standard 29 CFR 1910.146.</p>
+
+  <div class="notice info no-print">
+    <strong>Before any entry:</strong> confirm the space has been evaluated, the permit is completed and signed by the Entry Supervisor, atmospheric testing is acceptable, and an Attendant is posted. Never enter a permit-required space alone.
+  </div>
+
+  <h2 class="section no-print">Reference</h2>
+  <div class="grid2 no-print">
+    <div class="card ref">
+      <span class="pill osha">OSHA 1910.146</span>
+      <h3>Is it a confined space?</h3>
+      <p style="font-size:13.5px;color:var(--ink-soft);margin:0 0 6px">A confined space meets all three (3):</p>
+      <ul>
+        <li>Large enough to enter and perform work</li>
+        <li>Limited or restricted means of entry or exit</li>
+        <li>Not designed for continuous occupancy</li>
+      </ul>
+      <p style="font-size:13.5px;color:var(--ink-soft);margin:10px 0 6px">FDEC examples: water storage tanks, fire pump pits, below-grade valve vaults, underground main vaults, and tank interiors.</p>
+    </div>
+    <div class="card ref">
+      <span class="pill osha">OSHA 1910.146</span>
+      <h3>When is it permit-required?</h3>
+      <p style="font-size:13.5px;color:var(--ink-soft);margin:0 0 6px">A confined space is permit-required (PRCS) if it has any one (1) of:</p>
+      <ul>
+        <li>A hazardous atmosphere, actual or potential</li>
+        <li>Material that could engulf an entrant</li>
+        <li>Walls that converge inward or a floor that slopes and could trap or asphyxiate</li>
+        <li>Any other recognized serious safety or health hazard</li>
+      </ul>
+    </div>
+    <div class="card ref">
+      <h3>Roles</h3>
+      <ul>
+        <li><span style="color:var(--ink);font-weight:600">Entry Supervisor</span> — authorizes entry, verifies conditions, cancels the permit.</li>
+        <li><span style="color:var(--ink);font-weight:600">Authorized Entrant</span> — performs the work inside the space.</li>
+        <li><span style="color:var(--ink);font-weight:600">Attendant</span> — stays outside, monitors entrants, never enters, orders evacuation when needed.</li>
+      </ul>
+    </div>
+    <div class="card ref">
+      <h3>Atmospheric testing order</h3>
+      <p style="font-size:13.5px;color:var(--ink-soft);margin:0 0 6px">Always test in this sequence, then monitor continuously:</p>
+      <table class="vals">
+        <tr><th>Test</th><th>Acceptable range</th></tr>
+        <tr><td>1. Oxygen</td><td class="ok">19.5% – 23.5%</td></tr>
+        <tr><td>2. Flammables</td><td class="ok">&lt; 10% LEL</td></tr>
+        <tr><td>3. Toxics (CO)</td><td class="ok">&lt; 35 ppm</td></tr>
+        <tr><td>3. Toxics (H₂S)</td><td class="ok">&lt; 10 ppm</td></tr>
+      </table>
+      <p style="font-size:12px;color:var(--ink-soft);margin:8px 0 0">LEL = Lower Explosive Limit. Use values from your calibrated meter and FDEC policy.</p>
+    </div>
+  </div>
+
+  <h2 class="section">Entry Permit</h2>
+  <form id="csForm" autocomplete="off">
+    <div class="card">
+      <div class="formgrid">
+        <div class="fld"><label>Permit No.</label><input name="cs_permit" type="text"></div>
+        <div class="fld"><label>Date</label><input name="cs_date" type="date"></div>
+        <div class="fld full"><label>Site / Location</label><input name="cs_site" type="text"></div>
+        <div class="fld full"><label>Space Description</label><input name="cs_space" type="text" placeholder="e.g. below-grade backflow vault, east lot"></div>
+        <div class="fld"><label>Entry Start</label><input name="cs_start" type="time"></div>
+        <div class="fld"><label>Entry End</label><input name="cs_end" type="time"></div>
+        <div class="fld full"><label>Purpose of Entry</label><input name="cs_purpose" type="text" placeholder="e.g. internal tank inspection, valve repair"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Personnel</h3>
+      <div class="formgrid">
+        <div class="fld"><label>Entry Supervisor</label><input name="cs_sup" type="text"></div>
+        <div class="fld"><label>Attendant</label><input name="cs_att" type="text"></div>
+        <div class="fld full"><label>Authorized Entrant(s)</label><input name="cs_ent" type="text"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Hazard Review &amp; Controls</h3>
+      <div id="csChecks"></div>
+    </div>
+
+    <div class="card">
+      <h3>Atmospheric Monitoring</h3>
+      <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 4px">Record initial readings and periodic re-tests. Meter calibrated: <input type="text" name="cs_cal" placeholder="date" style="border:0;border-bottom:1px solid var(--line);font-family:inherit;font-size:13px;width:110px"></p>
+      <table class="atmo">
+        <tr><th>Time</th><th>O₂ (%)</th><th>LEL (%)</th><th>CO (ppm)</th><th>H₂S (ppm)</th><th>Tested by</th></tr>
+        <tbody id="atmoRows"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>Rescue &amp; Communication</h3>
+      <div class="formgrid">
+        <div class="fld"><label>Emergency / Rescue Contact</label><input name="cs_rescue" type="text" placeholder="911 / rescue service"></div>
+        <div class="fld"><label>Communication Method</label><input name="cs_comm" type="text" placeholder="radio, voice, visual"></div>
+        <div class="fld full"><label>Retrieval equipment on site</label><input name="cs_retrieval" type="text" placeholder="tripod, harness, winch, etc."></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Authorization &amp; Cancellation</h3>
+      <div class="sign">
+        <div><div class="sigline">Entry Supervisor — authorizes entry</div></div>
+        <div><div class="sigline">Date / Time authorized</div></div>
+        <div><div class="sigline">Entry Supervisor — cancels permit</div></div>
+        <div><div class="sigline">Date / Time canceled</div></div>
+      </div>
+    </div>
+
+    <div class="btnrow no-print">
+      <button type="button" class="act primary" onclick="window.print()">Print / Save as PDF</button>
+      <button type="button" class="act ghost" data-save="csForm">Save draft</button>
+      <button type="button" class="act ghost" data-clear="csForm">Clear form</button>
+      <span class="savednote" id="csSaved">Saved on this device</span>
+    </div>
+  </form>
+</section>
+
+<!-- ============ LIFTS ============ -->
+<section class="tab" id="lifts">
+  <div class="printhead"><h1>Scissor &amp; Boom Lift — Pre-Use Inspection</h1><div class="ph-sub">Fire Defense Equipment Company — Quick Hub</div></div>
+
+  <p class="lead">Safety rules and a pre-use inspection checklist for Mobile Elevating Work Platforms (MEWPs) — scissor and boom lifts — per OSHA 29 CFR 1926.453 and the American National Standards Institute (ANSI) A92 series.</p>
+
+  <div class="notice alert no-print">
+    <strong>Fall protection:</strong> in a boom lift, every occupant wears a full-body harness with a lanyard attached to the manufacturer's anchor point at all times. Scissor lifts rely on the guardrail system; follow the manufacturer and FDEC policy on whether a harness is also required. Never climb on or sit on the guardrails.
+  </div>
+
+  <h2 class="section no-print">Key safety rules</h2>
+  <div class="grid2 no-print">
+    <div class="card ref">
+      <span class="pill osha">OSHA 1926.453</span>
+      <h3>Before you raise the platform</h3>
+      <ul>
+        <li>Only trained, authorized operators run the lift.</li>
+        <li>Complete the pre-use inspection below each shift.</li>
+        <li>Survey the work area — slope, holes, soft ground, drop-offs, and debris.</li>
+        <li>Look up. Keep at least ten (10) feet from energized power lines up to fifty (50) kilovolts.</li>
+        <li>Set outriggers and wheel chocks where equipped and required.</li>
+      </ul>
+    </div>
+    <div class="card ref">
+      <span class="pill ansi">ANSI A92</span>
+      <h3>While working at height</h3>
+      <ul>
+        <li>Stay inside the platform with both feet on the deck.</li>
+        <li>Do not exceed the rated load — people, tools, and material combined.</li>
+        <li>Keep the gate or chain closed.</li>
+        <li>Do not use the lift as a crane or to carry suspended loads.</li>
+        <li>Lower the platform before moving, unless the lift is rated to travel elevated.</li>
+        <li>Stop work in high wind, lightning, or other unsafe conditions.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2 class="section">Pre-Use Inspection Checklist</h2>
+  <form id="liftForm" autocomplete="off">
+    <div class="card">
+      <div class="formgrid">
+        <div class="fld">
+          <label>Lift Type</label>
+          <select name="lf_type" id="lfType">
+            <option value="scissor">Scissor lift</option>
+            <option value="boom">Boom lift (articulating / telescopic)</option>
+          </select>
+        </div>
+        <div class="fld"><label>Date</label><input name="lf_date" type="date"></div>
+        <div class="fld"><label>Operator</label><input name="lf_op" type="text"></div>
+        <div class="fld"><label>Unit / Serial No.</label><input name="lf_unit" type="text"></div>
+        <div class="fld"><label>Make / Model</label><input name="lf_model" type="text"></div>
+        <div class="fld"><label>Hour Meter</label><input name="lf_hours" type="text"></div>
+        <div class="fld full"><label>Job Site</label><input name="lf_site" type="text"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Ground inspection — engine off</h3>
+      <div id="lfGround"></div>
+    </div>
+
+    <div class="card">
+      <h3>Function test — engine running</h3>
+      <div id="lfFunction"></div>
+    </div>
+
+    <div class="card" id="boomBox" style="display:none">
+      <h3>Boom lift — fall protection</h3>
+      <div id="lfBoom"></div>
+    </div>
+
+    <div class="card">
+      <h3>Workplace inspection</h3>
+      <div id="lfArea"></div>
+    </div>
+
+    <div class="card">
+      <div class="fld full"><label>Defects found / notes</label><textarea name="lf_notes" placeholder="Describe any defect. Any lift with a safety defect is tagged out of service until repaired."></textarea></div>
+      <div class="formgrid" style="margin-top:12px">
+        <div class="fld"><label>Safe to operate?</label>
+          <select name="lf_safe"><option value="">Select</option><option>Yes — in service</option><option>No — tagged out of service</option></select>
+        </div>
+        <div class="fld"><label>Operator signature</label><input name="lf_sign" type="text" placeholder="type name to confirm"></div>
+      </div>
+    </div>
+
+    <div class="btnrow no-print">
+      <button type="button" class="act primary" onclick="window.print()">Print / Save as PDF</button>
+      <button type="button" class="act ghost" data-save="liftForm">Save draft</button>
+      <button type="button" class="act ghost" data-clear="liftForm">Clear form</button>
+      <span class="savednote" id="liftSaved">Saved on this device</span>
+    </div>
+  </form>
+</section>
+
+</main>
+
+<footer>
+  Quick Hub — internal tool for Fire Defense Equipment Company employees. Reference content is based on OSHA and NFPA/ANSI standards and does not replace the current published standard, manufacturer instructions, or official FDEC policy. &nbsp;·&nbsp; v1.0
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- Home hub links ----------
+  // Edit the url for each tool below. Leave blank to show "URL not set".
+  var LINKS = [
+    {name:'ITM Inspection Reports',  cat:'Field',   access:'',             url:'https://302stang86.github.io/FDEC-ITM-REPORTS-V1/', desc:'NFPA 25 inspection report forms with PDF output.'},
+    {name:'Quoting & Proposal Suite',cat:'Quoting', access:'Manager only', url:'https://302stang86.github.io/SP-FDEC-Quoting-2026/', desc:'Sprinkler ITM quoting and proposal verbiage.'},
+    {name:'Fire Alarm Quoting Suite',cat:'Quoting', access:'Manager only', url:'', desc:'Fire alarm ITM quoting and proposal verbiage.'},
+    {name:'Time-Off Requests',       cat:'Team',    access:'Everyone',     url:'https://302stang86.github.io/On-Call-Rotation/timeoff.html', desc:'Submit paid time-off (PTO) requests and track balances.'},
+    {name:'On-Call Rotation',        cat:'Team',    access:'Everyone',     url:'https://302stang86.github.io/On-Call-Rotation/', desc:'Current sprinkler department on-call schedule.'}
+  ];
+  var hub = document.getElementById('hubLinks');
+  if(hub){
+    LINKS.forEach(function(l){
+      var a = document.createElement('a');
+      var set = l.url && l.url !== '#';
+      a.className = 'hublink' + (set ? '' : ' unset');
+      if(set){ a.href = l.url; a.target = '_blank'; a.rel = 'noopener'; }
+      else { a.href = '#'; a.addEventListener('click',function(e){e.preventDefault();}); }
+      a.innerHTML =
+        '<div class="htop"><span class="hname"></span>' +
+        '<span class="hcat ' + l.cat.toLowerCase() + '"></span></div>' +
+        '<p class="hdesc"></p>';
+      a.querySelector('.hname').textContent = l.name;
+      a.querySelector('.hcat').textContent = l.cat;
+      a.querySelector('.hdesc').textContent = l.desc;
+      if(l.access){
+        var ac = document.createElement('span');
+        ac.className = 'haccess ' + (l.access.toLowerCase().indexOf('manager') > -1 ? 'manager' : 'everyone');
+        ac.textContent = l.access;
+        a.appendChild(ac);
+      }
+      hub.appendChild(a);
+    });
+  }
+
+  // ---------- Tabs ----------
+  var tabBtns = document.querySelectorAll('#tabs button');
+  tabBtns.forEach(function(b){
+    b.addEventListener('click',function(){
+      tabBtns.forEach(function(x){x.classList.remove('active')});
+      document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});
+      b.classList.add('active');
+      document.getElementById(b.dataset.tab).classList.add('active');
+      window.scrollTo({top:0,behavior:'smooth'});
+    });
+  });
+
+  // ---------- SOP search ----------
+  var search = document.getElementById('sopSearch');
+  var none = document.getElementById('sopNone');
+  if(search){
+    search.addEventListener('input',function(){
+      var q = search.value.toLowerCase().trim();
+      var shown = 0;
+      document.querySelectorAll('#sopList .sop').forEach(function(s){
+        var match = s.textContent.toLowerCase().indexOf(q) !== -1;
+        s.style.display = match ? '' : 'none';
+        if(match) shown++;
+      });
+      none.style.display = shown === 0 ? 'block' : 'none';
+    });
+  }
+
+  // ---------- Checklist builder ----------
+  function buildChecks(containerId, items){
+    var c = document.getElementById(containerId);
+    if(!c) return;
+    items.forEach(function(item,i){
+      var row = document.createElement('div');
+      row.className = 'checkrow';
+      var id = containerId + '_' + i;
+      row.innerHTML =
+        '<input type="checkbox" name="'+id+'" id="'+id+'">' +
+        '<label class="q" for="'+id+'">'+item+'</label>';
+      c.appendChild(row);
+    });
+  }
+
+  buildChecks('csChecks',[
+    'Space evaluated and confirmed as permit-required',
+    'All entrants, attendant, and supervisor trained for this entry',
+    'Energy sources isolated (lockout/tagout complete)',
+    'Lines blanked, blinded, or disconnected where needed',
+    'Space purged and ventilated',
+    'Continuous forced-air ventilation in place',
+    'Atmospheric testing acceptable before entry (see table below)',
+    'Calibrated multi-gas meter in use and monitoring continuously',
+    'Lighting adequate and rated for the space',
+    'Attendant posted and in constant communication with entrants',
+    'Retrieval system rigged (harness, tripod/winch) where feasible',
+    'Rescue plan in place and rescue service notified / available',
+    'Entry, exit, and conditions logged on this permit'
+  ]);
+
+  // Atmospheric rows
+  var atmo = document.getElementById('atmoRows');
+  if(atmo){
+    for(var r=0;r<5;r++){
+      var tr = document.createElement('tr');
+      ['time','o2','lel','co','h2s','by'].forEach(function(f){
+        var td = document.createElement('td');
+        td.innerHTML = '<input type="text" name="atmo_'+r+'_'+f+'">';
+        tr.appendChild(td);
+      });
+      atmo.appendChild(tr);
+    }
+  }
+
+  buildChecks('lfGround',[
+    'Tires / tracks and wheels in good condition',
+    'No fluid leaks (hydraulic, fuel, coolant, battery)',
+    'Fluid levels correct',
+    'Hoses and cables intact, no chafing or cracks',
+    'Platform, deck, and guardrails secure and undamaged',
+    'Gate / entry chain present and working',
+    'All safety decals and capacity labels legible',
+    'No cracked welds or bent structural members',
+    'Battery secure and charged / adequate fuel'
+  ]);
+
+  buildChecks('lfFunction',[
+    'Upper (platform) controls operate correctly',
+    'Lower (ground) controls operate correctly',
+    'Emergency stop works at both control stations',
+    'Emergency / manual lowering works',
+    'Tilt alarm and sensors functioning',
+    'Horn, lights, and backup alarm work',
+    'Brakes and steering respond correctly',
+    'Platform raises, lowers, and (boom) articulates smoothly'
+  ]);
+
+  buildChecks('lfBoom',[
+    'Full-body harness inspected — webbing, stitching, D-ring, hardware',
+    'Lanyard / self-retracting device inspected and in date',
+    'Anchor point in platform intact and rated',
+    'Operator wearing harness and tied off to platform anchor'
+  ]);
+
+  buildChecks('lfArea',[
+    'Ground level, firm, and able to support the lift',
+    'No holes, drop-offs, slopes, or soft ground in the path',
+    'Overhead clear — minimum ten (10) foot clearance from power lines',
+    'No overhead obstructions, pipes, or structures in the work zone',
+    'Area barricaded from pedestrian and vehicle traffic where needed',
+    'Weather and wind within safe operating limits'
+  ]);
+
+  // Boom section toggle
+  var lfType = document.getElementById('lfType');
+  var boomBox = document.getElementById('boomBox');
+  function toggleBoom(){ if(boomBox) boomBox.style.display = lfType.value === 'boom' ? '' : 'none'; }
+  if(lfType){ lfType.addEventListener('change',function(){toggleBoom();saveForm('liftForm');}); toggleBoom(); }
+
+  // ---------- Save / restore (per device) ----------
+  function formData(form){
+    var data = {};
+    form.querySelectorAll('input,textarea,select').forEach(function(el){
+      if(!el.name) return;
+      data[el.name] = el.type === 'checkbox' ? el.checked : el.value;
+    });
+    return data;
+  }
+  function saveForm(id){
+    var form = document.getElementById(id);
+    if(!form) return;
+    try{ localStorage.setItem('riser_'+id, JSON.stringify(formData(form)));
+      var note = document.getElementById(id==='csForm'?'csSaved':'liftSaved');
+      if(note){ note.classList.add('show'); setTimeout(function(){note.classList.remove('show')},2200); }
+    }catch(e){}
+  }
+  function restoreForm(id){
+    try{
+      var raw = localStorage.getItem('riser_'+id);
+      if(!raw) return;
+      var data = JSON.parse(raw);
+      var form = document.getElementById(id);
+      Object.keys(data).forEach(function(k){
+        var el = form.querySelector('[name="'+CSS.escape(k)+'"]');
+        if(!el) return;
+        if(el.type === 'checkbox') el.checked = data[k]; else el.value = data[k];
+      });
+      if(id==='liftForm') toggleBoom();
+    }catch(e){}
+  }
+
+  document.querySelectorAll('[data-save]').forEach(function(b){
+    b.addEventListener('click',function(){ saveForm(b.dataset.save); });
+  });
+  document.querySelectorAll('[data-clear]').forEach(function(b){
+    b.addEventListener('click',function(){
+      if(!confirm('Clear this form and the saved draft on this device?')) return;
+      var form = document.getElementById(b.dataset.clear);
+      form.reset();
+      form.querySelectorAll('input[type=checkbox]').forEach(function(c){c.checked=false});
+      try{ localStorage.removeItem('riser_'+b.dataset.clear); }catch(e){}
+      if(b.dataset.clear==='liftForm') toggleBoom();
+    });
+  });
+
+  restoreForm('csForm');
+  restoreForm('liftForm');
+})();
+</script>
+</body>
+</html>
