@@ -6,9 +6,9 @@
 <title>FDEC Fire Dispatch Directory</title>
 <style>
   :root {
-    --navy: #20262d;
-    --red: #C8102E;
-    --red-hover: #9E0C24;
+    --navy: #1B2A4A;
+    --red: #C1121C;
+    --red-hover: #9d0e16;
     --bg: #eef1f4;
     --text: #1b1f24;
     --border: #dfe3e8;
@@ -18,7 +18,7 @@
   * { box-sizing: border-box; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background: var(--bg); color: var(--text); margin: 0; padding: 0; line-height: 1.4;
+    background: #141720 url("fdec-collage-bg-vintage.jpg") center/cover no-repeat fixed; color: var(--text); margin: 0; padding: 0; line-height: 1.4;
   }
   .masthead {
     background: var(--navy); border-bottom: 5px solid var(--red);
@@ -26,9 +26,9 @@
   }
   .masthead .company { font-size: 1.05rem; font-weight: 700; letter-spacing: .04em; margin: 0; }
   .masthead .doctype { font-size: .85rem; color: #aeb6bf; margin: 3px 0 0; }
-  .wrap { max-width: 980px; margin: 0 auto; padding: 14px 14px 60px; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 14px 14px 60px; background: rgba(238,241,244,.84); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
   .toolbar {
-    position: sticky; top: 0; z-index: 10; background: var(--bg);
+    position: sticky; top: 0; z-index: 10; background: rgba(238,241,244,.95); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
     padding: 12px 0 10px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
   }
   #search {

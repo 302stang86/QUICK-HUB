@@ -7,34 +7,34 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
 /* Layout: sticky navy masthead + search + form tabs over a centered reading column
-   of click-to-expand checklist statements. FDEC identity (navy #20262d / red #C8102E)
+   of click-to-expand checklist statements. FDEC identity (navy #1B2A4A / red #C1121C)
    in light; same identity re-grounded on a deep slate surface for dark. */
 :root{
   /* brand constants (same in both themes) */
-  --navy:#20262d; --navy2:#3a424d; --red:#C8102E; --red2:#9E0C24;
+  --navy:#1B2A4A; --navy2:#2b4a80; --red:#C1121C; --red2:#9d0e16;
   --ok:#1f7a3d;
   /* deficiency class hues */
-  --crit:#C8102E; --imp:#b4690e; --noncrit:#20262d; --comment:#5c6470;
+  --crit:#C1121C; --imp:#b4690e; --noncrit:#1B2A4A; --comment:#5c6470;
   /* themed surface tokens — light */
   --bg:#eef1f4; --card:#ffffff; --ink:#1a1a1a; --muted:#5c6470;
   --line:#dfe3e8; --line2:#e4e7ea; --shade:#f4f6f8; --pink:#f7e9ea;
-  --masthead:#20262d; --masthead-ink:#ffffff;
-  --sectionbar:#20262d; --sectionbar-ink:#ffffff;
-  --numchip:#eef2f8; --numchip-ink:#20262d;
+  --masthead:#1B2A4A; --masthead-ink:#ffffff;
+  --sectionbar:#1B2A4A; --sectionbar-ink:#ffffff;
+  --numchip:#eef2f8; --numchip-ink:#1B2A4A;
   --stmt-open:#eef4fb; --stmt-hover:#f5f8fd; --body-bg:#fbfcfe;
-  --tab-border:#dfe3e8; --reftag-bg:#fdecec; --reftag-ink:#9E0C24;
-  --accent-rail:#C8102E; --tag-ink:#ffffff;
+  --tab-border:#dfe3e8; --reftag-bg:#fdecec; --reftag-ink:#9d0e16;
+  --accent-rail:#C1121C; --tag-ink:#ffffff;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
   color-scheme:dark;
   --bg:#0f1824; --card:#17222f; --ink:#e7ecf2; --muted:#9aa7b6;
   --line:#2b3a4c; --line2:#223040; --shade:#1b2735; --pink:#3a2228;
-  --masthead:#15191e; --masthead-ink:#f1f4f9;
-  --sectionbar:#23282f; --sectionbar-ink:#eaf0f8;
+  --masthead:#12213c; --masthead-ink:#f1f4f9;
+  --sectionbar:#24364f; --sectionbar-ink:#eaf0f8;
   --numchip:#22344c; --numchip-ink:#aec6e8;
   --stmt-open:#1d2c3e; --stmt-hover:#1b2a3a; --body-bg:#141f2b;
   --tab-border:#2b3a4c; --reftag-bg:#3a2224; --reftag-ink:#f0b3b0;
-  --accent-rail:#e04b5f;
+  --accent-rail:#d8403f;
   --ok:#4caf6e; --crit:#e06663; --imp:#d6a44a; --noncrit:#7ba4dd; --comment:#9aa7b6;
   --tag-ink:#10151c;
 }}
@@ -42,17 +42,17 @@
   color-scheme:dark;
   --bg:#0f1824; --card:#17222f; --ink:#e7ecf2; --muted:#9aa7b6;
   --line:#2b3a4c; --line2:#223040; --shade:#1b2735; --pink:#3a2228;
-  --masthead:#15191e; --masthead-ink:#f1f4f9;
-  --sectionbar:#23282f; --sectionbar-ink:#eaf0f8;
+  --masthead:#12213c; --masthead-ink:#f1f4f9;
+  --sectionbar:#24364f; --sectionbar-ink:#eaf0f8;
   --numchip:#22344c; --numchip-ink:#aec6e8;
   --stmt-open:#1d2c3e; --stmt-hover:#1b2a3a; --body-bg:#141f2b;
   --tab-border:#2b3a4c; --reftag-bg:#3a2224; --reftag-ink:#f0b3b0;
-  --accent-rail:#e04b5f;
+  --accent-rail:#d8403f;
   --ok:#4caf6e; --crit:#e06663; --imp:#d6a44a; --noncrit:#7ba4dd; --comment:#9aa7b6;
   --tag-ink:#10151c;
 }
 *{box-sizing:border-box}
-body{font-family:"Segoe UI",Arial,Helvetica,sans-serif;color:var(--ink);background:var(--bg);font-size:14px;line-height:1.4}
+body{font-family:"Segoe UI",Arial,Helvetica,sans-serif;color:var(--ink);background:var(--bg) url("fdec-collage-bg-vintage.jpg") center/cover no-repeat fixed;font-size:14px;line-height:1.4}
 button{font-family:inherit}
 
 /* top bar */
@@ -84,8 +84,10 @@ button{font-family:inherit}
 .tabs button:focus-visible{outline:2px solid var(--navy2);outline-offset:2px}
 
 /* content */
-.wrap{max-width:900px;margin:0 auto;
+.wrap{max-width:900px;margin:0 auto;background:rgba(238,241,244,.86);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);border-radius:10px;
   padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .wrap{background:rgba(15,24,36,.82)}}
+:root[data-theme="dark"] .wrap{background:rgba(15,24,36,.82)}
 .formhead{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--accent-rail);border-radius:8px;padding:14px 16px;margin-bottom:14px}
 .formhead .code{font-size:11px;font-weight:700;color:var(--crit);letter-spacing:.5px;text-transform:uppercase}
 .formhead .ttl{font-size:17px;font-weight:800;color:var(--ink);margin-top:2px;text-wrap:balance}
@@ -136,7 +138,7 @@ button{font-family:inherit}
 .no-results{text-align:center;color:var(--muted);padding:40px 20px;font-size:14px}
 .disclaimer{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-top:18px;font-size:11.5px;color:var(--muted);line-height:1.5}
 .disclaimer b{color:var(--ink)}
-footer{text-align:center;color:var(--muted);font-size:11px;padding:20px}
+footer{text-align:center;color:#c3cbd4;font-size:11px;padding:20px}
 
 @media(max-width:640px){
   .wrap{padding-block:12px}
@@ -610,241 +612,241 @@ const FORMS = [
       ]}
     ]
   },
-  /* ---------------- FD-16 Limited ---------------- */
+  /* ---------------- FD Annual Dry Valve ---------------- */
   {
-    id:"fd16", code:"FD-16", freq:"Annual (Limited System)",
-    title:"Annual Limited System Inspection, Testing & Maintenance",
+    id:"dryvalve", code:"FD-DV", freq:"Annual Dry Valve",
+    title:"Annual Dry Valve Inspection, Testing & Maintenance",
     sections:[
       {name:"Pre-Inspection", items:[
         item(1,"System monitored by a central monitoring station?","monitored"),
-        item(2,"Fire alarm panel normal & suppression in service on arrival","panelNormal"),
-        item(3,"Local dispatch/monitoring notified of testing","dispatchNotify"),
+        item(2,"Fire alarm panel in normal status & suppression system in service on arrival","panelNormal"),
+        item(3,"Local dispatch and/or monitoring company notified of testing","dispatchNotify"),
         item(4,"All pertinent parties notified before testing","partiesNotify"),
         item(5,"Fire Dispatch — name / phone / badge ID","contactField"),
         item(6,"Monitoring company — name / phone / ID","contactField")
       ]},
       {name:"System Identifications", items:[
         item(7,"Hydraulic nameplates attached & legible","hydraulicPlate"),
-        item(8,"Additional system locations identified at riser","systemsIdentified"),
-        item(9,"Control valves, drains, ITVs, drum drips identified & accessible","valvesIdentified"),
-        item(10,"FDC properly identified & visible","fdcIdentified")
+        item(8,"Dry system identified at the riser; valves, drains, drum drips & low-point drains identified & accessible","valvesIdentified"),
+        item(9,"FDC properly identified & visible","fdcIdentified")
       ]},
       {name:"Additional NFPA Required Inspections", items:[
-        item(11,"Fire alarm system inspected within the past year","faInspected"),
-        item(12,"5-year internal pipe inspection","internalPipe5yr"),
-        item(13,"5-year FDC piping hydrostatic testing","fdcHydro5yr"),
-        item(14,"System backflow device tested within past 3 years","backflow3yr")
+        item(10,"Fire alarm system inspected within the past year","faInspected"),
+        item(11,"5-year internal pipe inspection","internalPipe5yr"),
+        item(12,"5-year FDC piping hydrostatic testing","fdcHydro5yr"),
+        item(13,"System backflow device tested within the past 3 years","backflow3yr")
       ]},
-      {name:"System Functionality", items:[
-        item(15,"Accessible control & sectional valves exercised & lubricated if required","exerciseValves"),
-        item(16,"Tamper switch signals verified within two revolutions & restored","tamperVerify"),
-        item(17,"Waterflow switch tested through ITV","waterflowITV"),
-        item(18,"Alarm device(s) above the FDC working properly","fdcAlarmDevices"),
-        item(19,"FDC inspected for damage, seized fittings, missing caps","fdcDamage"),
-        item(20,"FDC lubricated & interior inspected","fdcLube"),
-        item(21,"Time for waterflow alarm to activate (sec., per riser)","waterflowTime"),
-        item(22,"Building fire alarm devices that activated","faDevices"),
-        item(23,"Central monitoring received correct signals (verified by)","centralVerify"),
-        item(24,"All water gauges replaced every 5 years","waterGauge5yr"),
-        item(25,"Adequate drainage for main drain testing","drainage"),
-        item(26,"Beginning static pressure (psi)","staticBegin"),
-        item(27,"Residual pressure (psi)","residual"),
-        item(28,"Return static pressure (psi)","returnStatic"),
-        item(29,"Time to return to static pressure (sec.)","returnTime"),
-        item(30,"Last recorded residual pressure (psi)","lastResidual"),
-        item(31,"Residual less than 10% reduction from original/last test","residualCalc")
+      {name:"Dry Valve Inspection", items:[
+        item(14,"Dry pipe valve exterior & trim free of damage, leaks, missing components", {
+          how:"Inspect the dry pipe valve body, trim, and associated piping for physical damage, corrosion, leaks, and missing or loose components. Confirm the intermediate chamber is not leaking (continuous drip indicates a seated-seat or clapper issue).",
+          ref:["NFPA 25 13.4.4.1 (dry pipe valve inspection)"],
+          def:[["noncritical","Minor trim damage/leak not affecting operation — Non-Critical.","critical","Valve leaking by the clapper / intermediate chamber continuously discharging — Critical."]]
+        }),
+        item(15,"Air/nitrogen supervisory pressure correct per manufacturer's chart", {
+          how:"Read the system air (or nitrogen) gauge and compare to the manufacturer's air/water pressure differential chart. Confirm the pressure is within the listed range to keep the clapper seated without premature trip.",
+          ref:["NFPA 25 13.2.7.1 (gauges)","NFPA 25 13.4.4.2 (air pressure)"],
+          def:[["noncritical","Air pressure slightly off — adjust & note Non-Critical.","critical","Air pressure far below chart (risk of inadvertent trip) or supervisory air lost — Critical."]]
+        }),
+        item(16,"Automatic air maintenance device / compressor operating correctly", {
+          how:"Confirm the air compressor or shop-air maintenance device cycles and holds system pressure. Verify the restriction/listed air maintenance device is in place so a system trip does not feed the compressor into the system.",
+          ref:["NFPA 25 13.4.4.2 (air supply)"],
+          def:[["noncritical","Compressor short-cycling or slow to recover — Non-Critical; service.","critical","Air maintenance device bypassed/missing or compressor inoperable — Critical."]]
+        }),
+        item(17,"Priming water level correct (where applicable)", {
+          how:"On valves that use priming water, check the priming water level at the test/priming level valve. Top off or drain to the listed level. Not all dry valves are primed — mark N/A where the listed valve does not use priming water.",
+          ref:["NFPA 25 13.4.4.1.2 (priming water)"],
+          def:[["noncritical","Priming level off — correct & note Non-Critical."]]
+        }),
+        item(18,"Low-point / auxiliary drains drained of condensate", {
+          how:"Drain each low-point (auxiliary) drain to remove accumulated condensate. Trapped water freezes and blocks pipe — this is the most common dry-system freeze failure. Record the number of drum drips/low points serviced.",
+          ref:["NFPA 25 13.4.4.3.2 (low-point drains, before freezing & after operation)"],
+          def:[["noncritical","Water present & drained — Non-Critical; document locations.","critical","Low point inaccessible or frozen/blocked — Critical."]]
+        }),
+        item(19,"Enclosure heat maintaining riser room / dry valve above 40°F","riserTemp"),
+        item(20,"Quick-opening device (accelerator), where provided, inspected & in service", {
+          how:"Where an accelerator or other quick-opening device is installed, confirm it is in service, undamaged, and its control valve is open. The trip test (below) confirms its function.",
+          ref:["NFPA 25 13.4.4.1.1 (QOD inspection)"],
+          def:[["noncritical","QOD control valve closed / device bypassed — Non-Critical; restore.","critical","QOD required by design and inoperable — Critical."]]
+        })
+      ]},
+      {name:"Dry Valve Testing", items:[
+        item(21,"Trip test performed (partial-flow this year; full-flow trip test every 3 years)", {
+          how:"Conduct the dry pipe valve trip test by opening the inspector's test connection. Record trip time and water-delivery results. A full-flow trip test (control valve fully open) is required every 3 years; a partial-flow trip test (control valve partially open) in the intervening years.",
+          ref:["NFPA 25 13.4.4.2.2 (trip test — annual)","NFPA 25 13.4.4.2.2.2 (full-flow — every 3 yr)"],
+          def:[["critical","Valve fails to trip, or water delivery exceeds the required/last-recorded time — Critical.","noncritical","Trip/delivery slightly slow — Non-Critical; service & retest."]]
+        }),
+        item(22,"Air pressure at trip (psi)","staticBegin"),
+        item(23,"Time to trip after test valve opened (sec.)","returnTime"),
+        item(24,"Water-delivery time to inspector's test connection (sec.)","waterflowTime"),
+        item(25,"Waterflow alarm / supervisory signals received & verified by monitoring","centralVerify"),
+        item(26,"Main drain test — adequate drainage","drainage"),
+        item(27,"Beginning static pressure (psi)","staticBegin"),
+        item(28,"Residual pressure (psi)","residual"),
+        item(29,"Return static pressure (psi)","returnStatic"),
+        item(30,"Residual less than 10% reduction from original/last test","residualCalc")
       ]},
       {name:"System Visual Inspection", items:[
-        item(32,"Visible piping in good condition","pipeVisual"),
-        item(33,"Visible sprinklers in good condition","headVisual"),
-        item(34,"Sprinklers properly oriented; no storage within 18 in. of deflector","headOrientation"),
-        item(35,"Escutcheons & concealed cover plates in place","escutcheon"),
-        item(36,"Harsh-environment sprinklers (5 yr) replaced/sample tested","harsh5yr"),
-        item(37,"Sprinklers prior to 1920 replaced","pre1920"),
-        item(38,"Sprinklers 75 yr replaced/sample tested (then every 5 yr)","years75"),
-        item(39,"Sprinklers 50 yr replaced/sample tested (then every 10 yr)","years50"),
-        item(40,"Fast-response 20 yr replaced/sample tested (then every 10 yr)","fastResponse25"),
-        item(41,"ESFR/CMSA aged replaced/sample tested (then every 10 yr)","esfr20"),
-        item(42,"Dry-barrel 20 yr replaced/sample tested (then every 10 yr)","dryBarrel20"),
-        item(43,"Extra-high-temp solder sprinklers replaced/sample tested every 5 yr","highTemp5yr"),
-        item(44,"Spare head box properly equipped","spareHeadBox"),
-        item(45,"At time of report, riser room above 40°F","riserTemp")
+        item(31,"Visible piping in good condition — no leaks, corrosion, damage, pitch toward drains","pipeVisual"),
+        item(32,"Visible sprinklers in good condition — correct dry-system heads, no loading/corrosion","headVisual"),
+        item(33,"Dry-barrel sprinklers in service 20 yr replaced or sample tested (then every 10 yr)","dryBarrel20"),
+        item(34,"Spare head box properly equipped (dry-system spares, wrench, list)","spareHeadBox")
       ]},
       {name:"Post Inspection", items:[
-        item(46,"Fire alarm panel reset & cleared","panelReset"),
-        item(47,"System returned to full service & parties notified","returnService")
+        item(35,"Dry valve reset, air pressure restored per chart, QOD returned to service","panelReset"),
+        item(36,"System returned to full service & parties notified","returnService")
       ]}
     ]
   },
-  /* ---------------- FD-19 Monthly ---------------- */
+  /* ---------------- FD Annual Antifreeze ---------------- */
   {
-    id:"fd19", code:"FD-19", freq:"Monthly",
-    title:"Monthly Fire Sprinkler System Inspection",
+    id:"antifreeze", code:"FD-AF", freq:"Annual Antifreeze",
+    title:"Annual Antifreeze System Inspection, Testing & Maintenance",
     sections:[
       {name:"Pre-Inspection", items:[
         item(1,"System monitored by a central monitoring station?","monitored"),
-        item(2,"Fire alarm panel normal & suppression in service on arrival","panelNormal")
+        item(2,"Fire alarm panel in normal status & suppression system in service on arrival","panelNormal"),
+        item(3,"Local dispatch and/or monitoring company notified of testing","dispatchNotify"),
+        item(4,"All pertinent parties notified before testing","partiesNotify"),
+        item(5,"Fire Dispatch — name / phone / badge ID","contactField"),
+        item(6,"Monitoring company — name / phone / ID","contactField")
+      ]},
+      {name:"System Identifications", items:[
+        item(7,"Hydraulic nameplates attached & legible","hydraulicPlate"),
+        item(8,"Antifreeze system identified at the riser; antifreeze type placarded; valves & drains identified & accessible","valvesIdentified"),
+        item(9,"FDC properly identified & visible","fdcIdentified")
+      ]},
+      {name:"Additional NFPA Required Inspections", items:[
+        item(10,"Fire alarm system inspected within the past year","faInspected"),
+        item(11,"5-year internal pipe inspection","internalPipe5yr"),
+        item(12,"System backflow device tested within the past 3 years","backflow3yr")
+      ]},
+      {name:"Antifreeze Solution Testing", items:[
+        item(13,"Antifreeze solution tested annually; concentration by freezing point / refractometer", {
+          how:"Draw samples from the top, middle, and bottom (and remote ends) of each antifreeze loop and test the concentration with a refractometer or by freezing-point hydrometer. Record the freezing point and the measured concentration for each sample point — concentration stratifies, so a single sample is not sufficient.",
+          ref:["NFPA 25 5.3.4 (antifreeze solution test — annual)","NFPA 25 5.3.4.1 (sample at multiple points)"],
+          def:[["critical","Concentration above the listed maximum (flammability risk) — Critical; remove/replace solution.","noncritical","Concentration below protection target but not flammable — Non-Critical; adjust."]]
+        }),
+        item(14,"Antifreeze is a listed/approved factory-premixed solution (post-2022 installs)", {
+          how:"Confirm the solution is a listed, factory-premixed antifreeze permitted for fire sprinkler use. Since the 2012/later editions, newly introduced solutions must be listed premixed products; locally mixed glycerin/glycol is restricted. Note solution type and listing on the report.",
+          ref:["NFPA 25 5.3.4 / NFPA 13 (listed antifreeze requirements)"],
+          def:[["comment","Existing legacy solution — document type/concentration; recommend transition to a listed premixed solution where required.","critical","Unlisted/over-concentration solution in a system requiring listed antifreeze — Critical."]]
+        }),
+        item(15,"Freezing point adequate for the lowest expected temperature", {
+          how:"Compare the measured freezing point against the coldest temperature the protected area can reach. The solution must stay liquid at that temperature without exceeding the listed maximum concentration.",
+          ref:["NFPA 25 5.3.4 (freeze protection adequacy)"],
+          def:[["critical","Freezing point above the lowest expected temperature (freeze risk) — Critical.","noncritical","Marginal — Non-Critical; adjust before cold season."]]
+        }),
+        item(16,"Top sample concentration (%)","staticBegin"),
+        item(17,"Middle sample concentration (%)","residual"),
+        item(18,"Bottom / remote sample concentration (%)","returnStatic"),
+        item(19,"Lowest measured freezing point (°F)","lastResidual")
+      ]},
+      {name:"System Functionality", items:[
+        item(20,"Control & sectional valves exercised; antifreeze loop isolation valves verified","exerciseValves"),
+        item(21,"Tamper switch signals verified within two revolutions & restored","tamperVerify"),
+        item(22,"Waterflow switch tested through inspector's test valve (ITV)","waterflowITV"),
+        item(23,"Adequate drainage for main drain testing","drainage"),
+        item(24,"Beginning static pressure (psi)","staticBegin"),
+        item(25,"Residual pressure (psi)","residual"),
+        item(26,"Return static pressure (psi)","returnStatic"),
+        item(27,"Residual less than 10% reduction from original/last test","residualCalc")
       ]},
       {name:"System Visual Inspection", items:[
-        item(3,"Accessible control & associated valves — no leaks, damage, missing components", {
-          how:"Visually inspect all accessible control valves and associated system valves. Look for leaks, physical damage, and missing handles/components. Monthly inspection is visual only — no operation required.",
-          ref:["NFPA 25 13.3.2 (control valve inspection — monthly for locked)"],
-          def:[["critical","Valve damaged/leaking affecting operation — Critical.","noncritical","Minor issue not affecting operation — Non-Critical."]]
+        item(28,"Visible piping in good condition — no leaks, corrosion, damage","pipeVisual"),
+        item(29,"Visible sprinklers in good condition — no leaks, loading, corrosion","headVisual"),
+        item(30,"Expansion chamber / provision for solution expansion in place (where provided)", {
+          how:"Where the antifreeze loop uses an expansion chamber or other provision for thermal expansion, confirm it is present and functional so pressure surges do not open heads or damage the loop.",
+          ref:["NFPA 13 (antifreeze expansion provision)"],
+          def:[["noncritical","Expansion provision missing/undersized — Non-Critical; evaluate."]]
         }),
-        item(4,"Control valves in normal position (locked or sealed)", {
-          how:"Confirm each control valve is in its normal (open) position and secured — locked for monthly-interval valves, or sealed. A locked valve may be inspected monthly; a sealed-only valve requires weekly inspection.",
-          ref:["NFPA 25 13.3.2.1 (locked: monthly / sealed: weekly)"],
-          def:[["critical","Valve not in normal position — Critical (impairment).","noncritical","Lock/seal missing but valve correct — Non-Critical."]]
-        }),
-        item(5,"Tamper, pressure & waterflow switches — no damage/missing components", {
-          how:"Visually check supervisory (tamper), pressure, and waterflow switches and associated wiring/devices for damage or missing components. No functional test at the monthly interval.",
-          ref:["NFPA 25 13.2.2 / 13.3.3.5 (device inspection)"],
-          def:[["noncritical","Damaged/missing device component — Non-Critical; Critical if device is non-functional."]]
-        }),
-        item(6,"Water gong, retard chamber & mechanical devices — no leaks/damage", {
-          how:"Inspect the water motor gong, retard chamber, and associated mechanical alarm devices for leaks, damage, or missing parts.",
-          ref:["NFPA 25 13.2.2 (alarm device inspection)"],
-          def:[["noncritical","Leak/damage to alarm device — Non-Critical; Critical if it disables the only alarm."]]
-        }),
-        item(7,"Gauges & associated trim — no leaks/damage", {
-          how:"Inspect pressure gauges and trim for leaks, damage, or missing components; confirm readings are in the normal range.",
-          ref:["NFPA 25 13.2.7.1 (gauge inspection)"],
-          def:[["noncritical","Gauge damaged/leaking/out of range — Non-Critical; investigate abnormal pressure (may be Critical)."]]
-        }),
-        item(8,"All water gauges replaced every 5 years","waterGauge5yr"),
-        item(9,"FDC inspected for damage, seized fittings, missing caps","fdcDamage"),
-        item(10,"At time of report, riser room above 40°F","riserTemp")
+        item(31,"Spare head box properly equipped","spareHeadBox"),
+        item(32,"At time of report, riser room above 40°F","riserTemp")
+      ]},
+      {name:"Post Inspection", items:[
+        item(33,"Fire alarm panel reset & cleared after inspection","panelReset"),
+        item(34,"System returned to full service & parties notified","returnService")
       ]}
     ]
   },
-  /* ---------------- FD-20 Quarterly ---------------- */
+  /* ---------------- FD Annual Deluge / Preaction ---------------- */
   {
-    id:"fd20", code:"FD-20", freq:"Quarterly",
-    title:"Quarterly Fire Sprinkler System Inspection & Testing",
+    id:"delugepreaction", code:"FD-DP", freq:"Annual Deluge/Preaction",
+    title:"Annual Deluge / Preaction Inspection, Testing & Maintenance",
     sections:[
       {name:"Pre-Inspection", items:[
         item(1,"System monitored by a central monitoring station?","monitored"),
-        item(2,"Fire alarm panel normal & suppression in service on arrival","panelNormal"),
-        item(3,"Local dispatch/monitoring notified of testing","dispatchNotify"),
+        item(2,"Fire alarm / releasing panel in normal status & suppression system in service on arrival","panelNormal"),
+        item(3,"Local dispatch and/or monitoring company notified of testing","dispatchNotify"),
         item(4,"All pertinent parties notified before testing","partiesNotify"),
         item(5,"Fire Dispatch — name / phone / badge ID","contactField"),
         item(6,"Monitoring company — name / phone / ID","contactField")
       ]},
-      {name:"System Visual Inspection / Testing", items:[
-        item(7,"Accessible control & associated valves — no leaks/damage", {
-          how:"Visually inspect accessible control and associated valves for leaks, damage, and missing components.",
-          ref:["NFPA 25 13.3.2 (control valve inspection)"],
-          def:[["critical","Damage/leak affecting operation — Critical.","noncritical","Minor — Non-Critical."]]
-        }),
-        item(8,"Control valves in normal position (locked or sealed)", {
-          how:"Confirm valves are in normal open position and secured (locked/sealed) per their supervision method.",
-          ref:["NFPA 25 13.3.2.1"],
-          def:[["critical","Not in normal position — Critical.","noncritical","Lock/seal missing — Non-Critical."]]
-        }),
-        item(9,"Tamper, pressure & waterflow switches — no damage/missing components", {
-          how:"Inspect supervisory, pressure, and waterflow devices for damage or missing components.",
-          ref:["NFPA 25 13.2.2 / 13.3.3.5"],
-          def:[["noncritical","Damaged/missing component — Non-Critical."]]
-        }),
-        item(10,"Water gong, retard chamber & mechanical devices — no leaks/damage", {
-          how:"Inspect mechanical alarm devices (gong, retard chamber) for leaks/damage.",
-          ref:["NFPA 25 13.2.2"],
-          def:[["noncritical","Leak/damage — Non-Critical."]]
-        }),
-        item(11,"Mechanical alarm devices tested & operating (water motor gong)", {
-          how:"Quarterly: test the mechanical waterflow alarm (water motor gong) by flowing through the test connection and confirming the gong sounds. Record time per riser.",
-          ref:["NFPA 25 13.2.3 (mechanical waterflow alarm — quarterly)"],
-          def:[["critical","Gong fails to operate — Critical (loss of local alarm).","noncritical","Slow/weak operation — Non-Critical; service."]]
-        }),
-        item(12,"Water pressure gauges operable; supply pressure normal", {
-          how:"Confirm water pressure gauges are operable, undamaged, and reading normal supply pressure.",
-          ref:["NFPA 25 13.2.7.1"],
-          def:[["noncritical","Gauge inoperable/abnormal — Non-Critical; investigate pressure."]]
-        }),
-        item(13,"Air/nitrogen gauges operable; pressure normal", {
-          how:"On dry/preaction systems, confirm air/nitrogen gauges are operable and pressure is within normal range.",
-          ref:["NFPA 25 13.2.7.1 / 13.4"],
-          def:[["noncritical","Gauge inoperable/abnormal pressure — Non-Critical; Critical if supervisory air lost on a dry system."]]
-        }),
-        item(14,"At time of report, riser room above 40°F","riserTemp"),
-        item(15,"FDC visible, undamaged; swivels & clapper operate; caps & gaskets in place; interior inspected","fdcDamage")
+      {name:"System Identifications", items:[
+        item(7,"Hydraulic nameplates attached & legible","hydraulicPlate"),
+        item(8,"Deluge/preaction system & release type identified at riser; valves & drains identified & accessible","valvesIdentified"),
+        item(9,"FDC properly identified & visible","fdcIdentified")
       ]},
-      {name:"Main Drain Testing", items:[
-        item(16,"Adequate drainage for main drain testing","drainage"),
-        item(17,"Beginning static pressure (psi)","staticBegin"),
-        item(18,"Residual pressure (psi)","residual"),
-        item(19,"Return static pressure (psi)","returnStatic"),
-        item(20,"Time to return to static pressure (sec.)","returnTime"),
-        item(21,"Last recorded residual pressure (psi)","lastResidual"),
-        item(22,"Residual less than 10% reduction from original/last test","residualCalc")
-      ]}
-    ]
-  },
-  /* ---------------- FD-21 Semi-Annual ---------------- */
-  {
-    id:"fd21", code:"FD-21", freq:"Semi-Annual",
-    title:"Semi-Annual Fire Sprinkler System Inspection & Testing",
-    sections:[
-      {name:"Pre-Inspection", items:[
-        item(1,"System monitored by a central monitoring station?","monitored"),
-        item(2,"Fire alarm panel normal & suppression in service on arrival","panelNormal"),
-        item(3,"Local dispatch/monitoring notified of testing","dispatchNotify"),
-        item(4,"All pertinent parties notified before testing","partiesNotify"),
-        item(5,"Fire Dispatch — name / phone / badge ID","contactField"),
-        item(6,"Monitoring company — name / phone / ID","contactField")
+      {name:"Additional NFPA Required Inspections", items:[
+        item(10,"Fire alarm / releasing system inspected within the past year","faInspected"),
+        item(11,"5-year internal pipe inspection","internalPipe5yr"),
+        item(12,"System backflow device tested within the past 3 years","backflow3yr")
       ]},
-      {name:"System Visual Inspection / Testing", items:[
-        item(7,"Accessible control & associated valves — no leaks/damage", {
-          how:"Visually inspect accessible control and associated valves for leaks, damage, and missing components.",
-          ref:["NFPA 25 13.3.2"],
-          def:[["critical","Damage/leak affecting operation — Critical.","noncritical","Minor — Non-Critical."]]
+      {name:"Deluge / Preaction Valve Inspection", items:[
+        item(13,"Deluge/preaction valve exterior & trim free of damage, leaks, missing components", {
+          how:"Inspect the deluge/preaction valve body, trim, priming line, and solenoid/release trim for damage, corrosion, leaks, and missing components. Confirm the priming/supervisory water and air (preaction) are at normal levels.",
+          ref:["NFPA 25 13.4.3.1 (preaction) / 13.4.5.1 (deluge) valve inspection"],
+          def:[["noncritical","Minor trim issue — Non-Critical.","critical","Valve leaking by seat / priming lost / solenoid trim compromised — Critical."]]
         }),
-        item(8,"Control valves in normal position (locked or sealed)", {
-          how:"Confirm valves in normal open position, secured per supervision method.",
-          ref:["NFPA 25 13.3.2.1"],
-          def:[["critical","Not normal position — Critical.","noncritical","Lock/seal missing — Non-Critical."]]
+        item(14,"Supervisory air pressure normal (preaction / double-interlock)", {
+          how:"On preaction and double-interlock systems, confirm the supervisory air (or nitrogen) pressure is within the normal range so a loss-of-air supervisory signal is generated and the interlock functions.",
+          ref:["NFPA 25 13.2.7.1 / 13.4.3 (preaction air supervision)"],
+          def:[["noncritical","Pressure slightly off — adjust, Non-Critical.","critical","Supervisory air lost on a system that depends on it — Critical."]]
         }),
-        item(9,"Tamper, pressure & waterflow switches — no damage/missing components", {
-          how:"Inspect supervisory, pressure, and waterflow devices for damage or missing components.",
-          ref:["NFPA 25 13.2.2 / 13.3.3.5"],
-          def:[["noncritical","Damaged/missing component — Non-Critical."]]
+        item(15,"Detection system (heat/smoke/linear) in service & within test date", {
+          how:"Confirm the releasing detection (heat detectors, smoke detectors, linear heat, etc.) is in service and currently tested. Detection actuation is verified under the trip test below; here confirm it is enabled, not bypassed, and the releasing panel shows normal.",
+          ref:["NFPA 72 Ch.14 (detection ITM)","NFPA 25 13.4.3 (release coordination)"],
+          def:[["critical","Detection bypassed/disabled or overdue so release is impaired — Critical.","noncritical","Minor detection trouble not affecting release — Non-Critical."]]
         }),
-        item(10,"Water gong, retard chamber & mechanical devices — no leaks/damage", {
-          how:"Inspect mechanical alarm devices for leaks/damage.",
-          ref:["NFPA 25 13.2.2"],
-          def:[["noncritical","Leak/damage — Non-Critical."]]
+        item(16,"Release solenoid / actuator & manual release station operable", {
+          how:"Verify the release solenoid or pneumatic actuator and any manual release (pull) station are in place, unobstructed, and operable. The function is confirmed in the trip test; here confirm access and condition.",
+          ref:["NFPA 25 13.4.3 / 13.4.5 (release device)"],
+          def:[["critical","Manual release blocked or release device inoperable — Critical.","noncritical","Signage/access minor issue — Non-Critical."]]
         }),
-        item(11,"Vane, paddle & pressure alarm devices tested & operating", {
-          how:"Semi-annual: test vane-type and pressure-switch waterflow alarm devices by flowing through the test connection; confirm signal. (Mechanical/gong devices are tested quarterly.)",
-          ref:["NFPA 25 13.2.3.2 (vane/pressure-switch alarm — semi-annual)"],
-          def:[["critical","Device fails to signal — Critical.","noncritical","Delayed/intermittent — Non-Critical; adjust."]]
+        item(17,"Deluge nozzles/open sprinklers unobstructed & correctly oriented (deluge)", {
+          how:"On deluge systems, visually confirm open nozzles/sprinklers are unobstructed, correctly aimed for the hazard, and free of paint, debris, or corrosion that would alter the discharge pattern.",
+          ref:["NFPA 25 13.4.5 / Ch.5 (nozzle inspection)"],
+          def:[["noncritical","Minor obstruction/loading — Non-Critical; clean.","critical","Nozzles blocked/mis-aimed so coverage is lost — Critical."]]
         }),
-        item(12,"Valve tamper switches tested & operating", {
-          how:"Test each valve supervisory (tamper) switch — signal must register within the first two revolutions and restore when returned to normal.",
-          ref:["NFPA 25 13.3.3.5 (supervisory switch test — semi-annual)"],
-          def:[["critical","Tamper fails to signal — Critical.","noncritical","Signals late — Non-Critical; adjust."]]
+        item(18,"Low-point / auxiliary drains drained (preaction dry-pipe portion)", {
+          how:"On preaction systems holding supervisory air in dry piping, drain low-point/auxiliary drains of condensate to prevent freeze blockage, the same as a dry system.",
+          ref:["NFPA 25 13.4.3 (preaction drains)"],
+          def:[["noncritical","Condensate present & drained — Non-Critical.","critical","Low point frozen/blocked — Critical."]]
         }),
-        item(13,"At time of report, riser room above 40°F","riserTemp"),
-        item(14,"Water pressure gauges operable; supply pressure normal", {
-          how:"Confirm water gauges operable, undamaged, reading normal.",
-          ref:["NFPA 25 13.2.7.1"],
-          def:[["noncritical","Inoperable/abnormal — Non-Critical; investigate."]]
-        }),
-        item(15,"Air/nitrogen gauges operable; pressure normal", {
-          how:"Confirm air/nitrogen gauges operable; pressure normal (dry/preaction).",
-          ref:["NFPA 25 13.2.7.1 / 13.4"],
-          def:[["noncritical","Inoperable/abnormal — Non-Critical; Critical if supervisory air lost."]]
-        }),
-        item(16,"FDC visible, undamaged; swivels & clapper operate; caps & gaskets in place; interior inspected","fdcDamage")
+        item(19,"Enclosure heat maintaining riser room above 40°F","riserTemp")
       ]},
-      {name:"Main Drain Testing", items:[
-        item(17,"Adequate drainage for main drain testing","drainage"),
-        item(18,"Beginning static pressure (psi)","staticBegin"),
-        item(19,"Residual pressure (psi)","residual"),
-        item(20,"Return static pressure (psi)","returnStatic"),
-        item(21,"Time to return to static pressure (sec.)","returnTime"),
-        item(22,"Last recorded residual pressure (psi)","lastResidual"),
-        item(23,"Residual less than 10% reduction from original/last test","residualCalc")
+      {name:"Deluge / Preaction Testing", items:[
+        item(20,"Full trip test performed via detection & manual release; valve trips & resets", {
+          how:"Perform the full operational trip test: actuate the detection and the manual release and confirm the deluge/preaction valve trips, water is admitted (or held per interlock logic), alarms sound, and the valve can be reset. Coordinate carefully on deluge systems — tripping discharges water from all open nozzles.",
+          ref:["NFPA 25 13.4.3.2 (preaction trip test) / 13.4.5.2 (deluge trip test) — annual, full-flow every 3 yr"],
+          def:[["critical","Valve fails to trip on detection/manual release, or fails to reset — Critical.","noncritical","Trips but slow / requires adjustment — Non-Critical; service & retest."]]
+        }),
+        item(21,"Priming / supervisory pressure at trip (psi)","staticBegin"),
+        item(22,"Time from release signal to valve trip (sec.)","returnTime"),
+        item(23,"Water-delivery / coverage confirmed (sec., where flow-tested)","waterflowTime"),
+        item(24,"Release, waterflow & supervisory signals received & verified by monitoring","centralVerify"),
+        item(25,"Main drain test — adequate drainage","drainage"),
+        item(26,"Beginning static pressure (psi)","residual"),
+        item(27,"Return static pressure (psi)","returnStatic"),
+        item(28,"Residual less than 10% reduction from original/last test","residualCalc")
+      ]},
+      {name:"System Visual Inspection", items:[
+        item(29,"Visible piping in good condition — no leaks, corrosion, damage","pipeVisual"),
+        item(30,"Visible sprinklers / nozzles in good condition","headVisual"),
+        item(31,"Spare head box / spare nozzles properly equipped","spareHeadBox")
+      ]},
+      {name:"Post Inspection", items:[
+        item(32,"Valve reset; priming/supervisory air restored; detection & release returned to service","panelReset"),
+        item(33,"System returned to full service & parties notified","returnService")
       ]}
     ]
   }
@@ -885,7 +887,7 @@ function legend(){
   ];
   return `<div class="legend">${items.map(([c,t])=>`<span class="lg"><span class="dot" style="background:${defColor(c)}"></span>${esc(t)}</span>`).join('')}</div>`;
 }
-function defColor(c){return {critical:'#C8102E',impairment:'#b4690e',noncritical:'#20262d',comment:'#5c6470',varies:'#6a3d9a'}[c]||'#5c6470';}
+function defColor(c){return {critical:'#C1121C',impairment:'#b4690e',noncritical:'#1B2A4A',comment:'#5c6470',varies:'#6a3d9a'}[c]||'#5c6470';}
 
 function matchesQuery(f, sec, it){
   if(!QUERY) return true;
