@@ -1,4 +1,1 @@
-body {
-  background: url("fdec-collage-bg-vintage.jpg") center / cover no-repeat fixed;
-  background-color: #14151c; /* fallback while the image loads */
-}
+
