@@ -22,7 +22,7 @@
   html,body{margin:0;padding:0}
   body{
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    background:#141720 url("fdec-collage-bg-vintage.png") center/cover no-repeat fixed;color:var(--ink);line-height:1.5;-webkit-text-size-adjust:100%;
+    background:var(--bg);color:var(--ink);line-height:1.5;-webkit-text-size-adjust:100%;
   }
   a{color:var(--fdec-red)}
 
@@ -49,7 +49,7 @@
   nav.tabs button.active{color:#fff;border-bottom-color:var(--fdec-red)}
 
   /* Layout */
-  main{max-width:1100px;margin:0 auto;padding:22px 18px 70px;background:rgba(238,241,244,.84);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+  main{max-width:1100px;margin:0 auto;padding:22px 18px 70px}
   .tab{display:none}
   .tab.active{display:block;animation:fade .2s ease}
   @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
@@ -190,7 +190,7 @@
   @media(max-width:680px){.sign{grid-template-columns:1fr}}
   .sigline{border-top:1px solid var(--ink);padding-top:5px;font-size:12px;color:var(--ink-soft);margin-top:30px}
 
-  footer{max-width:1100px;margin:0 auto;padding:18px;color:#c3cbd4;font-size:12px;text-align:center;border-top:1px solid rgba(255,255,255,.14)}
+  footer{max-width:1100px;margin:0 auto;padding:18px;color:#8a949e;font-size:12px;text-align:center;border-top:1px solid var(--line)}
 
   /* Print */
   .printhead{display:none}
@@ -647,9 +647,9 @@
   // ---------- Home hub links ----------
   // Edit the url for each tool below. Leave blank to show "URL not set".
   var LINKS = [
-    {name:'ServiceTrade App',        cat:'Field',   access:'Everyone',     url:'https://app.servicetrade.com/auth', desc:'Log in to ServiceTrade for jobs, scheduling, and ITM documentation.'},
     {name:'ITM Inspection Reports',  cat:'Field',   access:'',             url:'https://302stang86.github.io/FDEC-ITM-REPORTS-V1/', desc:'NFPA 25 inspection report forms with PDF output.'},
     {name:'Local Dispatch Numbers',  cat:'Field',   access:'',             url:'fire-dispatch-directory.html', desc:'Fire department dispatch numbers by city — searchable, tap to call.'},
+    {name:'Troubleshooting Guide',   cat:'Field',   access:'',             url:'troubleshooting-guide.html', desc:'Field troubleshooting steps for common system and device issues.'},
     {name:'Quoting & Proposal Suite',cat:'Quoting', access:'Manager only', url:'https://302stang86.github.io/SP-FDEC-Quoting-2026/', desc:'Sprinkler ITM quoting and proposal verbiage.'},
     {name:'Time-Off Requests',       cat:'Team',    access:'Everyone',     url:'https://302stang86.github.io/On-Call-Rotation/timeoff.html', desc:'Submit paid time-off (PTO) requests and track balances.'},
     {name:'On-Call Rotation',        cat:'Team',    access:'Everyone',     url:'https://302stang86.github.io/On-Call-Rotation/', desc:'Current sprinkler department on-call schedule.'}
