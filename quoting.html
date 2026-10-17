@@ -124,16 +124,19 @@
   .views{flex:1; position:relative; min-height:0}
   .views iframe{
     position:absolute;
-    top:10px; bottom:max(10px,env(safe-area-inset-bottom));
-    left:max(10px,env(safe-area-inset-left)); right:max(10px,env(safe-area-inset-right));
-    width:auto; height:auto;
+    top:10px;
+    left:max(10px,env(safe-area-inset-left));
+    width:calc(100% - max(10px,env(safe-area-inset-left)) - max(10px,env(safe-area-inset-right)));
+    height:calc(100% - 10px - max(10px,env(safe-area-inset-bottom)));
     border:none; background:var(--page);
     border-radius:12px; box-shadow:0 10px 30px rgba(16,24,40,.30);
   }
   @media(max-width:680px){
     .views iframe{
-      top:7px; bottom:max(7px,env(safe-area-inset-bottom));
-      left:max(7px,env(safe-area-inset-left)); right:max(7px,env(safe-area-inset-right));
+      top:7px;
+      left:max(7px,env(safe-area-inset-left));
+      width:calc(100% - max(7px,env(safe-area-inset-left)) - max(7px,env(safe-area-inset-right)));
+      height:calc(100% - 7px - max(7px,env(safe-area-inset-bottom)));
       border-radius:9px;
     }
   }
