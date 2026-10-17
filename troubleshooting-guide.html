@@ -9,6 +9,7 @@
   /* Layout: fixed left system rail (tabs) + scrolling content column; collapses to stacked top nav on phones.
      Field-reference tool — utilitarian, scannable, state encoded as colored severity chips. */
   :root {
+    color-scheme: light;
     --bg: #eef1f4;
     --surface: #ffffff;
     --surface-2: #eef1f4;
@@ -28,42 +29,7 @@
     --font-body: "Inter", system-ui, -apple-system, sans-serif;
     --font-data: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
   }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #15181c;
-      --surface: #1e2228;
-      --surface-2: #272c33;
-      --ink: #e6e9ec;
-      --ink-soft: #9aa4b0;
-      --line: #343a42;
-      --accent: #e8595f;
-      --accent-soft: #3a1f21;
-      --warn: #d8a33f;
-      --warn-soft: #352b16;
-      --ok: #5cb784;
-      --ok-soft: #1b2f23;
-      --info: #6fa3d6;
-      --info-soft: #1a2835;
-      color-scheme: dark;
-    }
-  }
-  :root[data-theme="dark"] {
-    --bg: #15181c;
-    --surface: #1e2228;
-    --surface-2: #272c33;
-    --ink: #e6e9ec;
-    --ink-soft: #9aa4b0;
-    --line: #343a42;
-    --accent: #e8595f;
-    --accent-soft: #3a1f21;
-    --warn: #d8a33f;
-    --warn-soft: #352b16;
-    --ok: #5cb784;
-    --ok-soft: #1b2f23;
-    --info: #6fa3d6;
-    --info-soft: #1a2835;
-    color-scheme: dark;
-  }
+  /* Light FDEC theme is enforced on all devices; OS dark mode does not recolor this page. */
 
   * { box-sizing: border-box; }
   body {
