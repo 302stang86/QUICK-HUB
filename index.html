@@ -112,6 +112,7 @@
   a.hublink .hcat.quoting{background:#1565c0}
   a.hublink .hcat.team{background:var(--fdec-red)}
   a.hublink .hcat.shop{background:#5b6570}
+  a.hublink .hcat.news{background:#1f7a3d}
   a.hublink .hdesc{font-size:13px;color:var(--ink-soft);margin:0}
   a.hublink.unset{opacity:.8;cursor:default;border-style:dashed}
   a.hublink.unset:hover{transform:none;border-color:var(--line);box-shadow:var(--shadow)}
@@ -219,6 +220,10 @@
   .userchip #whoami{font-weight:600;color:#fff}
   .userchip button{appearance:none;border:1px solid #4A545E;background:transparent;color:#fff;border-radius:7px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
   .userchip button:hover{background:rgba(255,255,255,.1)}
+  a.hublink{position:relative}
+  .newbadge{position:absolute;top:-9px;right:-9px;z-index:3;line-height:0;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4));animation:fdecflash 1.1s ease-in-out infinite;}
+  @keyframes fdecflash{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.2;transform:scale(.86)}}
+  @media (prefers-reduced-motion:reduce){.newbadge{animation:none}}
 </style>
 <script type="module" src="fdec-auth.js" data-page="home"></script>
 </head>
@@ -651,6 +656,51 @@
 
 </main>
 
+<script type="module">
+/* Flashing "new announcement" badge on the Announcements card. */
+import { getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, query, orderBy, limit, onSnapshot }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+var LS = "fdec_announce_lastread";
+var BADGE = '<span class="newbadge" title="New announcement" aria-label="New announcement">'
+  + '<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">'
+  + '<path d="M12 2.4 L22.4 20.6 H1.6 Z" fill="#C1121C" stroke="#ffffff" stroke-width="1.3" stroke-linejoin="round"/>'
+  + '<rect x="11" y="8.4" width="2" height="6.4" rx="1" fill="#fff"/>'
+  + '<circle cx="12" cy="17.8" r="1.25" fill="#fff"/></svg></span>';
+var unread = false;
+
+function applyBadge(){
+  var card = document.querySelector('#hubLinks a.hublink[href="announcements.html"]');
+  if(!card) return;
+  var has = card.querySelector('.newbadge');
+  if(unread && !has) card.insertAdjacentHTML('beforeend', BADGE);
+  else if(!unread && has) has.remove();
+}
+(function watch(){
+  var hub = document.getElementById('hubLinks');
+  if(hub){ new MutationObserver(applyBadge).observe(hub,{childList:true}); applyBadge(); }
+  else setTimeout(watch,60);
+})();
+
+(function run(){
+  if(!(window.FDECAuth && window.FDECAuth.ready)){ setTimeout(run,50); return; }
+  window.FDECAuth.ready.then(function(){
+    try{
+      var db = getFirestore(getApp("fdec"));
+      onSnapshot(query(collection(db,"announcements"), orderBy("createdAt","desc"), limit(1)),
+        function(snap){
+          var ms = 0;
+          if(!snap.empty){ var c = snap.docs[0].data().createdAt; ms = (c && c.toMillis) ? c.toMillis() : Date.now(); }
+          var last = 0; try{ last = Number(localStorage.getItem(LS) || 0) || 0; }catch(e){}
+          unread = ms > 0 && ms > last;
+          applyBadge();
+        }, function(){});
+    }catch(e){}
+  });
+})();
+</script>
+
 <footer>
   Quick Hub — internal tool for Fire Defense Equipment Company employees. Reference content is based on OSHA and NFPA/ANSI standards and does not replace the current published standard, manufacturer instructions, or official FDEC policy. &nbsp;·&nbsp; v1.0
 </footer>
@@ -662,6 +712,7 @@
   // ---------- Home hub links ----------
   // Edit the url for each tool below. Leave blank to show "URL not set".
   var LINKS = [
+    {name:'Announcements',           cat:'News',    access:'Everyone',     page:'announcements',  url:'announcements.html', desc:'Department news — new hires, projects, updates, and events.'},
     {name:'ITM Inspection Reports',  cat:'Field',   access:'',             page:'itm',            url:'itm-reports.html', desc:'NFPA 25 inspection report forms with PDF output.'},
     {name:'ServiceTrade',            cat:'Field',   access:'',             page:'servicetrade',   url:'https://app.servicetrade.com/', desc:'Jobs, service records, deficiencies, and field paperwork.'},
     {name:'Local Dispatch Numbers',  cat:'Field',   access:'',             page:'dispatch',       url:'fire-dispatch-directory.html', desc:'Fire department dispatch numbers by city — searchable, tap to call.'},

@@ -38,6 +38,7 @@ const ALLOWED_DOMAINS = ["firedefense.com"];
    Admin is always allowed regardless of this map. */
 const DEFAULT_PAGES = {
   home:            ["new","tech","manager","admin"],
+  announcements:   ["new","tech","manager","admin"],
   sop:             ["new","tech","manager","admin"],
   dispatch:        ["new","tech","manager","admin"],
   troubleshooting: ["new","tech","manager","admin"],
