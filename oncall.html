@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1B2A4A">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>FDEC Sprinkler Department — On-Call Rotation</title>
+<link rel="icon" href="no-fire-favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  :root{
+    --navy:#1B2A4A; --navy-2:#24365c; --red:#C1121C;
+    --red-soft:#F7DDDD; --blue-soft:#DCE6F1; --grey:#F2F2F2;
+    --line:#d5dae3; --ink:#1a1f2b; --muted:#5c6472;
+    --now:#DCF0DC; --now-bar:#2e8b3d;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--ink);background:#eef1f5;line-height:1.5;}
+  .sheet{max-width:1100px;margin:0 auto;background:#fff;min-height:100vh;box-shadow:0 0 24px rgba(20,30,55,.08);}
+
+  header.mast{background:var(--navy);color:#fff;padding:26px 32px 22px;border-bottom:5px solid var(--red);}
+  .company{font-size:26px;font-weight:800;letter-spacing:.3px;margin:0;color:#fff;}
+  .dept{margin:2px 0 0;font-size:15px;font-weight:600;color:#c7d2e6;}
+  .period{margin:14px 0 0;font-size:13.5px;color:#aab8d4;}
+  .period strong{color:#fff;font-weight:700;}
+
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:14px 32px;background:var(--grey);border-bottom:1px solid var(--line);}
+  .toolbar .spacer{flex:1;}
+  button{font-family:inherit;font-size:13px;font-weight:700;border:1px solid var(--navy);background:#fff;color:var(--navy);padding:8px 14px;border-radius:4px;cursor:pointer;}
+  button:hover{background:var(--navy);color:#fff;}
+  button.danger{border-color:var(--red);color:var(--red);}
+  button.danger:hover{background:var(--red);color:#fff;}
+  button:focus-visible{outline:3px solid #7aa2ff;outline-offset:2px;}
+  .btnlink{font-family:inherit;font-size:13px;font-weight:700;border:1px solid var(--navy);background:#fff;color:var(--navy);padding:8px 14px;border-radius:4px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:4px;}
+  .btnlink:hover{background:var(--navy);color:#fff;}
+  .btnlink:focus-visible{outline:3px solid #7aa2ff;outline-offset:2px;}
+  #adminBtn.unlocked{background:#2e8b3d;color:#fff;border-color:#2e8b3d;}
+  #adminBtn.unlocked:hover{background:#256f31;}
+  body.locked td.assign select,body.locked input.note{pointer-events:none;background:#f4f6f9;color:#3a4152;border-color:#e2e6ee;-webkit-appearance:none;appearance:none;}
+  body.locked #resetBtn{display:none;}
+  body.locked #balBtn{display:none;}
+  body.locked #rosterPanel{display:none;}
+  .hint{font-size:12.5px;color:var(--muted);}
+
+  .yearbar{display:flex;align-items:center;gap:0;padding:16px 32px 0;}
+  .monthnav{display:flex;align-items:center;gap:4px;margin-left:12px;}
+  .mnav{border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:7px;
+    width:34px;height:34px;font-size:19px;line-height:1;cursor:pointer;}
+  .mnav:hover{background:var(--grey);}
+  .mnav:disabled{opacity:.35;cursor:not-allowed;}
+  .monthlabel{font-weight:800;color:var(--navy);font-size:15px;min-width:132px;text-align:center;}
+  .calbtn{display:inline-flex;align-items:center;gap:10px;border:1px solid var(--navy);background:#fff;color:var(--navy);font-weight:800;font-size:14px;padding:10px 18px;border-radius:6px;cursor:pointer;}
+  .calbtn:hover{background:var(--blue-soft);}
+  .calbtn svg{display:block;}
+  .calbtn-label{letter-spacing:.3px;}
+  .calbtn:focus-visible{outline:3px solid #7aa2ff;outline-offset:2px;}
+  .nowchip{margin-left:14px;font-size:12.5px;color:var(--muted);}
+  .nowchip b{color:var(--navy);}
+
+  /* Calendar popup */
+  .calpop-backdrop{position:fixed;inset:0;background:rgba(20,30,55,.35);z-index:40;}
+  .calpop{position:fixed;z-index:50;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:340px;max-width:92vw;background:#fff;border-radius:10px;
+    box-shadow:0 18px 50px rgba(20,30,55,.35);border:1px solid var(--line);overflow:hidden;}
+  .calpop-head{display:flex;align-items:center;justify-content:space-between;background:var(--navy);color:#fff;padding:12px 14px;}
+  .calpop-title{font-weight:800;font-size:15px;}
+  .calnav{background:rgba(255,255,255,.14);border:none;color:#fff;font-size:20px;line-height:1;width:32px;height:32px;border-radius:6px;cursor:pointer;padding:0;}
+  .calnav:hover{background:rgba(255,255,255,.28);}
+  .calnav:focus-visible{outline:3px solid #7aa2ff;outline-offset:2px;}
+  .calpop-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;padding:12px;}
+  .cal-dow{text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:4px 0;}
+  .cal-cell{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;font-size:13px;position:relative;
+    border-radius:6px;cursor:pointer;color:var(--ink);border:1px solid transparent;user-select:none;}
+  .cal-holstar{position:absolute;top:2px;right:3px;font-size:8px;color:#b8860b;line-height:1;}
+  .cal-cell.holiday{background:#fbf1d6;}
+  .cal-cell.holiday:hover{background:#f6e6b8;}
+  .cal-cell:hover{background:var(--blue-soft);}
+  .cal-cell.muted{color:#c2c8d2;cursor:default;}
+  .cal-cell.muted:hover{background:transparent;}
+  .cal-cell.oob{color:#c2c8d2;cursor:not-allowed;}
+  .cal-cell.oob:hover{background:transparent;}
+  .cal-cell.today{background:var(--now-bar);color:#fff;font-weight:800;}
+  .cal-cell.inweek{background:var(--now);}
+  .cal-cell.today.inweek{background:var(--now-bar);}
+  .cal-cell:focus-visible{outline:3px solid #7aa2ff;outline-offset:1px;}
+  .calpop-foot{display:flex;justify-content:space-between;gap:8px;padding:0 12px 14px;}
+  .caltoday{border:1px solid #2e8b3d;color:#2e8b3d;background:#fff;font-weight:700;font-size:13px;padding:8px 12px;border-radius:5px;cursor:pointer;}
+  .caltoday:hover{background:#2e8b3d;color:#fff;}
+  .calclose{border:1px solid var(--navy);color:var(--navy);background:#fff;font-weight:700;font-size:13px;padding:8px 12px;border-radius:5px;cursor:pointer;}
+  .calclose:hover{background:var(--navy);color:#fff;}
+
+  .wrap{padding:14px 32px 8px;overflow-x:auto;}
+  table{border-collapse:collapse;width:100%;font-size:14px;}
+  caption{text-align:left;font-size:13px;color:var(--muted);padding-bottom:8px;}
+  thead th{background:var(--navy);color:#fff;font-size:12.5px;font-weight:700;text-align:left;padding:11px 12px;border:1px solid var(--navy-2);}
+  tbody td{padding:8px 12px;border:1px solid var(--line);vertical-align:middle;}
+  tbody tr:nth-child(odd) td{background:var(--blue-soft);}
+  tbody tr:nth-child(even) td{background:#fff;}
+  td.wk{font-weight:700;text-align:center;width:60px;color:var(--navy);padding:4px 6px;}
+  td.date{white-space:nowrap;width:118px;color:#333;}
+  td.assign{width:150px;}
+  select{font-family:inherit;font-size:13.5px;font-weight:700;color:var(--navy);width:100%;padding:6px;border:1px solid var(--line);border-radius:4px;background:#fff;}
+  select:focus-visible{outline:3px solid #7aa2ff;outline-offset:1px;}
+  .role1 select{border-left:4px solid var(--red);}
+  .role2 select{border-left:4px solid var(--navy);}
+  input.note{font-family:inherit;font-size:13px;color:#333;width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:4px;background:#fff;}
+  input.note::placeholder{color:#aab1bd;}
+  tr.conflict td{background:var(--red-soft)!important;}
+  .flag{color:var(--red);font-weight:700;font-size:11px;display:block;margin-top:3px;}
+
+  tr.now td{background:var(--now)!important;}
+  tr.now td.wk{position:relative;}
+  tr.now td.wk::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--now-bar);}
+  .nowtag{display:inline-block;background:var(--now-bar);color:#ffffff;font-size:9px;line-height:1.15;font-weight:800;padding:3px 5px;border-radius:3px;letter-spacing:.2px;text-transform:uppercase;}
+
+  /* Selected week (picked from calendar): dark red border around the whole row */
+  tr.selweek td{box-shadow:inset 0 0 0 2px #7a0d14;}
+  tr.selweek td:first-child{box-shadow:inset 2px 0 0 0 #7a0d14, inset 0 2px 0 0 #7a0d14, inset 0 -2px 0 0 #7a0d14;}
+  tr.selweek td:last-child{box-shadow:inset -2px 0 0 0 #7a0d14, inset 0 2px 0 0 #7a0d14, inset 0 -2px 0 0 #7a0d14;}
+  tr.selweek td:not(:first-child):not(:last-child){box-shadow:inset 0 2px 0 0 #7a0d14, inset 0 -2px 0 0 #7a0d14;}
+
+  /* Holiday week markers */
+  .holdot{display:inline-block;color:#b8860b;font-size:15px;line-height:1;margin-top:2px;}
+  .holrow{margin-top:6px;display:flex;flex-wrap:wrap;gap:5px;}
+  .holtag{display:inline-block;background:#fbf1d6;border:1px solid #e3c766;color:#7a5b09;font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px;}
+
+  .callout{margin:18px 32px 6px;background:var(--red-soft);border:2px solid var(--red);border-left:8px solid var(--red);border-radius:5px;padding:14px 18px;color:#7a0d14;font-weight:700;font-size:14.5px;}
+
+  .lower{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;padding:20px 32px 8px;}
+  .reqwrap{padding:18px 32px 0;}
+  .reqpanel .body{border:1px solid var(--line);border-top:none;border-radius:0 0 5px 5px;padding:16px 18px;background:#fff;}
+  .reqintro{font-size:13px;color:var(--muted);margin:0 0 14px;}
+  .reqgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px;}
+  @media (max-width:760px){.reqgrid{grid-template-columns:1fr;}}
+  .reqpanel label{display:flex;flex-direction:column;gap:5px;font-size:12.5px;font-weight:700;color:var(--navy);}
+  .reqpanel .reqfull{margin-top:12px;}
+  .reqpanel select,.reqpanel input,.reqpanel textarea{font-family:inherit;font-size:13.5px;font-weight:400;color:#222;padding:8px 9px;border:1px solid var(--line);border-radius:4px;background:#fff;width:100%;}
+  .reqpanel textarea{resize:vertical;}
+  .reqpanel select:focus-visible,.reqpanel input:focus-visible,.reqpanel textarea:focus-visible{outline:3px solid #7aa2ff;outline-offset:1px;}
+  .reqactions{display:flex;align-items:center;gap:14px;margin-top:14px;}
+  #reqSubmit{font-size:14px;background:var(--red);color:#fff;border-color:var(--red);padding:10px 18px;}
+  #reqSubmit:hover{background:#9a0e17;border-color:#9a0e17;}
+  .reqhint{font-size:12.5px;color:var(--muted);}
+  @media (max-width:900px){.lower{grid-template-columns:1fr;}}
+  .panel h2{font-size:13px;font-weight:700;color:#fff;background:var(--navy);margin:0;padding:9px 14px;border-radius:5px 5px 0 0;}
+  .panel .body{border:1px solid var(--line);border-top:none;border-radius:0 0 5px 5px;padding:14px 16px;background:#fff;}
+  ul.notes{margin:0;padding-left:18px;}
+  ul.notes li{margin:0 0 9px;font-size:13px;color:#333;}
+  ul.notes li:last-child{margin-bottom:0;}
+
+  ul.roster{list-style:none;margin:0 0 12px;padding:0;}
+  ul.roster li{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);}
+  ul.roster li:last-child{border-bottom:none;}
+  ul.roster .rname{flex:1;font-weight:700;color:var(--navy);font-size:13.5px;}
+  .mgrbadge{display:inline-block;background:var(--navy);color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:3px;vertical-align:middle;letter-spacing:.3px;}
+  ul.roster button.rm{border-color:var(--red);color:var(--red);padding:4px 10px;font-size:12px;}
+  ul.roster button.rm:hover{background:var(--red);color:#fff;}
+  .addrow{display:flex;gap:8px;margin-top:4px;}
+  .addrow input{flex:1;font-family:inherit;font-size:13.5px;padding:7px 9px;border:1px solid var(--line);border-radius:4px;}
+  .addrow input:focus-visible{outline:3px solid #7aa2ff;outline-offset:1px;}
+  .rosterhint{font-size:11.5px;color:var(--muted);margin-top:10px;}
+
+  table.tally{width:100%;border-collapse:collapse;font-size:13px;}
+  table.tally th{background:var(--red);color:#fff;font-size:11.5px;padding:8px 8px;text-align:center;border:1px solid #a5121a;}
+  table.tally td{padding:7px 8px;border:1px solid var(--line);text-align:center;}
+  table.tally td.name{text-align:left;font-weight:700;color:var(--navy);}
+  table.tally tr:nth-child(odd) td{background:var(--blue-soft);}
+  .bal{font-size:12px;color:var(--muted);margin-top:8px;}
+  .tallycap{font-size:11.5px;color:var(--muted);margin:0 0 8px;}
+
+  footer{padding:18px 32px 30px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);margin-top:14px;}
+  /* ================= phones and small tablets ================= */
+  @media (max-width:760px){
+    html{-webkit-text-size-adjust:100%;}
+    body{-webkit-tap-highlight-color:rgba(27,42,74,.12);}
+    .sheet{box-shadow:none;}
+
+    header.mast{padding:16px 15px 14px;}
+    .company{font-size:19px;line-height:1.18;letter-spacing:0;}
+    .dept{font-size:13px;}
+    .period{font-size:12px;margin-top:9px;}
+
+    .toolbar{padding:10px 12px;gap:8px;}
+    .toolbar .spacer{display:none;}
+    .toolbar button,.toolbar .btnlink{flex:1 1 calc(50% - 8px);min-height:44px;
+      display:flex;align-items:center;justify-content:center;text-align:center;font-size:13px;}
+    .toolbar .hint{flex:1 1 100%;font-size:12px;text-align:center;}
+
+    .wrap{padding:10px 12px 4px;overflow-x:visible;}
+
+    /* the six-column grid becomes one card per week */
+    #rotation thead{display:none;}
+    #rotation,#rotation tbody,#rotation tr,#rotation td{display:block;width:auto;}
+    /* the table is display:block on phones, so the caption has to be too or
+       its containing block collapses and the text breaks one word per line */
+    #rotation caption{display:block;width:100%;max-width:100%;text-align:left;
+      font-size:13px;line-height:1.45;padding:0 0 10px;box-sizing:border-box;}
+    .yearbar{flex-wrap:wrap;gap:8px;padding:12px 12px 0;}
+    .monthnav{margin-left:0;flex:1 1 100%;justify-content:center;}
+    .mnav{width:44px;height:44px;}
+    .monthlabel{flex:1;font-size:16px;}
+    .yearbar .nowchip,.yearbar #nowChip{flex:1 1 100%;font-size:13px;line-height:1.4;}
+    #rotation tr{border:1px solid var(--line);border-radius:9px;background:#fff;
+      margin:0 0 12px;padding:11px 13px 13px;}
+    #rotation tr:nth-child(odd) td{background:transparent;}
+    #rotation tr.now{border:2px solid var(--now-bar);background:var(--now);}
+    #rotation tr.now td{background:transparent!important;}
+    #rotation td{border:none!important;padding:7px 0 0;width:auto!important;}
+    #rotation td.wk{padding:0;text-align:left;width:auto;}
+    #rotation tr.now td.wk::before{display:none;}
+    #rotation td.date{display:inline;padding:0;font-size:16px;font-weight:800;color:var(--navy);white-space:nowrap;}
+    #rotation td.date + td.date::before{content:" \2013 ";font-weight:600;color:var(--muted);}
+    #rotation td[data-label]::before{content:attr(data-label);display:block;
+      font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;
+      color:var(--muted);margin:0 0 4px;}
+    #rotation .nowtag{display:inline-block;margin:0 0 6px;}
+    #rotation .holdot{margin-left:6px;}
+
+    /* 16px keeps iOS from zooming the page when a field takes focus */
+    select,input.note,.reqpanel select,.reqpanel input,.reqpanel textarea{
+      font-size:16px;min-height:44px;padding:9px 10px;}
+    .reqpanel textarea{min-height:88px;}
+
+    .lower{padding-left:12px;padding-right:12px;}
+    .panel .body{padding:12px 13px;}
+    ul.roster button.rm{min-height:38px;padding:6px 12px;}
+    .addrow input{font-size:16px;min-height:44px;}
+    .addrow button{min-height:44px;}
+    table.tally{font-size:12.5px;}
+    table.tally th,table.tally td{padding:6px 5px;}
+    .calpop{width:min(340px,94vw);}
+    .cal-cell{font-size:15px;}
+  }
+
+  @media (max-width:400px){
+    .company{font-size:17px;}
+    .toolbar button,.toolbar .btnlink{flex:1 1 100%;}
+  }
+
+  @media print{
+    body{background:#fff;}
+    .toolbar,#rosterPanel,.calbtn,.calpop,.calpop-backdrop{display:none;}
+    .sheet{box-shadow:none;max-width:none;}
+    select,input.note{border:none;-webkit-appearance:none;appearance:none;background:transparent;}
+    tr.now td{background:var(--now)!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <header class="mast">
+    <h1 class="company">FIRE DEFENSE EQUIPMENT CO., INC.</h1>
+    <p class="dept">Sprinkler Department — On-Call Rotation</p>
+    <p class="period">Continuous weekly rotation, Sunday through Saturday &nbsp;·&nbsp; <strong>Sept 13, 2026 – Dec 31, 2027</strong></p>
+  </header>
+
+  <div class="toolbar">
+    <button id="adminBtn" type="button">🔒 Admin: locked</button>
+    <button id="jumpNow" type="button">Jump to current week</button>
+    <a class="btnlink" href="timeoff.html">🗓️ Time Off Requests</a>
+    <button id="printBtn" type="button">Print / Save PDF</button>
+    <button id="balBtn" type="button">Rebalance holidays</button>
+    <button id="resetBtn" class="danger" type="button">Reset everything</button>
+    <span class="spacer"></span>
+    <span class="hint" id="modeHint">View-only. Click “Admin” to unlock editing.</span>
+  </div>
+
+  <div class="yearbar">
+    <button class="calbtn" id="calBtn" type="button" aria-label="Open calendar" aria-haspopup="dialog" aria-expanded="false">
+      <svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true">
+        <rect x="3" y="4.5" width="18" height="16.5" rx="2.5" fill="#fff" stroke="#1B2A4A" stroke-width="1.8"/>
+        <rect x="3" y="4.5" width="18" height="5" rx="2.5" fill="#1B2A4A"/>
+        <line x1="7.5" y1="2.5" x2="7.5" y2="6.5" stroke="#1B2A4A" stroke-width="2" stroke-linecap="round"/>
+        <line x1="16.5" y1="2.5" x2="16.5" y2="6.5" stroke="#1B2A4A" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="8" cy="13.5" r="1.4" fill="#C1121C"/>
+        <circle cx="12" cy="13.5" r="1.4" fill="#1B2A4A"/>
+        <circle cx="16" cy="13.5" r="1.4" fill="#1B2A4A"/>
+        <circle cx="8" cy="17.5" r="1.4" fill="#1B2A4A"/>
+        <circle cx="12" cy="17.5" r="1.4" fill="#1B2A4A"/>
+      </svg>
+      <span class="calbtn-label">Calendar</span>
+    </button>
+    <div class="monthnav">
+      <button class="mnav" id="monthPrev" type="button" aria-label="Previous month">&#8249;</button>
+      <span class="monthlabel" id="monthLabel"></span>
+      <button class="mnav" id="monthNext" type="button" aria-label="Next month">&#8250;</button>
+    </div>
+    <span class="nowchip" id="nowChip"></span>
+  </div>
+
+  <div class="calpop-backdrop" id="calBackdrop" hidden></div>
+  <div class="calpop" id="calPop" role="dialog" aria-modal="true" aria-label="Calendar" hidden>
+    <div class="calpop-head">
+      <button class="calnav" id="calPrev" type="button" aria-label="Previous month">&#8249;</button>
+      <div class="calpop-title" id="calTitle"></div>
+      <button class="calnav" id="calNext" type="button" aria-label="Next month">&#8250;</button>
+    </div>
+    <div class="calpop-grid" id="calGrid"></div>
+    <div class="calpop-foot">
+      <button class="caltoday" id="calToday" type="button">Go to today</button>
+      <button class="calclose" id="calClose" type="button">Close</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <table id="rotation">
+      <caption id="tableCap"></caption>
+      <thead>
+        <tr>
+          <th style="text-align:center;width:60px;"></th>
+          <th>Start (Sun)</th>
+          <th>End (Sat)</th>
+          <th>First Up</th>
+          <th>Second Up</th>
+          <th>Notes / Vacation / Swaps</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    If both the First Up and Second Up technicians are unavailable, all technicians will be contacted.
+  </div>
+
+  <div class="reqwrap">
+    <section class="panel reqpanel">
+      <h2>Request an on-call rotation change</h2>
+      <div class="body">
+        <p class="reqintro">Use this form to request a swap or change to your on-call assignment. Submitting opens an email to the scheduler (mp1@firedefense.com) with your request; review it and press send.</p>
+        <div class="reqgrid">
+          <label>Your name
+            <select id="reqName"><option value="">Select…</option></select>
+          </label>
+          <label>Week affected (start date)
+            <input id="reqWeek" type="text" placeholder="e.g. 10/11/2026" autocomplete="off">
+          </label>
+          <label>Type of change
+            <select id="reqType">
+              <option value="Swap with another tech">Swap with another tech</option>
+              <option value="Give up my week (need coverage)">Give up my week (need coverage)</option>
+              <option value="Take an additional week">Take an additional week</option>
+              <option value="Other (explain below)">Other (explain below)</option>
+            </select>
+          </label>
+          <label>Swap with (if applicable)
+            <select id="reqWith"><option value="">— n/a —</option></select>
+          </label>
+        </div>
+        <label class="reqfull">Details / reason
+          <textarea id="reqNote" rows="3" placeholder="Briefly explain the change you're requesting…"></textarea>
+        </label>
+        <div class="reqactions">
+          <button id="reqSubmit" type="button">Submit request (opens email)</button>
+          <span class="reqhint" id="reqHint"></span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="lower">
+    <section class="panel">
+      <h2>How the rotation works</h2>
+      <div class="body">
+        <ul class="notes">
+          <li><strong>First Up</strong> is the primary on-call technician. <strong>Second Up</strong> is the backup if First Up is unavailable.</li>
+          <li>For vacation or personal time, note it and reassign that week's dropdowns. Keep two different techs per week; a duplicate is flagged red.</li>
+          <li>The current week is highlighted in green. Pick a date from the calendar to outline that week in dark red.</li>
+          <li>Weeks containing a U.S. federal holiday are marked with a ★ and the holiday name so techs can plan ahead.</li>
+          <li>The rotation runs continuously from 2026 into 2027, advancing one technician each week.</li>
+          <li>Refer to Fire Defense Equipment Co. policies regarding holiday pay, holiday paid days off, and which holidays are included.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="panel" id="rosterPanel">
+      <h2>Technician roster</h2>
+      <div class="body">
+        <ul class="roster" id="rosterList"></ul>
+        <div class="addrow">
+          <input id="newTech" type="text" placeholder="Add technician name…" aria-label="New technician name">
+          <button id="addTech" type="button">Add</button>
+        </div>
+        <p class="rosterhint">Roster changes apply to upcoming weeks only. Past and current weeks keep their assignments. Any two techs may share a week as First Up and Second Up. Second Up is never First Up the following week. Managers are listed for reference only and are never placed in the rotation.</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>On-call week tally</h2>
+      <div class="body">
+        <p class="tallycap" id="tallyCap"></p>
+        <table class="tally">
+          <thead><tr><th style="text-align:left;">Technician</th><th>First</th><th>Second</th><th>Total</th></tr></thead>
+          <tbody id="tallyRows"></tbody>
+        </table>
+        <p class="bal" id="balNote"></p>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    Fire Defense Equipment Co., Inc. — Sprinkler Department. Continuous on-call rotation. Assignments, notes, and roster are stored locally in your browser. "Reset everything" restores the default roster and regenerates the fair rotation.
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var DEFAULT_ROSTER = ["Tim H.","Owen H.","Eric O.","Jacob K.","Corey W.","Wade H.","Mitch P."];
+  var MANAGERS = ["Wade H.","Mitch P."]; // managers — listed on the roster, never placed in the rotation
+  var START = new Date(2026,8,13); // Sep 13 2026 (month 0-based)
+  var END = new Date(2027,11,31);
+  var KEY = "fdec_oncall_v3";
+
+  function isMgr(name){ return MANAGERS.indexOf(name)!==-1; }
+  // Everyone eligible for First Up / Second Up. Managers are excluded.
+  function techsOnly(list){ return list.filter(function(t){ return !isMgr(t); }); }
+
+  var selectedWeek = -1; // week highlighted after picking a date in the calendar
+
+  // ---- US federal holidays (computed for any year) ----
+  function nthWeekday(y,m,wd,n){ // m 0-based, wd 0=Sun..6=Sat, n 1-based
+    var d=new Date(y,m,1);
+    var off=(wd - d.getDay()+7)%7;
+    return new Date(y,m,1+off+(n-1)*7);
+  }
+  function lastWeekday(y,m,wd){
+    var last=new Date(y,m+1,0);
+    var off=(last.getDay()-wd+7)%7;
+    return new Date(y,m,last.getDate()-off);
+  }
+  function federalHolidays(y){
+    return [
+      ["New Year's Day", new Date(y,0,1)],
+      ["Martin Luther King Jr. Day", nthWeekday(y,0,1,3)],
+      ["Presidents' Day", nthWeekday(y,1,1,3)],
+      ["Memorial Day", lastWeekday(y,4,1)],
+      ["Juneteenth", new Date(y,5,19)],
+      ["Independence Day", new Date(y,6,4)],
+      ["Labor Day", nthWeekday(y,8,1,1)],
+      ["Columbus Day", nthWeekday(y,9,1,2)],
+      ["Veterans Day", new Date(y,10,11)],
+      ["Thanksgiving Day", nthWeekday(y,10,4,4)],
+      ["Christmas Day", new Date(y,11,25)]
+    ];
+  }
+  function ymd(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+  // Map "YYYY-MM-DD" -> holiday name, for years spanning the rotation
+  var HOLIDAY_MAP = (function(){
+    var map={};
+    [2026,2027].forEach(function(y){
+      federalHolidays(y).forEach(function(h){ map[ymd(h[1])]=h[0]; });
+    });
+    return map;
+  })();
+  // Return list of {name,date} holidays that fall within a given week
+  // ---- Holiday fairness ----------------------------------------------------
+  // A straight round robin repeats on a fixed cycle while holidays fall on a
+  // near-fixed yearly pattern, so the same techs keep catching them. This pass
+  // swaps whole weeks between techs: every tech keeps the same total number of
+  // on-call weeks, and only the holiday load moves.
+  function holidayCounts(assign, roster){
+    var c={};
+    techsOnly(roster).forEach(function(t){ c[t]=0; });
+    for(var i=0;i<assign.length;i++){
+      if(!HOLIDAY_WEEK[i]) continue;
+      if(assign[i].first in c) c[assign[i].first]++;
+    }
+    return c;
+  }
+  function weekOk(assign,i){
+    var a=assign[i];
+    if(!a) return true;
+    if(a.first===a.second) return false;            // one tech cannot hold both roles
+    var p=assign[i-1], nx=assign[i+1];
+    // nobody repeats the same role on back-to-back weeks
+    if(p  && (p.first===a.first  || p.second===a.second))  return false;
+    if(nx && (nx.first===a.first || nx.second===a.second)) return false;
+    // Second Up one week is not First Up the next
+    if(nx && nx.first===a.second) return false;
+    if(p  && p.second===a.first)  return false;
+    return true;
+  }
+
+  // Safety net. Any back-to-back repeat left over after a swap gets traded with
+  // the nearest clean week that will take it.
+  function repairAdjacency(assign, startIdx){
+    var fixed=0;
+    for(var i=Math.max(startIdx,1);i<assign.length;i++){
+      if(assign[i].first!==assign[i-1].first
+      && assign[i].second!==assign[i-1].second
+      && assign[i].first!==assign[i-1].second) continue;
+      for(var j=startIdx;j<assign.length;j++){
+        if(j===i || j===i-1 || j===i+1) continue;
+        var a=assign[i], b=assign[j];
+        assign[i]={first:b.first, second:b.second, note:a.note};
+        assign[j]={first:a.first, second:a.second, note:b.note};
+        if(weekOk(assign,i) && weekOk(assign,j)){ fixed++; break; }
+        assign[i]=a; assign[j]=b;
+      }
+    }
+    return fixed;
+  }
+  // Seeded so every browser holding the same roster builds the same schedule.
+  function mulberry32(a){
+    return function(){
+      a|=0; a=a+0x6D2B79F5|0;
+      var t=Math.imul(a^a>>>15, 1|a);
+      t=t+Math.imul(t^t>>>7, 61|t)^t;
+      return ((t^t>>>14)>>>0)/4294967296;
+    };
+  }
+  function seedOf(order){
+    var h=2166136261, str=order.join("|");
+    for(var i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619); }
+    return h>>>0;
+  }
+  function holidaySpread(assign, roster){
+    var c=holidayCounts(assign, roster);
+    var v=techsOnly(roster).map(function(t){ return c[t]||0; });
+    if(!v.length) return 0;
+    return Math.max.apply(null,v) - Math.min.apply(null,v);
+  }
+  function holidayScore(assign, roster){
+    var c=holidayCounts(assign, roster);
+    var v=techsOnly(roster).map(function(t){ return c[t]||0; });
+    if(!v.length) return 0;
+    var mean=v.reduce(function(a,b){return a+b;},0)/v.length;
+    return v.reduce(function(a,x){ return a + (x-mean)*(x-mean); },0);
+  }
+
+  // Local search. Trades whole weeks at random, keeping any trade that leaves
+  // the holiday load no more lopsided than before. Accepting sideways trades is
+  // what lets it work around the pairing rules a strict greedy pass gets stuck
+  // on. Stops as soon as the spread is one (1) week or less.
+  function balanceHolidays(assign, roster, startIdx){
+    var techs = techsOnly(roster);
+    if(techs.length < 3) return 0;
+    var rnd = mulberry32(seedOf(techs));
+    var cur = holidayScore(assign, roster), moves = 0, N = assign.length;
+    for(var it=0; it<6000; it++){
+      if(holidaySpread(assign, roster) <= 1) break;
+      var i = startIdx + Math.floor(rnd()*(N-startIdx));
+      var j = startIdx + Math.floor(rnd()*(N-startIdx));
+      if(i===j || i>=N || j>=N) continue;
+      var x = assign[i], y = assign[j];
+      assign[i] = { first:y.first, second:y.second, note:x.note };
+      assign[j] = { first:x.first, second:x.second, note:y.note };
+      if(!weekOk(assign,i) || !weekOk(assign,j)){ assign[i]=x; assign[j]=y; continue; }
+      var sc = holidayScore(assign, roster);
+      if(sc <= cur){ cur = sc; moves++; }
+      else { assign[i]=x; assign[j]=y; }
+    }
+    return moves;
+  }
+
+  function holidaysInWeek(w){
+    var out=[]; var d=new Date(w.start);
+    for(var k=0;k<7;k++){
+      var key=ymd(d);
+      if(HOLIDAY_MAP[key]) out.push({name:HOLIDAY_MAP[key], date:new Date(d)});
+      d.setDate(d.getDate()+1);
+    }
+    return out;
+  }
+
+  // Straight rotation order. first[i]=order[i%n], second[i]=order[(i+1)%n],
+  // so every tech takes First Up one week and backs up the next. Any two techs
+  // may share a week; the only rule left is that one tech cannot hold both roles.
+  function arrangeOrder(rosterIn){
+    return techsOnly(rosterIn);
+  }
+
+  function buildWeeks(){
+    var weeks=[], d=new Date(START.getFullYear(),START.getMonth(),START.getDate());
+    while(d<=END){
+      var s=new Date(d), e=new Date(d); e.setDate(e.getDate()+6);
+      weeks.push({start:s,end:e});
+      d.setDate(d.getDate()+7);
+    }
+    return weeks;
+  }
+  var WEEKS = buildWeeks();
+
+  function fmt(dt){
+    return String(dt.getMonth()+1).padStart(2,"0")+"/"+String(dt.getDate()).padStart(2,"0")+"/"+dt.getFullYear();
+  }
+
+  var HOLIDAY_WEEK = WEEKS.map(function(w){ return holidaysInWeek(w).length>0; });
+
+  // Second Up runs on its own offset instead of trailing First Up by one, so
+  // backing up a week never rolls straight into being primary the next week.
+  // With three (3) or more techs the gap is two (2) slots; with two (2) techs
+  // there is only one (1) possible pairing.
+  function secondGap(n){ return (n >= 3) ? 2 : 1; }
+
+  function genAssignments(roster){
+    var order = arrangeOrder(roster);
+    var n = order.length;
+    var g = secondGap(n);
+    return WEEKS.map(function(_,i){
+      return { first: order[i % n], second: order[(i+g) % n], note:"" };
+    });
+  }
+  // Fisher-Yates. Every ordering is equally likely.
+  function shuffle(arr){
+    var a = arr.slice();
+    for(var i=a.length-1;i>0;i--){
+      var j = Math.floor(Math.random()*(i+1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  // randomize: reset draws a new tech order so the rotation is not the same
+  // layout every time. First load stays deterministic on purpose, so every
+  // browser that has never saved anything builds the identical schedule.
+  function freshState(randomize){
+    var techs = techsOnly(DEFAULT_ROSTER);
+    if(randomize) techs = shuffle(techs);
+    var roster = techs.concat(DEFAULT_ROSTER.filter(isMgr));
+    var assign = genAssignments(roster);
+    balanceHolidays(assign, roster, 0);
+    repairAdjacency(assign, 0);
+    return { roster:roster, assign:assign, holBal:1 };
+  }
+  function load(){
+    try{
+      var raw=localStorage.getItem(KEY);
+      if(raw){
+        var d=JSON.parse(raw);
+        if(d && Array.isArray(d.roster) && Array.isArray(d.assign) && d.assign.length===WEEKS.length) return d;
+      }
+    }catch(e){}
+    return freshState();
+  }
+  function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+
+  var state = load();
+
+  function currentWeekIndex(){
+    var today=new Date(); today.setHours(0,0,0,0);
+    for(var i=0;i<WEEKS.length;i++){
+      var s=new Date(WEEKS[i].start); s.setHours(0,0,0,0);
+      var e=new Date(WEEKS[i].end); e.setHours(23,59,59,999);
+      if(today>=s && today<=e) return i;
+    }
+    return -1;
+  }
+  var NOW_I = currentWeekIndex();
+  // Bring older saved data up to date: make sure both managers are on the
+  // roster and that neither one is holding an upcoming on-call week.
+  (function migrateManagers(){
+    var touched=false;
+    MANAGERS.forEach(function(m){
+      if(state.roster.indexOf(m)===-1){ state.roster.push(m); touched=true; }
+    });
+    var startIdx = (NOW_I>=0) ? NOW_I+1 : 0;
+    for(var i=startIdx;i<state.assign.length;i++){
+      if(isMgr(state.assign[i].first) || isMgr(state.assign[i].second)){ touched=true; break; }
+    }
+    if(touched){ regenerateForward(); save(); }
+    else if(state.holBal!==1){
+      balanceHolidays(state.assign, state.roster, (NOW_I>=0)? NOW_I+1 : 0);
+      state.holBal=1; save();
+    }
+  })();
+
+
+  var viewYear, viewMonth;
+  (function(){
+    var anchor = (NOW_I>=0) ? WEEKS[NOW_I].start : WEEKS[0].start;
+    viewYear = anchor.getFullYear(); viewMonth = anchor.getMonth();
+  })();
+  var MONTH_NAMES = ["January","February","March","April","May","June",
+                     "July","August","September","October","November","December"];
+  // A week belongs to the month on screen if any of its seven days fall in it,
+  // so a week straddling the turn of the month shows under both.
+  function weekInView(w){
+    return (w.start.getFullYear()===viewYear && w.start.getMonth()===viewMonth)
+        || (w.end.getFullYear()===viewYear   && w.end.getMonth()===viewMonth);
+  }
+  function monthIndex(y,m){ return y*12+m; }
+  function viewBounds(){
+    return { min: monthIndex(WEEKS[0].start.getFullYear(), WEEKS[0].start.getMonth()),
+             max: monthIndex(WEEKS[WEEKS.length-1].start.getFullYear(), WEEKS[WEEKS.length-1].start.getMonth()) };
+  }
+  function stepMonth(delta){
+    var idx = monthIndex(viewYear, viewMonth) + delta, b = viewBounds();
+    if(idx < b.min || idx > b.max) return;
+    viewYear = Math.floor(idx/12); viewMonth = idx%12; render();
+  }
+  function showWeek(i){
+    if(i<0) return;
+    viewYear = WEEKS[i].start.getFullYear(); viewMonth = WEEKS[i].start.getMonth();
+  }
+
+  function escapeHtml(s){return String(s||"").replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+
+  // Build options; always include the currently-assigned value even if it's no longer on the roster
+  // (so historical/edited weeks referencing a removed tech still display correctly).
+  function options(sel){
+    var list = techsOnly(state.roster);
+    if(sel && list.indexOf(sel)===-1) list.push(sel+" (removed)");
+    return list.map(function(t){
+      var val = t.replace(/ \(removed\)$/,"");
+      return '<option value="'+escapeHtml(val)+'"'+(val===sel?" selected":"")+'>'+escapeHtml(t)+'</option>';
+    }).join("");
+  }
+
+  function render(){
+    var chip=document.getElementById("nowChip");
+    if(NOW_I>=0){
+      var w=WEEKS[NOW_I];
+      chip.innerHTML='Current week: <b>'+fmt(w.start)+' – '+fmt(w.end)+'</b> &nbsp;(1st: '+escapeHtml(state.assign[NOW_I].first)+', 2nd: '+escapeHtml(state.assign[NOW_I].second)+')';
+    }else{
+      chip.textContent="Today is outside the rotation range.";
+    }
+
+    var lbl=document.getElementById("monthLabel");
+    if(lbl) lbl.textContent = MONTH_NAMES[viewMonth]+" "+viewYear;
+    var b=viewBounds(), cur=monthIndex(viewYear,viewMonth);
+    var pv=document.getElementById("monthPrev"), nx=document.getElementById("monthNext");
+    if(pv) pv.disabled = (cur<=b.min);
+    if(nx) nx.disabled = (cur>=b.max);
+
+    document.getElementById("tableCap").textContent =
+      "Showing "+MONTH_NAMES[viewMonth]+" "+viewYear+". Assign First Up (primary) and Second Up (backup) per week; use notes for vacation, personal time, or swaps. Use the arrows or the calendar for other months.";
+
+    var rows=document.getElementById("rows"); rows.innerHTML="";
+    WEEKS.forEach(function(w,i){
+      if(!weekInView(w)) return;
+      var a=state.assign[i];
+      var conflict=(a.first===a.second);
+      var prev=(i>0)? state.assign[i-1] : null;
+      var repeat=!!(prev && (prev.first===a.first || prev.second===a.second));
+      var rollup=!!(prev && prev.second===a.first);
+      var isNow=(i===NOW_I);
+      var isSel=(i===selectedWeek);
+      var hols=holidaysInWeek(w);
+      var tr=document.createElement("tr");
+      tr.className=((conflict||repeat||rollup)?"conflict ":"")+(isNow?"now ":"")+(isSel?"selweek ":"")+(hols.length?"holidayweek":"");
+      tr.id="wk-"+i;
+      if(isNow) tr.setAttribute("data-now","1");
+      var flagMsg = conflict ? "Same tech in both roles"
+                  : (repeat ? "Same tech two weeks running"
+                  : (rollup ? "Second Up rolls into First Up" : ""));
+      var holHtml = hols.length
+        ? '<div class="holrow">'+hols.map(function(h){
+            return '<span class="holtag">★ '+escapeHtml(h.name)+' — '+(h.date.getMonth()+1)+'/'+h.date.getDate()+'</span>';
+          }).join(' ')+'</div>'
+        : '';
+      tr.innerHTML=
+        '<td class="wk">'+(isNow?'<span class="nowtag">CURRENT WEEK PERIOD</span>':'')+(hols.length?'<span class="holdot" title="Holiday week">★</span>':'')+'</td>'+
+        '<td class="date">'+fmt(w.start)+'</td>'+
+        '<td class="date">'+fmt(w.end)+'</td>'+
+        '<td class="assign role1" data-label="First Up"><select data-i="'+i+'" data-role="first" aria-label="First up week starting '+fmt(w.start)+'">'+options(a.first)+'</select>'+
+          (flagMsg?'<span class="flag">'+flagMsg+'</span>':'')+'</td>'+
+        '<td class="assign role2" data-label="Second Up"><select data-i="'+i+'" data-role="second" aria-label="Second up week starting '+fmt(w.start)+'">'+options(a.second)+'</select></td>'+
+        '<td data-label="Notes / Vacation / Swaps"><input class="note" type="text" data-i="'+i+'" data-role="note" value="'+escapeHtml(a.note)+'" placeholder="Vacation, personal time, swap…" aria-label="Notes week starting '+fmt(w.start)+'">'+holHtml+'</td>';
+      rows.appendChild(tr);
+    });
+
+    renderRoster();
+    renderTally();
+  }
+
+  function renderRoster(){
+    var ul=document.getElementById("rosterList"); ul.innerHTML="";
+    state.roster.forEach(function(t){
+      var li=document.createElement("li");
+      var badge = isMgr(t) ? ' <span class="mgrbadge">MANAGER</span>' : '';
+      li.innerHTML='<span class="rname">'+escapeHtml(t)+badge+'</span>'+
+        '<button class="rm" type="button" data-name="'+escapeHtml(t)+'" aria-label="Remove '+escapeHtml(t)+'">Remove</button>';
+      ul.appendChild(li);
+    });
+    if(typeof fillReqDropdowns==="function") fillReqDropdowns();
+  }
+
+  function renderTally(){
+    var first={}, second={};
+    state.roster.forEach(function(t){first[t]=0;second[t]=0;});
+    WEEKS.forEach(function(w,i){
+      if(w.start.getFullYear()!==viewYear) return;   // tally covers the whole year
+      var a=state.assign[i];
+      if(first.hasOwnProperty(a.first)) first[a.first]++;
+      if(second.hasOwnProperty(a.second)) second[a.second]++;
+    });
+    document.getElementById("tallyCap").textContent="On-call weeks across all of "+viewYear+" by technician, not just the month shown above.";
+    var body=document.getElementById("tallyRows"); body.innerHTML="";
+    var totals=[];
+    state.roster.forEach(function(t){
+      var tot=first[t]+second[t]; totals.push(tot);
+      var tr=document.createElement("tr");
+      tr.innerHTML='<td class="name">'+escapeHtml(t)+'</td><td>'+first[t]+'</td><td>'+second[t]+'</td><td><strong>'+tot+'</strong></td>';
+      body.appendChild(tr);
+    });
+    var note=document.getElementById("balNote");
+    if(totals.length){
+      var mn=Math.min.apply(null,totals), mx=Math.max.apply(null,totals);
+      if(mx-mn<=1){ note.textContent="Balanced — within one week across the roster."; note.style.color="#2e6b3b"; }
+      else{ note.textContent="Uneven — spread is "+(mx-mn)+" weeks."; note.style.color="#a5121a"; }
+    } else { note.textContent=""; }
+  }
+
+  document.addEventListener("change",function(ev){
+    if(!unlocked) return;
+    var el=ev.target;
+    if(el.matches("select[data-i]")){
+      state.assign[+el.dataset.i][el.dataset.role]=el.value; save(); render();
+    }
+  });
+  document.addEventListener("input",function(ev){
+    if(!unlocked) return;
+    var el=ev.target;
+    if(el.matches("input.note[data-i]")){
+      state.assign[+el.dataset.i].note=el.value; save();
+    }
+  });
+
+  // ---- Admin lock (view-only by default; passcode unlocks editing) ----
+  // NOTE: This is a deterrent only. A static page cannot truly secure edits.
+  // Change ADMIN_CODE to your desired passcode.
+  var ADMIN_CODE = "FDEC2026";
+  var unlocked = false;
+
+  function applyLock(){
+    document.body.classList.toggle("locked", !unlocked);
+    var btn=document.getElementById("adminBtn");
+    var hint=document.getElementById("modeHint");
+    if(unlocked){
+      btn.textContent="🔓 Admin: unlocked";
+      btn.classList.add("unlocked");
+      hint.textContent="Editing enabled. Changes save in this browser.";
+    }else{
+      btn.textContent="🔒 Admin: locked";
+      btn.classList.remove("unlocked");
+      hint.textContent="View-only. Click “Admin” to unlock editing.";
+    }
+  }
+
+  document.getElementById("adminBtn").addEventListener("click",function(){
+    if(unlocked){
+      unlocked=false; applyLock(); return;
+    }
+    var code=prompt("Enter admin passcode to enable editing:");
+    if(code===null) return;
+    if(code===ADMIN_CODE){
+      unlocked=true; applyLock();
+    }else{
+      alert("Incorrect passcode. Editing remains locked.");
+    }
+  });
+
+  // ---- Calendar popup ----
+  var calCursor = null; // month currently shown in popup
+  var MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  var DOW = ["Su","Mo","Tu","We","Th","Fr","Sa"];
+
+  function sameDay(a,b){ return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
+  function inRange(d){ var s=new Date(START); s.setHours(0,0,0,0); var e=new Date(END); e.setHours(23,59,59,999); return d>=s&&d<=e; }
+
+  function weekIndexForDate(d){
+    var x=new Date(d); x.setHours(12,0,0,0);
+    for(var i=0;i<WEEKS.length;i++){
+      var s=new Date(WEEKS[i].start); s.setHours(0,0,0,0);
+      var e=new Date(WEEKS[i].end); e.setHours(23,59,59,999);
+      if(x>=s&&x<=e) return i;
+    }
+    return -1;
+  }
+
+  function openCal(){
+    var base = (NOW_I>=0)? WEEKS[NOW_I].start : new Date();
+    // open on today's month if in range, else current view year
+    var today=new Date();
+    if(inRange(today)) base=today;
+    else base=new Date(viewYear, (viewYear===START.getFullYear()?START.getMonth():0), 1);
+    calCursor=new Date(base.getFullYear(), base.getMonth(), 1);
+    renderCal();
+    document.getElementById("calBackdrop").hidden=false;
+    document.getElementById("calPop").hidden=false;
+    document.getElementById("calBtn").setAttribute("aria-expanded","true");
+  }
+  function closeCal(){
+    document.getElementById("calBackdrop").hidden=true;
+    document.getElementById("calPop").hidden=true;
+    document.getElementById("calBtn").setAttribute("aria-expanded","false");
+    document.getElementById("calBtn").focus();
+  }
+
+  function renderCal(){
+    var y=calCursor.getFullYear(), m=calCursor.getMonth();
+    document.getElementById("calTitle").textContent=MONTHS[m]+" "+y;
+    var grid=document.getElementById("calGrid"); grid.innerHTML="";
+    DOW.forEach(function(d){
+      var el=document.createElement("div"); el.className="cal-dow"; el.textContent=d; grid.appendChild(el);
+    });
+    var first=new Date(y,m,1);
+    var startDow=first.getDay();
+    var daysInMonth=new Date(y,m+1,0).getDate();
+    var today=new Date(); today.setHours(0,0,0,0);
+    // leading blanks
+    for(var b=0;b<startDow;b++){
+      var mm=document.createElement("div"); mm.className="cal-cell muted"; grid.appendChild(mm);
+    }
+    for(var day=1;day<=daysInMonth;day++){
+      var d=new Date(y,m,day);
+      var cell=document.createElement("div");
+      cell.className="cal-cell";
+      cell.textContent=day;
+      var oob=!inRange(d);
+      if(oob){ cell.className+=" oob"; }
+      if(sameDay(d,today)) cell.className+=" today";
+      // holiday marker
+      var hkey=ymd(d);
+      if(HOLIDAY_MAP[hkey]){
+        cell.className+=" holiday";
+        cell.title=HOLIDAY_MAP[hkey];
+        var star=document.createElement("span"); star.className="cal-holstar"; star.textContent="★";
+        cell.appendChild(star);
+      }
+      // highlight the week containing today
+      if(NOW_I>=0){
+        var ws=new Date(WEEKS[NOW_I].start); ws.setHours(0,0,0,0);
+        var we=new Date(WEEKS[NOW_I].end); we.setHours(23,59,59,999);
+        if(d>=ws&&d<=we && !sameDay(d,today)) cell.className+=" inweek";
+      }
+      if(!oob){
+        cell.setAttribute("tabindex","0");
+        cell.setAttribute("role","button");
+        cell.setAttribute("aria-label",MONTHS[m]+" "+day+", "+y);
+        (function(dd){
+          function go(){
+            var wi=weekIndexForDate(dd);
+            if(wi>=0){ selectedWeek=wi; showWeek(wi); render(); closeCal();
+              var r=document.getElementById("wk-"+wi); if(r) r.scrollIntoView({behavior:"smooth",block:"center"});
+            }
+          }
+          cell.addEventListener("click",go);
+          cell.addEventListener("keydown",function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); go(); }});
+        })(d);
+      }
+      grid.appendChild(cell);
+    }
+  }
+
+  document.getElementById("calBtn").addEventListener("click",openCal);
+  document.getElementById("calClose").addEventListener("click",closeCal);
+  document.getElementById("calBackdrop").addEventListener("click",closeCal);
+  document.getElementById("calPrev").addEventListener("click",function(){ calCursor.setMonth(calCursor.getMonth()-1); renderCal(); });
+  document.getElementById("calNext").addEventListener("click",function(){ calCursor.setMonth(calCursor.getMonth()+1); renderCal(); });
+  document.getElementById("calToday").addEventListener("click",function(){
+    var today=new Date();
+    if(!inRange(today)){ alert("Today is outside the rotation range (Sep 2026 – Dec 2027)."); return; }
+    calCursor=new Date(today.getFullYear(), today.getMonth(), 1); renderCal();
+  });
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape" && !document.getElementById("calPop").hidden) closeCal(); });
+
+  document.getElementById("jumpNow").addEventListener("click",function(){
+    if(NOW_I<0){ alert("Today is outside the rotation range (Sep 2026 – Dec 2027)."); return; }
+    showWeek(NOW_I);
+    render();
+    var r=document.getElementById("wk-"+NOW_I);
+    if(r) r.scrollIntoView({behavior:"smooth",block:"center"});
+  });
+
+  document.getElementById("printBtn").addEventListener("click",function(){ window.print(); });
+
+  document.getElementById("resetBtn").addEventListener("click",function(){
+    if(!unlocked){ alert("Unlock admin editing first."); return; }
+    if(confirm("Reset the roster and deal a new random rotation? This clears all edits and notes.")){
+      state=freshState(true); save();
+      showWeek(NOW_I>=0?NOW_I:0);
+      render();
+      alert("New rotation order:\n\n"+techsOnly(state.roster).join("  ->  ")
+        +"\n\nHoliday weeks are balanced across this order. Reset again for a different draw.");
+    }
+  });
+
+  document.getElementById("monthPrev").addEventListener("click",function(){ stepMonth(-1); });
+  document.getElementById("monthNext").addEventListener("click",function(){ stepMonth(1); });
+
+  document.getElementById("balBtn").addEventListener("click",function(){
+    if(!unlocked) return;
+    var startIdx=(NOW_I>=0)? NOW_I+1 : 0;
+    var before=holidayCounts(state.assign,state.roster);
+    var moves=balanceHolidays(state.assign,state.roster,startIdx);
+    repairAdjacency(state.assign,startIdx);
+    save(); render();
+    var after=holidayCounts(state.assign,state.roster);
+    var line=Object.keys(after).map(function(t){return t+": "+after[t];}).join("\n");
+    alert(moves? ("Swapped "+moves+" week"+(moves===1?"":"s")+" from next week forward.\n\nHoliday weeks as First Up:\n"+line)
+               : ("Already as even as the roster allows.\n\nHoliday weeks as First Up:\n"+line));
+  });
+
+  document.getElementById("addTech").addEventListener("click",addTech);
+  document.getElementById("newTech").addEventListener("keydown",function(e){ if(e.key==="Enter") addTech(); });
+  function addTech(){
+    if(!unlocked) return;
+    var inp=document.getElementById("newTech");
+    var name=inp.value.trim();
+    if(!name) return;
+    if(state.roster.indexOf(name)!==-1){ alert(name+" is already on the roster."); return; }
+    state.roster.push(name);
+    regenerateForward();
+    inp.value=""; save(); render();
+  }
+
+  document.getElementById("rosterList").addEventListener("click",function(ev){
+    if(!unlocked) return;
+    var b=ev.target.closest("button.rm"); if(!b) return;
+    var name=b.dataset.name;
+    if(!isMgr(name) && techsOnly(state.roster).length<=2){ alert("Keep at least two technicians so each week has a First Up and Second Up."); return; }
+    if(!confirm("Remove "+name+" from the roster? Upcoming weeks will be reassigned; past and current weeks keep their assignments.")) return;
+    state.roster=state.roster.filter(function(t){return t!==name;});
+    regenerateForward();
+    save(); render();
+  });
+
+  // Regenerate assignments for weeks AFTER the current week only.
+  // Past and current weeks keep their assignments (historical record).
+  function regenerateForward(){
+    var order = arrangeOrder(state.roster);
+    var n = order.length;
+    if(n<1) return;
+    var startIdx = (NOW_I>=0)? NOW_I+1 : 0;
+    // Pick up the cycle where the last untouched week left off, so the tech who
+    // just finished a week does not get handed the next one as well.
+    var off = 0;
+    if(startIdx > 0){
+      var prevFirst = state.assign[startIdx-1].first;
+      var pi = order.indexOf(prevFirst);
+      if(pi !== -1) off = (pi + 1) - startIdx;
+    }
+    var g = secondGap(n);
+    var at = function(i){ return order[(((i + off) % n) + n) % n]; };
+    for(var i=startIdx;i<WEEKS.length;i++){
+      state.assign[i].first  = at(i);
+      state.assign[i].second = at(i+g);
+    }
+    balanceHolidays(state.assign, state.roster, startIdx);
+    repairAdjacency(state.assign, startIdx);
+  }
+
+  // ---- Rotation change request form ----
+  var SCHEDULER_EMAIL = "mp1@firedefense.com";
+
+  function fillReqDropdowns(){
+    var nameSel=document.getElementById("reqName");
+    var withSel=document.getElementById("reqWith");
+    if(!nameSel||!withSel) return;
+    var curName=nameSel.value, curWith=withSel.value;
+    var techs = techsOnly(state.roster);
+    nameSel.innerHTML='<option value="">Select…</option>'+
+      techs.map(function(t){return '<option value="'+escapeHtml(t)+'">'+escapeHtml(t)+'</option>';}).join("");
+    withSel.innerHTML='<option value="">— n/a —</option>'+
+      techs.map(function(t){return '<option value="'+escapeHtml(t)+'">'+escapeHtml(t)+'</option>';}).join("");
+    // restore prior selections if still valid
+    if(techs.indexOf(curName)!==-1) nameSel.value=curName;
+    if(techs.indexOf(curWith)!==-1) withSel.value=curWith;
+  }
+
+  var reqBtn=document.getElementById("reqSubmit");
+  if(reqBtn){
+    reqBtn.addEventListener("click",function(){
+      var name=document.getElementById("reqName").value.trim();
+      var week=document.getElementById("reqWeek").value.trim();
+      var type=document.getElementById("reqType").value;
+      var wth=document.getElementById("reqWith").value.trim();
+      var note=document.getElementById("reqNote").value.trim();
+      var hint=document.getElementById("reqHint");
+      if(!name){ hint.textContent="Please select your name."; hint.style.color="#a5121a"; return; }
+      if(!week){ hint.textContent="Please enter the week affected."; hint.style.color="#a5121a"; return; }
+
+      var subject="On-Call Rotation Change Request — "+name;
+      var lines=[
+        "On-Call Rotation Change Request",
+        "--------------------------------",
+        "Technician: "+name,
+        "Week affected (start): "+week,
+        "Type of change: "+type,
+        (wth ? "Swap with: "+wth : ""),
+        "",
+        "Details / reason:",
+        (note || "(none provided)"),
+        "",
+        "Submitted from the On-Call Rotation page."
+      ].filter(function(l){return l!==""||true;});
+      var body=lines.join("\n");
+
+      var mailto="mailto:"+encodeURIComponent(SCHEDULER_EMAIL)+
+        "?subject="+encodeURIComponent(subject)+
+        "&body="+encodeURIComponent(body);
+      window.location.href=mailto;
+      hint.textContent="Opening your email app… review and press send.";
+      hint.style.color="#2e6b3b";
+    });
+  }
+
+  applyLock();
+  render();
+  fillReqDropdowns();
+})();
+</script>
+<script type="module" src="fdec-auth.js" data-page="oncall"></script>
+</body>
+</html>

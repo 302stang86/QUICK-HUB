@@ -215,7 +215,12 @@
   h2.section{color:#ffffff;text-shadow:0 1px 3px rgba(0,0,0,.55);}
   footer{color:#d7dbe0;}
   @media print{.bg-layer{display:none !important;} .lead,h2.section,footer{color:#000;text-shadow:none;}}
+  .userchip{margin-left:auto;display:flex;align-items:center;gap:10px;color:#dfe3e8;font-size:13px}
+  .userchip #whoami{font-weight:600;color:#fff}
+  .userchip button{appearance:none;border:1px solid #4A545E;background:transparent;color:#fff;border-radius:7px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+  .userchip button:hover{background:rgba(255,255,255,.1)}
 </style>
+<script type="module" src="fdec-auth.js" data-page="home"></script>
 </head>
 <body>
 <div class="bg-layer" aria-hidden="true"></div>
@@ -227,6 +232,7 @@
       <h1>Quick Hub</h1>
       <p class="sub"><strong>Fire Defense Equipment Company</strong> &nbsp;·&nbsp; Employee Hub</p>
     </div>
+    <div class="userchip no-print"><span id="whoami"></span><button type="button" id="signOut">Sign out</button></div>
   </div>
   <nav class="tabs" id="tabs">
     <button class="active" data-tab="home">Home</button>
@@ -656,17 +662,21 @@
   // ---------- Home hub links ----------
   // Edit the url for each tool below. Leave blank to show "URL not set".
   var LINKS = [
-    {name:'ITM Inspection Reports',  cat:'Field',   access:'',             url:'https://302stang86.github.io/FDEC-ITM-REPORTS-V1/', desc:'NFPA 25 inspection report forms with PDF output.'},
-    {name:'ServiceTrade',            cat:'Field',   access:'',             url:'https://app.servicetrade.com/', desc:'Jobs, service records, deficiencies, and field paperwork.'},
-    {name:'Local Dispatch Numbers',  cat:'Field',   access:'',             url:'fire-dispatch-directory.html', desc:'Fire department dispatch numbers by city — searchable, tap to call.'},
-    {name:'Troubleshooting Guide',   cat:'Field',   access:'',             url:'troubleshooting-guide.html', desc:'Field troubleshooting steps for common system and device issues.'},
-    {name:'Quoting & Proposal Suite',cat:'Quoting', access:'Manager only', url:'https://302stang86.github.io/SP-FDEC-Quoting-2026/', desc:'Sprinkler ITM quoting and proposal verbiage.'},
-    {name:'Time-Off Requests',       cat:'Team',    access:'Everyone',     url:'https://302stang86.github.io/On-Call-Rotation/timeoff.html', desc:'Submit paid time-off (PTO) requests and track balances.'},
-    {name:'On-Call Rotation',        cat:'Team',    access:'Everyone',     url:'https://302stang86.github.io/On-Call-Rotation/', desc:'Current sprinkler department on-call schedule.'}
+    {name:'ITM Inspection Reports',  cat:'Field',   access:'',             page:'itm',            url:'itm-reports.html', desc:'NFPA 25 inspection report forms with PDF output.'},
+    {name:'ServiceTrade',            cat:'Field',   access:'',             page:'servicetrade',   url:'https://app.servicetrade.com/', desc:'Jobs, service records, deficiencies, and field paperwork.'},
+    {name:'Local Dispatch Numbers',  cat:'Field',   access:'',             page:'dispatch',       url:'fire-dispatch-directory.html', desc:'Fire department dispatch numbers by city — searchable, tap to call.'},
+    {name:'Troubleshooting Guide',   cat:'Field',   access:'',             page:'troubleshooting',url:'troubleshooting-guide.html', desc:'Field troubleshooting steps for common system and device issues.'},
+    {name:'Quoting & Proposal Suite',cat:'Quoting', access:'Manager only', page:'quoting',        url:'quoting.html', desc:'Sprinkler ITM quoting and proposal verbiage.'},
+    {name:'Time-Off Requests',       cat:'Team',    access:'Everyone',     page:'timeoff',        url:'timeoff.html', desc:'Submit paid time-off (PTO) requests and track balances.'},
+    {name:'On-Call Rotation',        cat:'Team',    access:'Everyone',     page:'oncall',         url:'oncall.html', desc:'Current sprinkler department on-call schedule.'},
+    {name:'Administration',          cat:'Admin',   access:'Admin only',   page:'administration', url:'administration.html', desc:'Department administration and management tools.'}
   ];
-  var hub = document.getElementById('hubLinks');
-  if(hub){
+  function renderHub(auth){
+    var hub = document.getElementById('hubLinks');
+    if(!hub) return;
+    hub.innerHTML = '';
     LINKS.forEach(function(l){
+      if(auth && typeof auth.canOpen === 'function' && !auth.canOpen(l.page)) return;
       var a = document.createElement('a');
       var set = l.url && l.url !== '#';
       a.className = 'hublink' + (set ? '' : ' unset');
@@ -681,13 +691,30 @@
       a.querySelector('.hdesc').textContent = l.desc;
       if(l.access){
         var ac = document.createElement('span');
-        ac.className = 'haccess ' + (l.access.toLowerCase().indexOf('manager') > -1 ? 'manager' : 'everyone');
+        var lc = l.access.toLowerCase();
+        ac.className = 'haccess ' + ((lc.indexOf('manager') > -1 || lc.indexOf('admin') > -1) ? 'manager' : 'everyone');
         ac.textContent = l.access;
         a.appendChild(ac);
       }
       hub.appendChild(a);
     });
   }
+  // Wait for the shared sign-in gate, then show only the cards this role may open.
+  (function(){
+    var tries = 0;
+    (function wait(){
+      if(window.FDECAuth && window.FDECAuth.ready){
+        window.FDECAuth.ready.then(function(auth){
+          renderHub(auth);
+          var who = document.getElementById('whoami');
+          if(who && auth.profile){ who.textContent = auth.profile.name + (auth.isAdmin ? ' · Admin' : ''); }
+          var so = document.getElementById('signOut');
+          if(so) so.addEventListener('click', function(){ auth.signOut(); });
+        });
+      } else if(tries++ < 150){ setTimeout(wait, 40); }
+      else { renderHub(null); }   // auth could not load — show all (degraded)
+    })();
+  })();
 
   // ---------- Tabs ----------
   var tabBtns = document.querySelectorAll('#tabs button');
