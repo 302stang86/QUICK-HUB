@@ -193,7 +193,8 @@ async function loadPermissions(){
 }
 
 /* ---------- boot ---------- */
-const PAGE = (document.currentScript && document.currentScript.dataset.page) || null;
+const gateTag = document.querySelector('script[data-page]');
+const PAGE = (gateTag && gateTag.dataset.page) || null;
 let booted = false;
 
 onAuthStateChanged(auth, async (user) => {
