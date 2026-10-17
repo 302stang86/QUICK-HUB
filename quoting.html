@@ -123,8 +123,19 @@
   .xm-go:disabled{opacity:.5; cursor:default}
   .views{flex:1; position:relative; min-height:0}
   .views iframe{
-    position:absolute; inset:0; width:100%; height:100%;
+    position:absolute;
+    top:10px; bottom:max(10px,env(safe-area-inset-bottom));
+    left:max(10px,env(safe-area-inset-left)); right:max(10px,env(safe-area-inset-right));
+    width:auto; height:auto;
     border:none; background:var(--page);
+    border-radius:12px; box-shadow:0 10px 30px rgba(16,24,40,.30);
+  }
+  @media(max-width:680px){
+    .views iframe{
+      top:7px; bottom:max(7px,env(safe-area-inset-bottom));
+      left:max(7px,env(safe-area-inset-left)); right:max(7px,env(safe-area-inset-right));
+      border-radius:9px;
+    }
   }
   .views iframe[hidden]{display:none}
 
@@ -2758,6 +2769,31 @@ window.addEventListener('message', function(e){
 })();
 <\/script>
 
+<script>
+/* FDEC central capture — relay every downloaded file (draft, Word doc, export) to the suite shell for central storage. */
+(function(){
+  if(window.__fdecCapInit) return; window.__fdecCapInit=true;
+  function fld(ids){ for(var i=0;i<ids.length;i++){ var e=document.getElementById(ids[i]); if(e&&'value'in e&&e.value) return e.value; } return ''; }
+  document.addEventListener('click', function(e){
+    var a=(e.target&&e.target.closest)?e.target.closest('a[download]'):null;
+    if(!a||!a.href||a.__fdecSent) return;
+    a.__fdecSent=true;
+    var href=a.href, fname=a.getAttribute('download')||'file';
+    fetch(href).then(function(r){return r.blob();}).then(function(blob){
+      if(!blob) return;
+      var fr=new FileReader();
+      fr.onload=function(){
+        try{ window.parent.postMessage({fdec:true,type:'filesave',value:{
+          filename:fname, dataUrl:fr.result, size:blob.size, mime:blob.type||'',
+          jobName:fld(['jobName','jobCustomer']), quoteNo:fld(['quoteNo','jobQuote']),
+          app:(document.title||'Quoting Suite').replace(/^FDEC\s*/i,'').trim()
+        }},'*'); }catch(_){}
+      };
+      fr.readAsDataURL(blob);
+    }).catch(function(){});
+  }, true);
+})();
+<\/script>
 </body></html></script>
 <script type="text/html" id="src-proposal"><!DOCTYPE html>
 <html lang="en"><head>
@@ -4273,6 +4309,31 @@ if (_btnSave) _btnSave.addEventListener("click", () => {
 })();
 <\/script>
 
+<script>
+/* FDEC central capture — relay every downloaded file (draft, Word doc, export) to the suite shell for central storage. */
+(function(){
+  if(window.__fdecCapInit) return; window.__fdecCapInit=true;
+  function fld(ids){ for(var i=0;i<ids.length;i++){ var e=document.getElementById(ids[i]); if(e&&'value'in e&&e.value) return e.value; } return ''; }
+  document.addEventListener('click', function(e){
+    var a=(e.target&&e.target.closest)?e.target.closest('a[download]'):null;
+    if(!a||!a.href||a.__fdecSent) return;
+    a.__fdecSent=true;
+    var href=a.href, fname=a.getAttribute('download')||'file';
+    fetch(href).then(function(r){return r.blob();}).then(function(blob){
+      if(!blob) return;
+      var fr=new FileReader();
+      fr.onload=function(){
+        try{ window.parent.postMessage({fdec:true,type:'filesave',value:{
+          filename:fname, dataUrl:fr.result, size:blob.size, mime:blob.type||'',
+          jobName:fld(['jobName','jobCustomer']), quoteNo:fld(['quoteNo','jobQuote']),
+          app:(document.title||'Quoting Suite').replace(/^FDEC\s*/i,'').trim()
+        }},'*'); }catch(_){}
+      };
+      fr.readAsDataURL(blob);
+    }).catch(function(){});
+  }, true);
+})();
+<\/script>
 </body></html></script>
 <script type="text/html" id="src-annual"><!DOCTYPE html>
 <html lang="en"><head>
@@ -5698,6 +5759,31 @@ if (_btnSave) _btnSave.addEventListener("click", () => {
 })();
 <\/script>
 
+<script>
+/* FDEC central capture — relay every downloaded file (draft, Word doc, export) to the suite shell for central storage. */
+(function(){
+  if(window.__fdecCapInit) return; window.__fdecCapInit=true;
+  function fld(ids){ for(var i=0;i<ids.length;i++){ var e=document.getElementById(ids[i]); if(e&&'value'in e&&e.value) return e.value; } return ''; }
+  document.addEventListener('click', function(e){
+    var a=(e.target&&e.target.closest)?e.target.closest('a[download]'):null;
+    if(!a||!a.href||a.__fdecSent) return;
+    a.__fdecSent=true;
+    var href=a.href, fname=a.getAttribute('download')||'file';
+    fetch(href).then(function(r){return r.blob();}).then(function(blob){
+      if(!blob) return;
+      var fr=new FileReader();
+      fr.onload=function(){
+        try{ window.parent.postMessage({fdec:true,type:'filesave',value:{
+          filename:fname, dataUrl:fr.result, size:blob.size, mime:blob.type||'',
+          jobName:fld(['jobName','jobCustomer']), quoteNo:fld(['quoteNo','jobQuote']),
+          app:(document.title||'Quoting Suite').replace(/^FDEC\s*/i,'').trim()
+        }},'*'); }catch(_){}
+      };
+      fr.readAsDataURL(blob);
+    }).catch(function(){});
+  }, true);
+})();
+<\/script>
 </body></html></script>
 <script type="text/html" id="src-install"><!DOCTYPE html>
 <html lang="en"><head>
@@ -7101,6 +7187,31 @@ if (_btnSave) _btnSave.addEventListener("click", () => {
 })();
 <\/script>
 
+<script>
+/* FDEC central capture — relay every downloaded file (draft, Word doc, export) to the suite shell for central storage. */
+(function(){
+  if(window.__fdecCapInit) return; window.__fdecCapInit=true;
+  function fld(ids){ for(var i=0;i<ids.length;i++){ var e=document.getElementById(ids[i]); if(e&&'value'in e&&e.value) return e.value; } return ''; }
+  document.addEventListener('click', function(e){
+    var a=(e.target&&e.target.closest)?e.target.closest('a[download]'):null;
+    if(!a||!a.href||a.__fdecSent) return;
+    a.__fdecSent=true;
+    var href=a.href, fname=a.getAttribute('download')||'file';
+    fetch(href).then(function(r){return r.blob();}).then(function(blob){
+      if(!blob) return;
+      var fr=new FileReader();
+      fr.onload=function(){
+        try{ window.parent.postMessage({fdec:true,type:'filesave',value:{
+          filename:fname, dataUrl:fr.result, size:blob.size, mime:blob.type||'',
+          jobName:fld(['jobName','jobCustomer']), quoteNo:fld(['quoteNo','jobQuote']),
+          app:(document.title||'Quoting Suite').replace(/^FDEC\s*/i,'').trim()
+        }},'*'); }catch(_){}
+      };
+      fr.readAsDataURL(blob);
+    }).catch(function(){});
+  }, true);
+})();
+<\/script>
 </body></html></script>
 
 <script>
@@ -7319,6 +7430,12 @@ window.addEventListener('message', function(e){
     // Editing counts as activity — clear the restore prompt if it's still up.
     if (_restoreBannerOpen && _restoreHide) _restoreHide();
     autosaveStore(d.page, d.data);
+    return;
+  }
+  // A page downloaded a file (draft, Word doc, export). Save a central copy
+  // to Firebase so admins can retrieve it from the Administration page.
+  if (d.type === 'filesave' && d.value){
+    if (window.fdecSaveQuoteFile) window.fdecSaveQuoteFile(d.value);
     return;
   }
   // Otherwise relay quoting -> all verbiage pages (down payment sync, etc.)
@@ -7549,5 +7666,70 @@ function loadSuiteDraftFile(input){
 </script>
 
 <script type="module" src="fdec-auth.js" data-page="quoting"></script>
+
+<script type="module">
+/* Central storage of quote outputs (drafts, Word docs, exports) in Firebase,
+   so every file is retrievable from the Administration page by job name,
+   quote number, and user. Pages relay each download to the shell (stable
+   origin); here we upload the bytes to Firebase Storage and index the file
+   in Firestore (collection "quoteFiles"). */
+import { getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getStorage, ref as sRef, uploadString, getDownloadURL }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+import { getFirestore, collection, addDoc, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+function fdecSafe(s){ return String(s || "").replace(/[^\w.-]+/g, "_").slice(0, 90); }
+
+function fdecToast(msg, bad){
+  try{
+    var t = document.createElement("div");
+    t.textContent = msg;
+    t.style.cssText = "position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:9999;"
+      + "background:" + (bad ? "#9d0e16" : "#1B2A4A") + ";color:#fff;padding:10px 16px;border-radius:8px;"
+      + "font:600 13px/1.3 -apple-system,Segoe UI,Arial,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.3);max-width:86vw";
+    document.body.appendChild(t);
+    setTimeout(function(){ t.style.transition = "opacity .4s"; t.style.opacity = "0";
+      setTimeout(function(){ t.remove(); }, 450); }, 2600);
+  }catch(_){}
+}
+
+window.fdecSaveQuoteFile = async function(v){
+  try{
+    if (window.FDECAuth && window.FDECAuth.ready){ try{ await window.FDECAuth.ready; }catch(_){} }
+    var app = getApp("fdec");
+    var storage = getStorage(app);
+    var dbf = getFirestore(app);
+    var user = (window.FDECAuth && window.FDECAuth.user) || null;
+    var profile = (window.FDECAuth && window.FDECAuth.profile) || null;
+    var userName = (profile && profile.name) || (user && (user.displayName || user.email)) || "Unknown user";
+    var uid = (user && user.uid) || "anon";
+    var stamp = Date.now();
+    var path = "quote-files/" + fdecSafe(uid) + "/" + stamp + "_" + fdecSafe(v.filename || "file");
+    var r = sRef(storage, path);
+    await uploadString(r, v.dataUrl, "data_url", v.mime ? { contentType: v.mime } : undefined);
+    var url = "";
+    try{ url = await getDownloadURL(r); }catch(_){}
+    await addDoc(collection(dbf, "quoteFiles"), {
+      jobName:   v.jobName || "",
+      quoteNo:   v.quoteNo || "",
+      userName:  userName,
+      userEmail: (user && user.email) || "",
+      uid:       uid,
+      app:       v.app || "",
+      filename:  v.filename || "file",
+      mime:      v.mime || "",
+      size:      v.size || 0,
+      storagePath: path,
+      downloadURL: url,
+      createdAt: serverTimestamp()
+    });
+    fdecToast("Saved to Administration: " + (v.filename || "file"));
+  }catch(err){
+    console.warn("Central quote-file save failed:", err);
+    fdecToast("Could not save a central copy (saved to your device).", true);
+  }
+};
+</script>
 </body>
 </html>

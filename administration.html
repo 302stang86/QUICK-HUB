@@ -166,6 +166,27 @@
     .toggle input:not(:checked) + .slider { outline: 1px solid #bbb; }
     .masthead { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
+
+  /* Quote files browser */
+  .qf-wrap { background:#fff; border:1px solid #dfe3e8; border-radius:10px; padding:16px; margin:22px 0 4px; box-shadow:0 1px 3px rgba(16,24,40,.08); }
+  .qf-head h2 { margin:0 0 2px; font-size:17px; color:#1B2A4A; }
+  .qf-head p { margin:0 0 12px; font-size:12.5px; color:#5c6470; }
+  .qf-search { width:100%; border:1.5px solid #cdd9e8; border-radius:8px; padding:9px 12px; font-size:15px; margin-bottom:12px; color:#20262d; }
+  .qf-search:focus { outline:2px solid rgba(193,18,28,.28); border-color:#C1121C; }
+  .qf-list { display:flex; flex-direction:column; gap:8px; }
+  .qf-row { display:grid; grid-template-columns:1fr auto; gap:6px 12px; align-items:center; border:1px solid #e4e7ea; border-left:4px solid #C1121C; border-radius:8px; padding:10px 12px; background:#fbfcfe; }
+  .qf-row .qf-main { min-width:0; }
+  .qf-row .qf-job { font-weight:700; font-size:14px; color:#1B2A4A; }
+  .qf-row .qf-meta { font-size:12px; color:#5c6470; margin-top:2px; word-break:break-word; }
+  .qf-row .qf-file { font-size:12px; color:#20262d; margin-top:2px; word-break:break-all; }
+  .qf-chip { display:inline-block; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; background:#eef2f8; color:#1B2A4A; border-radius:999px; padding:2px 8px; margin-right:6px; }
+  .qf-acts { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+  .qf-btn { font-size:12px; font-weight:600; border-radius:7px; padding:6px 11px; cursor:pointer; border:1.5px solid #1B2A4A; background:#1B2A4A; color:#fff; text-decoration:none; white-space:nowrap; }
+  .qf-btn:hover { background:#13203b; }
+  .qf-btn.del { background:#fff; color:#9d0e16; border-color:#9d0e16; }
+  .qf-btn.del:hover { background:#9d0e16; color:#fff; }
+  .qf-empty { font-size:13px; color:#5c6470; font-style:italic; padding:8px 2px; }
+  @media(max-width:620px){ .qf-row { grid-template-columns:1fr; } .qf-acts { justify-content:flex-start; } }
 </style>
 </head>
 <body>
@@ -203,6 +224,15 @@
     <div class="tabs" id="tabs"></div>
     <div id="roleHead"></div>
     <div id="groups"></div>
+
+    <div class="qf-wrap" id="qfWrap" style="display:none">
+      <div class="qf-head">
+        <h2>Quote files</h2>
+        <p>Drafts, Word documents, and export packages saved from the Quoting &amp; Proposal Suite. Search by job name, quote number, user, or file name.</p>
+      </div>
+      <input id="qfSearch" class="qf-search" type="search" placeholder="Search job name, quote number, user, or file name&hellip;" autocomplete="off">
+      <div id="qfList" class="qf-list"></div>
+    </div>
 
     <p class="foot">
       Permissions are stored in your Firebase project (<code>config/permissions</code>) and shared across all FDEC tools and devices.
@@ -356,8 +386,10 @@ window.PERM.init();
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc }
+import { getFirestore, doc, getDoc, setDoc, collection, query, where, orderBy, getDocs, deleteDoc }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getStorage, ref as sRef, deleteObject }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 /* ============================================================
    FIREBASE CONFIG — use the SAME values as the time-off app.
@@ -377,7 +409,7 @@ const isAdminEmail = e => ADMIN_EMAILS.includes(String(e||"").toLowerCase());
 
 const P = window.PERM;
 const $ = (id)=>document.getElementById(id);
-let auth=null, db=null, me=null, PERM_REF=null;
+let auth=null, db=null, storage=null, me=null, PERM_REF=null;
 
 /* sign-in modal */
 const overlay=$("overlay"), emailInput=$("email"), passInput=$("pass"), passErr=$("passErr");
@@ -412,7 +444,7 @@ async function loadPerms(){
 }
 
 async function onAuth(user){
-  if(!user){ me=null; P.setAuth({signedIn:false,isAdmin:false,me:null}); P.setState(P.deepDefault()); return; }
+  if(!user){ me=null; P.setAuth({signedIn:false,isAdmin:false,me:null}); P.setState(P.deepDefault()); var w=$("qfWrap"); if(w) w.style.display="none"; return; }
   try {
     const usnap = await getDoc(doc(db,"users",user.uid));
     const d = usnap.exists()? usnap.data():{};
@@ -420,13 +452,83 @@ async function onAuth(user){
   } catch(e){ me = { uid:user.uid, name:user.email.split("@")[0], email:user.email, role:isAdminEmail(user.email)?"admin":"tech" }; }
   P.setAuth({ signedIn:true, isAdmin: me.role==="admin"||isAdminEmail(me.email), me });
   await loadPerms();
+  await loadQuoteFiles();
 }
+
+/* ---------- Quote files (drafts, Word docs & exports from the Quoting Suite) ---------- */
+let QF = [];
+function qfEsc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];}); }
+function qfSize(n){ n=+n||0; if(n<1024) return n+" B"; if(n<1048576) return (n/1024).toFixed(0)+" KB"; return (n/1048576).toFixed(1)+" MB"; }
+function qfMs(ts){ try{ return ts&&ts.toDate? ts.toDate().getTime() : (ts? new Date(ts).getTime():0); }catch(_){ return 0; } }
+function qfDate(ts){ try{ var d= ts&&ts.toDate? ts.toDate() : (ts? new Date(ts):null); return d? d.toLocaleString():""; }catch(_){ return ""; } }
+
+async function loadQuoteFiles(){
+  var wrap=$("qfWrap"); if(!wrap) return;
+  if(!db || !me){ wrap.style.display="none"; return; }
+  var isMgr = me.role==="admin" || me.role==="manager" || isAdminEmail(me.email);
+  wrap.style.display="";
+  try{
+    var snaps;
+    if(isMgr){ snaps = await getDocs(query(collection(db,"quoteFiles"), orderBy("createdAt","desc"))); }
+    else { snaps = await getDocs(query(collection(db,"quoteFiles"), where("uid","==",me.uid))); }
+    QF = [];
+    snaps.forEach(function(s){ var o=s.data()||{}; o.id=s.id; QF.push(o); });
+    if(!isMgr) QF.sort(function(a,b){ return qfMs(b.createdAt) - qfMs(a.createdAt); });
+    renderQF($("qfSearch").value||"");
+  }catch(e){
+    $("qfList").innerHTML = '<div class="qf-empty">Could not load quote files'+(e&&e.code?(" ("+e.code+")"):"")+'.</div>';
+  }
+}
+
+function renderQF(filter){
+  var list=$("qfList"); if(!list) return;
+  var f=String(filter||"").toLowerCase().trim();
+  var rows = QF.filter(function(o){
+    if(!f) return true;
+    return [o.jobName,o.quoteNo,o.userName,o.userEmail,o.filename,o.app].join(" ").toLowerCase().indexOf(f)>=0;
+  });
+  if(!rows.length){ list.innerHTML = '<div class="qf-empty">'+(QF.length?"No files match your search.":"No quote files saved yet.")+'</div>'; return; }
+  var canDel = me && (me.role==="admin"||isAdminEmail(me.email));
+  list.innerHTML = rows.map(function(o){
+    var job = o.jobName ? qfEsc(o.jobName) : "(no job name)";
+    var qn  = o.quoteNo ? ("Quote #"+qfEsc(o.quoteNo)) : "No quote #";
+    var meta = qn+" &middot; "+qfEsc(o.userName||o.userEmail||"Unknown")+" &middot; "+qfEsc(qfDate(o.createdAt));
+    var app = o.app ? '<span class="qf-chip">'+qfEsc(o.app)+'</span>' : "";
+    var dl = o.downloadURL
+      ? '<a class="qf-btn" href="'+qfEsc(o.downloadURL)+'" target="_blank" rel="noopener" download="'+qfEsc(o.filename||"file")+'">Download</a>'
+      : '<span class="qf-btn" style="opacity:.5;cursor:default">No file</span>';
+    var del = canDel ? '<button class="qf-btn del" data-del="'+qfEsc(o.id)+'" data-path="'+qfEsc(o.storagePath||"")+'">Delete</button>' : "";
+    return '<div class="qf-row"><div class="qf-main">'
+      + '<div class="qf-job">'+app+job+'</div>'
+      + '<div class="qf-meta">'+meta+'</div>'
+      + '<div class="qf-file">'+qfEsc(o.filename||"file")+' &middot; '+qfSize(o.size)+'</div>'
+      + '</div><div class="qf-acts">'+dl+del+'</div></div>';
+  }).join("");
+}
+
+(function(){
+  var s=$("qfSearch"), l=$("qfList");
+  if(s) s.addEventListener("input", function(){ renderQF(this.value); });
+  if(l) l.addEventListener("click", async function(e){
+    var b = e.target.closest ? e.target.closest("[data-del]") : null;
+    if(!b) return;
+    if(!confirm("Delete this quote file for everyone? This cannot be undone.")) return;
+    var id=b.getAttribute("data-del"), path=b.getAttribute("data-path");
+    try{
+      if(path && storage){ try{ await deleteObject(sRef(storage, path)); }catch(_){} }
+      await deleteDoc(doc(db,"quoteFiles",id));
+      QF = QF.filter(function(o){ return o.id!==id; });
+      renderQF($("qfSearch").value||"");
+      P.toast("File deleted.");
+    }catch(err){ P.toast("Delete failed: "+(err&&err.code?err.code:"check permissions")); }
+  });
+})();
 
 /* init */
 if(configured){
   try {
     const app = initializeApp(firebaseConfig);
-    auth = getAuth(app); db = getFirestore(app);
+    auth = getAuth(app); db = getFirestore(app); storage = getStorage(app);
     PERM_REF = doc(db,"config","permissions");
     onAuthStateChanged(auth, onAuth);
   } catch(e){ P.toast("Firebase failed to initialize."); }
