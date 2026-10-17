@@ -187,6 +187,25 @@
   .savednote{font-size:12px;color:var(--good);margin-left:4px;align-self:center;opacity:0;transition:.3s}
   .savednote.show{opacity:1}
 
+  /* Photo documentation (lift pre/post use) */
+  .phelp{font-size:12.5px;color:var(--ink-soft);margin:0 0 12px}
+  .photowrap{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:680px){.photowrap{grid-template-columns:1fr}}
+  .photocol{display:flex;flex-direction:column;gap:8px}
+  .photohd{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .phtag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:3px 10px;border-radius:999px;color:#fff}
+  .phtag.pre{background:var(--fdec-navy,#1B2A4A)}
+  .phtag.post{background:var(--fdec-red,#C1121C)}
+  .addphoto{font-size:12px;font-weight:600;color:var(--fdec-red,#C1121C);border:1.5px solid var(--fdec-red,#C1121C);border-radius:8px;padding:5px 11px;cursor:pointer;background:#fff;white-space:nowrap}
+  .addphoto:hover{background:var(--fdec-red,#C1121C);color:#fff}
+  .photogrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px;min-height:34px}
+  .photogrid:empty::before{content:attr(data-empty);grid-column:1/-1;font-size:12px;color:var(--ink-soft);font-style:italic;padding:6px 2px}
+  .photoitem{position:relative;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff;aspect-ratio:4/3}
+  .photoitem img{width:100%;height:100%;object-fit:cover;display:block}
+  .photoitem .rm{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:none;background:rgba(17,17,17,.72);color:#fff;font-size:15px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+  .photoitem .rm:hover{background:var(--fdec-red,#C1121C)}
+  .photoitem .cap{position:absolute;left:0;right:0;bottom:0;background:rgba(17,17,17,.62);color:#fff;font-size:9.5px;padding:2px 4px;text-align:center;line-height:1.2}
+
   .sign{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:6px}
   @media(max-width:680px){.sign{grid-template-columns:1fr}}
   .sigline{border-top:1px solid var(--ink);padding-top:5px;font-size:12px;color:var(--ink-soft);margin-top:30px}
@@ -207,6 +226,10 @@
     .printhead .ph-sub{font-size:11px;color:#555}
     .sop,details{display:none !important}
     a{color:#000;text-decoration:none}
+    .addphoto,.photoitem .rm{display:none !important}
+    .photogrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+    .photoitem{break-inside:avoid;aspect-ratio:auto;border:1px solid #999}
+    .photoitem img{height:auto}
   }
 
   /* Equipment background (embedded) */
@@ -630,6 +653,27 @@
     </div>
 
     <div class="card">
+      <h3>Photo documentation — pre &amp; post use</h3>
+      <p class="phelp">Attach photos of the unit and work area before use and again after use. Photos save on this device with the draft and print on the Portable Document Format (PDF) copy.</p>
+      <div class="photowrap">
+        <div class="photocol">
+          <div class="photohd">
+            <span class="phtag pre">Pre-use</span>
+            <label class="addphoto no-print">Add photos<input type="file" accept="image/*" capture="environment" multiple data-photo="pre" hidden></label>
+          </div>
+          <div class="photogrid" id="lfPhotosPre" data-empty="No pre-use photos added."></div>
+        </div>
+        <div class="photocol">
+          <div class="photohd">
+            <span class="phtag post">Post-use</span>
+            <label class="addphoto no-print">Add photos<input type="file" accept="image/*" capture="environment" multiple data-photo="post" hidden></label>
+          </div>
+          <div class="photogrid" id="lfPhotosPost" data-empty="No post-use photos added."></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
       <div class="fld full"><label>Defects found / notes</label><textarea name="lf_notes" placeholder="Describe any defect. Any lift with a safety defect is tagged out of service until repaired."></textarea></div>
       <div class="formgrid" style="margin-top:12px">
         <div class="fld"><label>Safe to operate?</label>
@@ -928,12 +972,90 @@ function applyBadge(){
       form.reset();
       form.querySelectorAll('input[type=checkbox]').forEach(function(c){c.checked=false});
       try{ localStorage.removeItem('riser_'+b.dataset.clear); }catch(e){}
-      if(b.dataset.clear==='liftForm') toggleBoom();
+      if(b.dataset.clear==='liftForm'){ toggleBoom(); clearPhotos(); }
+    });
+  });
+
+  // ---------- Pre/post-use photo documentation (lift form) ----------
+  var liftPhotos = { pre: [], post: [] };
+
+  function scaleImage(file, maxPx, quality){
+    return new Promise(function(resolve, reject){
+      var fr = new FileReader();
+      fr.onload = function(){
+        var img = new Image();
+        img.onload = function(){
+          var w = img.width, h = img.height;
+          var scale = Math.min(1, maxPx / Math.max(w, h));
+          var cw = Math.max(1, Math.round(w * scale)), ch = Math.max(1, Math.round(h * scale));
+          var c = document.createElement('canvas'); c.width = cw; c.height = ch;
+          c.getContext('2d').drawImage(img, 0, 0, cw, ch);
+          try{ resolve(c.toDataURL('image/jpeg', quality)); }catch(e){ reject(e); }
+        };
+        img.onerror = reject; img.src = fr.result;
+      };
+      fr.onerror = reject; fr.readAsDataURL(file);
+    });
+  }
+  function savePhotos(){
+    try{ localStorage.setItem('riser_liftForm_photos', JSON.stringify(liftPhotos)); return true; }
+    catch(e){ return false; }
+  }
+  function restorePhotos(){
+    try{
+      var raw = localStorage.getItem('riser_liftForm_photos');
+      if(raw){ var d = JSON.parse(raw) || {}; liftPhotos.pre = d.pre || []; liftPhotos.post = d.post || []; }
+    }catch(e){}
+    renderPhotos();
+  }
+  function clearPhotos(){
+    liftPhotos.pre = []; liftPhotos.post = [];
+    try{ localStorage.removeItem('riser_liftForm_photos'); }catch(e){}
+    renderPhotos();
+  }
+  function renderPhotos(){
+    ['pre','post'].forEach(function(k){
+      var grid = document.getElementById(k === 'pre' ? 'lfPhotosPre' : 'lfPhotosPost');
+      if(!grid) return;
+      grid.innerHTML = '';
+      liftPhotos[k].forEach(function(p, i){
+        var item = document.createElement('div'); item.className = 'photoitem';
+        var im = document.createElement('img'); im.src = p.src; im.alt = k + ' photo ' + (i + 1); im.loading = 'lazy';
+        item.appendChild(im);
+        if(p.cap){ var cap = document.createElement('div'); cap.className = 'cap'; cap.textContent = p.cap; item.appendChild(cap); }
+        var rm = document.createElement('button');
+        rm.type = 'button'; rm.className = 'rm no-print'; rm.textContent = '×'; rm.title = 'Remove photo';
+        rm.addEventListener('click', function(){ liftPhotos[k].splice(i, 1); savePhotos(); renderPhotos(); });
+        item.appendChild(rm);
+        grid.appendChild(item);
+      });
+    });
+  }
+  document.querySelectorAll('input[data-photo]').forEach(function(inp){
+    inp.addEventListener('change', function(){
+      var k = inp.dataset.photo;
+      var files = Array.prototype.slice.call(inp.files || []);
+      if(!files.length) return;
+      var stamp = new Date().toLocaleString();
+      var chain = Promise.resolve();
+      files.forEach(function(f){
+        if(!/^image\//.test(f.type)) return;
+        chain = chain.then(function(){ return scaleImage(f, 1200, 0.72); }).then(function(src){
+          liftPhotos[k].push({ src: src, cap: (k === 'pre' ? 'Pre' : 'Post') + ' · ' + stamp });
+        }).catch(function(){});
+      });
+      chain.then(function(){
+        var ok = savePhotos();
+        renderPhotos();
+        inp.value = '';
+        if(!ok) alert('This device is low on storage, so the newest photos may not be saved with the draft. Print or save the PDF now, or remove some photos.');
+      });
     });
   });
 
   restoreForm('csForm');
   restoreForm('liftForm');
+  restorePhotos();
 
   // ---------- Incident report frame auto-size ----------
   var incFrame = document.getElementById('incidentFrame');
