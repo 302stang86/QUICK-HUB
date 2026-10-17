@@ -7674,9 +7674,7 @@ function loadSuiteDraftFile(input){
    origin); here we upload the bytes to Firebase Storage and index the file
    in Firestore (collection "quoteFiles"). */
 import { getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getStorage, ref as sRef, uploadString, getDownloadURL }
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-import { getFirestore, collection, addDoc, serverTimestamp }
+import { getFirestore, collection, addDoc, doc, setDoc, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 function fdecSafe(s){ return String(s || "").replace(/[^\w.-]+/g, "_").slice(0, 90); }
@@ -7694,23 +7692,26 @@ function fdecToast(msg, bad){
   }catch(_){}
 }
 
+var FDEC_CHUNK = 700000;   // base64 chars per Firestore chunk doc (well under the 1 MiB limit)
+
 window.fdecSaveQuoteFile = async function(v){
   try{
     if (window.FDECAuth && window.FDECAuth.ready){ try{ await window.FDECAuth.ready; }catch(_){} }
     var app = getApp("fdec");
-    var storage = getStorage(app);
     var dbf = getFirestore(app);
     var user = (window.FDECAuth && window.FDECAuth.user) || null;
     var profile = (window.FDECAuth && window.FDECAuth.profile) || null;
     var userName = (profile && profile.name) || (user && (user.displayName || user.email)) || "Unknown user";
     var uid = (user && user.uid) || "anon";
-    var stamp = Date.now();
-    var path = "quote-files/" + fdecSafe(uid) + "/" + stamp + "_" + fdecSafe(v.filename || "file");
-    var r = sRef(storage, path);
-    await uploadString(r, v.dataUrl, "data_url", v.mime ? { contentType: v.mime } : undefined);
-    var url = "";
-    try{ url = await getDownloadURL(r); }catch(_){}
-    await addDoc(collection(dbf, "quoteFiles"), {
+
+    // The file arrives as a data URL ("data:<mime>;base64,<data>"). Keep only the base64 body.
+    var du = v.dataUrl || "";
+    var comma = du.indexOf(",");
+    var b64 = comma >= 0 ? du.slice(comma + 1) : du;
+    var total = Math.ceil(b64.length / FDEC_CHUNK) || 1;
+
+    // Metadata record (held as not-ready until every chunk is written).
+    var metaRef = await addDoc(collection(dbf, "quoteFiles"), {
       jobName:   v.jobName || "",
       quoteNo:   v.quoteNo || "",
       userName:  userName,
@@ -7720,10 +7721,18 @@ window.fdecSaveQuoteFile = async function(v){
       filename:  v.filename || "file",
       mime:      v.mime || "",
       size:      v.size || 0,
-      storagePath: path,
-      downloadURL: url,
+      chunkCount: total,
+      ready:     false,
       createdAt: serverTimestamp()
     });
+
+    // Store the file body as one or more chunk documents under the record.
+    for (var i = 0; i < total; i++){
+      var part = b64.slice(i * FDEC_CHUNK, (i + 1) * FDEC_CHUNK);
+      await setDoc(doc(dbf, "quoteFiles", metaRef.id, "chunks", String(i)), { i: i, uid: uid, data: part });
+    }
+    await setDoc(metaRef, { ready: true }, { merge: true });
+
     fdecToast("Saved to Administration: " + (v.filename || "file"));
   }catch(err){
     console.warn("Central quote-file save failed:", err);

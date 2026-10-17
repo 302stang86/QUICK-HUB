@@ -187,6 +187,38 @@
   .qf-btn.del:hover { background:#9d0e16; color:#fff; }
   .qf-empty { font-size:13px; color:#5c6470; font-style:italic; padding:8px 2px; }
   @media(max-width:620px){ .qf-row { grid-template-columns:1fr; } .qf-acts { justify-content:flex-start; } }
+
+  /* Employee roster */
+  .er-wrap { background:#fff; border:1px solid #dfe3e8; border-radius:10px; padding:16px; margin:4px 0 18px; box-shadow:0 1px 3px rgba(16,24,40,.08); }
+  .er-head { display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+  .er-head h2 { margin:0 0 2px; font-size:17px; color:#1B2A4A; }
+  .er-head p { margin:0 0 10px; font-size:12.5px; color:#5c6470; }
+  .er-count { font-size:12px; font-weight:700; color:#C1121C; white-space:nowrap; }
+  .er-search { width:100%; border:1.5px solid #cdd9e8; border-radius:8px; padding:9px 12px; font-size:15px; margin-bottom:12px; color:#20262d; }
+  .er-search:focus { outline:2px solid rgba(193,18,28,.28); border-color:#C1121C; }
+  .er-list { display:flex; flex-direction:column; gap:8px; }
+  .er-row { display:grid; grid-template-columns:1fr auto; gap:8px 12px; align-items:center; border:1px solid #e4e7ea; border-radius:8px; padding:10px 12px; background:#fbfcfe; }
+  .er-row.pending { border-left:4px solid #b4690e; background:#fffaf0; }
+  .er-row.archived { opacity:.62; }
+  .er-name { font-weight:700; font-size:14px; color:#1B2A4A; }
+  .er-sub { font-size:12px; color:#5c6470; margin-top:2px; word-break:break-word; }
+  .er-badge { display:inline-block; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; border-radius:999px; padding:2px 8px; margin-left:8px; vertical-align:middle; }
+  .er-badge.pending { background:#f7edd9; color:#8a5a00; }
+  .er-badge.approved { background:#e1f0e7; color:#1f7a3d; }
+  .er-badge.denied { background:#fdecec; color:#9d0e16; }
+  .er-badge.archived { background:#eef2f8; color:#5c6470; }
+  .er-acts { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; align-items:center; }
+  .er-sel { font:inherit; font-size:12px; border:1.5px solid #cdd9e8; border-radius:7px; padding:5px 7px; color:#20262d; background:#fff; }
+  .er-btn { font-size:12px; font-weight:600; border-radius:7px; padding:6px 11px; cursor:pointer; border:1.5px solid #1B2A4A; background:#1B2A4A; color:#fff; white-space:nowrap; }
+  .er-btn:hover { background:#13203b; }
+  .er-btn.ok { border-color:#1f7a3d; background:#1f7a3d; }
+  .er-btn.ok:hover { background:#17602f; }
+  .er-btn.warn { background:#fff; color:#8a5a00; border-color:#b4690e; }
+  .er-btn.warn:hover { background:#b4690e; color:#fff; }
+  .er-btn.del { background:#fff; color:#9d0e16; border-color:#9d0e16; }
+  .er-btn.del:hover { background:#9d0e16; color:#fff; }
+  .er-empty { font-size:13px; color:#5c6470; font-style:italic; padding:8px 2px; }
+  @media(max-width:620px){ .er-row { grid-template-columns:1fr; } .er-acts { justify-content:flex-start; } }
 </style>
 </head>
 <body>
@@ -220,6 +252,18 @@
       </span>
       <span style="font-size:20px;color:#C1121C;font-weight:700" aria-hidden="true">&rarr;</span>
     </a>
+
+    <div class="er-wrap" id="erWrap" style="display:none">
+      <div class="er-head">
+        <div>
+          <h2>Employee roster</h2>
+          <p>Approve new sign-ups, change roles, and archive or remove accounts. Pending accounts are highlighted and listed first.</p>
+        </div>
+        <span class="er-count" id="erCount"></span>
+      </div>
+      <input id="erSearch" class="er-search" type="search" placeholder="Search name, email, role, or status&hellip;" autocomplete="off">
+      <div id="erList" class="er-list"></div>
+    </div>
 
     <div class="tabs" id="tabs"></div>
     <div id="roleHead"></div>
@@ -386,10 +430,8 @@ window.PERM.init();
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, collection, query, where, orderBy, getDocs, deleteDoc }
+import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, orderBy, getDocs, deleteDoc }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getStorage, ref as sRef, deleteObject }
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 /* ============================================================
    FIREBASE CONFIG — use the SAME values as the time-off app.
@@ -409,7 +451,7 @@ const isAdminEmail = e => ADMIN_EMAILS.includes(String(e||"").toLowerCase());
 
 const P = window.PERM;
 const $ = (id)=>document.getElementById(id);
-let auth=null, db=null, storage=null, me=null, PERM_REF=null;
+let auth=null, db=null, me=null, PERM_REF=null;
 
 /* sign-in modal */
 const overlay=$("overlay"), emailInput=$("email"), passInput=$("pass"), passErr=$("passErr");
@@ -444,7 +486,7 @@ async function loadPerms(){
 }
 
 async function onAuth(user){
-  if(!user){ me=null; P.setAuth({signedIn:false,isAdmin:false,me:null}); P.setState(P.deepDefault()); var w=$("qfWrap"); if(w) w.style.display="none"; return; }
+  if(!user){ me=null; P.setAuth({signedIn:false,isAdmin:false,me:null}); P.setState(P.deepDefault()); var w=$("qfWrap"); if(w) w.style.display="none"; var rw=$("erWrap"); if(rw) rw.style.display="none"; return; }
   try {
     const usnap = await getDoc(doc(db,"users",user.uid));
     const d = usnap.exists()? usnap.data():{};
@@ -452,6 +494,7 @@ async function onAuth(user){
   } catch(e){ me = { uid:user.uid, name:user.email.split("@")[0], email:user.email, role:isAdminEmail(user.email)?"admin":"tech" }; }
   P.setAuth({ signedIn:true, isAdmin: me.role==="admin"||isAdminEmail(me.email), me });
   await loadPerms();
+  await loadRoster();
   await loadQuoteFiles();
 }
 
@@ -494,10 +537,10 @@ function renderQF(filter){
     var qn  = o.quoteNo ? ("Quote #"+qfEsc(o.quoteNo)) : "No quote #";
     var meta = qn+" &middot; "+qfEsc(o.userName||o.userEmail||"Unknown")+" &middot; "+qfEsc(qfDate(o.createdAt));
     var app = o.app ? '<span class="qf-chip">'+qfEsc(o.app)+'</span>' : "";
-    var dl = o.downloadURL
-      ? '<a class="qf-btn" href="'+qfEsc(o.downloadURL)+'" target="_blank" rel="noopener" download="'+qfEsc(o.filename||"file")+'">Download</a>'
-      : '<span class="qf-btn" style="opacity:.5;cursor:default">No file</span>';
-    var del = canDel ? '<button class="qf-btn del" data-del="'+qfEsc(o.id)+'" data-path="'+qfEsc(o.storagePath||"")+'">Delete</button>' : "";
+    var dl = (o.ready === false)
+      ? '<span class="qf-btn" style="opacity:.5;cursor:default">Saving&hellip;</span>'
+      : '<button class="qf-btn" data-dl="'+qfEsc(o.id)+'">Download</button>';
+    var del = canDel ? '<button class="qf-btn del" data-del="'+qfEsc(o.id)+'">Delete</button>' : "";
     return '<div class="qf-row"><div class="qf-main">'
       + '<div class="qf-job">'+app+job+'</div>'
       + '<div class="qf-meta">'+meta+'</div>'
@@ -506,29 +549,158 @@ function renderQF(filter){
   }).join("");
 }
 
+/* Rebuild a file from its Firestore chunks and hand it to the browser. */
+async function qfDownload(o){
+  try{
+    var snaps = await getDocs(query(collection(db,"quoteFiles",o.id,"chunks"), orderBy("i")));
+    var parts = [];
+    snaps.forEach(function(s){ var d=s.data()||{}; parts[d.i|0] = d.data||""; });
+    var b64 = parts.join("");
+    var bin = atob(b64), len = bin.length, arr = new Uint8Array(len);
+    for(var i=0;i<len;i++) arr[i] = bin.charCodeAt(i);
+    var blob = new Blob([arr], { type: o.mime || "application/octet-stream" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a"); a.href = url; a.download = o.filename || "file";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
+  }catch(e){ P.toast("Download failed: "+(e&&e.code?e.code:"try again")); }
+}
+
+/* Remove a file: its chunk documents first, then the metadata record. */
+async function qfDelete(o){
+  var snaps = await getDocs(collection(db,"quoteFiles",o.id,"chunks"));
+  var ds = snaps.docs || [];
+  for(var k=0;k<ds.length;k++){ try{ await deleteDoc(ds[k].ref); }catch(_){} }
+  await deleteDoc(doc(db,"quoteFiles",o.id));
+}
+
 (function(){
   var s=$("qfSearch"), l=$("qfList");
   if(s) s.addEventListener("input", function(){ renderQF(this.value); });
   if(l) l.addEventListener("click", async function(e){
-    var b = e.target.closest ? e.target.closest("[data-del]") : null;
-    if(!b) return;
-    if(!confirm("Delete this quote file for everyone? This cannot be undone.")) return;
-    var id=b.getAttribute("data-del"), path=b.getAttribute("data-path");
-    try{
-      if(path && storage){ try{ await deleteObject(sRef(storage, path)); }catch(_){} }
-      await deleteDoc(doc(db,"quoteFiles",id));
-      QF = QF.filter(function(o){ return o.id!==id; });
-      renderQF($("qfSearch").value||"");
-      P.toast("File deleted.");
-    }catch(err){ P.toast("Delete failed: "+(err&&err.code?err.code:"check permissions")); }
+    var dlBtn  = e.target.closest ? e.target.closest("[data-dl]")  : null;
+    var delBtn = e.target.closest ? e.target.closest("[data-del]") : null;
+    if(dlBtn){
+      var od = QF.filter(function(o){ return o.id===dlBtn.getAttribute("data-dl"); })[0];
+      if(od) qfDownload(od);
+      return;
+    }
+    if(delBtn){
+      if(!confirm("Delete this quote file for everyone? This cannot be undone.")) return;
+      var id = delBtn.getAttribute("data-del");
+      var o = QF.filter(function(x){ return x.id===id; })[0];
+      if(!o) return;
+      try{
+        await qfDelete(o);
+        QF = QF.filter(function(x){ return x.id!==id; });
+        renderQF($("qfSearch").value||"");
+        P.toast("File deleted.");
+      }catch(err){ P.toast("Delete failed: "+(err&&err.code?err.code:"check permissions")); }
+    }
   });
+})();
+
+/* ---------- Employee roster (approve / role / archive / delete) ---------- */
+let ROSTER = [];
+function erCan(){ return me && (me.role==="admin" || me.role==="manager" || isAdminEmail(me.email)); }
+function erIsAdmin(){ return me && (me.role==="admin" || isAdminEmail(me.email)); }
+
+async function loadRoster(){
+  var wrap=$("erWrap"); if(!wrap) return;
+  if(!db || !erCan()){ wrap.style.display="none"; return; }
+  wrap.style.display="";
+  try{
+    var snaps = await getDocs(collection(db,"users"));
+    ROSTER = [];
+    snaps.forEach(function(s){ var o=s.data()||{}; o.uid=s.id; ROSTER.push(o); });
+    var order = { pending:0, approved:1, denied:2, archived:3 };
+    ROSTER.sort(function(a,b){
+      var pa=order[a.status]==null?1:order[a.status], pb=order[b.status]==null?1:order[b.status];
+      if(pa!==pb) return pa-pb;
+      return String(a.name||a.email||"").localeCompare(String(b.name||b.email||""));
+    });
+    renderRoster($("erSearch").value||"");
+  }catch(e){
+    $("erList").innerHTML = '<div class="er-empty">Could not load the roster'+(e&&e.code?(" ("+e.code+")"):"")+'.</div>';
+  }
+}
+
+function renderRoster(filter){
+  var list=$("erList"); if(!list) return;
+  var f=String(filter||"").toLowerCase().trim();
+  var rows = ROSTER.filter(function(o){
+    if(!f) return true;
+    return [o.name,o.email,o.role,o.status].join(" ").toLowerCase().indexOf(f)>=0;
+  });
+  var pend = ROSTER.filter(function(o){ return (o.status||"pending")==="pending"; }).length;
+  var cnt=$("erCount"); if(cnt) cnt.textContent = pend ? (pend+" pending approval") : (ROSTER.length+" user"+(ROSTER.length===1?"":"s"));
+  if(!rows.length){ list.innerHTML='<div class="er-empty">'+(ROSTER.length?"No users match your search.":"No users yet.")+'</div>'; return; }
+  var canAdmin = erIsAdmin();
+  list.innerHTML = rows.map(function(o){
+    var st = o.status || "pending";
+    var isSelf = me && o.uid===me.uid;
+    var isAdm = o.role==="admin";
+    var roleOpts = ["new","tech","manager","admin"].map(function(r){
+      if(r==="admin" && !canAdmin) return "";   // managers cannot grant admin
+      return '<option value="'+r+'"'+(o.role===r?" selected":"")+'>'+r.charAt(0).toUpperCase()+r.slice(1)+'</option>';
+    }).join("");
+    var roleSel = '<select class="er-sel" data-role="'+qfEsc(o.uid)+'"'+(((!canAdmin&&isAdm)||isSelf)?" disabled":"")+'>'+roleOpts+'</select>';
+    var acts = "";
+    if(st!=="approved") acts += '<button class="er-btn ok" data-appr="'+qfEsc(o.uid)+'">'+(st==="archived"?"Reactivate":"Approve")+'</button>';
+    if(st==="pending")  acts += '<button class="er-btn warn" data-deny="'+qfEsc(o.uid)+'">Deny</button>';
+    if(st!=="archived" && !isSelf) acts += '<button class="er-btn warn" data-arch="'+qfEsc(o.uid)+'">Archive</button>';
+    if(canAdmin && !isSelf) acts += '<button class="er-btn del" data-del="'+qfEsc(o.uid)+'">Delete</button>';
+    return '<div class="er-row '+(st==="pending"?"pending":(st==="archived"?"archived":""))+'">'
+      + '<div><div class="er-name">'+qfEsc(o.name||"(no name)")+'<span class="er-badge '+qfEsc(st)+'">'+qfEsc(st)+'</span></div>'
+      + '<div class="er-sub">'+qfEsc(o.email||"")+'</div></div>'
+      + '<div class="er-acts">'+roleSel+acts+'</div></div>';
+  }).join("");
+}
+
+async function erUpdate(uid, fields, okMsg){
+  try{
+    await updateDoc(doc(db,"users",uid), fields);
+    var o = ROSTER.filter(function(x){ return x.uid===uid; })[0];
+    if(o) Object.keys(fields).forEach(function(k){ o[k]=fields[k]; });
+    renderRoster($("erSearch").value||"");
+    P.toast(okMsg||"Saved.");
+  }catch(err){ P.toast("Update failed: "+(err&&err.code?err.code:"check permissions")); loadRoster(); }
+}
+
+(function(){
+  var s=$("erSearch"), l=$("erList");
+  if(s) s.addEventListener("input", function(){ renderRoster(this.value); });
+  if(l){
+    l.addEventListener("change", async function(e){
+      var sel = e.target.closest ? e.target.closest("[data-role]") : null;
+      if(!sel) return;
+      await erUpdate(sel.getAttribute("data-role"), { role: sel.value }, "Role updated.");
+    });
+    l.addEventListener("click", async function(e){
+      var t=e.target;
+      var ap=t.closest("[data-appr]"), dn=t.closest("[data-deny]"), ar=t.closest("[data-arch]"), dl=t.closest("[data-del]");
+      if(ap){ await erUpdate(ap.getAttribute("data-appr"), { status:"approved" }, "User approved."); return; }
+      if(dn){ await erUpdate(dn.getAttribute("data-deny"), { status:"denied" }, "User denied."); return; }
+      if(ar){ await erUpdate(ar.getAttribute("data-arch"), { status:"archived" }, "User archived."); return; }
+      if(dl){
+        if(!confirm("Permanently delete this user's profile? Archive is the reversible option. If this person signs in again they will return as a new pending account.")) return;
+        var uid=dl.getAttribute("data-del");
+        try{
+          await deleteDoc(doc(db,"users",uid));
+          ROSTER = ROSTER.filter(function(x){ return x.uid!==uid; });
+          renderRoster($("erSearch").value||"");
+          P.toast("User deleted.");
+        }catch(err){ P.toast("Delete failed: "+(err&&err.code?err.code:"check permissions")); }
+      }
+    });
+  }
 })();
 
 /* init */
 if(configured){
   try {
     const app = initializeApp(firebaseConfig);
-    auth = getAuth(app); db = getFirestore(app); storage = getStorage(app);
+    auth = getAuth(app); db = getFirestore(app);
     PERM_REF = doc(db,"config","permissions");
     onAuthStateChanged(auth, onAuth);
   } catch(e){ P.toast("Firebase failed to initialize."); }
