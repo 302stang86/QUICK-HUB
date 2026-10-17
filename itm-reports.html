@@ -1435,6 +1435,12 @@ async function enterApp(fbUser){
   document.getElementById('adminToggle').style.display='none';   // locking not used
   const mub=document.getElementById('manageUsersBtn'); if(mub) mub.style.display='none';
   const adb=document.getElementById('adminDashBtn'); if(adb) adb.style.display = IS_ADMIN?'':'none';
+  // Auto-open the Admin Dashboard when arriving from the Administration card (itm-reports.html#admin)
+  var __wantAdmin = location.hash.toLowerCase()==='#admin' || /[?&](admin=1|view=admin)/i.test(location.search);
+  if(IS_ADMIN && __wantAdmin && !window.__itmAdminOpened){
+    window.__itmAdminOpened = true;
+    setTimeout(function(){ try{ adminDashboard(); }catch(e){} }, 350);
+  }
   ADMIN_UNLOCKED=true;   // fields editable (locking feature unused)
   updateLockPill();
   authScreen.classList.add('hidden');
