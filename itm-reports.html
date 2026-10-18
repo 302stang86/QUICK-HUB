@@ -1256,7 +1256,90 @@ const DELUGE_SA = {
   disclaimer:DISCLAIMER
 };
 
-const ADDON_FORMS = [DRY, AF, DELUGE_A, DELUGE_SA];
+/* ---- Standpipe & Hose Systems (FD-SP) — NFPA 25 Chapter 6 ---- */
+const STANDPIPE = {
+  id:"standpipe", code:"FD-SP", addon:true,
+  title:"Annual Standpipe & Hose System Inspection, Testing and Maintenance Report",
+  header:{ risersLabel:"This Report is for Standpipe Riser(s)" },
+  sections:[
+    { name:"Pre-Inspection", items:[
+      {n:1, text:"Is the standpipe system monitored by a central monitoring station?", type:"yn"},
+      {n:2, text:"The Fire alarm panel is in normal status and the standpipe system is in service upon arrival", type:"check"},
+      {n:3, text:"Local Dispatch and/or Monitoring company notified of system testing:", type:"check"},
+      {n:4, text:"All pertinent parties notified before testing", type:"check"},
+      {n:5, text:"Fire Dispatch:", type:"fields", fields:[
+        {id:"standpipe_firedispatch", label:"Fire Dispatch", w:"wide"},
+        {id:"standpipe_firedispatch_phone", label:"Phone"},
+        {id:"standpipe_firedispatch_id", label:"Name or Badge ID #"}]},
+      {n:6, text:"Monitoring company:", type:"fields", fields:[
+        {id:"standpipe_moncompany", label:"Monitoring company", w:"wide"},
+        {id:"standpipe_moncompany_phone", label:"Phone"},
+        {id:"standpipe_moncompany_id", label:"Name or Badge ID #"}]}
+    ], compliance:"c_1_6", deficiency:"d_1_6", note:"1) FDEC recommends all water flow and supervisory devices to be monitored, per IBC 901.6, 903.4"},
+
+    { name:"System Identification", items:[
+      {n:7, text:"Standpipe class (I, II, or III) and type (automatic wet, automatic dry, semiautomatic dry, manual wet, or manual dry) identified at the riser", type:"check"},
+      {n:8, text:"Hydraulic design/information nameplate or placard attached and legible", type:"check"},
+      {n:9, text:"Control valves, isolation valves, drains, and test connections properly identified and accessible", type:"check"},
+      {n:10, text:"Fire department connection (FDC) is properly identified, visible, and designated for the standpipe where separate", type:"check"},
+      {n:11, text:'Standpipe and hose valve signage ("STANDPIPE") in place and legible', type:"check"}
+    ], compliance:"c_7_11", deficiency:"d_7_11"},
+
+    { name:"Additional NFPA Required Inspections", items:[
+      {n:12, text:"Fire Alarm system inspected within the past year", type:"check_dates", dateId:"standpipe_i12_date", byId:"standpipe_i12_by"},
+      {n:13, text:"Fire pump(s) inspected and tagged within the past year, where applicable", type:"check_dates", dateId:"standpipe_i13_date", byId:"standpipe_i13_by"},
+      {n:14, text:"5 Year standpipe flow test at the hydraulically most remote outlet", type:"dates_only", dateId:"standpipe_i14_date", byId:"standpipe_i14_by"},
+      {n:15, text:"5 Year hydrostatic test (dry, manual, or semiautomatic standpipe systems)", type:"dates_only", dateId:"standpipe_i15_date", byId:"standpipe_i15_by"},
+      {n:16, text:"System backflow device tested within the past 3 years, where applicable", type:"check_dates", dateId:"standpipe_i16_date", byId:"standpipe_i16_by"}
+    ], compliance:"c_12_16", deficiency:"d_12_16"},
+
+    { name:"Visual Inspection", items:[
+      {n:17, text:"Standpipe piping and fittings in good condition — no leaks, corrosion, mechanical damage, or external load", type:"check"},
+      {n:18, text:"Hangers and supports in place, secure, and not damaged", type:"check"},
+      {n:19, text:"Control valves open and sealed, locked, or electrically supervised; no leaks", type:"check"},
+      {n:20, text:"Hose connection valves: handwheels present and operable; caps/plugs in place with gaskets; threads undamaged; no leaks", type:"check"},
+      {n:21, text:"Pressure-regulating / pressure-reducing devices in place at hose connections where required and set correctly", type:"check"},
+      {n:22, text:"Required reducers, adapters, and flow-restricting devices in place at hose connections", type:"check"},
+      {n:23, text:"Hose connections unobstructed and accessible; cabinets accessible, undamaged, and identified, where provided", type:"check"},
+      {n:24, text:"Occupant hose (Class II/III), nozzles, racks, and reels present and in good condition — or removed per AHJ and marked N/A", type:"check"},
+      {n:25, text:"FDC: couplings/swivels rotate freely; plugs/caps in place; gaskets good; check valve not leaking; interior free of obstruction", type:"check"},
+      {n:26, text:"FDC automatic drip / ball-drip functioning and FDC check valve holds", type:"check"},
+      {n:27, text:"All water gauges in good condition and replaced within the past 5 years", type:"check_gauge"}
+    ], compliance:"c_17_27", deficiency:"d_17_27"},
+
+    { name:"Testing & Flow Data", items:[
+      {n:28, text:"Accessible control valves exercised through full range and, if required, lubricated", type:"check"},
+      {n:29, text:"Tamper / supervisory switch signals verified at the panel within two revolutions and restored, or valves locked or sealed", type:"check"},
+      {n:30, text:"Waterflow alarm device tested and signal verified (automatic standpipe), where provided", type:"check"},
+      {n:31, text:"Alarm device(s) above the FDC working properly", type:"check"},
+      {n:32, text:"Adequate drainage available for main drain testing", type:"check"},
+      {n:33, text:"Beginning Static Pressure (psi):", type:"numfield", fid:"standpipe_static"},
+      {n:34, text:"Residual Pressure during flow (psi):", type:"numfield", fid:"standpipe_resid"},
+      {n:35, text:"Return Static Pressure (psi):", type:"numfield", fid:"standpipe_return"},
+      {n:36, text:"Time to return to static Pressure (sec.):", type:"numfield", fid:"standpipe_rtime"},
+      {n:37, text:"Flow at hydraulically most remote outlet during 5-year flow test (gpm), where performed:", type:"numfield", fid:"standpipe_flow"},
+      {n:38, text:"Required / demand pressure at that outlet (psi), where performed:", type:"numfield", fid:"standpipe_demand"},
+      {n:39, text:"Water supply met the system demand (automatic/semiautomatic), or manual supply verified via the FDC, as applicable", type:"check"}
+    ], compliance:"c_28_39", deficiency:"d_28_39"},
+
+    { name:"Pressure-Regulating Device & 5-Year Tests", items:[
+      {n:40, text:"Pressure-reducing valve (hose) full-flow test performed (5-year)", type:"dates_only", dateId:"standpipe_i40_date", byId:"standpipe_i40_by"},
+      {n:41, text:"Pressure-reducing valve (hose) partial-flow test performed this inspection (annual), where applicable", type:"check"},
+      {n:42, text:"Standpipe hydrostatic test at 200 psi (or 50 psi above max pressure) for 2 hours — dry, manual, or semiautomatic (5-year)", type:"dates_only", dateId:"standpipe_i42_date", byId:"standpipe_i42_by"},
+      {n:43, text:"Occupant hose service tested or replaced per NFPA 1962, where hose is provided (5-year / 3-year)", type:"dates_only", dateId:"standpipe_i43_date", byId:"standpipe_i43_by"}
+    ], compliance:"c_40_43", deficiency:"d_40_43"},
+
+    { name:"Post Inspection", items:[
+      {n:44, text:"All valves returned to normal position; caps, plugs, and reducers reinstalled", type:"check"},
+      {n:45, text:"Fire alarm panel reset and cleared after inspection", type:"check"},
+      {n:46, text:"Standpipe system returned to full service and pertinent parties notified after inspection", type:"check"}
+    ], compliance:"c_44_46", deficiency:"d_44_46"}
+  ],
+  passLabel:"The Standpipe System(s) are free from Critical & Impaired Deficiencies:",
+  disclaimer:DISCLAIMER
+};
+
+const ADDON_FORMS = [DRY, AF, DELUGE_A, DELUGE_SA, STANDPIPE];
 const FORMS = CORE_FORMS.concat(ADDON_FORMS);
 
 
@@ -1598,7 +1681,7 @@ function removeFormTab(id){
   buildTabs(); renderForm(ACTIVE_FORM);
 }
 function addonName(f){
-  return ({dry:'Dry System', af:'Antifreeze System', deluge_a:'Deluge/Preaction (Annual)', deluge_sa:'Deluge/Preaction (Semi-Annual)'})[f.id]||f.title;
+  return ({dry:'Dry System', af:'Antifreeze System', deluge_a:'Deluge/Preaction (Annual)', deluge_sa:'Deluge/Preaction (Semi-Annual)', standpipe:'Standpipe System'})[f.id]||f.title;
 }
 function shortName(f){
   return ({
@@ -1613,7 +1696,8 @@ function shortName(f){
     dry:'Annual Dry Valve Inspection',
     af:'Annual Antifreeze Inspection',
     deluge_a:'Annual Deluge/Preaction Inspection',
-    deluge_sa:'Semi-Annual Deluge/Preaction Inspection'
+    deluge_sa:'Semi-Annual Deluge/Preaction Inspection',
+    standpipe:'Annual Standpipe & Hose Inspection'
   })[f.id]||f.title||f.code;
 }
 let DIRTY=false;
@@ -1766,7 +1850,7 @@ function buildPaper(fid){
 
   /* sections */
   if(f.correction) renderCorrection(f,paper);
-  else if(f.addon) renderAddon(f,paper);
+  else if(f.addon && f.repeatable) renderAddon(f,paper);
   else if(f.id==='fd24') renderGridForm(f,paper);
   else if(f.id==='fd25') renderFDC(f,paper);
   else renderStandard(f,paper);
