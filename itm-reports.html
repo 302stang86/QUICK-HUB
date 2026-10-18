@@ -2505,7 +2505,8 @@ function extractDeficienciesFromRecord(rec){
     secs.forEach(sec=>{
       const raw=store[sec.key];
       if(sec.freeText){
-        if(raw && String(raw).trim()) out.push({text:String(raw).trim(), source:shortName(f)+' — '+sec.name});
+        // Free-text notes carry no deficiency type, so they are not Critical or
+        // Impairment and are not carried over.
         return;
       }
       let arr=raw;
@@ -2517,6 +2518,8 @@ function extractDeficienciesFromRecord(rec){
           const type=String(r.t||'').trim();
           if(!comment && !type) return;       // blank row
           if(!comment) return;                // keep only rows with actual text
+          // Carry ONLY Critical and Impairment deficiencies.
+          if(type!=='Critical' && type!=='Impairment') return;
           // Build a readable item label from the stored item number.
           let itemLabel=sec.name;
           if(r.n!=null && r.n!=='' && r.n!=='__custom'){
@@ -2536,6 +2539,7 @@ function extractDeficienciesFromRecord(rec){
         if(store[base+'_no']===true){
           const why=String(store[base+'_why']||'').trim();
           const type=String(store[base+'_deftype']||'').trim();
+          if(type!=='Critical' && type!=='Impairment') return;
           if(why){ out.push({ text: why, source: shortName(f)+' — Item '+it.n + (type?(' ['+type+']'):'') }); }
         }
       });
@@ -2608,7 +2612,7 @@ async function pullPriorDeficiencies(statusEl, redraw){
   }
   const defs = extractDeficienciesFromRecord(rec);
   if(defs.length===0){
-    statusEl.textContent='Found that report, but it had no listed deficiencies.';
+    statusEl.textContent='Found that report — it had no Critical or Impairment deficiencies to carry over.';
     statusEl.className='cpull-status';
     // still stamp the reference date from that report if blank
     stampRefDate(rec);
