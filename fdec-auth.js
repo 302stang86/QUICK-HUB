@@ -42,6 +42,7 @@ const DEFAULT_PAGES = {
   sop:             ["new","tech","manager","admin"],
   dispatch:        ["new","tech","manager","admin"],
   troubleshooting: ["new","tech","manager","admin"],
+  frequencies:     ["new","tech","manager","admin"],
   incident:        ["new","tech","manager","admin"],
   itm:             ["tech","manager","admin"],
   servicetrade:    ["tech","manager","admin"],

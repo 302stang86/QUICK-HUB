@@ -53,12 +53,14 @@
   .card .dispatch .plain { font-size: 13px; color: var(--text); }
   .card .notes { color: #55606e; font-size: 11px; }
   .card .notes:empty { display: none; }
-  .card-actions { margin-top: 4px; }
+  .card-actions { margin-top: 4px; display: flex; gap: 14px; align-items: center; }
   .edit-btn {
     background: none; border: none; color: #8a94a3; font-size: 11px; cursor: pointer;
     padding: 2px 0; text-decoration: underline;
   }
   .edit-btn:hover { color: var(--navy); }
+  .map-btn { color: var(--navy); font-size: 11px; text-decoration: underline; font-weight: 600; white-space: nowrap; }
+  .map-btn:hover { color: var(--red); }
   .edited-tag { font-size: 10px; color: var(--red); margin-left: 6px; }
 
   /* edit mode */
@@ -115,7 +117,7 @@ body>*{position:relative;z-index:1;}
     <div class="grid" id="grid"></div>
     <div class="no-results" id="noResults">No matching city or dispatch number.</div>
     <p class="foot">
-      Source list dated October 8, 2026. Tap a dispatch number to call from a mobile device.<br>
+      Source list dated October 8, 2026. Tap a dispatch number to call, or Open in Maps to navigate, from a mobile device.<br>
       Edits save in this browser only &mdash; they are not shared between devices or other technicians.
     </p>
   </div>
@@ -153,8 +155,15 @@ body>*{position:relative;z-index:1;}
     };
   }
   function telHref(s) {
-    var digits = (s.match(/\d/g) || []).join("");
-    return digits.length >= 10 ? "tel:" + digits : null;
+    // Use the FIRST 10-digit US number in the string, so rows that list a
+    // second number or extension still dial correctly.
+    var m = (s || "").match(/(\d{3})\D*(\d{3})\D*(\d{4})/);
+    return m ? "tel:" + m[1] + m[2] + m[3] : null;
+  }
+  function mapHref(city) {
+    // Opens the phone's maps app searching the city's fire department.
+    return "https://www.google.com/maps/search/?api=1&query=" +
+      encodeURIComponent((city || "") + " MI fire department");
   }
   function esc(s) { return (s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
   function highlight(text, q) {
@@ -189,7 +198,10 @@ body>*{position:relative;z-index:1;}
       '<div class="city">' + highlight(r.city, q) + (ef.isEdited ? '<span class="edited-tag">edited</span>' : '') + '</div>' +
       '<div class="dispatch">' + dispatchHtml(ef.dispatch, q) + '</div>' +
       '<div class="notes">' + highlight(ef.notes, q) + '</div>' +
-      '<div class="card-actions"><button class="edit-btn" data-act="edit">Edit</button></div>' +
+      '<div class="card-actions">' +
+        '<a class="map-btn" href="' + mapHref(r.city) + '" target="_blank" rel="noopener">Open in Maps</a>' +
+        '<button class="edit-btn" data-act="edit">Edit</button>' +
+      '</div>' +
       '</div>';
   }
 

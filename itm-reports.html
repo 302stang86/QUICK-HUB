@@ -1661,7 +1661,63 @@ function inputEl(id, opts={}){
   if(opts.placeholder) i.placeholder=opts.placeholder;
   i.value=val(id);
   i.oninput=()=>{ setVal(id,i.value); if(opts.onchange) opts.onchange(); flash(); };
+  if(/_firedispatch$/.test(id)) attachDispatchLookup(i, id);
+  if(/_job_csz$/.test(id)) attachCityAutostamp(i, id);
   return i;
+}
+
+/* Per-form references to the live Fire Dispatch input, so the city field can
+   fill it without a full re-render. */
+const FD_FIELD_REFS = {};
+
+/* Fire Dispatch auto-stamp (manual): the "Fire Dispatch" field is a city lookup
+   backed by the Local Dispatch directory. Choosing a city fills the adjacent
+   Phone field with that city's dispatch number, unless a number is already there. */
+function attachDispatchLookup(i, id){
+  i.setAttribute('list','fdDispatchCities');
+  i.setAttribute('autocomplete','off');
+  const prefix=id.replace(/_firedispatch$/,'');
+  FD_FIELD_REFS[prefix]=FD_FIELD_REFS[prefix]||{}; FD_FIELD_REFS[prefix].city=i;
+  const phoneId=id+'_phone';
+  const fill=()=>{
+    const map=window.FD_DISPATCH_MAP||{};
+    const num=map[(i.value||'').trim().toLowerCase()];
+    if(!num) return;
+    const fl=i.closest('.fl');
+    const nextFl=fl && fl.nextElementSibling;
+    const pin=nextFl && nextFl.querySelector('input,textarea');
+    if(pin && !pin.value){ pin.value=num; setVal(phoneId, num); flash(); }
+    else if(!val(phoneId)){ setVal(phoneId, num); }
+  };
+  i.addEventListener('change', fill);
+  i.addEventListener('input', fill);
+}
+
+/* Fire Dispatch auto-stamp (automatic): read the city from the customer
+   "City, State, Zip" field and, if it matches the dispatch directory, fill the
+   Fire Dispatch city and Phone for this form — without overwriting entered values. */
+function attachCityAutostamp(i, id){
+  const prefix=id.replace(/_job_csz$/,'');
+  const run=()=>{
+    const map=window.FD_DISPATCH_MAP||{};
+    const city=(i.value||'').split(',')[0].trim();
+    if(!city) return;
+    const num=map[city.toLowerCase()];
+    if(!num) return;
+    const fdId=prefix+'_firedispatch', phId=prefix+'_firedispatch_phone';
+    const cityInput=(FD_FIELD_REFS[prefix]||{}).city;
+    let changed=false;
+    if(!val(fdId)){ setVal(fdId, city); if(cityInput && !cityInput.value) cityInput.value=city; changed=true; }
+    if(!val(phId)){
+      setVal(phId, num);
+      if(cityInput){ const fl=cityInput.closest('.fl'); const nf=fl&&fl.nextElementSibling;
+        const pin=nf&&nf.querySelector('input,textarea'); if(pin && !pin.value) pin.value=num; }
+      changed=true;
+    }
+    if(changed) flash();
+  };
+  i.addEventListener('change', run);
+  i.addEventListener('blur', run);
 }
 
 /* X checkbox */
@@ -3493,6 +3549,22 @@ function draftPicker(keys, drafts){
   onScroll();
 })();
 
+</script>
+<script>
+/* Fire dispatch directory (city -> dispatch number) for report auto-stamp. */
+window.FD_DISPATCH=[{c:"Adrian",p:"(517) 263-0524"},{c:"Albion",p:"(269) 781-0911"},{c:"Algonac",p:"(810) 985-8115"},{c:"Allen Park",p:"(734) 324-4438"},{c:"Alpena",p:"(989) 354-9111"},{c:"Ann Arbor",p:"(734) 477-6550"},{c:"Auburn",p:"(989) 892-9551"},{c:"Auburn Hills",p:"(248) 370-9444"},{c:"Bad Axe",p:"(989) 269-6421"},{c:"Bangor Twp.",p:"(989) 892-9551"},{c:"Battlecreek",p:"(269) 781-0912"},{c:"Bay City",p:"(989) 892-9551"},{c:"Beaverton",p:"(989) 426-9284"},{c:"Berkley",p:"(248) 658-3380"},{c:"Beverly Hills",p:"(248) 540-3400"},{c:"Big Rapids",p:"(231) 796-4811"},{c:"Birmingham",p:"(248) 644-3405"},{c:"Bloomfield Hills",p:"(248) 644-4200"},{c:"Bloomfield Twp.",p:"(248) 433-7755"},{c:"Bridgeport",p:"(989) 797-4580"},{c:"Brighton",p:"(517) 546-9111"},{c:"Brownstown Twp.",p:"(734) 675-1300"},{c:"Bunea Vista Twp.",p:"(989) 755-4103"},{c:"Burton",p:"(810) 732-9911"},{c:"Cadillac",p:"(231) 779-9211"},{c:"Caledonia",p:"(800) 249-0911"},{c:"Canton",p:"(734) 394-5400"},{c:"Carleton",p:"(734) 243-7070"},{c:"Caro",p:"(989) 673-8738"},{c:"Cascade",p:"(616) 949-1320"},{c:"Cedar Springs",p:"(616) 336-3113"},{c:"Charlevoix",p:"(231) 439-3300"},{c:"Charlotte",p:"(517) 372-8217"},{c:"Chelsea",p:"(734) 475-1339"},{c:"Chesterfield",p:"(586) 949-2322"},{c:"Clare",p:"(989) 539-1336"},{c:"Clarkston",p:"(248) 858-4911"},{c:"Clawson",p:"(248) 524-3477"},{c:"Clay County",p:"(810) 794-9381"},{c:"Clinton",p:"(517) 263-0524"},{c:"Clinton Twp.",p:"(586) 263-8447"},{c:"Clio",p:"(810) 686-5010"},{c:"Coldwater",p:"(517) 278-3091"},{c:"Commerce Twp.",p:"(248) 858-4911"},{c:"Davison",p:"(810) 732-9911"},{c:"Dearborn",p:"(313) 943-2870"},{c:"Dearborn Heights",p:"(313) 277-7400"},{c:"Dehli Twp.",p:"(517) 272-6026"},{c:"Delta Twp",p:"(517) 372-8217"},{c:"Detroit",p:"(313) 596-1660"},{c:"DeWitt",p:"(989) 224-6792"},{c:"Dexter",p:"(734) 973-0911"},{c:"Dundee",p:"(734) 243-7070"},{c:"East Pointe",p:"(586) 777-6700"},{c:"Eaton Co.",p:"(517) 372-8217"},{c:"Escanaba",p:"(906) 786-5911"},{c:"Essexville",p:"(989) 892-9551"},{c:"Farmington",p:"(248) 474-4700"},{c:"Farmington Hills",p:"(248) 871-2600"},{c:"Fenton",p:"(810) 629-2242"},{c:"Ferndale",p:"(248) 541-3650"},{c:"Flint",p:"(810) 232-2222"},{c:"Flint Twp.",p:"(810) 732-4413"},{c:"Flushing",p:"(810) 732-9911"},{c:"Fort Gratiot",p:"(810) 985-8115"},{c:"Fowlerville",p:"(517) 272-6026"},{c:"Frankenmuth",p:"(989) 652-9901"},{c:"Franklin",p:"(248) 858-4951"},{c:"Fraser",p:"(586) 293-1425"},{c:"Fremont",p:"(888)-254-5026"},{c:"Garden City",p:"(734) 467-5632"},{c:"Gaylord",p:"(989) 732-5141"},{c:"Genesee County",p:"(810) 732-9911"},{c:"Gladwin",p:"(989) 426-9284"},{c:"Grand Blanc",p:"(810) 732-9911"},{c:"Grand Haven",p:"(800) 249-0911"},{c:"Grand Ledge",p:"(517) 372-8217"},{c:"Grand Rapids",p:"(616) 456-3400"},{c:"Grandville",p:"(616) 632-6100"},{c:"Grayling",p:"(989) 348-6341"},{c:"Gregory",p:"(734)-973-0911"},{c:"Grosse Pointe Public Safety",p:"(313) 417-1183"},{c:"Grosse Pointe Woods Public Safety",p:"(313) 343-2400"},{c:"Hale",p:"(989) 362-1430"},{c:"Hamtramck",p:"(313) 876-7778"},{c:"Harbor Beach",p:"(989) 269-6421"},{c:"Harper Woods",p:"(313) 343-2530"},{c:"Harrison",p:"(989) 539-1336"},{c:"Harrison Twp.",p:"(586) 469-5502"},{c:"Hartland Twp.",p:"(517) 546-9111"},{c:"Hazel Park",p:"(248) 542-6000"},{c:"Highland Park",p:"(313) 852-7338"},{c:"Hillman",p:"(989) 785-4238"},{c:"Hillsdale",p:"(517) 523-9913"},{c:"Holland",p:"(800) 249-0911"},{c:"Holly",p:"(248) 858-4911"},{c:"Holt",p:"(517) 272-6026"},{c:"Howell",p:"(517) 546-9111"},{c:"Hudsonville",p:"(616) 832-6359"},{c:"Huntington Woods",p:"(248) 541-1180"},{c:"Imlay City",p:"(810) 667-0292"},{c:"Independence Twp.",p:"(248) 858-4950"},{c:"Inkster",p:"(734) 722-9600"},{c:"Jackson",p:"(517) 788-4377"},{c:"Kalamazoo",p:"(269) 337-8994"},{c:"Kawkawlin",p:"(989) 892-9551"},{c:"Kawkawlin Twp.",p:"(989) 686-1120"},{c:"Kentwood",p:"(616) 632-6359"},{c:"Lake Orion",p:"(248) 858-4911"},{c:"Lansing",p:"(517) 272-6002"},{c:"Lapeer",p:"(810) 667-0292"},{c:"Lenawee Co. Sheriff Dispatch",p:"(517) 263-0524"},{c:"Lincoln Park",p:"(734) 324-4438"},{c:"Linden Twp.",p:"(734) 973-0911"},{c:"Livingston Co. Fire Dispatch",p:"(517) 546-9111"},{c:"Livonia",p:"(734) 421-1313"},{c:"Ludington",p:"(231) 869-5858"},{c:"Lyon Twp.",p:"(248) 858-4911"},{c:"Macomb",p:"(586) 469-5502"},{c:"Macomb Twp.",p:"(586) 469-5502"},{c:"Madison Heights",p:"(248) 585-6111"},{c:"Marine City",p:"(810) 985-8115"},{c:"Marion",p:"(888) 960-1630"},{c:"Marquette",p:"(906) 475-9922"},{c:"Marysville",p:"(810) 985-8115"},{c:"Mason",p:"(517) 272-6002"},{c:"Melvindale",p:"(313) 429-1070"},{c:"Midland",p:"(989) 839-6466"},{c:"Milan",p:"(734) 439-1551"},{c:"Milford",p:"(248) 858-4911"},{c:"Mio",p:"(989) 826-3214"},{c:"Monroe",p:"(734) 243-7070"},{c:"Mt. Clemens",p:"(586) 263-8447"},{c:"Mt. Morris",p:"(810) 732-9911"},{c:"Mt. Pleasant",p:"(989) 773-1000"},{c:"Muskegan",p:"(231) 722-3524"},{c:"New Baltimore",p:"(586) 949-2322"},{c:"New Haven",p:"(586) 469-5502"},{c:"Northville",p:"(248) 349-9400"},{c:"Norton Shores",p:"(231) 722-3524"},{c:"Novi",p:"(248) 347-0575"},{c:"Oak Park Public Safety",p:"(248) 691-7447"},{c:"Oakland County Sheriff",p:"(248) 858-4911"},{c:"Okemos",p:"(517) 272-6013"},{c:"Orion Twp.",p:"(248) 858-4911"},{c:"Oscoda",p:"(989) 362-1430"},{c:"Owosso",p:"(989) 743-9111"},{c:"Oxford",p:"(248) 628-2525"},{c:"Petoskey",p:"(231) 439-3300"},{c:"Pinckney",p:"(517) 546-9111"},{c:"Pittsfield Twp.",p:"(734) 944-7218"},{c:"Plymouth Twp.",p:"(734) 354-3250"},{c:"Pontiac",p:"(248) 618-7550"},{c:"Port Huron",p:"(810) 985-8115"},{c:"Port Huron Twp.",p:"(810) 985-8115"},{c:"Portage",p:"(269) 488-8911"},{c:"Redford",p:"(313) 387-2552"},{c:"Richmond",p:"(586) 727-4000"},{c:"Rochester",p:"(248) 651-4470"},{c:"Rochester Hills",p:"(248) 656-4650"},{c:"Rockford",p:"(616) 632-6100"},{c:"Romeo",p:"(586) 752-3587"},{c:"Roscommon",p:"(989) 275-0911"},{c:"Roseville",p:"(586) 777-6700"},{c:"Royal Oak",p:"(248) 246-3500"},{c:"Saginaw",p:"(989) 797-4580"},{c:"Saginaw Twp.",p:"(989) 792-9691"},{c:"Saline",p:"(734) 994-4111"},{c:"Sandusky",p:"(810) 648-2000"},{c:"Sanford",p:"(989) 839-6466"},{c:"Sault St. Marie",p:"(906) 495-7488"},{c:"Shelby Twp.",p:"(586) 731-2121"},{c:"South Haven",p:"(269) 637-5151"},{c:"South Lyon",p:"(248) 412-8697"},{c:"Southfield",p:"(248) 354-1010"},{c:"Southgate",p:"(734) 324-4438"},{c:"Springfield",p:"(269) 781-0911"},{c:"Springfield Twp.",p:"(248) 858-4951"},{c:"St. Clair Shores",p:"(586) 777-6700"},{c:"St. Johns",p:"(989) 224-6792"},{c:"Standish",p:"(989) 846-4561"},{c:"Sterling Heights",p:"(586) 469-5502"},{c:"Stevensville",p:"(269) 429-2444"},{c:"Sturgis",p:"(269) 467-4195"},{c:"Swartz Creek",p:"(810) 732-9911"},{c:"Sylvan Lake",p:"(248) 682-2104"},{c:"Tawas City",p:"(989) 362-1430"},{c:"Taylor",p:"(734) 287-6611"},{c:"Tecumseh",p:"(517) 263-0524"},{c:"Three Rivers",p:"(269) 467-4195"},{c:"Traverse City",p:"(231) 922-4556"},{c:"Troy",p:"(248) 524-3478"},{c:"Utica",p:"(586) 469-5151"},{c:"Walled Lake",p:"(248) 858-4911"},{c:"Warren",p:"(586) 574-4727"},{c:"Washington Twp.",p:"(586) 469-5502"},{c:"Waterford",p:"(248) 618-7550"},{c:"Wayne",p:"(734) 722-9600"},{c:"West Bloomfield",p:"(248) 975-9200"},{c:"West Branch",p:"(989) 345-9911"},{c:"Westland",p:"(313) 943-2201"},{c:"White Lake",p:"(248) 698-4400"},{c:"Whitehall",p:"(231) 722-3524"},{c:"Williamston",p:"(517) 272-6026"},{c:"Wixom",p:"(248) 858-4930"},{c:"Wyoming",p:"(269) 983-3060"},{c:"Ypsilanti",p:"(734) 477-6445"},{c:"Ypsilanti Twp.",p:"(734) 973-0911"}];
+(function(){
+  var list=window.FD_DISPATCH||[];
+  window.FD_DISPATCH_MAP={};
+  list.forEach(function(d){ window.FD_DISPATCH_MAP[d.c.toLowerCase()]=d.p; });
+  function build(){
+    if(document.getElementById('fdDispatchCities')) return;
+    var dl=document.createElement('datalist'); dl.id='fdDispatchCities';
+    list.forEach(function(d){ var o=document.createElement('option'); o.value=d.c; o.label=d.p; dl.appendChild(o); });
+    document.body.appendChild(dl);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', build); else build();
+})();
 </script>
 </body>
 </html>
