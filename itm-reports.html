@@ -106,6 +106,54 @@ button{font-family:inherit}
 .correction-ref .cref-box:last-child{border-right:none}
 .correction-list .item{grid-template-columns:34px 1fr}
 .correction-list .item .txt{padding:6px 10px}
+/* carried-over deficiencies (correction report auto-populate) */
+.cpull-wrap{margin-top:8px}
+.cpull-btn{background:var(--navy);color:#fff;border:none;border-radius:7px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer}
+.cpull-btn:hover{background:var(--navy2,#16294a)}
+.cpull-btn:disabled{opacity:.6;cursor:default}
+.cpull-status{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.4;min-height:14px}
+.cpull-status.ok{color:var(--ok);font-weight:600}
+.cpull-status.err{color:var(--red);font-weight:600}
+.carried-body{border:1px solid var(--line);border-top:none}
+.carried-empty{padding:14px 12px;font-size:12.5px;color:var(--muted);font-style:italic;line-height:1.5}
+.carried-counts{display:flex;gap:16px;padding:8px 12px;background:#eef2f8;border-bottom:1px solid var(--line2);font-size:12px;font-weight:700}
+.carried-counts .cc-fixed{color:var(--ok)}
+.carried-counts .cc-rem{color:var(--red)}
+.carried-row{display:grid;grid-template-columns:30px 1fr auto 26px;align-items:start;gap:0;border-bottom:1px solid var(--line2)}
+.carried-row:last-child{border-bottom:none}
+.carried-row:nth-child(even){background:var(--shade)}
+.carried-row.is-fixed{background:#f0f8f2}
+.carried-num{padding:9px 6px;text-align:center;font-weight:700;color:var(--navy);font-size:12.5px}
+.carried-mid{padding:7px 8px}
+.carried-text{width:100%;box-sizing:border-box;border:none;border-bottom:1.4px solid var(--navy);background:transparent;font-size:12.5px;font-family:inherit;line-height:1.4;resize:none;padding:3px 4px;color:var(--ink)}
+.carried-text:focus{outline:none;background:#fffde9}
+.carried-src{font-size:10.5px;color:var(--muted);margin-top:4px;font-style:italic}
+.carried-toggle{display:flex;flex-direction:column;gap:4px;padding:7px 8px;align-items:stretch}
+.ctog{border:1.4px solid var(--line);background:#fff;border-radius:6px;padding:5px 10px;font-size:11.5px;font-weight:700;cursor:pointer;color:var(--muted);white-space:nowrap}
+.ctog-fix.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.ctog-rem.on{background:var(--red);border-color:var(--red);color:#fff}
+.ctog:hover{border-color:var(--navy)}
+.carried-rm{align-self:center;background:#fff;border:1px solid var(--line);color:var(--red);width:22px;height:22px;border-radius:50%;font-size:15px;line-height:1;cursor:pointer;margin:4px}
+.carried-rm:hover{background:#fdecea;border-color:var(--red)}
+.carried-ctrls{display:flex;gap:8px;flex-wrap:wrap}
+.carried-clear{border-color:var(--red)!important;color:var(--red)!important}
+@media print{
+  .cpull-wrap,.carried-rm,.carried-clear,.carried-ctrls .defadd{display:none!important}
+  .carried-empty{display:none!important}
+  .carried-counts{break-inside:avoid}
+  .carried-row{break-inside:avoid}
+  /* On print, collapse the interactive toggle to a simple status word. */
+  .carried-toggle{padding:7px 8px}
+  .ctog{display:none!important}
+  .ctog.on{display:inline-block!important;border:none;background:transparent!important;color:var(--ink)!important;padding:0;font-size:11px}
+  .ctog-fix.on{color:var(--ok)!important}
+  .ctog-rem.on{color:var(--red)!important}
+}
+@media(max-width:640px){
+  .carried-row{grid-template-columns:24px 1fr 26px}
+  .carried-toggle{grid-column:1/-1;flex-direction:row;border-top:1px dashed var(--line2)}
+  .ctog{flex:1}
+}
 .rp-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;cursor:pointer}
 .dw-row{padding:9px 12px;border-bottom:1px solid var(--line2)}
 .dw-row:last-child{border-bottom:none}
@@ -2420,16 +2468,211 @@ function complianceBlock(sec){
 }
 
 /* ---------- Deficiency Correction Report ---------- */
+/* ============================================================================
+   DEFICIENCY CORRECTION — auto-populate from a prior ITM report by job number
+============================================================================ */
+
+/* Extract every deficiency row from a GIVEN report's stored data (not the live
+   form). `rec` is a submitted-report record: {allValues, added, reports, ...}.
+   Returns a flat list of {text, source} for every deficiency/comment line that
+   has text, across every form in that report, regardless of type. */
+function extractDeficienciesFromRecord(rec){
+  const out=[];
+  const allValues=(rec && rec.allValues) || {};
+  const added=Array.isArray(rec && rec.added)? rec.added : [];
+  // forms present in that report, in the usual tab order
+  const order=CORE_FORMS.map(f=>f.id).concat(added.slice());
+  order.forEach(fid=>{
+    const f=FORMS.find(x=>x.id===fid); if(!f) return;
+    const store=allValues[fid]||{};
+    // Rebuild this form's deficiency sections using the SAME structure logic as
+    // deficiencySections(), but reading counts from the fetched store so addon
+    // instances resolve correctly.
+    const secs=[];
+    if(f.addon){
+      const count=Math.max(1, parseInt(store[f.id+'_instances'],10)||1);
+      for(let k=1;k<=count;k++){
+        const inst=f.repeatable.build('inst'+k);
+        const label=inst.groupTitle+(count>1?(' #'+k):'');
+        if(inst.deficiency) secs.push({name:label, key:inst.deficiency, items:inst.items||[]});
+      }
+      if(f.post && f.postDeficiency) secs.push({name:'Post Inspection', key:f.postDeficiency, items:f.post||[]});
+    } else if(f.sections){
+      f.sections.forEach(sec=>{ if(sec.deficiency) secs.push({name:sec.name, key:sec.deficiency, items:sec.items||[]}); });
+    }
+    if(f.id==='fd25') secs.push({name:'Additional Comments', key:'fd25_comments', freeText:true, items:[]});
+
+    secs.forEach(sec=>{
+      const raw=store[sec.key];
+      if(sec.freeText){
+        if(raw && String(raw).trim()) out.push({text:String(raw).trim(), source:shortName(f)+' — '+sec.name});
+        return;
+      }
+      let arr=raw;
+      if(typeof arr==='string'){ try{arr=JSON.parse(arr);}catch{arr=[];} }
+      if(Array.isArray(arr)){
+        arr.forEach(r=>{
+          if(!r) return;
+          const comment=String(r.c||'').trim();
+          const type=String(r.t||'').trim();
+          if(!comment && !type) return;       // blank row
+          if(!comment) return;                // keep only rows with actual text
+          // Build a readable item label from the stored item number.
+          let itemLabel=sec.name;
+          if(r.n!=null && r.n!=='' && r.n!=='__custom'){
+            const hit=(sec.items||[]).find(it=>String(it.n)===String(r.n));
+            itemLabel = hit ? ('#'+r.n) : ('#'+r.n);
+          }
+          const typeTag = type ? (' ['+type+']') : '';
+          out.push({ text: comment, source: shortName(f)+' — '+itemLabel + typeTag });
+        });
+      }
+    });
+    // FD-25 items 5/6/7 "If No, why?" deficiency text
+    if(fid==='fd25'){
+      (f.sections[0].items||[]).forEach(it=>{
+        if(!it.defType) return;
+        const base='fd25_i'+it.n;
+        if(store[base+'_no']===true){
+          const why=String(store[base+'_why']||'').trim();
+          const type=String(store[base+'_deftype']||'').trim();
+          if(why){ out.push({ text: why, source: shortName(f)+' — Item '+it.n + (type?(' ['+type+']'):'') }); }
+        }
+      });
+    }
+  });
+  return out;
+}
+
+/* Look up the most recent submitted report for a job number, in the cloud. */
+async function fetchReportByJobNumber(jobno){
+  if(!FB_READY || !FB_DB) throw new Error('nocloud');
+  const jn=String(jobno||'').trim();
+  if(!jn) throw new Error('nojob');
+  // Query by jobNumber. Order by submittedAt desc so we can take the newest.
+  // (A composite index on jobNumber+submittedAt may be required by Firestore;
+  //  if it isn't present we fall back to client-side sorting below.)
+  let snap;
+  try{
+    snap = await FB_DB.collection('reports')
+      .where('jobNumber','==',jn)
+      .orderBy('submittedAt','desc')
+      .limit(5).get();
+  }catch(e){
+    // Missing-index or rule issues on the ordered query: retry without orderBy.
+    snap = await FB_DB.collection('reports')
+      .where('jobNumber','==',jn)
+      .limit(25).get();
+  }
+  if(snap.empty) return null;
+  let recs=[];
+  snap.forEach(d=>recs.push({id:d.id, ...d.data()}));
+  // newest first (defensive sort in case orderBy was dropped)
+  recs.sort((a,b)=>{
+    const ta=a.submittedAt&&a.submittedAt.toMillis?a.submittedAt.toMillis():0;
+    const tb=b.submittedAt&&b.submittedAt.toMillis?b.submittedAt.toMillis():0;
+    return tb-ta;
+  });
+  return recs[0];
+}
+
+/* Read the carried-over deficiency list for the correction form. */
+function getCarried(){
+  let arr=val('correction_carried');
+  if(typeof arr==='string'){ try{arr=JSON.parse(arr);}catch{arr=[];} }
+  return Array.isArray(arr)?arr:[];
+}
+function setCarried(arr){ setVal('correction_carried', arr); }
+
+/* Pull deficiencies from the prior report and load them into the carried list. */
+async function pullPriorDeficiencies(statusEl, redraw){
+  const jobno = val('correction_ref_jobno');
+  if(!String(jobno||'').trim()){
+    statusEl.textContent='Enter the inspection report job # first.';
+    statusEl.className='cpull-status err'; return;
+  }
+  statusEl.textContent='Looking up job #'+jobno+'…';
+  statusEl.className='cpull-status';
+  let rec;
+  try{
+    rec = await fetchReportByJobNumber(jobno);
+  }catch(e){
+    if(e && e.message==='nocloud'){ statusEl.textContent='Cloud lookup is unavailable (offline or sign-in service down). You can still add deficiencies by hand below.'; }
+    else if(e && (e.code==='permission-denied' || /permission/i.test(e.message||''))){ statusEl.textContent="Couldn't read prior reports — your account may not have access. Ask an admin, or add deficiencies by hand below."; }
+    else { statusEl.textContent='Lookup failed: '+(e.message||e)+'. You can add deficiencies by hand below.'; }
+    statusEl.className='cpull-status err'; return;
+  }
+  if(!rec){
+    statusEl.textContent='No submitted report found for job #'+jobno+'. Check the number, or add deficiencies by hand below.';
+    statusEl.className='cpull-status err'; return;
+  }
+  const defs = extractDeficienciesFromRecord(rec);
+  if(defs.length===0){
+    statusEl.textContent='Found that report, but it had no listed deficiencies.';
+    statusEl.className='cpull-status';
+    // still stamp the reference date from that report if blank
+    stampRefDate(rec);
+    if(redraw) redraw();
+    return;
+  }
+  // Merge into carried list without duplicating identical (text+source) rows.
+  const carried=getCarried();
+  const existing=new Set(carried.map(c=>(c.text||'')+'||'+(c.source||'')));
+  let addedCount=0;
+  defs.forEach(d=>{
+    const keyStr=(d.text||'')+'||'+(d.source||'');
+    if(!existing.has(keyStr)){
+      carried.push({ text:d.text, source:d.source, status:'remaining' });  // default: still needs correction
+      existing.add(keyStr); addedCount++;
+    }
+  });
+  setCarried(carried);
+  stampRefDate(rec);
+  const when = rec.submittedAt&&rec.submittedAt.toDate ? rec.submittedAt.toDate().toLocaleDateString() : '';
+  statusEl.textContent='Loaded '+addedCount+' deficienc'+(addedCount===1?'y':'ies')+' from job #'+jobno+(when?(' ('+when+' report)'):'')+'. Mark each as corrected or still needs correction below.';
+  statusEl.className='cpull-status ok';
+  if(redraw) redraw();
+}
+
+/* If the correction "Date of inspection report" field is blank, fill it from
+   the fetched report's submission date. */
+function stampRefDate(rec){
+  if(val('correction_ref_date')) return;
+  const d = rec.submittedAt&&rec.submittedAt.toDate ? rec.submittedAt.toDate() : null;
+  if(d){ setVal('correction_ref_date', d.toLocaleDateString()); }
+}
+
 function renderCorrection(f,paper){
   // reference fields (which inspection this correction applies to)
   const ref=document.createElement('div'); ref.className='correction-ref';
   f.refFields.forEach(rf=>{
     const box=document.createElement('div'); box.className='cref-box';
     box.innerHTML=`<div class="hlab">${esc(rf.label)}</div>`;
-    box.appendChild(inputEl(rf.id,{cls:'grow'}));
+    const inp=inputEl(rf.id,{cls:'grow'});
+    box.appendChild(inp);
+    // Add a "Pull deficiencies" button beside the job-number field.
+    if(rf.id==='correction_ref_jobno'){
+      const pullWrap=document.createElement('div'); pullWrap.className='cpull-wrap';
+      const pullBtn=document.createElement('button'); pullBtn.type='button'; pullBtn.className='cpull-btn';
+      pullBtn.textContent='↓ Pull deficiencies from this report';
+      const statusEl=document.createElement('div'); statusEl.className='cpull-status';
+      const redraw=()=>renderForm(f.id);
+      pullBtn.onclick=async ()=>{
+        pullBtn.disabled=true; const old=pullBtn.textContent; pullBtn.textContent='Pulling…';
+        await pullPriorDeficiencies(statusEl, redraw);
+        pullBtn.disabled=false; pullBtn.textContent=old;
+      };
+      // allow Enter in the job-no field to trigger the pull
+      inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ e.preventDefault(); pullBtn.click(); } });
+      pullWrap.appendChild(pullBtn); pullWrap.appendChild(statusEl);
+      box.appendChild(pullWrap);
+    }
     ref.appendChild(box);
   });
   paper.appendChild(ref);
+
+  // carried-over deficiencies (auto-populated from the prior report)
+  paper.appendChild(carriedDeficienciesSection(f));
 
   // two growable numbered lists
   f.lists.forEach(list=>{
@@ -2457,6 +2700,81 @@ function renderCorrection(f,paper){
     s.appendChild(addWrap);
     paper.appendChild(s);
   });
+}
+
+/* Carried-over deficiencies section: each row shows the (editable) deficiency
+   text, where it came from, and a Corrected / Still Needs Correction toggle.
+   Rows marked Corrected read as resolved on this correction report; rows left
+   as "Still needs correction" read as impaired/critical remaining. */
+function carriedDeficienciesSection(f){
+  const s=document.createElement('div'); s.className='section';
+  const t=document.createElement('div'); t.className='sec-title';
+  t.textContent='Deficiencies Carried Over From Prior ITM Report';
+  s.appendChild(t);
+
+  const carried=getCarried();
+  const body=document.createElement('div'); body.className='carried-body';
+
+  const redraw=()=>renderForm(f.id);
+
+  if(carried.length===0){
+    const empty=document.createElement('div'); empty.className='carried-empty';
+    empty.textContent='Enter the inspection report job # above and press “Pull deficiencies from this report” to load the deficiencies from that ITM report. You can also add rows by hand.';
+    body.appendChild(empty);
+  }else{
+    // counters
+    const nFixed=carried.filter(c=>c.status==='fixed').length;
+    const nRem=carried.length-nFixed;
+    const counts=document.createElement('div'); counts.className='carried-counts';
+    counts.innerHTML=`<span class="cc-fixed">✓ Corrected: ${nFixed}</span><span class="cc-rem">◻ Still needs correction: ${nRem}</span>`;
+    body.appendChild(counts);
+
+    carried.forEach((row,idx)=>{
+      const r=document.createElement('div'); r.className='carried-row'+(row.status==='fixed'?' is-fixed':'');
+      // number
+      const num=document.createElement('div'); num.className='carried-num'; num.textContent=(idx+1); r.appendChild(num);
+      // text + source
+      const mid=document.createElement('div'); mid.className='carried-mid';
+      const ta=document.createElement('textarea'); ta.className='carried-text'; ta.rows=1; ta.value=row.text||'';
+      const grow=()=>{ ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,200)+'px'; };
+      ta.oninput=()=>{ row.text=ta.value; setCarried(carried); grow(); flash(); };
+      setTimeout(grow,0);
+      mid.appendChild(ta);
+      if(row.source){ const src=document.createElement('div'); src.className='carried-src'; src.textContent='From: '+row.source; mid.appendChild(src); }
+      r.appendChild(mid);
+      // status toggle
+      const tog=document.createElement('div'); tog.className='carried-toggle';
+      const bFix=document.createElement('button'); bFix.type='button';
+      bFix.className='ctog ctog-fix'+(row.status==='fixed'?' on':'');
+      bFix.textContent='Corrected';
+      bFix.onclick=()=>{ row.status='fixed'; setCarried(carried); flash(); redraw(); };
+      const bRem=document.createElement('button'); bRem.type='button';
+      bRem.className='ctog ctog-rem'+(row.status!=='fixed'?' on':'');
+      bRem.textContent='Still needs correction';
+      bRem.onclick=()=>{ row.status='remaining'; setCarried(carried); flash(); redraw(); };
+      tog.appendChild(bFix); tog.appendChild(bRem);
+      r.appendChild(tog);
+      // remove
+      const rm=document.createElement('button'); rm.type='button'; rm.className='carried-rm'; rm.innerHTML='×'; rm.title='Remove this row';
+      rm.onclick=()=>{ carried.splice(idx,1); setCarried(carried); redraw(); };
+      r.appendChild(rm);
+      body.appendChild(r);
+    });
+  }
+  s.appendChild(body);
+
+  // controls: add a manual row, and clear all
+  const ctrls=document.createElement('div'); ctrls.className='add-instance-wrap carried-ctrls';
+  const add=document.createElement('button'); add.type='button'; add.className='defadd'; add.textContent='+ Add deficiency by hand';
+  add.onclick=()=>{ const c=getCarried(); c.push({text:'', source:'', status:'remaining'}); setCarried(c); redraw(); };
+  ctrls.appendChild(add);
+  if(carried.length){
+    const clr=document.createElement('button'); clr.type='button'; clr.className='defadd carried-clear'; clr.textContent='Clear carried list';
+    clr.onclick=()=>{ if(confirm('Remove all carried-over deficiencies from this report?')){ setCarried([]); redraw(); } };
+    ctrls.appendChild(clr);
+  }
+  s.appendChild(ctrls);
+  return s;
 }
 
 /* ---------- standard form (FD-17) ---------- */
