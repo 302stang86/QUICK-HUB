@@ -116,9 +116,14 @@ button{font-family:inherit}
 .cpull-status.err{color:var(--red);font-weight:600}
 .carried-body{border:1px solid var(--line);border-top:none}
 .carried-empty{padding:14px 12px;font-size:12.5px;color:var(--muted);font-style:italic;line-height:1.5}
-.carried-counts{display:flex;gap:16px;padding:8px 12px;background:#eef2f8;border-bottom:1px solid var(--line2);font-size:12px;font-weight:700}
-.carried-counts .cc-fixed{color:var(--ok)}
-.carried-counts .cc-rem{color:var(--red)}
+/* two groups: corrected (green) and still-needs-correction (red) */
+.carried-group{border:1px solid var(--line);border-top:none}
+.carried-grouptitle{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;font-size:12px;font-weight:700;color:#fff}
+.carried-grp-fixed .carried-grouptitle{background:var(--ok)}
+.carried-grp-rem .carried-grouptitle{background:var(--red)}
+.carried-gcount{background:rgba(255,255,255,.28);border-radius:10px;padding:1px 9px;font-size:11px}
+.carried-groupbody{}
+.carried-groupempty{padding:10px 12px;font-size:12px;color:var(--muted);font-style:italic}
 .carried-row{display:grid;grid-template-columns:30px 1fr auto 26px;align-items:start;gap:0;border-bottom:1px solid var(--line2)}
 .carried-row:last-child{border-bottom:none}
 .carried-row:nth-child(even){background:var(--shade)}
@@ -138,16 +143,14 @@ button{font-family:inherit}
 .carried-ctrls{display:flex;gap:8px;flex-wrap:wrap}
 .carried-clear{border-color:var(--red)!important;color:var(--red)!important}
 @media print{
-  .cpull-wrap,.carried-rm,.carried-clear,.carried-ctrls .defadd{display:none!important}
-  .carried-empty{display:none!important}
-  .carried-counts{break-inside:avoid}
-  .carried-row{break-inside:avoid}
-  /* On print, collapse the interactive toggle to a simple status word. */
-  .carried-toggle{padding:7px 8px}
-  .ctog{display:none!important}
-  .ctog.on{display:inline-block!important;border:none;background:transparent!important;color:var(--ink)!important;padding:0;font-size:11px}
-  .ctog-fix.on{color:var(--ok)!important}
-  .ctog-rem.on{color:var(--red)!important}
+  .cpull-wrap,.carried-rm,.carried-clear,.carried-ctrls{display:none!important}
+  .carried-empty,.carried-groupempty{display:none!important}
+  .carried-toggle{display:none!important}           /* group heading already states corrected vs remaining */
+  .carried-row{grid-template-columns:30px 1fr;break-inside:avoid}
+  .carried-group,.carried-grouptitle{break-inside:avoid}
+  .carried-grouptitle{break-after:avoid}
+  /* hide an empty group entirely on print so a blank heading doesn't show */
+  .carried-group:has(.carried-groupempty){display:none!important}
 }
 @media(max-width:640px){
   .carried-row{grid-template-columns:24px 1fr 26px}
@@ -1131,8 +1134,8 @@ const CORRECTION = {
     {id:"correction_ref_jobno", label:"Inspection report job # this work is based on:"}
   ],
   lists:[
-    {title:"Deficiencies Corrected on this Job", key:"correction_fixed", start:4},
-    {title:"Impaired or Critical Deficiencies Remaining on this Job", key:"correction_remaining", start:2}
+    {title:"Additional Deficiencies Corrected on this Job (entered by hand)", key:"correction_fixed", start:4},
+    {title:"Additional Impaired or Critical Deficiencies Remaining (entered by hand)", key:"correction_remaining", start:2}
   ],
   passLabel:"All noted deficiencies on this report have been corrected:",
   disclaimer:[
@@ -2730,8 +2733,14 @@ function renderCorrection(f,paper){
   // carried-over deficiencies (auto-populated from the prior report)
   paper.appendChild(carriedDeficienciesSection(f));
 
+  // The two hand-entry lists below are only shown when nothing has been carried
+  // over. Once deficiencies are carried in, they replace these lists entirely
+  // (the "+ Add deficiency by hand" button in the carried section covers manual
+  // additions).
+  const hasCarried = getCarried().length>0;
+
   // two growable numbered lists
-  f.lists.forEach(list=>{
+  if(!hasCarried) f.lists.forEach(list=>{
     const s=document.createElement('div'); s.className='section';
     const t=document.createElement('div'); t.className='sec-title'; t.textContent=list.title; s.appendChild(t);
     const wrap=document.createElement('div'); wrap.className='items correction-list';
@@ -2758,38 +2767,32 @@ function renderCorrection(f,paper){
   });
 }
 
-/* Carried-over deficiencies section: each row shows the (editable) deficiency
-   text, where it came from, and a Corrected / Still Needs Correction toggle.
-   Rows marked Corrected read as resolved on this correction report; rows left
-   as "Still needs correction" read as impaired/critical remaining. */
+/* Carried-over deficiencies section. Each deficiency is editable, shows where
+   it came from, and has a Corrected / Still-needs-correction toggle. Choosing a
+   status MOVES the row into the matching group: a green "Corrected on this Job"
+   group and a red "Still Needs Correction (Impaired/Critical)" group. That
+   placement is also how it reads on the printed report. */
 function carriedDeficienciesSection(f){
-  const s=document.createElement('div'); s.className='section';
+  const s=document.createElement('div'); s.className='section carried-section';
   const t=document.createElement('div'); t.className='sec-title';
   t.textContent='Deficiencies Carried Over From Prior ITM Report';
   s.appendChild(t);
 
   const carried=getCarried();
-  const body=document.createElement('div'); body.className='carried-body';
-
   const redraw=()=>renderForm(f.id);
 
   if(carried.length===0){
+    const body=document.createElement('div'); body.className='carried-body';
     const empty=document.createElement('div'); empty.className='carried-empty';
     empty.textContent='Enter the inspection report job # above and press “Pull deficiencies from this report” to load the deficiencies from that ITM report. You can also add rows by hand.';
     body.appendChild(empty);
+    s.appendChild(body);
   }else{
-    // counters
-    const nFixed=carried.filter(c=>c.status==='fixed').length;
-    const nRem=carried.length-nFixed;
-    const counts=document.createElement('div'); counts.className='carried-counts';
-    counts.innerHTML=`<span class="cc-fixed">✓ Corrected: ${nFixed}</span><span class="cc-rem">◻ Still needs correction: ${nRem}</span>`;
-    body.appendChild(counts);
-
-    carried.forEach((row,idx)=>{
+    // Build one row element for a given carried item (found by object identity,
+    // so splice/edit always target the right item regardless of display group).
+    const makeRow=(row,n)=>{
       const r=document.createElement('div'); r.className='carried-row'+(row.status==='fixed'?' is-fixed':'');
-      // number
-      const num=document.createElement('div'); num.className='carried-num'; num.textContent=(idx+1); r.appendChild(num);
-      // text + source
+      const num=document.createElement('div'); num.className='carried-num'; num.textContent=n; r.appendChild(num);
       const mid=document.createElement('div'); mid.className='carried-mid';
       const ta=document.createElement('textarea'); ta.className='carried-text'; ta.rows=1; ta.value=row.text||'';
       const grow=()=>{ ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,200)+'px'; };
@@ -2798,26 +2801,46 @@ function carriedDeficienciesSection(f){
       mid.appendChild(ta);
       if(row.source){ const src=document.createElement('div'); src.className='carried-src'; src.textContent='From: '+row.source; mid.appendChild(src); }
       r.appendChild(mid);
-      // status toggle
       const tog=document.createElement('div'); tog.className='carried-toggle';
       const bFix=document.createElement('button'); bFix.type='button';
       bFix.className='ctog ctog-fix'+(row.status==='fixed'?' on':'');
       bFix.textContent='Corrected';
-      bFix.onclick=()=>{ row.status='fixed'; setCarried(carried); flash(); redraw(); };
+      bFix.onclick=()=>{ if(row.status!=='fixed'){ row.status='fixed'; setCarried(carried); flash(); redraw(); } };
       const bRem=document.createElement('button'); bRem.type='button';
       bRem.className='ctog ctog-rem'+(row.status!=='fixed'?' on':'');
       bRem.textContent='Still needs correction';
-      bRem.onclick=()=>{ row.status='remaining'; setCarried(carried); flash(); redraw(); };
+      bRem.onclick=()=>{ if(row.status==='fixed'){ row.status='remaining'; setCarried(carried); flash(); redraw(); } };
       tog.appendChild(bFix); tog.appendChild(bRem);
       r.appendChild(tog);
-      // remove
       const rm=document.createElement('button'); rm.type='button'; rm.className='carried-rm'; rm.innerHTML='×'; rm.title='Remove this row';
-      rm.onclick=()=>{ carried.splice(idx,1); setCarried(carried); redraw(); };
+      rm.onclick=()=>{ const i=carried.indexOf(row); if(i>=0){ carried.splice(i,1); setCarried(carried); redraw(); } };
       r.appendChild(rm);
-      body.appendChild(r);
-    });
+      return r;
+    };
+
+    // Build a titled group (corrected or remaining) with its rows.
+    const makeGroup=(title, cls, rows, emptyMsg)=>{
+      const g=document.createElement('div'); g.className='carried-group '+cls;
+      const gt=document.createElement('div'); gt.className='carried-grouptitle';
+      gt.innerHTML=`<span>${esc(title)}</span><span class="carried-gcount">${rows.length}</span>`;
+      g.appendChild(gt);
+      const gb=document.createElement('div'); gb.className='carried-groupbody';
+      if(rows.length===0){
+        const e=document.createElement('div'); e.className='carried-groupempty'; e.textContent=emptyMsg; gb.appendChild(e);
+      }else{
+        rows.forEach((row,i)=> gb.appendChild(makeRow(row, i+1)) );
+      }
+      g.appendChild(gb);
+      return g;
+    };
+
+    const fixedRows  = carried.filter(c=>c.status==='fixed');
+    const remRows    = carried.filter(c=>c.status!=='fixed');
+    s.appendChild(makeGroup('Deficiencies Corrected on this Job','carried-grp-fixed', fixedRows,
+      'Mark a deficiency “Corrected” below to move it here.'));
+    s.appendChild(makeGroup('Impaired or Critical Deficiencies Still Needing Correction','carried-grp-rem', remRows,
+      'None — every carried-over deficiency has been marked corrected.'));
   }
-  s.appendChild(body);
 
   // controls: add a manual row, and clear all
   const ctrls=document.createElement('div'); ctrls.className='add-instance-wrap carried-ctrls';
