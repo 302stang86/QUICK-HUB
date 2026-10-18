@@ -2612,10 +2612,11 @@ async function pullPriorDeficiencies(statusEl, redraw){
   }
   const defs = extractDeficienciesFromRecord(rec);
   if(defs.length===0){
-    statusEl.textContent='Found that report — it had no Critical or Impairment deficiencies to carry over.';
+    statusEl.textContent='Found that report — job info filled in. It had no Critical or Impairment deficiencies to carry over.';
     statusEl.className='cpull-status';
-    // still stamp the reference date from that report if blank
+    // still stamp the reference date and job info from that report
     stampRefDate(rec);
+    stampJobInfo(rec);
     if(redraw) redraw();
     return;
   }
@@ -2632,8 +2633,9 @@ async function pullPriorDeficiencies(statusEl, redraw){
   });
   setCarried(carried);
   stampRefDate(rec);
+  stampJobInfo(rec);
   const when = rec.submittedAt&&rec.submittedAt.toDate ? rec.submittedAt.toDate().toLocaleDateString() : '';
-  statusEl.textContent='Loaded '+addedCount+' deficienc'+(addedCount===1?'y':'ies')+' from job #'+jobno+(when?(' ('+when+' report)'):'')+'. Mark each as corrected or still needs correction below.';
+  statusEl.textContent='Loaded job info and '+addedCount+' Critical/Impairment deficienc'+(addedCount===1?'y':'ies')+' from job #'+jobno+(when?(' ('+when+' report)'):'')+'. Mark each as corrected or still needs correction below.';
   statusEl.className='cpull-status ok';
   if(redraw) redraw();
 }
@@ -2644,6 +2646,56 @@ function stampRefDate(rec){
   if(val('correction_ref_date')) return;
   const d = rec.submittedAt&&rec.submittedAt.toDate ? rec.submittedAt.toDate() : null;
   if(d){ setVal('correction_ref_date', d.toLocaleDateString()); }
+}
+
+/* Copy job header info from the prior report onto the correction report.
+   - Shared fields (job name/street/city, job number) come from the prior
+     report's __shared store (the number also falls back to its top-level
+     jobNumber field). These write into the live shared store, so they appear
+     on every form.
+   - Per-form header fields (the three riser lines, zones, wet/other riser
+     counts) are read from whichever inspection form in the prior report
+     actually carried them, and written onto the correction form's own keys.
+   Nothing the tech has already typed is overwritten. */
+function stampJobInfo(rec){
+  const av=(rec && rec.allValues)||{};
+  const prevShared=av.__shared||{};
+  const liveShared=sharedStore();
+  // shared job fields — only fill blanks
+  [['shared_job', prevShared.shared_job],
+   ['shared_job_street', prevShared.shared_job_street],
+   ['shared_job_csz', prevShared.shared_job_csz],
+   ['shared_jobno', prevShared.shared_jobno || rec.jobNumber]
+  ].forEach(([k,v])=>{
+    if(v!=null && String(v).trim() && !String(liveShared[k]||'').trim()){ liveShared[k]=v; DIRTY=true; }
+  });
+
+  // Find the source inspection form in the prior report that has riser/job
+  // header data. Prefer the forms that were actually submitted, in tab order;
+  // skip the correction form itself.
+  const order=CORE_FORMS.map(f=>f.id).concat(Array.isArray(rec.added)?rec.added:[]);
+  let src=null, srcId=null;
+  for(const fid of order){
+    if(fid==='correction') continue;
+    const store=av[fid];
+    if(!store) continue;
+    const hasHeader = store[fid+'_risers'] || store[fid+'_zones'] ||
+                      store[fid+'_wetrisers'] || store[fid+'_otherrisers'] ||
+                      store[fid+'_risercount'] || store[fid+'_fdccount'] ||
+                      store[fid+'_risers2'] || store[fid+'_risers3'];
+    if(hasHeader){ src=store; srcId=fid; break; }
+  }
+  if(!src) return;
+  // Map prior per-form header keys -> correction form keys. Only fill blanks.
+  const put=(corrKey, v)=>{
+    if(v!=null && String(v).trim() && !String(val(corrKey)||'').trim()){ setVal(corrKey, v); }
+  };
+  put('correction_risers',       src[srcId+'_risers']);
+  put('correction_risers2',      src[srcId+'_risers2']);
+  put('correction_risers3',      src[srcId+'_risers3']);
+  put('correction_zones',        src[srcId+'_zones']);
+  put('correction_wetrisers',    src[srcId+'_wetrisers']);
+  put('correction_otherrisers',  src[srcId+'_otherrisers']);
 }
 
 function renderCorrection(f,paper){
