@@ -1379,28 +1379,15 @@ const STANDPIPE = {
       {n:29, text:"Tamper / supervisory switch signals verified at the panel within two revolutions and restored, or valves locked or sealed", type:"check"},
       {n:30, text:"Waterflow alarm device tested and signal verified (automatic standpipe), where provided", type:"check"},
       {n:31, text:"Alarm device(s) above the FDC working properly", type:"check"},
-      {n:32, text:"Adequate drainage available for main drain testing", type:"check"},
-      {n:33, text:"Beginning Static Pressure (psi):", type:"numfield", fid:"standpipe_static"},
-      {n:34, text:"Residual Pressure during flow (psi):", type:"numfield", fid:"standpipe_resid"},
-      {n:35, text:"Return Static Pressure (psi):", type:"numfield", fid:"standpipe_return"},
-      {n:36, text:"Time to return to static Pressure (sec.):", type:"numfield", fid:"standpipe_rtime"},
-      {n:37, text:"Flow at hydraulically most remote outlet during 5-year flow test (gpm), where performed:", type:"numfield", fid:"standpipe_flow"},
-      {n:38, text:"Required / demand pressure at that outlet (psi), where performed:", type:"numfield", fid:"standpipe_demand"},
-      {n:39, text:"Water supply met the system demand (automatic/semiautomatic), or manual supply verified via the FDC, as applicable", type:"check"}
-    ], compliance:"c_28_39", deficiency:"d_28_39"},
-
-    { name:"Pressure-Regulating Device & 5-Year Tests", items:[
-      {n:40, text:"Pressure-reducing valve (hose) full-flow test performed (5-year)", type:"dates_only", dateId:"standpipe_i40_date", byId:"standpipe_i40_by"},
-      {n:41, text:"Pressure-reducing valve (hose) partial-flow test performed this inspection (annual), where applicable", type:"check"},
-      {n:42, text:"Standpipe hydrostatic test at 200 psi (or 50 psi above max pressure) for 2 hours — dry, manual, or semiautomatic (5-year)", type:"dates_only", dateId:"standpipe_i42_date", byId:"standpipe_i42_by"},
-      {n:43, text:"Occupant hose service tested or replaced per NFPA 1962, where hose is provided (5-year / 3-year)", type:"dates_only", dateId:"standpipe_i43_date", byId:"standpipe_i43_by"}
-    ], compliance:"c_40_43", deficiency:"d_40_43"},
+      {n:32, text:"Required / demand pressure at that outlet (psi), where performed:", type:"numfield", fid:"standpipe_demand"},
+      {n:33, text:"Water supply met the system demand (automatic/semiautomatic), or manual supply verified via the FDC, as applicable", type:"check"}
+    ], compliance:"c_28_33", deficiency:"d_28_33"},
 
     { name:"Post Inspection", items:[
-      {n:44, text:"All valves returned to normal position; caps, plugs, and reducers reinstalled", type:"check"},
-      {n:45, text:"Fire alarm panel reset and cleared after inspection", type:"check"},
-      {n:46, text:"Standpipe system returned to full service and pertinent parties notified after inspection", type:"check"}
-    ], compliance:"c_44_46", deficiency:"d_44_46"}
+      {n:34, text:"All valves returned to normal position; caps, plugs, and reducers reinstalled", type:"check"},
+      {n:35, text:"Fire alarm panel reset and cleared after inspection", type:"check"},
+      {n:36, text:"Standpipe system returned to full service and pertinent parties notified after inspection", type:"check"}
+    ], compliance:"c_34_36", deficiency:"d_34_36"}
   ],
   passLabel:"The Standpipe System(s) are free from Critical & Impaired Deficiencies:",
   disclaimer:DISCLAIMER
