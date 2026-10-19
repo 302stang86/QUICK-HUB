@@ -279,7 +279,7 @@
     <button data-tab="sop">SOP</button>
     <button data-tab="confined">Confined Space Permitting</button>
     <button data-tab="lifts">Scissor &amp; Boom Lift</button>
-    <button data-tab="incident">Incident Reporting</button>
+    <button data-href="incident-report.html">Incident Reporting</button>
   </nav>
 </header>
 
@@ -704,11 +704,6 @@
   </form>
 </section>
 
-<!-- ============ INCIDENT REPORTING ============ -->
-<section class="tab" id="incident">
-  <p class="lead">Report any injury, near-miss, vehicle or equipment event, or property damage. Submitting opens your email with the report addressed to the department manager.</p>
-  <iframe id="incidentFrame" src="incident-report.html" title="FDEC Incident Report" style="width:100%;border:0;border-radius:12px;min-height:1000px;background:transparent" loading="lazy"></iframe>
-</section>
 
 </main>
 
@@ -832,6 +827,7 @@ function applyBadge(){
   var tabBtns = document.querySelectorAll('#tabs button');
   tabBtns.forEach(function(b){
     b.addEventListener('click',function(){
+      if(b.dataset.href){ window.location.href = b.dataset.href; return; }
       tabBtns.forEach(function(x){x.classList.remove('active')});
       document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});
       b.classList.add('active');
