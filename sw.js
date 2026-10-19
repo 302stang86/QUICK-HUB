@@ -13,7 +13,7 @@
      - Everything else (Firestore API, etc.): straight to network — Firestore's
        own offline mode handles those when there is no signal.
 */
-const CACHE = 'fdec-quickhub-v1';
+const CACHE = 'fdec-quickhub-v2';
 
 const CORE = [
   './',
@@ -72,8 +72,14 @@ self.addEventListener('fetch', (e) => {
   try { url = new URL(req.url); } catch (_) { return; }
 
   if (url.origin === self.location.origin) {
-    if (req.mode === 'navigate') e.respondWith(networkFirst(req));
-    else e.respondWith(staleWhileRevalidate(req));
+    // Code (pages, scripts, styles, manifest) = network-first so updates land
+    // immediately when online, then fall back to cache offline. Media/images =
+    // stale-while-revalidate (instant, refresh quietly).
+    if (req.mode === 'navigate' || /\.(?:html|js|css|webmanifest|json)(?:$|\?)/i.test(url.pathname)) {
+      e.respondWith(networkFirst(req));
+    } else {
+      e.respondWith(staleWhileRevalidate(req));
+    }
   } else if (isLibraryCDN(url)) {
     e.respondWith(cacheFirst(req));
   }

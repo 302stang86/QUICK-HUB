@@ -34,6 +34,25 @@
         "font-family:Arial,Helvetica,sans-serif;letter-spacing:.12em;",
         "font-size:clamp(7px,1.15vw,12px);margin-top:.35em;text-shadow:0 1px 3px rgba(0,0,0,.4);",
         "white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}",
+      /* relocated action buttons: slim row under the banner on phones, */
+      /* overlaid in the banner's lower-left on wider screens (like the mock). */
+      ".fdec-ubar-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;",
+        "line-height:normal;background:#0f1b2e;padding:7px 12px 8px;}",
+      ".fdec-ubar-actions:empty{display:none;}",
+      ".fdec-ubar-actions > *{line-height:1;}",
+      ".fdec-ubar-actions button,.fdec-ubar-actions a,.fdec-ubar-actions input[type=button],.fdec-ubar-actions input[type=submit]{",
+        "font:600 12px/1 Arial,Helvetica,sans-serif !important;color:#fff !important;",
+        "background:rgba(255,255,255,.14) !important;border:1px solid rgba(255,255,255,.42) !important;",
+        "border-radius:7px !important;padding:6px 11px !important;cursor:pointer;text-decoration:none !important;",
+        "white-space:nowrap;display:inline-flex;align-items:center;box-shadow:none !important;min-height:0 !important;}",
+      ".fdec-ubar-actions button:hover,.fdec-ubar-actions a:hover{background:rgba(255,255,255,.26) !important;}",
+      ".fdec-ubar-actions #whoami,.fdec-ubar-actions .who,.fdec-ubar-actions .whoami,.fdec-ubar-actions .admin-note{",
+        "background:none !important;border:0 !important;color:#dbe6f4 !important;font:700 12px/1.2 Arial,sans-serif !important;",
+        "padding:4px 2px !important;box-shadow:none !important;}",
+      "@media(min-width:720px){",
+        ".fdec-ubar-actions{position:absolute;left:16%;right:38%;bottom:13%;padding:0;background:transparent;}",
+        ".fdec-ubar-title{bottom:auto;top:20%;}",
+      "}",
       "@media print{.fdec-ubar{display:none !important;}}"
     ].join("");
     (document.head || document.documentElement).appendChild(s);
@@ -57,8 +76,38 @@
     sub.className = "fdec-ubar-sub";
     sub.textContent = "Fire Defense Equipment Company";
     box.appendChild(h1); box.appendChild(sub);
-    header.appendChild(img); header.appendChild(box);
+    var actions = document.createElement("div");
+    actions.className = "fdec-ubar-actions no-print";
+    header.appendChild(img); header.appendChild(box); header.appendChild(actions);
     document.body.insertBefore(header, document.body.firstChild);
+    relocate(actions);
+  }
+
+  /* Move each page's real buttons into the banner (keeps their click handlers),
+     then hide the old branding bar. Declared per page with:
+       <meta name="fdec-actions" content="#whoami, #logoutBtn">
+       <meta name="fdec-hide"    content=".topbar, .masthead">   */
+  function relocate(slot) {
+    try {
+      var am = document.querySelector('meta[name="fdec-actions"]');
+      if (am && am.content) {
+        am.content.split(",").forEach(function (sel) {
+          sel = sel.trim(); if (!sel) return;
+          document.querySelectorAll(sel).forEach(function (el) {
+            if (el && !el.closest(".fdec-ubar")) slot.appendChild(el);
+          });
+        });
+      }
+      var hm = document.querySelector('meta[name="fdec-hide"]');
+      if (hm && hm.content) {
+        hm.content.split(",").forEach(function (sel) {
+          sel = sel.trim(); if (!sel) return;
+          document.querySelectorAll(sel).forEach(function (el) {
+            if (el && !el.closest(".fdec-ubar")) el.style.display = "none";
+          });
+        });
+      }
+    } catch (e) {}
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", build);
