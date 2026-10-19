@@ -108,23 +108,31 @@
   .hubgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media(max-width:680px){.hubgrid{grid-template-columns:1fr}}
   a.hublink{
-    display:flex;flex-direction:column;gap:7px;text-decoration:none;color:inherit;
-    background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);
-    padding:16px;transition:.15s;
+    position:relative;display:flex;align-items:center;gap:15px;text-decoration:none;color:inherit;
+    background:var(--card);border:1px solid var(--line);border-left:5px solid var(--cc,#5b6570);
+    border-radius:14px;box-shadow:var(--shadow);padding:15px 18px;transition:.15s;overflow:hidden;
   }
-  a.hublink:hover{border-color:var(--fdec-red);transform:translateY(-1px);box-shadow:0 4px 12px rgba(16,24,40,.1)}
-  a.hublink .htop{display:flex;align-items:center;gap:9px}
-  a.hublink .hname{font-weight:700;font-size:15.5px;color:var(--ink)}
-  a.hublink .hcat{margin-left:auto;font-size:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;color:#fff;background:var(--ink-soft);padding:3px 8px;border-radius:20px;flex:0 0 auto}
+  a.hublink:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(16,24,40,.16)}
+  a.hublink .hubicon{
+    flex:0 0 auto;width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background-color:var(--cc,#5b6570);
+    background-image:linear-gradient(150deg,rgba(255,255,255,.32),rgba(255,255,255,0) 58%);
+    box-shadow:0 4px 10px rgba(16,24,40,.22),inset 0 2px 3px rgba(255,255,255,.3),inset 0 -3px 6px rgba(0,0,0,.14);
+  }
+  a.hublink .hubicon svg{width:28px;height:28px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  a.hublink .hbody{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:6px}
+  a.hublink .htop{display:flex;align-items:flex-start;gap:9px}
+  a.hublink .hname{font-weight:800;font-size:16px;color:var(--ink);line-height:1.2}
+  a.hublink .hcat{margin-left:auto;font-size:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:800;color:#fff;background:#3b4654;padding:4px 10px;border-radius:20px;flex:0 0 auto;white-space:nowrap}
+  a.hublink .hcat.news{background:#1f7a3d}
   a.hublink .hcat.quoting{background:#1565c0}
   a.hublink .hcat.team{background:var(--fdec-red)}
-  a.hublink .hcat.shop{background:#5b6570}
-  a.hublink .hcat.news{background:#1f7a3d}
-  a.hublink .hdesc{font-size:13px;color:var(--ink-soft);margin:0}
-  a.hublink.unset{opacity:.8;cursor:default;border-style:dashed}
-  a.hublink.unset:hover{transform:none;border-color:var(--line);box-shadow:var(--shadow)}
+  a.hublink .hcat.field,a.hublink .hcat.admin{background:#3b4654}
+  a.hublink .hdesc{font-size:13px;color:var(--ink-soft);margin:0;line-height:1.4}
+  a.hublink.unset{opacity:.85;cursor:default}
+  a.hublink.unset:hover{transform:none;box-shadow:var(--shadow)}
   a.hublink.unset .hname::after{content:' — URL not set';color:var(--warn);font-weight:600;font-size:12px}
-  a.hublink .haccess{align-self:flex-start;font-size:11px;font-weight:700;letter-spacing:.3px;padding:3px 10px;border-radius:20px;margin-top:2px}
+  a.hublink .haccess{align-self:flex-start;font-size:11px;font-weight:700;letter-spacing:.3px;padding:3px 11px;border-radius:20px;margin-top:2px}
   a.hublink .haccess.everyone{background:#e7f4ec;color:var(--good)}
   a.hublink .haccess.manager{background:#fff3df;color:var(--warn)}
 
@@ -763,18 +771,33 @@ function applyBadge(){
   // ---------- Home hub links ----------
   // Edit the url for each tool below. Leave blank to show "URL not set".
   var LINKS = [
-    {name:'Announcements',           cat:'News',    access:'Everyone',     page:'announcements',  url:'announcements.html', desc:'Department news — new hires, projects, updates, and events.'},
-    {name:'ITM Inspection Reports',  cat:'Field',   access:'',             page:'itm',            url:'itm-reports.html', desc:'NFPA 25 inspection report forms with PDF output.'},
-    {name:'ServiceTrade',            cat:'Field',   access:'',             page:'servicetrade',   url:'https://app.servicetrade.com/', desc:'Jobs, service records, deficiencies, and field paperwork.'},
-    {name:'Local Dispatch Numbers',  cat:'Field',   access:'',             page:'dispatch',       url:'fire-dispatch-directory.html', desc:'Fire department dispatch numbers by city — searchable, tap to call.'},
-    {name:'Troubleshooting Guide',   cat:'Field',   access:'',             page:'troubleshooting',url:'troubleshooting-guide.html', desc:'Field troubleshooting steps for common system and device issues.'},
-    {name:'NFPA 25 Frequencies',     cat:'Field',   access:'',             page:'frequencies',    url:'nfpa25-frequencies.html', desc:'Searchable test and inspection frequency lookup by device — confirm when an item is due.'},
-    {name:'Quoting & Proposal Suite',cat:'Quoting', access:'Manager only', page:'quoting',        url:'quoting.html', desc:'Sprinkler ITM quoting and proposal verbiage.'},
-    {name:'Time-Off Requests',       cat:'Team',    access:'Everyone',     page:'timeoff',        url:'timeoff.html', desc:'Submit paid time-off (PTO) requests and track balances.'},
-    {name:'On-Call Rotation',        cat:'Team',    access:'Everyone',     page:'oncall',         url:'oncall.html', desc:'Current sprinkler department on-call schedule.'},
-    {name:'Weekly Time Sheet',       cat:'Team',    access:'Admin only · pending release', page:'timesheet', url:'timesheet.html', desc:'Interactive weekly time sheet for technicians. Locked until released by an administrator.'},
-    {name:'Administration',          cat:'Admin',   access:'Admin only',   page:'administration', url:'administration.html', desc:'Department administration and management tools.'}
+    {name:'Announcements',           cat:'News',    access:'Everyone',     page:'announcements',  url:'announcements.html', color:'#1f7a3d', icon:'megaphone', desc:'Department news — new hires, projects, updates, and events.'},
+    {name:'ITM Inspection Reports',  cat:'Field',   access:'',             page:'itm',            url:'itm-reports.html', color:'#1565c0', icon:'doc', desc:'NFPA 25 inspection report forms with PDF output.'},
+    {name:'ServiceTrade',            cat:'Field',   access:'',             page:'servicetrade',   url:'https://app.servicetrade.com/', color:'#e07b1a', icon:'clipboard', desc:'Jobs, service records, deficiencies, and field paperwork.'},
+    {name:'Local Dispatch Numbers',  cat:'Field',   access:'',             page:'dispatch',       url:'fire-dispatch-directory.html', color:'#6d3bb5', icon:'pin', desc:'Fire department dispatch numbers by city — searchable, tap to call.'},
+    {name:'Troubleshooting Guide',   cat:'Field',   access:'',             page:'troubleshooting',url:'troubleshooting-guide.html', color:'#0e8a84', icon:'search', desc:'Field troubleshooting steps for common system and device issues.'},
+    {name:'NFPA 25 Frequencies',     cat:'Field',   access:'',             page:'frequencies',    url:'nfpa25-frequencies.html', color:'#d12f2f', icon:'hourglass', desc:'Searchable test and inspection frequency lookup by device — confirm when an item is due.'},
+    {name:'Quoting & Proposal Suite',cat:'Quoting', access:'Manager only', page:'quoting',        url:'quoting.html', color:'#1565c0', icon:'quote', desc:'Sprinkler ITM quoting and proposal verbiage.'},
+    {name:'Time-Off Requests',       cat:'Team',    access:'Everyone',     page:'timeoff',        url:'timeoff.html', color:'#1f7a3d', icon:'calendar', desc:'Submit paid time-off (PTO) requests and track balances.'},
+    {name:'On-Call Rotation',        cat:'Team',    access:'Everyone',     page:'oncall',         url:'oncall.html', color:'#d12f2f', icon:'phone', desc:'Current sprinkler department on-call schedule.'},
+    {name:'Weekly Time Sheet',       cat:'Team',    access:'Admin only · pending release', page:'timesheet', url:'timesheet.html', color:'#6d3bb5', icon:'clock', desc:'Interactive weekly time sheet for technicians. Locked until released by an administrator.'},
+    {name:'Administration',          cat:'Admin',   access:'Admin only',   page:'administration', url:'administration.html', color:'#c08a1e', icon:'admin', desc:'Department administration and management tools.'}
   ];
+  var ICONS = {
+    megaphone:'<path d="m3 11 15-5v12L3 15v-4z"/><path d="M18 8a3 3 0 0 1 0 6"/><path d="M7 15.5V19a1 1 0 0 0 1 1h1.5a1 1 0 0 0 1-1v-2.5"/>',
+    doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/>',
+    clipboard:'<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>',
+    pin:'<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
+    wrench:'<path d="M14.7 6.3a4 4 0 0 1 5.2 5.2l-7.6 7.6a2.1 2.1 0 0 1-3-3l7.6-7.6a4 4 0 0 1 .8-.8z"/><path d="M14.7 6.3 18 3"/>',
+    droplet:'<path d="M12 2.7s7 7.3 7 12a7 7 0 0 1-14 0c0-4.7 7-12 7-12z"/>',
+    search:'<circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/>',
+    hourglass:'<path d="M6 3h12M6 21h12"/><path d="M8 3v3.5L12 11l4-4.5V3M8 21v-3.5L12 13l4 4.5V21"/>',
+    quote:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="M13.6 13.2c0-.7-.8-1.2-1.6-1.2s-1.6.5-1.6 1.2.8 1.2 1.6 1.2 1.6.5 1.6 1.2-.8 1.2-1.6 1.2-1.6-.5-1.6-1.2"/>',
+    calendar:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/>',
+    phone:'<path d="M6.6 10.8c1.4 2.8 3.8 5.2 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.2c1.1.4 2.4.6 3.6.6a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.6 21 3 13.4 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.2.2 2.5.6 3.6a1 1 0 0 1-.2 1l-2.3 2.2z"/>',
+    clock:'<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>',
+    admin:'<circle cx="12" cy="8" r="3.2"/><path d="M5.5 20a6.5 6.5 0 0 1 10-.3"/><circle cx="18" cy="17" r="2.3"/><path d="M18 14.3v-1.1M18 20.8v-1.1M20.3 15.7l-.9.5M16.6 17.8l-.9.5M20.3 18.3l-.9-.5M16.6 16.2l-.9-.5"/>'
+  };
   function renderHub(auth){
     var hub = document.getElementById('hubLinks');
     if(!hub) return;
@@ -784,12 +807,16 @@ function applyBadge(){
       var a = document.createElement('a');
       var set = l.url && l.url !== '#';
       a.className = 'hublink' + (set ? '' : ' unset');
+      if(l.color){ a.style.setProperty('--cc', l.color); }
       if(set){ a.href = l.url; a.target = '_blank'; a.rel = 'noopener'; }
       else { a.href = '#'; a.addEventListener('click',function(e){e.preventDefault();}); }
       a.innerHTML =
-        '<div class="htop"><span class="hname"></span>' +
-        '<span class="hcat ' + l.cat.toLowerCase() + '"></span></div>' +
-        '<p class="hdesc"></p>';
+        '<span class="hubicon"><svg viewBox="0 0 24 24" aria-hidden="true">' + (ICONS[l.icon] || '') + '</svg></span>' +
+        '<span class="hbody">' +
+          '<span class="htop"><span class="hname"></span>' +
+          '<span class="hcat ' + l.cat.toLowerCase() + '"></span></span>' +
+          '<p class="hdesc"></p>' +
+        '</span>';
       a.querySelector('.hname').textContent = l.name;
       a.querySelector('.hcat').textContent = l.cat;
       a.querySelector('.hdesc').textContent = l.desc;
@@ -798,7 +825,7 @@ function applyBadge(){
         var lc = l.access.toLowerCase();
         ac.className = 'haccess ' + ((lc.indexOf('manager') > -1 || lc.indexOf('admin') > -1) ? 'manager' : 'everyone');
         ac.textContent = l.access;
-        a.appendChild(ac);
+        a.querySelector('.hbody').appendChild(ac);
       }
       hub.appendChild(a);
     });
