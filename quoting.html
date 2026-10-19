@@ -191,6 +191,13 @@ body>*{position:relative;z-index:1;}
 <meta name="fdec-page-title" content="Quoting & Proposals">
 <meta name="fdec-hide" content=".suitebar .brand">
 <script defer src="fdec-header.js"></script>
+<style>
+/* fdec: let the whole page (and the universal banner) scroll instead of the
+   suite being locked to the viewport. The working sheet stays full-height. */
+html,body{height:auto !important;}
+body{min-height:100dvh;display:block !important;}
+.views{flex:none !important;height:100dvh;height:100svh;}
+</style>
 </head>
 <body>
 <div class="bg-layer" aria-hidden="true"></div>

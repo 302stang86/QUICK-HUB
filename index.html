@@ -816,7 +816,10 @@ function applyBadge(){
         window.FDECAuth.ready.then(function(auth){
           renderHub(auth);
           var who = document.getElementById('whoami');
-          if(who && auth.profile){ who.textContent = auth.profile.name + (auth.isAdmin ? ' · Admin' : ''); }
+          if(who && auth.profile){
+            var nm = auth.profile.name || (auth.profile.email||'').split('@')[0] || (auth.user && auth.user.email) || 'Signed in';
+            who.textContent = nm + (auth.isAdmin ? ' · Admin' : '');
+          }
           var so = document.getElementById('signOut');
           if(so) so.addEventListener('click', function(){ auth.signOut(); });
         });
