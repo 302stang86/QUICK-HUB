@@ -22,7 +22,7 @@
     var s = document.createElement("style");
     s.id = "fdec-ubar-css";
     s.textContent = [
-      ".fdec-ubar{position:relative;width:100%;background:#12213c;line-height:0;}",
+      ".fdec-ubar{position:relative;width:100%;background:#12213c;line-height:0;z-index:5;}",
       ".fdec-ubar-bg{display:block;width:100%;height:auto;}",
       ".fdec-ubar-title{position:absolute;left:16%;right:27%;top:11%;bottom:37%;",
         "display:flex;flex-direction:column;justify-content:center;line-height:1.04;pointer-events:none;}",
