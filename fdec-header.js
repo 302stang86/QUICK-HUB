@@ -24,15 +24,15 @@
     s.textContent = [
       ".fdec-ubar{position:relative;width:100%;background:#12213c;line-height:0;}",
       ".fdec-ubar-bg{display:block;width:100%;height:auto;}",
-      ".fdec-ubar-title{position:absolute;top:0;bottom:0;left:16%;right:42%;",
-        "display:flex;flex-direction:column;justify-content:center;line-height:1.02;pointer-events:none;}",
+      ".fdec-ubar-title{position:absolute;left:16%;right:27%;top:11%;bottom:37%;",
+        "display:flex;flex-direction:column;justify-content:center;line-height:1.04;pointer-events:none;}",
       ".fdec-ubar-h1{color:#fff;font-weight:800;letter-spacing:.2px;",
         "font-family:'Arial Narrow',Arial,Helvetica,sans-serif;",
-        "font-size:clamp(14px,3.1vw,30px);text-shadow:0 1px 4px rgba(0,0,0,.45);",
+        "font-size:clamp(20px,5.4vw,56px);text-shadow:0 1px 4px rgba(0,0,0,.45);",
         "white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}",
       ".fdec-ubar-sub{color:#cfdcee;font-weight:700;text-transform:uppercase;",
         "font-family:Arial,Helvetica,sans-serif;letter-spacing:.12em;",
-        "font-size:clamp(7px,1.15vw,12px);margin-top:.35em;text-shadow:0 1px 3px rgba(0,0,0,.4);",
+        "font-size:clamp(9px,1.7vw,18px);margin-top:.45em;text-shadow:0 1px 3px rgba(0,0,0,.4);",
         "white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}",
       /* relocated action buttons: slim row under the banner on phones, */
       /* overlaid in the banner's lower-left on wider screens (like the mock). */
@@ -50,8 +50,7 @@
         "background:none !important;border:0 !important;color:#dbe6f4 !important;font:700 12px/1.2 Arial,sans-serif !important;",
         "padding:4px 2px !important;box-shadow:none !important;}",
       "@media(min-width:720px){",
-        ".fdec-ubar-actions{position:absolute;left:16%;right:38%;bottom:13%;padding:0;background:transparent;}",
-        ".fdec-ubar-title{bottom:auto;top:20%;}",
+        ".fdec-ubar-actions{position:absolute;left:16%;right:38%;bottom:9%;padding:0;background:transparent;}",
       "}",
       "@media print{.fdec-ubar{display:none !important;}}"
     ].join("");
