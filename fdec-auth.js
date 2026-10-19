@@ -131,10 +131,16 @@ function loginUI(msg){
   document.getElementById("fdec-toggle").onclick = () => { mode = reg ? "signin" : "register"; loginUI(); };
   const rb = document.getElementById("fdec-reset");
   if (rb) rb.onclick = async () => {
-    const email = (document.getElementById("fdec-email").value||"").trim();
-    if (!email) return loginUI("Enter your email first, then reset.");
-    try { await sendPasswordResetEmail(auth, email); loginUI("Reset link sent. Check your inbox."); }
-    catch(e){ loginUI(niceErr(e)); }
+    const email = (document.getElementById("fdec-email").value||"").trim().toLowerCase();
+    if (!email) return loginUI("Enter your email first, then request a reset.");
+    if (!emailAllowed(email)) return loginUI("Use your firedefense.com work email.");
+    try {
+      const id = email.replace(/[^a-z0-9]+/g, "_");
+      await setDoc(doc(db, "passwordResets", id), {
+        email: email, status: "pending", requestedAt: serverTimestamp()
+      }, { merge: true });
+      loginUI("Your password reset request was sent to an administrator. You'll get a reset email once it is approved.");
+    } catch(e){ loginUI("Could not send the request. Try again, or contact your administrator."); }
   };
 }
 function niceErr(e){

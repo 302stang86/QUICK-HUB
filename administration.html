@@ -185,6 +185,14 @@
   .qf-btn:hover { background:#13203b; }
   .qf-btn.del { background:#fff; color:#9d0e16; border-color:#9d0e16; }
   .qf-btn.del:hover { background:#9d0e16; color:#fff; }
+  .qf-btn.open { background:#1565c0; border-color:#1565c0; }
+  .qf-btn.open:hover { background:#0f4e96; }
+  .qf-years { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+  .qf-year { font-size:12.5px; font-weight:700; border:1.5px solid #cdd9e8; background:#fff; color:#1B2A4A; border-radius:999px; padding:5px 12px; cursor:pointer; }
+  .qf-year:hover { border-color:#1565c0; }
+  .qf-year.active { background:#1B2A4A; border-color:#1B2A4A; color:#fff; }
+  .qf-year .n { opacity:.6; font-weight:600; margin-left:5px; }
+  .qf-year.active .n { opacity:.85; }
   .qf-empty { font-size:13px; color:#5c6470; font-style:italic; padding:8px 2px; }
   @media(max-width:620px){ .qf-row { grid-template-columns:1fr; } .qf-acts { justify-content:flex-start; } }
 
@@ -272,6 +280,7 @@
         <p>Drafts, Word documents, and export packages saved from the Quoting &amp; Proposal Suite. Search by job name, quote number, user, or file name.</p>
       </div>
       <input id="qfSearch" class="qf-search" type="search" placeholder="Search job name, quote number, user, or file name&hellip;" autocomplete="off">
+      <div id="qfYears" class="qf-years"></div>
       <div id="qfList" class="qf-list"></div>
     </div>
 
@@ -285,6 +294,17 @@
       </div>
       <input id="erSearch" class="er-search" type="search" placeholder="Search name, email, role, or status&hellip;" autocomplete="off">
       <div id="erList" class="er-list"></div>
+    </div>
+
+    <div class="er-wrap" id="prWrap" style="display:none">
+      <div class="er-head">
+        <div>
+          <h2>Password reset requests</h2>
+          <p>When someone asks for a password reset from the sign-in screen, it appears here. Approve to email them a secure reset link, or deny.</p>
+        </div>
+        <span class="er-count" id="prCount"></span>
+      </div>
+      <div id="prList" class="er-list"></div>
     </div>
 
     <div class="tabs" id="tabs"></div>
@@ -441,7 +461,7 @@ window.PERM.init();
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, orderBy, getDocs, deleteDoc, enableIndexedDbPersistence, waitForPendingWrites }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -499,7 +519,7 @@ async function loadPerms(){
 }
 
 async function onAuth(user){
-  if(!user){ me=null; P.setAuth({signedIn:false,isAdmin:false,me:null}); P.setState(P.deepDefault()); var w=$("qfWrap"); if(w) w.style.display="none"; var rw=$("erWrap"); if(rw) rw.style.display="none"; return; }
+  if(!user){ me=null; P.setAuth({signedIn:false,isAdmin:false,me:null}); P.setState(P.deepDefault()); var w=$("qfWrap"); if(w) w.style.display="none"; var rw=$("erWrap"); if(rw) rw.style.display="none"; var pw=$("prWrap"); if(pw) pw.style.display="none"; return; }
   try {
     const usnap = await getDoc(doc(db,"users",user.uid));
     const d = usnap.exists()? usnap.data():{};
@@ -508,6 +528,7 @@ async function onAuth(user){
   P.setAuth({ signedIn:true, isAdmin: me.role==="admin"||isAdminEmail(me.email), me });
   await loadPerms();
   await loadRoster();
+  await loadResetRequests();
   await loadQuoteFiles();
 }
 
@@ -517,6 +538,28 @@ function qfEsc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){ret
 function qfSize(n){ n=+n||0; if(n<1024) return n+" B"; if(n<1048576) return (n/1024).toFixed(0)+" KB"; return (n/1048576).toFixed(1)+" MB"; }
 function qfMs(ts){ try{ return ts&&ts.toDate? ts.toDate().getTime() : (ts? new Date(ts).getTime():0); }catch(_){ return 0; } }
 function qfDate(ts){ try{ var d= ts&&ts.toDate? ts.toDate() : (ts? new Date(ts):null); return d? d.toLocaleString():""; }catch(_){ return ""; } }
+function qfYear(ts){ var ms=qfMs(ts); if(!ms) return "Undated"; var y=new Date(ms).getFullYear(); return (y>1970 && y<3000) ? String(y) : "Undated"; }
+let QF_YEAR; // undefined = not chosen yet; "" = all years; otherwise a year string like "2026"
+
+function renderQFYears(){
+  var box=$("qfYears"); if(!box) return;
+  // Count files per year.
+  var counts={}, order=[];
+  QF.forEach(function(o){ var y=qfYear(o.createdAt); if(!(y in counts)){ counts[y]=0; order.push(y); } counts[y]++; });
+  // Years newest first; "Undated" last.
+  var years=order.filter(function(y){ return y!=="Undated"; }).sort(function(a,b){ return Number(b)-Number(a); });
+  if(order.indexOf("Undated")>=0) years.push("Undated");
+  // First load: default to the most recent year so older files are tucked away by year.
+  if(typeof QF_YEAR==="undefined"){ QF_YEAR = years.length ? years[0] : ""; }
+  // If the chosen year no longer has files (e.g. after a delete), fall back to All.
+  if(QF_YEAR && years.indexOf(QF_YEAR)<0){ QF_YEAR=""; }
+  if(!QF.length){ box.innerHTML=""; return; }
+  var chips=['<button class="qf-year'+(QF_YEAR===""?" active":"")+'" data-year="">All<span class="n">'+QF.length+'</span></button>'];
+  years.forEach(function(y){
+    chips.push('<button class="qf-year'+(QF_YEAR===y?" active":"")+'" data-year="'+qfEsc(y)+'">'+qfEsc(y)+'<span class="n">'+counts[y]+'</span></button>');
+  });
+  box.innerHTML=chips.join("");
+}
 
 async function loadQuoteFiles(){
   var wrap=$("qfWrap"); if(!wrap) return;
@@ -530,6 +573,7 @@ async function loadQuoteFiles(){
     QF = [];
     snaps.forEach(function(s){ var o=s.data()||{}; o.id=s.id; QF.push(o); });
     if(!isMgr) QF.sort(function(a,b){ return qfMs(b.createdAt) - qfMs(a.createdAt); });
+    renderQFYears();
     renderQF($("qfSearch").value||"");
   }catch(e){
     $("qfList").innerHTML = '<div class="qf-empty">Could not load quote files'+(e&&e.code?(" ("+e.code+")"):"")+'.</div>';
@@ -540,6 +584,7 @@ function renderQF(filter){
   var list=$("qfList"); if(!list) return;
   var f=String(filter||"").toLowerCase().trim();
   var rows = QF.filter(function(o){
+    if(QF_YEAR && qfYear(o.createdAt)!==QF_YEAR) return false;
     if(!f) return true;
     return [o.jobName,o.quoteNo,o.userName,o.userEmail,o.filename,o.app].join(" ").toLowerCase().indexOf(f)>=0;
   });
@@ -550,6 +595,8 @@ function renderQF(filter){
     var qn  = o.quoteNo ? ("Quote #"+qfEsc(o.quoteNo)) : "No quote #";
     var meta = qn+" &middot; "+qfEsc(o.userName||o.userEmail||"Unknown")+" &middot; "+qfEsc(qfDate(o.createdAt));
     var app = o.app ? '<span class="qf-chip">'+qfEsc(o.app)+'</span>' : "";
+    var op = (o.ready === false) ? ""
+      : '<button class="qf-btn open" data-op="'+qfEsc(o.id)+'">Open</button>';
     var dl = (o.ready === false)
       ? '<span class="qf-btn" style="opacity:.5;cursor:default">Saving&hellip;</span>'
       : '<button class="qf-btn" data-dl="'+qfEsc(o.id)+'">Download</button>';
@@ -558,7 +605,7 @@ function renderQF(filter){
       + '<div class="qf-job">'+app+job+'</div>'
       + '<div class="qf-meta">'+meta+'</div>'
       + '<div class="qf-file">'+qfEsc(o.filename||"file")+' &middot; '+qfSize(o.size)+'</div>'
-      + '</div><div class="qf-acts">'+dl+del+'</div></div>';
+      + '</div><div class="qf-acts">'+op+dl+del+'</div></div>';
   }).join("");
 }
 
@@ -579,6 +626,26 @@ async function qfDownload(o){
   }catch(e){ P.toast("Download failed: "+(e&&e.code?e.code:"try again")); }
 }
 
+/* Rebuild a file from its chunks and open it in a new browser tab (view in place). */
+async function qfOpen(o, win){
+  try{
+    var snaps = await getDocs(query(collection(db,"quoteFiles",o.id,"chunks"), orderBy("i")));
+    var parts = [];
+    snaps.forEach(function(s){ var d=s.data()||{}; parts[d.i|0] = d.data||""; });
+    var b64 = parts.join("");
+    var bin = atob(b64), len = bin.length, arr = new Uint8Array(len);
+    for(var i=0;i<len;i++) arr[i] = bin.charCodeAt(i);
+    var blob = new Blob([arr], { type: o.mime || "application/octet-stream" });
+    var url = URL.createObjectURL(blob);
+    if(win && !win.closed){ win.location = url; }
+    else { window.open(url, "_blank", "noopener"); }
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 60000);
+  }catch(e){
+    if(win && !win.closed){ try{ win.close(); }catch(_){} }
+    P.toast("Open failed: "+(e&&e.code?e.code:"try again"));
+  }
+}
+
 /* Remove a file: its chunk documents first, then the metadata record. */
 async function qfDelete(o){
   var snaps = await getDocs(collection(db,"quoteFiles",o.id,"chunks"));
@@ -588,11 +655,26 @@ async function qfDelete(o){
 }
 
 (function(){
-  var s=$("qfSearch"), l=$("qfList");
+  var s=$("qfSearch"), l=$("qfList"), y=$("qfYears");
   if(s) s.addEventListener("input", function(){ renderQF(this.value); });
+  if(y) y.addEventListener("click", function(e){
+    var yb = e.target.closest ? e.target.closest("[data-year]") : null;
+    if(!yb) return;
+    QF_YEAR = yb.getAttribute("data-year");   // "" = all years
+    renderQFYears();
+    renderQF($("qfSearch").value||"");
+  });
   if(l) l.addEventListener("click", async function(e){
+    var opBtn  = e.target.closest ? e.target.closest("[data-op]")  : null;
     var dlBtn  = e.target.closest ? e.target.closest("[data-dl]")  : null;
     var delBtn = e.target.closest ? e.target.closest("[data-del]") : null;
+    if(opBtn){
+      // open the tab synchronously (within the click) so pop-up blockers allow it
+      var win = window.open("", "_blank", "noopener");
+      var oo = QF.filter(function(o){ return o.id===opBtn.getAttribute("data-op"); })[0];
+      if(oo) qfOpen(oo, win); else if(win) win.close();
+      return;
+    }
     if(dlBtn){
       var od = QF.filter(function(o){ return o.id===dlBtn.getAttribute("data-dl"); })[0];
       if(od) qfDownload(od);
@@ -606,6 +688,7 @@ async function qfDelete(o){
       try{
         await qfDelete(o);
         QF = QF.filter(function(x){ return x.id!==id; });
+        renderQFYears();
         renderQF($("qfSearch").value||"");
         P.toast("File deleted.");
       }catch(err){ P.toast("Delete failed: "+(err&&err.code?err.code:"check permissions")); }
@@ -707,6 +790,84 @@ async function erUpdate(uid, fields, okMsg){
       }
     });
   }
+})();
+
+/* ---------- Password reset requests (approve = email a reset link / deny) ---------- */
+let PR = [];
+async function loadResetRequests(){
+  var wrap=$("prWrap"); if(!wrap) return;
+  if(!db || !erCan()){ wrap.style.display="none"; return; }
+  wrap.style.display="";
+  try{
+    var snaps = await getDocs(collection(db,"passwordResets"));
+    PR = [];
+    snaps.forEach(function(s){ var o=s.data()||{}; o.id=s.id; PR.push(o); });
+    PR.sort(function(a,b){
+      var pa=(a.status||"pending")==="pending"?0:1, pb=(b.status||"pending")==="pending"?0:1;
+      if(pa!==pb) return pa-pb;
+      return qfMs(b.requestedAt)-qfMs(a.requestedAt);
+    });
+    renderResetRequests();
+  }catch(e){
+    $("prList").innerHTML='<div class="er-empty">Could not load reset requests'+(e&&e.code?(" ("+e.code+")"):"")+'.</div>';
+  }
+}
+
+function renderResetRequests(){
+  var list=$("prList"); if(!list) return;
+  var pend = PR.filter(function(o){ return (o.status||"pending")==="pending"; });
+  var cnt=$("prCount"); if(cnt) cnt.textContent = pend.length ? (pend.length+" pending") : "None pending";
+  if(!PR.length){ list.innerHTML='<div class="er-empty">No password reset requests.</div>'; return; }
+  var handled = PR.filter(function(o){ return (o.status||"pending")!=="pending"; }).slice(0,8);
+  var rows = pend.concat(handled);
+  list.innerHTML = rows.map(function(o){
+    var st=o.status||"pending";
+    var when=qfDate(o.requestedAt);
+    var acts="";
+    if(st==="pending"){
+      acts += '<button class="er-btn ok" data-prok="'+qfEsc(o.id)+'">Approve &amp; email reset</button>';
+      acts += '<button class="er-btn warn" data-prno="'+qfEsc(o.id)+'">Deny</button>';
+    } else {
+      acts += '<button class="er-btn del" data-prdel="'+qfEsc(o.id)+'">Remove</button>';
+    }
+    return '<div class="er-row '+(st==="pending"?"pending":"")+'">'
+      + '<div><div class="er-name">'+qfEsc(o.email||"(no email)")+'<span class="er-badge '+qfEsc(st)+'">'+qfEsc(st)+'</span></div>'
+      + '<div class="er-sub">Requested '+qfEsc(when||"recently")+(o.handledBy?(" &middot; handled by "+qfEsc(o.handledBy)):"")+'</div></div>'
+      + '<div class="er-acts">'+acts+'</div></div>';
+  }).join("");
+}
+
+(function(){
+  var l=$("prList"); if(!l) return;
+  l.addEventListener("click", async function(e){
+    var ok=e.target.closest("[data-prok]"), no=e.target.closest("[data-prno]"), rm=e.target.closest("[data-prdel]");
+    if(ok){
+      var id=ok.getAttribute("data-prok");
+      var o=PR.filter(function(x){ return x.id===id; })[0]; if(!o) return;
+      ok.disabled=true;
+      try{
+        await sendPasswordResetEmail(auth, o.email);
+        try{ await updateDoc(doc(db,"passwordResets",id), { status:"approved", handledBy:(me&&me.email)||"", handledAt:new Date().toISOString() }); }catch(_){}
+        o.status="approved"; o.handledBy=(me&&me.email)||"";
+        renderResetRequests();
+        P.toast("Reset email sent to "+o.email+".");
+      }catch(err){ ok.disabled=false; P.toast("Could not send reset: "+(err&&err.code?err.code:"try again")); }
+      return;
+    }
+    if(no){
+      var id2=no.getAttribute("data-prno");
+      var o2=PR.filter(function(x){ return x.id===id2; })[0]; if(!o2) return;
+      try{ await updateDoc(doc(db,"passwordResets",id2), { status:"denied", handledBy:(me&&me.email)||"", handledAt:new Date().toISOString() }); o2.status="denied"; o2.handledBy=(me&&me.email)||""; renderResetRequests(); P.toast("Request denied."); }
+      catch(err){ P.toast("Update failed: "+(err&&err.code?err.code:"check permissions")); }
+      return;
+    }
+    if(rm){
+      var id3=rm.getAttribute("data-prdel");
+      try{ await deleteDoc(doc(db,"passwordResets",id3)); PR=PR.filter(function(x){ return x.id!==id3; }); renderResetRequests(); P.toast("Removed."); }
+      catch(err){ P.toast("Delete failed: "+(err&&err.code?err.code:"check permissions")); }
+      return;
+    }
+  });
 })();
 
 /* init */
