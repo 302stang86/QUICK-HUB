@@ -22,17 +22,17 @@
     var s = document.createElement("style");
     s.id = "fdec-ubar-css";
     s.textContent = [
-      ".fdec-ubar{position:relative;width:100%;background:#12213c;line-height:0;z-index:5;}",
-      ".fdec-ubar-bg{display:block;width:100%;height:auto;}",
+      ".fdec-ubar{position:relative;width:100%;background:#12213c;line-height:0;z-index:5;aspect-ratio:1600/135;overflow:hidden;}",
+      ".fdec-ubar-bg{display:block;width:100%;height:100%;object-fit:cover;object-position:center;}",
       ".fdec-ubar-title{position:absolute;left:16%;right:27%;top:11%;bottom:37%;",
         "display:flex;flex-direction:column;justify-content:center;line-height:1.04;pointer-events:none;}",
       ".fdec-ubar-h1{color:#fff;font-weight:800;letter-spacing:.2px;",
         "font-family:'Arial Narrow',Arial,Helvetica,sans-serif;",
-        "font-size:clamp(20px,5.4vw,56px);text-shadow:0 1px 4px rgba(0,0,0,.45);",
+        "font-size:clamp(13px,2.8vw,30px);text-shadow:0 1px 4px rgba(0,0,0,.45);",
         "white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}",
       ".fdec-ubar-sub{color:#cfdcee;font-weight:700;text-transform:uppercase;",
         "font-family:Arial,Helvetica,sans-serif;letter-spacing:.12em;",
-        "font-size:clamp(9px,1.7vw,18px);margin-top:.45em;text-shadow:0 1px 3px rgba(0,0,0,.4);",
+        "font-size:clamp(7px,1.25vw,13px);margin-top:.3em;text-shadow:0 1px 3px rgba(0,0,0,.4);",
         "white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}",
       /* relocated action buttons: slim row under the banner on phones, */
       /* overlaid in the banner's lower-left on wider screens (like the mock). */
