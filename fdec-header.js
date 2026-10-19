@@ -59,6 +59,12 @@
 
   function build() {
     if (document.querySelector(".fdec-ubar")) return;
+    // When this page is embedded inside another page (an iframe, e.g. the
+    // Incident Reporting tab on Home), skip the banner so it does not show a
+    // second time — just hide the page's own masthead so only the form shows.
+    var framed = false;
+    try { framed = window.top !== window.self; } catch (e) { framed = true; }
+    if (framed) { relocate(document.createElement("div")); return; }
     injectCSS();
     var header = document.createElement("header");
     header.className = "fdec-ubar no-print";
