@@ -220,6 +220,18 @@
   .er-empty { font-size:13px; color:#5c6470; font-style:italic; padding:8px 2px; }
   @media(max-width:620px){ .er-row { grid-template-columns:1fr; } .er-acts { justify-content:flex-start; } }
 </style>
+<!-- FDEC PWA / offline -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1B2A4A">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Quick Hub">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<script defer src="fdec-offline.js"></script>
+<meta name="fdec-page-title" content="Administration">
+<script defer src="fdec-header.js"></script>
 </head>
 <body>
   <div class="bg-layer" aria-hidden="true"></div>
@@ -430,7 +442,7 @@ window.PERM.init();
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, orderBy, getDocs, deleteDoc }
+import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, orderBy, getDocs, deleteDoc, enableIndexedDbPersistence, waitForPendingWrites }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* ============================================================
@@ -701,6 +713,8 @@ if(configured){
   try {
     const app = initializeApp(firebaseConfig);
     auth = getAuth(app); db = getFirestore(app);
+    try { enableIndexedDbPersistence(db).catch(function(){}); } catch(e){}
+    (window.__fdecWaiters = window.__fdecWaiters || []).push(function(){ return waitForPendingWrites(db); });
     PERM_REF = doc(db,"config","permissions");
     onAuthStateChanged(auth, onAuth);
   } catch(e){ P.toast("Firebase failed to initialize."); }

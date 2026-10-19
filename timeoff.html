@@ -256,6 +256,17 @@ pre{background:#F1F3F5;border:1px solid var(--line);border-radius:var(--radius);
 body>*{position:relative;z-index:1;}
 @media print{.bg-layer{display:none !important;}}
 </style>
+<!-- FDEC PWA / offline -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1B2A4A">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Quick Hub">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<script defer src="fdec-offline.js"></script>
+<meta name="fdec-page-title" content="Time-Off Requests">
+<script defer src="fdec-header.js"></script>
 </head>
 <body>
 <div class="bg-layer" aria-hidden="true"></div>
@@ -370,7 +381,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc,
-  collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp
+  collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp,
+  enableIndexedDbPersistence, waitForPendingWrites
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const $  = (s, r=document) => r.querySelector(s);
@@ -440,6 +452,8 @@ if (!configured){
   app  = initializeApp(firebaseConfig);
   auth = getAuth(app);
   db   = getFirestore(app);
+  try { enableIndexedDbPersistence(db).catch(function(){}); } catch(e){}
+  (window.__fdecWaiters = window.__fdecWaiters || []).push(function(){ return waitForPendingWrites(db); });
   onAuthStateChanged(auth, onAuth);
   show("gateView");
 }

@@ -73,6 +73,18 @@
   .no-results{display:none;color:var(--muted);font-style:italic;padding:14px 2px}
   footer{max-width:1000px;margin:0 auto;padding:4px max(16px,env(safe-area-inset-left)) 30px;font-size:11.5px;color:#55606e}
 </style>
+<!-- FDEC PWA / offline -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1B2A4A">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Quick Hub">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<script defer src="fdec-offline.js"></script>
+<meta name="fdec-page-title" content="NFPA 25 Frequencies">
+<script defer src="fdec-header.js"></script>
 </head>
 <body>
 <div class="bg-layer" aria-hidden="true"></div>

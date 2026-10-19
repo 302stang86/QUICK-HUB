@@ -16,7 +16,7 @@ import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword,
   createUserWithEmailAndPassword, sendPasswordResetEmail, updateProfile, signOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, serverTimestamp }
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp, enableIndexedDbPersistence, waitForPendingWrites }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* ---- The one project the whole hub runs on ---- */
@@ -56,6 +56,11 @@ const DEFAULT_PAGES = {
 const app  = getApps().length ? getApp() : initializeApp(firebaseConfig, "fdec");
 const auth = getAuth(app);
 const db   = getFirestore(app);
+
+/* Offline: cache reads and queue writes on the device; they sync when signal
+   returns. Fails quietly if another tab already holds persistence. */
+try { enableIndexedDbPersistence(db).catch(function(){}); } catch(e){}
+(window.__fdecWaiters = window.__fdecWaiters || []).push(function(){ return waitForPendingWrites(db); });
 
 const emailAllowed = e => {
   e = String(e||"").toLowerCase();

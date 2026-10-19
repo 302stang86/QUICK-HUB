@@ -1,0 +1,17 @@
+{
+  "name": "FDEC Quick Hub",
+  "short_name": "Quick Hub",
+  "description": "Fire Defense Equipment Company — Employee Hub",
+  "id": "./",
+  "start_url": "index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#12213c",
+  "theme_color": "#1B2A4A",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

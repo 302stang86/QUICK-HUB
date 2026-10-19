@@ -1,0 +1,118 @@
+/* FDEC Quick Hub — service worker
+   Caches the whole hub so every page opens with no signal, and lets the hub
+   install to a phone's home screen. Served from the repo root, so its scope
+   covers all pages (e.g. https://<user>.github.io/QUICK-HUB/).
+
+   Strategy:
+     - Page loads (navigation): network-first, fall back to the cached copy
+       (fresh when online, still opens underground).
+     - Same-origin assets (js, css, images): stale-while-revalidate (instant,
+       updates quietly in the background).
+     - Firebase / library CDNs (gstatic, cdnjs, jsdelivr): cache-first, so the
+       sign-in and data libraries also work with no signal after the first load.
+     - Everything else (Firestore API, etc.): straight to network — Firestore's
+       own offline mode handles those when there is no signal.
+*/
+const CACHE = 'fdec-quickhub-v1';
+
+const CORE = [
+  './',
+  'index.html',
+  'administration.html',
+  'announcements.html',
+  'fdec-itm-sop.html',
+  'fire-dispatch-directory.html',
+  'incident-report.html',
+  'itm-reports.html',
+  'nfpa25-frequencies.html',
+  'oncall.html',
+  'quoting.html',
+  'timeoff.html',
+  'timesheet.html',
+  'troubleshooting-guide.html',
+  'troubleshooting-tech.gif',
+  'fdec-auth.js',
+  'fdec-offline.js',
+  'fdec-header.js',
+  'manifest.webmanifest',
+  'icon-192.png',
+  'icon-512.png',
+  'icon-maskable-512.png',
+  'apple-touch-icon.png'
+];
+
+self.addEventListener('install', (e) => {
+  e.waitUntil((async () => {
+    const c = await caches.open(CACHE);
+    // Tolerant precache: one missing file never breaks the whole install.
+    await Promise.allSettled(CORE.map((u) => c.add(new Request(u, { cache: 'reload' }))));
+    self.skipWaiting();
+  })());
+});
+
+self.addEventListener('activate', (e) => {
+  e.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)));
+    await self.clients.claim();
+  })());
+});
+
+function isLibraryCDN(url) {
+  const h = url.hostname;
+  return h === 'www.gstatic.com' || h.endsWith('.gstatic.com') ||
+         h === 'cdnjs.cloudflare.com' || h === 'cdn.jsdelivr.net' ||
+         h === 'unpkg.com' || h === 'code.jquery.com';
+}
+
+self.addEventListener('fetch', (e) => {
+  const req = e.request;
+  if (req.method !== 'GET') return;                 // let writes/POST hit network
+  let url;
+  try { url = new URL(req.url); } catch (_) { return; }
+
+  if (url.origin === self.location.origin) {
+    if (req.mode === 'navigate') e.respondWith(networkFirst(req));
+    else e.respondWith(staleWhileRevalidate(req));
+  } else if (isLibraryCDN(url)) {
+    e.respondWith(cacheFirst(req));
+  }
+  // otherwise: do nothing -> browser handles it (Firestore/Auth API calls)
+});
+
+async function networkFirst(req) {
+  const c = await caches.open(CACHE);
+  try {
+    const res = await fetch(req);
+    if (res && res.ok) c.put(req, res.clone());
+    return res;
+  } catch (_) {
+    return (await c.match(req, { ignoreSearch: true })) ||
+           (await c.match('index.html')) ||
+           new Response('<!doctype html><meta charset="utf-8"><body style="font:16px system-ui;padding:24px;color:#1B2A4A"><h1>Offline</h1><p>This page has not been opened on this device yet. Open it once while you have signal, then it will work offline.</p>',
+             { headers: { 'Content-Type': 'text/html' } });
+  }
+}
+
+async function staleWhileRevalidate(req) {
+  const c = await caches.open(CACHE);
+  const cached = await c.match(req, { ignoreSearch: false });
+  const net = fetch(req).then((res) => {
+    if (res && res.ok && res.type === 'basic') c.put(req, res.clone());
+    return res;
+  }).catch(() => null);
+  return cached || (await net) || new Response('', { status: 504 });
+}
+
+async function cacheFirst(req) {
+  const c = await caches.open(CACHE);
+  const cached = await c.match(req);
+  if (cached) return cached;
+  try {
+    const res = await fetch(req);
+    if (res && (res.ok || res.type === 'opaque')) c.put(req, res.clone());
+    return res;
+  } catch (_) {
+    return cached || new Response('', { status: 504 });
+  }
+}
