@@ -626,7 +626,11 @@ async function qfDownload(o){
   }catch(e){ P.toast("Download failed: "+(e&&e.code?e.code:"try again")); }
 }
 
-/* Rebuild a file from its chunks and open it in a new browser tab (view in place). */
+/* Rebuild a file from its chunks and open it in a new browser tab.
+   Saved drafts are self-contained HTML copies of the Quoting suite. Those are
+   written straight into the new window so it keeps a real (same-origin) page —
+   a blob: URL gives an opaque origin where the tool's localStorage throws and
+   the page renders blank. Other files (PDF, Word, exports) open from a blob URL. */
 async function qfOpen(o, win){
   try{
     var snaps = await getDocs(query(collection(db,"quoteFiles",o.id,"chunks"), orderBy("i")));
@@ -635,6 +639,19 @@ async function qfOpen(o, win){
     var b64 = parts.join("");
     var bin = atob(b64), len = bin.length, arr = new Uint8Array(len);
     for(var i=0;i<len;i++) arr[i] = bin.charCodeAt(i);
+    var mime = (o.mime||"").toLowerCase();
+    var name = (o.filename||"").toLowerCase();
+    var isHtml = mime.indexOf("text/html")>=0 || /\.x?html?$/.test(name);
+    if(isHtml){
+      var html = new TextDecoder("utf-8").decode(arr);
+      if(win && !win.closed){
+        win.document.open(); win.document.write(html); win.document.close();
+      } else {
+        var hu = URL.createObjectURL(new Blob([arr], { type:"text/html" }));
+        window.open(hu, "_blank"); setTimeout(function(){ URL.revokeObjectURL(hu); }, 120000);
+      }
+      return;
+    }
     var blob = new Blob([arr], { type: o.mime || "application/octet-stream" });
     var url = URL.createObjectURL(blob);
     if(win && !win.closed){ win.location = url; }
