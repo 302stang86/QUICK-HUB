@@ -638,8 +638,8 @@ async function qfOpen(o, win){
     var blob = new Blob([arr], { type: o.mime || "application/octet-stream" });
     var url = URL.createObjectURL(blob);
     if(win && !win.closed){ win.location = url; }
-    else { window.open(url, "_blank", "noopener"); }
-    setTimeout(function(){ URL.revokeObjectURL(url); }, 60000);
+    else { window.open(url, "_blank"); }
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 120000);
   }catch(e){
     if(win && !win.closed){ try{ win.close(); }catch(_){} }
     P.toast("Open failed: "+(e&&e.code?e.code:"try again"));
@@ -669,8 +669,10 @@ async function qfDelete(o){
     var dlBtn  = e.target.closest ? e.target.closest("[data-dl]")  : null;
     var delBtn = e.target.closest ? e.target.closest("[data-del]") : null;
     if(opBtn){
-      // open the tab synchronously (within the click) so pop-up blockers allow it
-      var win = window.open("", "_blank", "noopener");
+      // open the tab synchronously (within the click) so pop-up blockers allow it.
+      // No "noopener" here: that makes window.open return null, which left the
+      // new tab blank because we never got a handle to navigate it.
+      var win = window.open("", "_blank");
       var oo = QF.filter(function(o){ return o.id===opBtn.getAttribute("data-op"); })[0];
       if(oo) qfOpen(oo, win); else if(win) win.close();
       return;
