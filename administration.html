@@ -396,12 +396,14 @@ window.PERM = (function () {
   var ROLES = [
     { id:"new",  name:"New Employee", desc:"Onboarding tier with view-only access while training." },
     { id:"tech", name:"Technician",   desc:"Field technician performing ITM, reports, and assigned jobs." },
+    { id:"temp", name:"Temp",         desc:"Temporary worker — Quick Hub access limited to the Troubleshooting Guide and NFPA 25 Frequencies only." },
     { id:"mgr",  name:"Manager",      desc:"Department manager overseeing quoting, scheduling, and approvals." },
     { id:"admin",name:"Administrator",desc:"Full control, including user management and permission settings." }
   ];
   var DEFAULTS = {
     new:["viewHub","viewDispatch","editOwnProfile","viewAnnouncements","requestTimeOff","viewOwnBalance","viewOnCall","viewSchedule","viewOwnJobs"],
     tech:["viewHub","viewDispatch","editOwnProfile","viewAnnouncements","viewReports","createReports","editOwnReports","exportReports","viewQuotes","viewSchedule","viewOwnJobs","requestTimeOff","viewOwnBalance","viewOnCall","requestRotationChange","viewInventory","adjustInventory","orderParts"],
+    temp:["viewHub"],
     mgr:["viewHub","viewDispatch","editOwnProfile","viewAnnouncements","viewReports","createReports","editOwnReports","editAllReports","deleteReports","approveReports","exportReports","viewQuotes","createQuotes","editQuotes","setPricing","approveQuotes","viewMargins","viewSchedule","viewOwnJobs","createJobs","editSchedule","manageCustomers","requestTimeOff","viewOwnBalance","approveTimeOff","viewOnCall","editOnCall","requestRotationChange","viewInventory","adjustInventory","manageInventoryItems","orderParts","manageUsers","assignRoles","viewAudit"],
     admin:null
   };
@@ -755,7 +757,7 @@ function renderRoster(filter){
     var st = o.status || "pending";
     var isSelf = me && o.uid===me.uid;
     var isAdm = o.role==="admin";
-    var roleOpts = ["new","tech","manager","admin"].map(function(r){
+    var roleOpts = ["new","tech","temp","manager","admin"].map(function(r){
       if(r==="admin" && !canAdmin) return "";   // managers cannot grant admin
       return '<option value="'+r+'"'+(o.role===r?" selected":"")+'>'+r.charAt(0).toUpperCase()+r.slice(1)+'</option>';
     }).join("");

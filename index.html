@@ -837,6 +837,14 @@ function applyBadge(){
       if(window.FDECAuth && window.FDECAuth.ready){
         window.FDECAuth.ready.then(function(auth){
           renderHub(auth);
+          // Temp employees get a minimal hub: only the two reference tools (shown
+          // as cards) and no extra tabs (SOP, Confined Space, Lifts, Incident).
+          var role = auth && auth.profile && auth.profile.role;
+          if(role === 'temp'){
+            document.querySelectorAll('#tabs button').forEach(function(b){
+              if(b.dataset.tab !== 'home'){ b.style.display = 'none'; }
+            });
+          }
           var who = document.getElementById('whoami');
           if(who && auth.profile){
             var nm = auth.profile.name || (auth.profile.email||'').split('@')[0] || (auth.user && auth.user.email) || 'Signed in';
