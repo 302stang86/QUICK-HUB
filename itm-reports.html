@@ -2022,7 +2022,9 @@ function validateDeficiencyTypes(onlyIds){
       let gridDocumented=false;
       if(fid==='fd24'){
         const gsec=f.sections[0];
-        gridDocumented = (gsec.items||[]).some(it=>store['fd24_i'+it.n+'_no']===true && String(store['fd24_i'+it.n+'_cmt']||'').trim());
+        // The grid's OK / N/A / NO marks document each item, so a "No" by itself
+        // is enough; the comment to its right is optional.
+        gridDocumented = (gsec.items||[]).some(it=>store['fd24_i'+it.n+'_no']===true);
       }
       complianceSections(fid).forEach(cs=>{
         const ok=store[cs.key+'_ok']===true;
@@ -2041,16 +2043,8 @@ function validateDeficiencyTypes(onlyIds){
         }
       });
     }
-    // FD-24 (grid) & FD-25 (yn/yn_why): if "No" is selected, a comment is required.
-    if(fid==='fd24'){
-      const sec=f.sections[0];
-      sec.items.forEach(it=>{
-        const base='fd24_i'+it.n;
-        if(store[base+'_no']===true && !String(store[base+'_cmt']||'').trim()){
-          problems.push({ form:shortName(f), section:'Item '+it.n, comment:'"No" selected — a comment is required: '+it.text.slice(0,70), kind:'no_comment' });
-        }
-      });
-    }
+    // FD-24 (grid): the comment to the right of the marks is optional — a "No"
+    // may be submitted with or without a note. (FD-25 below still prompts.)
     if(fid==='fd25'){
       const sec=f.sections[0];
       const formComments=String(store['fd25_comments']||'').trim();
