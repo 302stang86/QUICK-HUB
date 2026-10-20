@@ -37,12 +37,14 @@ const ALLOWED_DOMAINS = ["firedefense.com"];
 /* Fallback page access, used until Administration saves config/permissions.
    Admin is always allowed regardless of this map. */
 const DEFAULT_PAGES = {
-  home:            ["new","tech","manager","admin"],
+  // "temp" is a limited tier: only the hub home plus the Troubleshooting Guide
+  // and NFPA 25 Frequencies tools. It is intentionally left off every other page.
+  home:            ["new","tech","manager","admin","temp"],
   announcements:   ["new","tech","manager","admin"],
   sop:             ["new","tech","manager","admin"],
   dispatch:        ["new","tech","manager","admin"],
-  troubleshooting: ["new","tech","manager","admin"],
-  frequencies:     ["new","tech","manager","admin"],
+  troubleshooting: ["new","tech","manager","admin","temp"],
+  frequencies:     ["new","tech","manager","admin","temp"],
   incident:        ["new","tech","manager","admin"],
   itm:             ["tech","manager","admin"],
   servicetrade:    ["tech","manager","admin"],
