@@ -551,7 +551,12 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:18px}
   .fdc-header{grid-template-columns:1fr}
   .devices{flex-wrap:wrap}
   .gridform .ghead,.gridform .grow{grid-template-columns:24px 1fr 30px 30px 30px}
-  .gridform .ghead div:last-child,.gridform .grow .gcmt{display:none}
+  .gridform .ghead div:last-child{display:none}
+  /* keep the Comment field usable on phones: drop it to a full-width line so a
+     tech can enter the note a "No" requires instead of it being hidden */
+  .gridform .grow .gcmt{grid-column:1/-1;border-left:none;border-top:1px dashed var(--line2);padding:5px 7px}
+  .gridform .grow .gcmt input{font-size:12px}
+  .gridform .grow .gcmt input::placeholder{color:#8a949e}
   .summary-row{grid-template-columns:1fr 1.6fr 0.8fr}
   .summary-row>div{padding:5px 6px;font-size:11px}
 }
@@ -2011,14 +2016,22 @@ function validateDeficiencyTypes(onlyIds){
     });
     // Compliance blocks: neither box checked. Only on forms with some data.
     if(formHasData(fid)){
+      // The FD-24 grid carries its own per-item Comment column, so a "No" with a
+      // comment already documents the deficiency. When that is present, its
+      // separate compliance block is not required to submit.
+      let gridDocumented=false;
+      if(fid==='fd24'){
+        const gsec=f.sections[0];
+        gridDocumented = (gsec.items||[]).some(it=>store['fd24_i'+it.n+'_no']===true && String(store['fd24_i'+it.n+'_cmt']||'').trim());
+      }
       complianceSections(fid).forEach(cs=>{
         const ok=store[cs.key+'_ok']===true;
         const exc=store[cs.key+'_exc']===true;
-        if(!ok && !exc){
+        if(!ok && !exc && !gridDocumented){
           problems.push({ form:shortName(f), section:cs.name, comment:'Compliance not marked (select one of the two boxes)', kind:'compliance' });
         }
         // "Compliant, except as listed below" requires at least one deficiency/comment listed.
-        if(exc && cs.defKey){
+        if(exc && cs.defKey && !gridDocumented){
           let arr=store[cs.defKey];
           if(typeof arr==='string'){ try{arr=JSON.parse(arr);}catch{arr=[];} }
           const hasEntry=Array.isArray(arr) && arr.some(r=>r && String(r.c||'').trim());
@@ -3433,7 +3446,7 @@ function renderGridForm(f,paper){
     if(it.dateField){ const dd=document.createElement('span'); dd.className='cbwrap'; dd.style.marginLeft='6px'; dd.innerHTML='<span class="lab">Date:</span>'; dd.appendChild(inputEl(base+'_date',{placeholder:'—'})); tx.appendChild(dd); }
     r.appendChild(tx);
     ['ok','na','no'].forEach(k=>{ const cx=document.createElement('div'); cx.className='gx'; cx.appendChild(xbox(base+'_'+k)); r.appendChild(cx); });
-    const cm=document.createElement('div'); cm.className='gcmt'; const ci=document.createElement('input'); ci.value=val(base+'_cmt'); ci.placeholder='…';
+    const cm=document.createElement('div'); cm.className='gcmt'; const ci=document.createElement('input'); ci.value=val(base+'_cmt'); ci.placeholder='Comment / note';
     ci.oninput=()=>{ setVal(base+'_cmt',ci.value); flash(); }; cm.appendChild(ci); r.appendChild(cm);
     g.appendChild(r);
   });

@@ -259,9 +259,11 @@
   .userchip button{appearance:none;border:1px solid #4A545E;background:transparent;color:#fff;border-radius:7px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
   .userchip button:hover{background:rgba(255,255,255,.1)}
   a.hublink{position:relative}
-  .newbadge{position:absolute;top:-9px;right:-9px;z-index:3;line-height:0;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4));animation:fdecflash 1.1s ease-in-out infinite;}
-  @keyframes fdecflash{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.2;transform:scale(.86)}}
-  @media (prefers-reduced-motion:reduce){.newbadge{animation:none}}
+  a.hublink .hubicon{position:relative;overflow:visible}
+  .hubnote{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#C1121C;color:#fff;font:800 11px/1 Arial,Helvetica,sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.5);border:2px solid #fff;z-index:4;box-sizing:border-box;animation:fdecflash 1.15s ease-in-out infinite;}
+  .hubnote.dot{min-width:0;width:15px;height:15px;padding:0;}
+  @keyframes fdecflash{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.82)}}
+  @media (prefers-reduced-motion:reduce){.hubnote{animation:none}}
 </style>
 <script type="module" src="fdec-auth.js" data-page="home"></script>
 <!-- FDEC PWA / offline -->
@@ -716,46 +718,78 @@
 </main>
 
 <script type="module">
-/* Flashing "new announcement" badge on the Announcements card. */
+/* Notification badges on hub cards:
+   - Announcements: a flashing red dot while there is an unread announcement.
+     announcements.html stamps a "last read" time on view, so returning to the
+     hub (or clicking the card) clears the dot.
+   - Administration: a flashing red count of items waiting on an admin —
+     pending account approvals plus pending password-reset requests. */
 import { getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, query, orderBy, limit, onSnapshot }
+import { getFirestore, collection, query, orderBy, limit, where, onSnapshot }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 var LS = "fdec_announce_lastread";
-var BADGE = '<span class="newbadge" title="New announcement" aria-label="New announcement">'
-  + '<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">'
-  + '<path d="M12 2.4 L22.4 20.6 H1.6 Z" fill="#C1121C" stroke="#ffffff" stroke-width="1.3" stroke-linejoin="round"/>'
-  + '<rect x="11" y="8.4" width="2" height="6.4" rx="1" fill="#fff"/>'
-  + '<circle cx="12" cy="17.8" r="1.25" fill="#fff"/></svg></span>';
-var unread = false;
+var annLatestMs = 0;      // newest announcement time
+var adminPending = 0;     // pending approvals + reset requests
 
-function applyBadge(){
-  var card = document.querySelector('#hubLinks a.hublink[href="announcements.html"]');
+function cardFor(href){ return document.querySelector('#hubLinks a.hublink[href="'+href+'"]'); }
+function setNote(card, show, text, dot){
   if(!card) return;
-  var has = card.querySelector('.newbadge');
-  if(unread && !has) card.insertAdjacentHTML('beforeend', BADGE);
-  else if(!unread && has) has.remove();
+  var icon = card.querySelector('.hubicon'); if(!icon) return;
+  var el = icon.querySelector('.hubnote');
+  if(!show){ if(el) el.remove(); return; }
+  if(!el){ el = document.createElement('span'); icon.appendChild(el); }
+  el.className = 'hubnote' + (dot ? ' dot' : '');
+  el.textContent = dot ? '' : (text || '');
+  el.title = dot ? 'New announcement' : (text + ' waiting for approval');
 }
+
+function annRead(){ try{ return Number(localStorage.getItem(LS) || 0) || 0; }catch(e){ return 0; } }
+function paintAnn(){ setNote(cardFor('announcements.html'), annLatestMs > 0 && annLatestMs > annRead(), '', true); }
+function paintAdmin(){ setNote(cardFor('administration.html'), adminPending > 0, String(adminPending), false); }
+function paintAll(){ paintAnn(); paintAdmin(); }
+
+function markAnnRead(){ try{ if(annLatestMs > 0) localStorage.setItem(LS, String(annLatestMs)); }catch(e){} paintAnn(); }
+
+// Re-check the read flag when the user comes back to the hub after reading, and
+// clear the dot the moment they click through to Announcements.
+window.addEventListener('storage', function(e){ if(e.key === LS) paintAnn(); });
+window.addEventListener('focus', paintAnn);
+document.addEventListener('visibilitychange', function(){ if(!document.hidden) paintAnn(); });
+document.addEventListener('click', function(e){
+  var a = e.target && e.target.closest ? e.target.closest('#hubLinks a.hublink[href="announcements.html"]') : null;
+  if(a) setTimeout(markAnnRead, 50);
+}, true);
+
+// Cards are rebuilt when the role filter runs, so re-apply badges on any change.
 (function watch(){
   var hub = document.getElementById('hubLinks');
-  if(hub){ new MutationObserver(applyBadge).observe(hub,{childList:true}); applyBadge(); }
+  if(hub){ new MutationObserver(paintAll).observe(hub,{childList:true}); paintAll(); }
   else setTimeout(watch,60);
 })();
 
 (function run(){
   if(!(window.FDECAuth && window.FDECAuth.ready)){ setTimeout(run,50); return; }
-  window.FDECAuth.ready.then(function(){
+  window.FDECAuth.ready.then(function(auth){
+    var db;
+    try{ db = getFirestore(getApp("fdec")); }catch(e){ return; }
+    // Unread announcements (everyone).
     try{
-      var db = getFirestore(getApp("fdec"));
       onSnapshot(query(collection(db,"announcements"), orderBy("createdAt","desc"), limit(1)),
         function(snap){
-          var ms = 0;
-          if(!snap.empty){ var c = snap.docs[0].data().createdAt; ms = (c && c.toMillis) ? c.toMillis() : Date.now(); }
-          var last = 0; try{ last = Number(localStorage.getItem(LS) || 0) || 0; }catch(e){}
-          unread = ms > 0 && ms > last;
-          applyBadge();
+          annLatestMs = 0;
+          if(!snap.empty){ var c = snap.docs[0].data().createdAt; annLatestMs = (c && c.toMillis) ? c.toMillis() : Date.now(); }
+          paintAnn();
         }, function(){});
     }catch(e){}
+    // Pending admin items — only for admins who can open Administration.
+    var canAdmin = auth && typeof auth.canOpen === 'function' && auth.canOpen('administration');
+    if(canAdmin){
+      var pu = 0, pr = 0;
+      function sum(){ adminPending = pu + pr; paintAdmin(); }
+      try{ onSnapshot(query(collection(db,"users"), where("status","==","pending")), function(s){ pu = s.size; sum(); }, function(){}); }catch(e){}
+      try{ onSnapshot(query(collection(db,"passwordResets"), where("status","==","pending")), function(s){ pr = s.size; sum(); }, function(){}); }catch(e){}
+    }
   });
 })();
 </script>
