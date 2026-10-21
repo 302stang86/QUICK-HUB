@@ -53,7 +53,7 @@ const DEFAULT_PAGES = {
   oncall:          ["tech","manager","admin"],
   timesheet:       ["admin"],   // LOCKED to admin until released to technicians
   quoting:         ["manager","admin"],
-  administration:  ["admin"]
+  administration:  ["manager","admin"]   // managers reach the quote files here; roster/resets/permissions stay admin-only inside the page
 };
 
 const app  = getApps().length ? getApp() : initializeApp(firebaseConfig, "fdec");

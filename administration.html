@@ -382,7 +382,7 @@ window.PERM = (function () {
     new:    ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","timeoff"],
     tech:   ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","timeoff","itm","servicetrade","oncall"],
     temp:   ["home","troubleshooting","frequencies","help"],
-    manager:["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","timeoff","itm","servicetrade","oncall","quoting"],
+    manager:["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","timeoff","itm","servicetrade","oncall","quoting","administration"],
     admin:null
   };
   var ALL = [];
@@ -504,14 +504,23 @@ async function loadPerms(){
   } catch(e){ P.setState(P.deepDefault()); P.toast("Could not load saved permissions."); }
 }
 
+/* Managers may open this page for the Quote files only — hide the role/permissions
+   editor (and its Save/Reset/Export) from anyone who is not an administrator. */
+function adminOnlyPanels(on){
+  ["tabs","roleHead","groups"].forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display = on?"":"none"; });
+  var foot=document.querySelector(".foot"); if(foot) foot.style.display = on?"":"none";
+  ["saveBtn","resetBtn","exportBtn"].forEach(function(id){ var b=document.getElementById(id); if(b) b.style.display = on?"":"none"; });
+}
 async function onAuth(user){
-  if(!user){ me=null; P.setAuth({signedIn:false,isAdmin:false,me:null}); P.setState(P.deepDefault()); var w=$("qfWrap"); if(w) w.style.display="none"; var rw=$("erWrap"); if(rw) rw.style.display="none"; var pw=$("prWrap"); if(pw) pw.style.display="none"; return; }
+  if(!user){ me=null; P.setAuth({signedIn:false,isAdmin:false,me:null}); P.setState(P.deepDefault()); adminOnlyPanels(true); var w=$("qfWrap"); if(w) w.style.display="none"; var rw=$("erWrap"); if(rw) rw.style.display="none"; var pw=$("prWrap"); if(pw) pw.style.display="none"; return; }
   try {
     const usnap = await getDoc(doc(db,"users",user.uid));
     const d = usnap.exists()? usnap.data():{};
     me = { uid:user.uid, name:d.name||user.email.split("@")[0], email:user.email, role:d.role||(isAdminEmail(user.email)?"admin":"tech") };
   } catch(e){ me = { uid:user.uid, name:user.email.split("@")[0], email:user.email, role:isAdminEmail(user.email)?"admin":"tech" }; }
-  P.setAuth({ signedIn:true, isAdmin: me.role==="admin"||isAdminEmail(me.email), me });
+  const amAdmin = me.role==="admin"||isAdminEmail(me.email);
+  P.setAuth({ signedIn:true, isAdmin: amAdmin, me });
+  adminOnlyPanels(amAdmin);
   await loadPerms();
   await loadRoster();
   await loadResetRequests();
@@ -745,7 +754,7 @@ function erIsAdmin(){ return me && (me.role==="admin" || isAdminEmail(me.email))
 
 async function loadRoster(){
   var wrap=$("erWrap"); if(!wrap) return;
-  if(!db || !erCan()){ wrap.style.display="none"; return; }
+  if(!db || !erIsAdmin()){ wrap.style.display="none"; return; }
   wrap.style.display="";
   try{
     var snaps = await getDocs(collection(db,"users"));
@@ -838,7 +847,7 @@ async function erUpdate(uid, fields, okMsg){
 let PR = [];
 async function loadResetRequests(){
   var wrap=$("prWrap"); if(!wrap) return;
-  if(!db || !erCan()){ wrap.style.display="none"; return; }
+  if(!db || !erIsAdmin()){ wrap.style.display="none"; return; }
   wrap.style.display="";
   try{
     var snaps = await getDocs(collection(db,"passwordResets"));

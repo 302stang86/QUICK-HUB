@@ -782,8 +782,9 @@ document.addEventListener('click', function(e){
           paintAnn();
         }, function(){});
     }catch(e){}
-    // Pending admin items — only for admins who can open Administration.
-    var canAdmin = auth && typeof auth.canOpen === 'function' && auth.canOpen('administration');
+    // Pending admin items (new accounts, password resets) — admins only, since
+    // managers open Administration for the quote files but can't action these.
+    var canAdmin = auth && (auth.isAdmin === true || (auth.profile && auth.profile.role === 'admin'));
     if(canAdmin){
       var pu = 0, pr = 0;
       function sum(){ adminPending = pu + pr; paintAdmin(); }
@@ -815,7 +816,7 @@ document.addEventListener('click', function(e){
     {name:'Time-Off Requests',       cat:'Team',    access:'Everyone',     page:'timeoff',        url:'timeoff.html', color:'#1f7a3d', icon:'calendar', desc:'Submit paid time-off (PTO) requests and track balances.'},
     {name:'On-Call Rotation',        cat:'Team',    access:'Everyone',     page:'oncall',         url:'oncall.html', color:'#d12f2f', icon:'phone', desc:'Current sprinkler department on-call schedule.'},
     {name:'Weekly Time Sheet',       cat:'Team',    access:'Admin only · pending release', page:'timesheet', url:'timesheet.html', color:'#6d3bb5', icon:'clock', desc:'Interactive weekly time sheet for technicians. Locked until released by an administrator.'},
-    {name:'Administration',          cat:'Admin',   access:'Admin only',   page:'administration', url:'administration.html', color:'#c08a1e', icon:'admin', desc:'Department administration and management tools.'},
+    {name:'Administration',          cat:'Admin',   access:'Admin & managers', page:'administration', url:'administration.html', color:'#c08a1e', icon:'admin', desc:'Quote files for managers; full management tools for admins.'},
     {name:'Help',                    cat:'Help',    access:'Everyone',     page:'help',           url:'help.html', color:'#5b6570', icon:'hammer', desc:'Report a bug with a photo, and find quick help on using Quick Hub.'}
   ];
   var ICONS = {
