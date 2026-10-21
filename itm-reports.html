@@ -667,6 +667,7 @@ body>*{position:relative;z-index:1;}
     <div class="ab-menu">
       <button id="abMenuBtn" aria-label="More options" title="More">⋮</button>
       <div class="ab-menu-pop" id="abMenuPop">
+        <button id="stOpenBtn">Open in ServiceTrade</button>
         <button id="newDraftBtn">Clear Form</button>
       </div>
     </div>
@@ -3631,6 +3632,25 @@ document.getElementById('newDraftBtn').onclick=()=>{
     if(hasAnyData()) writeAutosave(); else clearAutosave();
   }
 };
+
+/* Open ServiceTrade for the current report's Job Number. ServiceTrade's search has
+   no job-number web address (it resolves to an internal job id), so this copies the
+   number and opens ServiceTrade for the tech to paste into the search box. Works on
+   every report because "_jobno" is a shared field read via val(ACTIVE_FORM+'_jobno'). */
+(function(){
+  var btn=document.getElementById('stOpenBtn'); if(!btn) return;
+  function legacyCopy(t){ try{ var ta=document.createElement('textarea'); ta.value=t; ta.setAttribute('readonly',''); ta.style.position='fixed'; ta.style.top='-1000px'; document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0,String(t).length); var ok=document.execCommand('copy'); document.body.removeChild(ta); return ok; }catch(e){ return false; } }
+  function stToast(msg){ try{ var d=document.createElement('div'); d.textContent=msg; d.style.cssText='position:fixed;left:50%;bottom:84px;transform:translateX(-50%);max-width:92%;background:#12213c;color:#fff;font:600 13px/1.4 -apple-system,Segoe UI,Arial,sans-serif;padding:11px 16px;border-radius:9px;box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:10000;text-align:center;'; document.body.appendChild(d); setTimeout(function(){ d.style.transition='opacity .4s'; d.style.opacity='0'; setTimeout(function(){ if(d.parentNode) d.parentNode.removeChild(d); },440); }, 3200); }catch(e){ alert(msg); } }
+  btn.onclick=function(){
+    var pop=document.getElementById('abMenuPop'); if(pop) pop.classList.remove('open');
+    var jn=String(val(ACTIVE_FORM+'_jobno')||'').trim();
+    if(!jn){ alert('Enter the Job Number on the report first.\n\nThen tap "Open in ServiceTrade" again \u2014 it copies that number and opens ServiceTrade so you can paste it into the search.'); return; }
+    var copied=legacyCopy(jn);
+    window.open('https://app.servicetrade.com/', '_blank');
+    if(navigator.clipboard && navigator.clipboard.writeText){ try{ navigator.clipboard.writeText(jn); }catch(e){} }
+    stToast(copied ? ('Job #'+jn+' copied \u2014 paste it into the ServiceTrade search.') : ('ServiceTrade opened \u2014 search for Job #'+jn+'.'));
+  };
+})();
 
 /* Warn before leaving/closing the tab if there are unsaved changes. */
 window.addEventListener('beforeunload', (e)=>{

@@ -189,6 +189,11 @@ body>*{position:relative;z-index:1;}
 <meta name="fdec-hide" content=".masthead">
 <meta name="fdec-actions" content="#hubLink">
 <script defer src="fdec-header.js"></script>
+  <style>
+  /* Full-bleed the universal banner + actions past the body's page padding (24px 16px) */
+  .fdec-ubar{ width:calc(100% + 32px) !important; margin:-24px -16px 0; }
+  .fdec-ubar-actions{ width:calc(100% + 32px) !important; margin:0 -16px 20px; }
+  </style>
 </head>
 <body>
 <div class="bg-layer" aria-hidden="true"></div>
