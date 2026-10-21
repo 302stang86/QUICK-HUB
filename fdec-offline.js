@@ -13,18 +13,7 @@
   /* ---- 1) service worker ---- */
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", function () {
-      navigator.serviceWorker.register("sw.js").then(function (reg) {
-        try { reg.update(); } catch (e) {}
-      }).catch(function () {});
-    });
-    // When an updated service worker takes control, reload the page once so it
-    // shows the newest files instead of the old cached copy. The guard skips the
-    // very first install (no prior controller) and prevents a reload loop.
-    var hadController = !!navigator.serviceWorker.controller;
-    navigator.serviceWorker.addEventListener("controllerchange", function () {
-      if (window.__fdecReloaded || !hadController) return;
-      window.__fdecReloaded = true;
-      window.location.reload();
+      navigator.serviceWorker.register("sw.js").catch(function () {});
     });
   }
 

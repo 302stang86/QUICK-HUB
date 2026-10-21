@@ -1,0 +1,109 @@
+rules_version = '2';
+
+// FDEC Quick Hub — unified Firestore rules for project: fire-defense-itm-reports
+// Replace this project's existing rules with these (they cover the ITM reports,
+// Time-Off requests, the shared users list, and the Administration config).
+//
+// Model:
+//   users/{uid}         { email, name, role: new|tech|manager|admin, status: pending|approved|denied, balances? }
+//   config/permissions  { pages: { <pageId>: [roles allowed] } }
+//   requests/{id}       Time-Off requests  { uid, name, status, ... }
+//   reports/{id}        ITM inspection reports
+//
+// A user may create only their OWN profile and may never grant themselves a
+// manager/admin role or an approved status. Admins (by email or by role) manage
+// everyone. Managers may edit roster balances but not roles or account status.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn(){ return request.auth != null; }
+    function email(){ return request.auth.token.email; }
+    function isAdminEmail(){
+      return signedIn() && email() in [
+        'mp1@firedefense.com', '302stang86@gmail.com', 'wh1@firedefense.com'
+      ];
+    }
+    function myRole(){
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+        : 'new';
+    }
+    function isAdmin(){ return isAdminEmail() || (signedIn() && myRole() == 'admin'); }
+    function isManager(){ return signedIn() && myRole() == 'manager'; }
+
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin() || isManager());
+
+      // Self sign-up: own doc only, no self-granted manager/admin or approved.
+      allow create: if (signedIn() && request.auth.uid == uid
+                        && (!('role'   in request.resource.data) || request.resource.data.role   in ['new','tech'])
+                        && (!('status' in request.resource.data) || request.resource.data.status == 'pending'))
+                    || (isAdminEmail() && request.auth.uid == uid);
+
+      // Admins change anything. Managers may approve/deny/archive and set a
+      // user's role to new/tech/manager, but may not touch an admin account or
+      // grant the admin role. The user themselves may edit other fields
+      // (e.g. name, balances) but never their own role or account status.
+      allow update: if isAdmin()
+                    || (isManager()
+                        && resource.data.role != 'admin'
+                        && request.resource.data.role in ['new','tech','manager'])
+                    || (request.auth.uid == uid
+                        && request.resource.data.role   == resource.data.role
+                        && request.resource.data.status == resource.data.status);
+
+      allow delete: if isAdmin();
+    }
+
+    match /config/permissions {
+      allow read:  if signedIn();
+      allow write: if isAdmin();
+    }
+
+    // Announcements — everyone signed in reads; admins and managers post/edit/delete.
+    match /announcements/{id} {
+      allow read:                if signedIn();
+      allow create, update, delete: if isAdmin() || isManager();
+    }
+
+    // Time-Off requests
+    match /requests/{id} {
+      allow read:   if isAdmin() || isManager() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if isAdmin() || isManager()
+                            || (signedIn() && resource.data.uid == request.auth.uid);
+    }
+
+    // ITM inspection reports (adjust if your ITM app needs per-owner editing)
+    match /reports/{id} {
+      allow read:   if signedIn();
+      allow create: if signedIn();
+      allow update, delete: if isAdmin()
+                            || (signedIn() && resource.data.uid == request.auth.uid);
+    }
+
+    // Quote files — drafts, Word docs, and export packages saved from the
+    // Quoting & Proposal Suite. Stored entirely in Firestore (no paid Cloud
+    // Storage): each record holds the searchable metadata (jobName, quoteNo,
+    // userName), and the file bytes live in a "chunks" subcollection beneath it.
+    // A user creates only their own entries; admins and managers see everyone's.
+    match /quoteFiles/{id} {
+      allow read:   if isAdmin() || isManager() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if isAdmin() || isManager()
+                            || (signedIn() && resource.data.uid == request.auth.uid);
+
+      // File body, split into base64 chunks. Each chunk carries its owner uid.
+      match /chunks/{cid} {
+        allow read:   if isAdmin() || isManager() || (signedIn() && resource.data.uid == request.auth.uid);
+        allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+        allow update, delete: if isAdmin() || isManager()
+                              || (signedIn() && resource.data.uid == request.auth.uid);
+      }
+    }
+
+    // Everything else: denied.
+    match /{document=**} { allow read, write: if false; }
+  }
+}

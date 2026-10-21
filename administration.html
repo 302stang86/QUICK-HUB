@@ -250,7 +250,7 @@
   <div class="masthead">
     <div>
       <p class="company">FIRE DEFENSE EQUIPMENT CO., INC.</p>
-      <p class="doctype">Administrator — Role Permissions</p>
+      <p class="doctype">Administrator — Page Access by Role</p>
     </div>
     <div class="lock-state" id="lockState">Not signed in</div>
   </div>
@@ -315,8 +315,9 @@
     <div id="groups"></div>
 
     <p class="foot">
-      Permissions are stored in your Firebase project (<code>config/permissions</code>) and shared across all FDEC tools and devices.
-      Only users with the administrator role can change and save them.<br>
+      Each box controls whether that role can open that Quick Hub page. Toggle the pages a role may use, then Save Changes —
+      the setting is stored in your Firebase project (<code>config/permissions</code>) and takes effect for everyone on their next sign-in or refresh.
+      Only administrators can change and save access. Administrators can always open every page.<br>
       Export Config downloads a backup copy of the current settings as a JSON file.
     </p>
   </div>
@@ -342,72 +343,46 @@
 /* ===== Core UI (no network) — renders immediately so the page is never blank ===== */
 window.PERM = (function () {
   "use strict";
+  /* Each entry is an actual Quick Hub page. The id MUST match the data-page
+     value on that page's gate script and the keys in fdec-auth.js DEFAULT_PAGES,
+     because that is exactly what canOpen() checks. Toggling a box here writes the
+     config/permissions "pages" map that the gate reads live — so it really does
+     grant or remove access. */
   var GROUPS = [
-    { name: "General Access", perms: [
-      ["viewHub","View employee hub","Open the Quick Hub home, SOP, and reference pages"],
-      ["viewDispatch","View dispatch directory","Open the fire department dispatch phone directory"],
-      ["editOwnProfile","Edit own profile","Update own name, contact, and login details"],
-      ["viewAnnouncements","View announcements","See company and department notices"]
-    ]},
-    { name: "ITM Inspection Reports", perms: [
-      ["viewReports","View inspection reports","Open completed NFPA 25 ITM reports"],
-      ["createReports","Create inspection reports","Start and complete ITM report forms in the field"],
-      ["editOwnReports","Edit own reports","Change reports the user created before submission"],
-      ["editAllReports","Edit any report","Change any technician's report"],
-      ["deleteReports","Delete reports","Remove inspection reports"],
-      ["approveReports","Approve / finalize reports","Review and sign off on completed reports"],
-      ["exportReports","Export report PDFs","Generate and download report PDFs"]
-    ]},
-    { name: "Quoting & Proposals", perms: [
-      ["viewQuotes","View quotes","Open existing quotes and proposals"],
-      ["createQuotes","Create quotes","Build new sprinkler or fire alarm quotes"],
-      ["editQuotes","Edit quotes","Change pricing and scope on quotes"],
-      ["setPricing","Set pricing / markup","Adjust labor rates, markup, and material pricing"],
-      ["approveQuotes","Approve quotes","Release quotes to customers"],
-      ["viewMargins","View cost & margin","See internal cost and profit figures"]
-    ]},
-    { name: "Scheduling & Jobs", perms: [
-      ["viewSchedule","View schedule","See the job calendar and assignments"],
-      ["viewOwnJobs","View own assigned jobs","See only jobs assigned to the user"],
-      ["createJobs","Create / schedule jobs","Add jobs and assign technicians"],
-      ["editSchedule","Edit schedule","Move, reassign, or cancel scheduled jobs"],
-      ["manageCustomers","Manage customers & sites","Add or edit customer and location records"]
-    ]},
-    { name: "Time Off & On-Call", perms: [
-      ["requestTimeOff","Request time off","Submit personal time-off requests"],
-      ["viewOwnBalance","View own balance","See own accrued and used time-off balance"],
-      ["approveTimeOff","Approve time off","Approve or deny technician time-off requests"],
-      ["viewOnCall","View on-call rotation","See the published on-call schedule"],
-      ["editOnCall","Edit on-call rotation","Change the rotation, roster, and holidays"],
-      ["requestRotationChange","Request rotation change","Submit a request to swap on-call weeks"]
-    ]},
-    { name: "Inventory", perms: [
-      ["viewInventory","View inventory","See stock levels and item records"],
-      ["adjustInventory","Adjust stock counts","Add, remove, or correct quantities"],
-      ["manageInventoryItems","Manage item catalog","Add or edit inventory item definitions"],
-      ["orderParts","Order / request parts","Submit purchase or restock requests"]
-    ]},
-    { name: "Administration", perms: [
-      ["manageUsers","Manage user accounts","Create, disable, and edit employee accounts"],
-      ["assignRoles","Assign roles","Set each employee's role tier"],
-      ["editPermissions","Edit role permissions","Change what each role is allowed to do (this page)"],
-      ["viewAudit","View audit log","Review change history and access logs"],
-      ["manageIntegrations","Manage integrations & keys","Configure Firebase, ServiceTrade, and email settings"],
-      ["exportData","Export company data","Download full data exports and backups"]
+    { name: "Quick Hub tools", perms: [
+      ["home","Quick Hub home","Open the hub home page and its tool cards. Required to reach any tool."],
+      ["announcements","Announcements","See company and department notices"],
+      ["sop","SOP / ITM reference","Open the standard-operating-procedure and ITM reference page"],
+      ["dispatch","Local dispatch numbers","Open the fire-department dispatch phone directory"],
+      ["troubleshooting","Troubleshooting Guide","Open the field troubleshooting guide"],
+      ["frequencies","NFPA 25 Frequencies","Open the NFPA 25 inspection-frequency reference"],
+      ["incident","Incident Reporting","Open and submit incident reports"],
+      ["help","Help & Bug Fix","Open the help page, quick help topics, and bug-fix form"],
+      ["itm","ITM Inspection Reports","Create, view, and submit NFPA 25 ITM reports"],
+      ["servicetrade","ServiceTrade","Open the ServiceTrade link"],
+      ["timeoff","Time-Off Requests","Submit and view time-off requests"],
+      ["oncall","On-Call Rotation","View the on-call rotation schedule"],
+      ["timesheet","Weekly Time Sheet","Open and submit the weekly time sheet"],
+      ["quoting","Quoting & Proposal Suite","Open the quoting and proposal builder"],
+      ["administration","Administration","Open this Administration page — manage users, quote files, and permissions"]
     ]}
   ];
+  /* Role ids MUST match the roster roles and fdec-auth.js (new / tech / temp /
+     manager / admin) — profile.role is compared directly against these. */
   var ROLES = [
-    { id:"new",  name:"New Employee", desc:"Onboarding tier with view-only access while training." },
-    { id:"tech", name:"Technician",   desc:"Field technician performing ITM, reports, and assigned jobs." },
-    { id:"temp", name:"Temp",         desc:"Temporary worker — Quick Hub access limited to the Troubleshooting Guide and NFPA 25 Frequencies only." },
-    { id:"mgr",  name:"Manager",      desc:"Department manager overseeing quoting, scheduling, and approvals." },
-    { id:"admin",name:"Administrator",desc:"Full control, including user management and permission settings." }
+    { id:"new",     name:"New Employee", desc:"Onboarding tier with access while training." },
+    { id:"tech",    name:"Technician",   desc:"Field technician performing ITM, reports, and assigned jobs." },
+    { id:"temp",    name:"Temp",         desc:"Temporary worker — access limited to the tools you grant below." },
+    { id:"manager", name:"Manager",      desc:"Department manager overseeing quoting and approvals." },
+    { id:"admin",   name:"Administrator",desc:"Full control. Administrators can always open every page, so these toggles are informational." }
   ];
+  /* Seeded from fdec-auth.js DEFAULT_PAGES so the editor opens showing exactly
+     what is already in force. admin = every page. */
   var DEFAULTS = {
-    new:["viewHub","viewDispatch","editOwnProfile","viewAnnouncements","requestTimeOff","viewOwnBalance","viewOnCall","viewSchedule","viewOwnJobs"],
-    tech:["viewHub","viewDispatch","editOwnProfile","viewAnnouncements","viewReports","createReports","editOwnReports","exportReports","viewQuotes","viewSchedule","viewOwnJobs","requestTimeOff","viewOwnBalance","viewOnCall","requestRotationChange","viewInventory","adjustInventory","orderParts"],
-    temp:["viewHub"],
-    mgr:["viewHub","viewDispatch","editOwnProfile","viewAnnouncements","viewReports","createReports","editOwnReports","editAllReports","deleteReports","approveReports","exportReports","viewQuotes","createQuotes","editQuotes","setPricing","approveQuotes","viewMargins","viewSchedule","viewOwnJobs","createJobs","editSchedule","manageCustomers","requestTimeOff","viewOwnBalance","approveTimeOff","viewOnCall","editOnCall","requestRotationChange","viewInventory","adjustInventory","manageInventoryItems","orderParts","manageUsers","assignRoles","viewAudit"],
+    new:    ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","timeoff"],
+    tech:   ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","timeoff","itm","servicetrade","oncall"],
+    temp:   ["home","troubleshooting","frequencies","help"],
+    manager:["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","timeoff","itm","servicetrade","oncall","quoting"],
     admin:null
   };
   var ALL = [];
@@ -416,6 +391,13 @@ window.PERM = (function () {
 
   function deepDefault(){ var o={}; ROLES.forEach(function(r){ o[r.id]={}; ALL.forEach(function(k){ o[r.id][k]=DEFAULTS[r.id].indexOf(k)>=0; }); }); return o; }
   function mergeInto(base, saved){ if(!saved) return base; ROLES.forEach(function(r){ if(saved[r.id]) ALL.forEach(function(k){ if(typeof saved[r.id][k]==="boolean") base[r.id][k]=saved[r.id][k]; }); }); return base; }
+  /* Convert the per-role editor grid into the { page: [roles] } map that
+     fdec-auth.js canOpen() reads from config/permissions. admin is forced into
+     every page so an administrator can never be locked out. */
+  function toPages(s){ var out={}; ALL.forEach(function(pg){ var list=[]; ROLES.forEach(function(r){ if(r.id==="admin" || (s[r.id] && s[r.id][pg])) list.push(r.id); }); out[pg]=list; }); return out; }
+  /* Convert a saved pages map back into the editor grid, seeded from defaults
+     for any page the map doesn't mention. admin always shows all-on. */
+  function fromPages(p){ var base=deepDefault(); if(p){ ALL.forEach(function(pg){ if(Array.isArray(p[pg])){ ROLES.forEach(function(r){ base[r.id][pg]=p[pg].indexOf(r.id)>=0; }); } }); } ALL.forEach(function(pg){ base.admin[pg]=true; }); return base; }
 
   var state=deepDefault(), active="new", me=null, signedIn=false, isAdmin=false, dirty=false;
   var onSaveCb=null, onSignInCb=null, onSignOutCb=null, onResetToast=null;
@@ -424,12 +406,12 @@ window.PERM = (function () {
   function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function countOn(r){var n=0;ALL.forEach(function(k){if(state[r][k])n++;});return n;}
   function canEdit(){return signedIn && isAdmin;}
-  function roleLabel(role){ if(role==="admin")return"Administrator"; if(role==="manager"||role==="mgr")return"Manager"; if(role==="new")return"New Employee"; return"Technician"; }
+  function roleLabel(role){ if(role==="admin")return"Administrator"; if(role==="manager"||role==="mgr")return"Manager"; if(role==="temp")return"Temp"; if(role==="new")return"New Employee"; return"Technician"; }
   function toast(msg){var t=$("toast");t.textContent=msg;t.className="show";setTimeout(function(){t.className=t.className.replace("show","");},3000);}
 
-  function renderTabs(){ $("tabs").innerHTML = ROLES.map(function(r){ return '<button data-role="'+r.id+'" class="'+(r.id===active?'active':'')+'"><span class="role-name">'+esc(r.name)+'</span><span class="role-count">'+countOn(r.id)+' of '+ALL.length+' permissions</span></button>'; }).join(""); }
-  function renderHead(){ var r=ROLES.find(function(x){return x.id===active;}); $("roleHead").innerHTML='<div class="role-head"><h2>'+esc(r.name)+'</h2><p>'+esc(r.desc)+'</p><div class="summary"><b>'+countOn(r.id)+'</b> of '+ALL.length+' permissions enabled'+(canEdit()?' &middot; editing enabled':' &middot; view only')+'</div></div>'; }
-  function renderGroups(){ var ed=canEdit(); $("groups").innerHTML=GROUPS.map(function(g){ var rows=g.perms.map(function(p){ var on=state[active][p[0]]; return '<div class="perm'+(!on&&!ed?' locked-off':'')+'"><label class="toggle"><input type="checkbox" data-perm="'+p[0]+'"'+(on?' checked':'')+(ed?'':' disabled')+'><span class="slider"></span></label><div class="meta"><div class="p-name">'+esc(p[1])+'</div><div class="p-desc">'+esc(p[2])+'</div></div></div>'; }).join(""); return '<div class="group"><div class="group-head"><span>'+esc(g.name)+'</span><span class="grp-tools"><button class="grp-tool" data-grp-all="'+esc(g.name)+'"'+(ed?'':' disabled')+'>All</button><button class="grp-tool" data-grp-none="'+esc(g.name)+'"'+(ed?'':' disabled')+'>None</button></span></div>'+rows+'</div>'; }).join(""); }
+  function renderTabs(){ $("tabs").innerHTML = ROLES.map(function(r){ return '<button data-role="'+r.id+'" class="'+(r.id===active?'active':'')+'"><span class="role-name">'+esc(r.name)+'</span><span class="role-count">'+countOn(r.id)+' of '+ALL.length+' tools</span></button>'; }).join(""); }
+  function renderHead(){ var r=ROLES.find(function(x){return x.id===active;}); $("roleHead").innerHTML='<div class="role-head"><h2>'+esc(r.name)+'</h2><p>'+esc(r.desc)+'</p><div class="summary"><b>'+countOn(r.id)+'</b> of '+ALL.length+' tools enabled'+(canEdit()?' &middot; editing enabled':' &middot; view only')+'</div></div>'; }
+  function renderGroups(){ var ed=canEdit(); var adminRole=(active==="admin"); var rowEd=ed&&!adminRole; $("groups").innerHTML=GROUPS.map(function(g){ var rows=g.perms.map(function(p){ var on=adminRole?true:state[active][p[0]]; var dis=!rowEd; return '<div class="perm'+(!on&&!ed?' locked-off':'')+'"><label class="toggle"><input type="checkbox" data-perm="'+p[0]+'"'+(on?' checked':'')+(dis?' disabled':'')+'><span class="slider"></span></label><div class="meta"><div class="p-name">'+esc(p[1])+'</div><div class="p-desc">'+esc(p[2])+'</div></div></div>'; }).join(""); return '<div class="group"><div class="group-head"><span>'+esc(g.name)+'</span><span class="grp-tools"><button class="grp-tool" data-grp-all="'+esc(g.name)+'"'+(rowEd?'':' disabled')+'>All</button><button class="grp-tool" data-grp-none="'+esc(g.name)+'"'+(rowEd?'':' disabled')+'>None</button></span></div>'+rows+'</div>'; }).join(""); }
   function updateBar(){
     var ls=$("lockState"), an=$("adminNote"), wi=$("whoami"), sin=$("signInBtn"), sout=$("signOutBtn");
     if(!signedIn){ ls.textContent="Not signed in"; ls.className="lock-state"; an.textContent="Sign in to view role permissions. Administrators can edit and save."; wi.textContent=""; sin.style.display=""; sout.style.display="none"; }
@@ -443,7 +425,7 @@ window.PERM = (function () {
     $("groups").addEventListener("change",function(e){var cb=e.target.closest("input[data-perm]");if(!cb||!canEdit())return;state[active][cb.getAttribute("data-perm")]=cb.checked;dirty=true;renderTabs();renderHead();updateBar();});
     $("groups").addEventListener("click",function(e){ if(!canEdit())return; var all=e.target.closest("[data-grp-all]"),none=e.target.closest("[data-grp-none]"); if(!all&&!none)return; var gn=(all||none).getAttribute(all?"data-grp-all":"data-grp-none"); var grp=GROUPS.find(function(g){return g.name===gn;}); grp.perms.forEach(function(p){state[active][p[0]]=!!all;}); dirty=true; renderAll(); });
     $("resetBtn").addEventListener("click",function(){ if(!canEdit())return; state=deepDefault(); dirty=true; renderAll(); toast("Reset to defaults. Save to apply."); });
-    $("exportBtn").addEventListener("click",function(){ var out={exported:new Date().toISOString(),roles:state}; var blob=new Blob([JSON.stringify(out,null,2)],{type:"application/json"}); var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="fdec-role-permissions.json"; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(function(){URL.revokeObjectURL(a.href);},1000); toast("Config exported."); });
+    $("exportBtn").addEventListener("click",function(){ var out={exported:new Date().toISOString(),pages:toPages(state)}; var blob=new Blob([JSON.stringify(out,null,2)],{type:"application/json"}); var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="fdec-role-permissions.json"; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(function(){URL.revokeObjectURL(a.href);},1000); toast("Config exported."); });
     $("saveBtn").addEventListener("click",function(){ if(onSaveCb) onSaveCb(getState()); });
     $("signInBtn").addEventListener("click",function(){ if(onSignInCb) onSignInCb(); });
     $("signOutBtn").addEventListener("click",function(){ if(onSignOutCb) onSignOutCb(); });
@@ -452,7 +434,7 @@ window.PERM = (function () {
   function getState(){ return state; }
   return {
     init:function(){ renderAll(); wire(); },
-    deepDefault:deepDefault, mergeInto:mergeInto,
+    deepDefault:deepDefault, mergeInto:mergeInto, toPages:toPages, fromPages:fromPages,
     setState:function(s){ state=s; dirty=false; renderAll(); },
     getState:getState,
     markClean:function(){ dirty=false; updateBar(); },
@@ -509,17 +491,16 @@ passInput.addEventListener("keydown",e=>{ if(e.key==="Enter") doSignIn(); });
 P.onSave(async (state)=>{
   if(!db || !me || !(me.role==="admin"||isAdminEmail(me.email))) return;
   try {
-    await setDoc(PERM_REF, { roles: state, updatedAt: new Date().toISOString(), updatedBy: me.email });
-    P.markClean(); P.toast("Permissions saved to Firebase for all users.");
+    await setDoc(PERM_REF, { pages: P.toPages(state), updatedAt: new Date().toISOString(), updatedBy: me.email });
+    P.markClean(); P.toast("Page access saved to Firebase for all users.");
   } catch(e){ P.toast("Save failed: " + (e && e.code ? e.code : "check permissions")); }
 });
 
 async function loadPerms(){
   try {
     const snap = await getDoc(PERM_REF);
-    const base = P.deepDefault();
-    if(snap.exists() && snap.data() && snap.data().roles) P.mergeInto(base, snap.data().roles);
-    P.setState(base);
+    if(snap.exists() && snap.data() && snap.data().pages) P.setState(P.fromPages(snap.data().pages));
+    else P.setState(P.deepDefault());
   } catch(e){ P.setState(P.deepDefault()); P.toast("Could not load saved permissions."); }
 }
 

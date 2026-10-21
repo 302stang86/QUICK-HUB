@@ -266,13 +266,8 @@ button{font-family:inherit}
 .ad-table th{text-align:left;padding:7px 8px;border-bottom:2px solid var(--line);color:var(--navy);font-size:11px;text-transform:uppercase;letter-spacing:.3px}
 .ad-table td{padding:7px 8px;border-bottom:1px solid var(--line2);vertical-align:top}
 .ad-dl,.ad-del{border:1px solid var(--navy);background:#fff;color:var(--navy);border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer}
-.ad-view,.ad-edit{border:1px solid var(--navy);background:var(--navy);color:#fff;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer}
-.ad-view:hover,.ad-edit:hover{background:var(--navy2,#16294a)}
-.edited-by{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:700;color:#7a5c00;background:#fff3d6;border:1px solid #e6cf8a;border-radius:20px;padding:1px 7px}
-.edit-mode-bar{position:sticky;top:0;z-index:1200;display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap;background:#fff3d6;border-bottom:2px solid #e0b64a;color:#5c4300;font:600 13px/1.4 "Segoe UI",Arial,sans-serif;padding:9px 16px}
-.edit-mode-bar b{color:#8a1212}
-.edit-mode-bar button{border:1px solid #8a1212;background:#fff;color:#8a1212;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
-.edit-mode-bar button:hover{background:#8a1212;color:#fff}
+.ad-view{border:1px solid var(--navy);background:var(--navy);color:#fff;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer}
+.ad-view:hover{background:var(--navy2,#16294a)}
 .ad-dl:hover{background:#eef2f8}
 .ad-del{border-color:var(--red);color:var(--red)}
 .ad-approve{border:1px solid #1a7f37;background:#1a7f37;color:#fff;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer}
@@ -556,12 +551,7 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:18px}
   .fdc-header{grid-template-columns:1fr}
   .devices{flex-wrap:wrap}
   .gridform .ghead,.gridform .grow{grid-template-columns:24px 1fr 30px 30px 30px}
-  .gridform .ghead div:last-child{display:none}
-  /* keep the Comment field usable on phones: drop it to a full-width line so a
-     tech can enter the note a "No" requires instead of it being hidden */
-  .gridform .grow .gcmt{grid-column:1/-1;border-left:none;border-top:1px dashed var(--line2);padding:5px 7px}
-  .gridform .grow .gcmt input{font-size:12px}
-  .gridform .grow .gcmt input::placeholder{color:#8a949e}
+  .gridform .ghead div:last-child,.gridform .grow .gcmt{display:none}
   .summary-row{grid-template-columns:1fr 1.6fr 0.8fr}
   .summary-row>div{padding:5px 6px;font-size:11px}
 }
@@ -1389,15 +1379,28 @@ const STANDPIPE = {
       {n:29, text:"Tamper / supervisory switch signals verified at the panel within two revolutions and restored, or valves locked or sealed", type:"check"},
       {n:30, text:"Waterflow alarm device tested and signal verified (automatic standpipe), where provided", type:"check"},
       {n:31, text:"Alarm device(s) above the FDC working properly", type:"check"},
-      {n:32, text:"Required / demand pressure at that outlet (psi), where performed:", type:"numfield", fid:"standpipe_demand"},
-      {n:33, text:"Water supply met the system demand (automatic/semiautomatic), or manual supply verified via the FDC, as applicable", type:"check"}
-    ], compliance:"c_28_33", deficiency:"d_28_33"},
+      {n:32, text:"Adequate drainage available for main drain testing", type:"check"},
+      {n:33, text:"Beginning Static Pressure (psi):", type:"numfield", fid:"standpipe_static"},
+      {n:34, text:"Residual Pressure during flow (psi):", type:"numfield", fid:"standpipe_resid"},
+      {n:35, text:"Return Static Pressure (psi):", type:"numfield", fid:"standpipe_return"},
+      {n:36, text:"Time to return to static Pressure (sec.):", type:"numfield", fid:"standpipe_rtime"},
+      {n:37, text:"Flow at hydraulically most remote outlet during 5-year flow test (gpm), where performed:", type:"numfield", fid:"standpipe_flow"},
+      {n:38, text:"Required / demand pressure at that outlet (psi), where performed:", type:"numfield", fid:"standpipe_demand"},
+      {n:39, text:"Water supply met the system demand (automatic/semiautomatic), or manual supply verified via the FDC, as applicable", type:"check"}
+    ], compliance:"c_28_39", deficiency:"d_28_39"},
+
+    { name:"Pressure-Regulating Device & 5-Year Tests", items:[
+      {n:40, text:"Pressure-reducing valve (hose) full-flow test performed (5-year)", type:"dates_only", dateId:"standpipe_i40_date", byId:"standpipe_i40_by"},
+      {n:41, text:"Pressure-reducing valve (hose) partial-flow test performed this inspection (annual), where applicable", type:"check"},
+      {n:42, text:"Standpipe hydrostatic test at 200 psi (or 50 psi above max pressure) for 2 hours — dry, manual, or semiautomatic (5-year)", type:"dates_only", dateId:"standpipe_i42_date", byId:"standpipe_i42_by"},
+      {n:43, text:"Occupant hose service tested or replaced per NFPA 1962, where hose is provided (5-year / 3-year)", type:"dates_only", dateId:"standpipe_i43_date", byId:"standpipe_i43_by"}
+    ], compliance:"c_40_43", deficiency:"d_40_43"},
 
     { name:"Post Inspection", items:[
-      {n:34, text:"All valves returned to normal position; caps, plugs, and reducers reinstalled", type:"check"},
-      {n:35, text:"Fire alarm panel reset and cleared after inspection", type:"check"},
-      {n:36, text:"Standpipe system returned to full service and pertinent parties notified after inspection", type:"check"}
-    ], compliance:"c_34_36", deficiency:"d_34_36"}
+      {n:44, text:"All valves returned to normal position; caps, plugs, and reducers reinstalled", type:"check"},
+      {n:45, text:"Fire alarm panel reset and cleared after inspection", type:"check"},
+      {n:46, text:"Standpipe system returned to full service and pertinent parties notified after inspection", type:"check"}
+    ], compliance:"c_44_46", deficiency:"d_44_46"}
   ],
   passLabel:"The Standpipe System(s) are free from Critical & Impaired Deficiencies:",
   disclaimer:DISCLAIMER
@@ -2021,24 +2024,14 @@ function validateDeficiencyTypes(onlyIds){
     });
     // Compliance blocks: neither box checked. Only on forms with some data.
     if(formHasData(fid)){
-      // The FD-24 grid carries its own per-item Comment column, so a "No" with a
-      // comment already documents the deficiency. When that is present, its
-      // separate compliance block is not required to submit.
-      let gridDocumented=false;
-      if(fid==='fd24'){
-        const gsec=f.sections[0];
-        // The grid's OK / N/A / NO marks document each item, so a "No" by itself
-        // is enough; the comment to its right is optional.
-        gridDocumented = (gsec.items||[]).some(it=>store['fd24_i'+it.n+'_no']===true);
-      }
       complianceSections(fid).forEach(cs=>{
         const ok=store[cs.key+'_ok']===true;
         const exc=store[cs.key+'_exc']===true;
-        if(!ok && !exc && !gridDocumented){
+        if(!ok && !exc){
           problems.push({ form:shortName(f), section:cs.name, comment:'Compliance not marked (select one of the two boxes)', kind:'compliance' });
         }
         // "Compliant, except as listed below" requires at least one deficiency/comment listed.
-        if(exc && cs.defKey && !gridDocumented){
+        if(exc && cs.defKey){
           let arr=store[cs.defKey];
           if(typeof arr==='string'){ try{arr=JSON.parse(arr);}catch{arr=[];} }
           const hasEntry=Array.isArray(arr) && arr.some(r=>r && String(r.c||'').trim());
@@ -2048,8 +2041,16 @@ function validateDeficiencyTypes(onlyIds){
         }
       });
     }
-    // FD-24 (grid): the comment to the right of the marks is optional — a "No"
-    // may be submitted with or without a note. (FD-25 below still prompts.)
+    // FD-24 (grid) & FD-25 (yn/yn_why): if "No" is selected, a comment is required.
+    if(fid==='fd24'){
+      const sec=f.sections[0];
+      sec.items.forEach(it=>{
+        const base='fd24_i'+it.n;
+        if(store[base+'_no']===true && !String(store[base+'_cmt']||'').trim()){
+          problems.push({ form:shortName(f), section:'Item '+it.n, comment:'"No" selected — a comment is required: '+it.text.slice(0,70), kind:'no_comment' });
+        }
+      });
+    }
     if(fid==='fd25'){
       const sec=f.sections[0];
       const formComments=String(store['fd25_comments']||'').trim();
@@ -2162,14 +2163,6 @@ function reportPickerModal(){
   };
 }
 
-/* When an admin opens a technician's report with "Edit", this holds the record
-   being edited so a resubmit replaces it in place instead of adding a new one. */
-let EDIT_DOC = null;
-function clearEditMode(){
-  EDIT_DOC=null;
-  const b=document.getElementById('editModeBar'); if(b) b.style.display='none';
-}
-
 /* Save the full report data to Firestore so the admin can view/download it. */
 function submitReportToCloud(selectedIds){
   try{
@@ -2177,36 +2170,10 @@ function submitReportToCloud(selectedIds){
     const u=FB_AUTH.currentUser;
     const job = (sharedStore()['shared_job']||'') ;
     const jobno = (sharedStore()['shared_jobno']||'');
-    const myName = (document.getElementById('whoami')?document.getElementById('whoami').textContent.replace('ADMIN','').trim():'') || (u.email||'');
-    // Admin edit: update the SAME record (replace the original), keep the
-    // technician as author, and stamp who edited it.
-    if(EDIT_DOC && EDIT_DOC.id){
-      // Safety net: only when replacing an existing report, confirm first.
-      const who = EDIT_DOC.byName || EDIT_DOC.byEmail || 'the technician';
-      if(!confirm('This will replace '+who+'’s original report with your edits.\n\nThe technician stays listed as the author, with an "Edited by" note added. This cannot be undone.\n\nContinue?')){
-        flashCloud('Edit canceled — original report unchanged');
-        return;
-      }
-      const id=EDIT_DOC.id;
-      const upd={
-        jobName: job||'',
-        jobNumber: jobno||'',
-        reports: selectedIds.slice(),
-        allValues: JSON.parse(JSON.stringify(ALLVALUES)),
-        added: (ADDED||[]).slice(),
-        editedBy: myName,
-        editedByEmail: (u.email||'').toLowerCase(),
-        editedAt: firebase.firestore.FieldValue.serverTimestamp()
-      };
-      FB_DB.collection('reports').doc(id).update(upd)
-        .then(()=>{ flashCloud('✓ Report updated — replaced the original'); clearEditMode(); })
-        .catch((e)=>{ flashCloud('⚠ Update failed — try again'); console.warn('cloud edit failed', e); });
-      return;
-    }
     const rec={
       uid:u.uid,
       byEmail:(u.email||'').toLowerCase(),
-      byName: myName,
+      byName: (document.getElementById('whoami')?document.getElementById('whoami').textContent.replace('ADMIN','').trim():'') || (u.email||''),
       jobName: job||'',
       jobNumber: jobno||'',
       reports: selectedIds.slice(),
@@ -3479,7 +3446,7 @@ function renderGridForm(f,paper){
     if(it.dateField){ const dd=document.createElement('span'); dd.className='cbwrap'; dd.style.marginLeft='6px'; dd.innerHTML='<span class="lab">Date:</span>'; dd.appendChild(inputEl(base+'_date',{placeholder:'—'})); tx.appendChild(dd); }
     r.appendChild(tx);
     ['ok','na','no'].forEach(k=>{ const cx=document.createElement('div'); cx.className='gx'; cx.appendChild(xbox(base+'_'+k)); r.appendChild(cx); });
-    const cm=document.createElement('div'); cm.className='gcmt'; const ci=document.createElement('input'); ci.value=val(base+'_cmt'); ci.placeholder='Comment / note';
+    const cm=document.createElement('div'); cm.className='gcmt'; const ci=document.createElement('input'); ci.value=val(base+'_cmt'); ci.placeholder='…';
     ci.oninput=()=>{ setVal(base+'_cmt',ci.value); flash(); }; cm.appendChild(ci); r.appendChild(cm);
     g.appendChild(r);
   });
@@ -3676,7 +3643,6 @@ async function adminDashboard(){
     <h3>Admin Dashboard</h3>
     <div class="ad-tabs">
       <button class="ad-tab active" data-tab="reports">Submitted Reports</button>
-      <button class="ad-tab" data-tab="archived">Archived Duplicates</button>
       <button class="ad-tab" data-tab="users">Users</button>
     </div>
     <div id="adBody" style="max-height:60vh;overflow:auto;margin-top:10px">Loading…</div>
@@ -3691,21 +3657,9 @@ async function adminDashboard(){
   async function render(which){
     body.innerHTML='Loading…';
     try{
-      if(which==='users'){ await renderUsers(); }
-      else if(which==='archived'){ await renderArchived(); }
-      else { await renderReports(); }
+      if(which==='users'){ await renderUsers(); } else { await renderReports(); }
     }catch(e){ body.innerHTML='<div style="padding:16px;color:#c00">Could not load: '+esc(e.message||String(e))+'</div>'; }
   }
-  // Housekeeping on open: delete archived duplicates older than 365 days.
-  async function sweepExpiredArchive(){
-    try{
-      const snap=await FB_DB.collection('reports').where('archived','==',true).get();
-      const YEAR=365*24*3600*1000, now=Date.now(); const batch=FB_DB.batch(); let n=0;
-      snap.forEach(d=>{ const r=d.data(); const dt=r.archivedAt&&r.archivedAt.toDate?r.archivedAt.toDate():null; if(dt && (now-dt.getTime())>YEAR){ batch.delete(d.ref); n++; } });
-      if(n) await batch.commit();
-    }catch(e){}
-  }
-  sweepExpiredArchive();
   async function renderReports(){
     const snap=await FB_DB.collection('reports').orderBy('submittedAt','desc').limit(500).get();
     if(snap.empty){ body.innerHTML='<div style="padding:16px;color:#777">No reports have been submitted yet.</div>'; return; }
@@ -3718,9 +3672,7 @@ async function adminDashboard(){
       r._year = dt?dt.getFullYear():nowYear;
       r._when = dt?dt.toLocaleString():'—';
       r._names=(r.reports||[]).map(id=>{const f=FORMS.find(x=>x.id===id); return f?shortName(f):id;}).join(', ');
-      const edt=r.editedAt&&r.editedAt.toDate?r.editedAt.toDate():null;
-      r._editedWhen=edt?edt.toLocaleDateString():'';
-      r._search=[r.byName,r.byEmail,r.jobName,r.jobNumber,r._names,r.editedBy].filter(Boolean).join(' ').toLowerCase();
+      r._search=[r.byName,r.byEmail,r.jobName,r.jobNumber,r._names].filter(Boolean).join(' ').toLowerCase();
     });
     // Duplicate detection by job number. Reports are already newest-first, so the
     // FIRST time we see a job number is the most recent = the "true" report; any
@@ -3736,22 +3688,6 @@ async function adminDashboard(){
         else { r._dupRole='dup'; }                                  // older = duplicate
       } else { r._dupRole=''; }
     });
-    // Auto-archive: move possible duplicates into the Archived Duplicates folder
-    // once they are more than 30 days old. The newest ("Current") report is never
-    // archived — only the older copies that share its job number.
-    const THIRTY=30*24*3600*1000, nowMs=Date.now();
-    const toArchive=rows.filter(r=>{
-      if(r._dupRole!=='dup' || r.archived) return false;
-      const dt=r.submittedAt&&r.submittedAt.toDate?r.submittedAt.toDate():null;
-      return dt && (nowMs-dt.getTime())>THIRTY;
-    });
-    if(toArchive.length){
-      try{
-        const batch=FB_DB.batch();
-        toArchive.forEach(r=>{ batch.update(FB_DB.collection('reports').doc(r.id), { archived:true, archivedAt: firebase.firestore.FieldValue.serverTimestamp() }); r.archived=true; });
-        await batch.commit();
-      }catch(e){}
-    }
     // available years, newest first; default to current year (or newest with data)
     const years=[...new Set(rows.map(r=>r._year))].sort((a,b)=>b-a);
     let selYear = years.includes(nowYear)?nowYear:years[0];
@@ -3773,7 +3709,7 @@ async function adminDashboard(){
     function draw(){
       const y=parseInt(yearSel.value,10);
       const q=(searchBox.value||'').trim().toLowerCase();
-      const filtered=rows.filter(r=> r._year===y && !r.archived && (!q || r._search.includes(q)));
+      const filtered=rows.filter(r=> r._year===y && (!q || r._search.includes(q)));
       if(filtered.length===0){
         listEl.innerHTML='<div style="padding:16px;color:#777">No reports'+(q?' match your search':'')+' for '+y+'.</div>';
         return;
@@ -3791,16 +3727,16 @@ async function adminDashboard(){
         html+=`<tr class="${r._dupRole==='dup'?'dup-row':''}">
           <td>${esc(r._when)}</td>
           <td>${esc(r.byName||r.byEmail||'—')}</td>
-          <td>${esc(r.jobName||'—')}${r.jobNumber?(' · '+esc(r.jobNumber)):''}${dupBadge}${r.editedBy?(' <span class="edited-by" title="Edited by an administrator">✎ Edited by '+esc(r.editedBy)+(r._editedWhen?(' · '+esc(r._editedWhen)):'')+'</span>'):''}</td>
+          <td>${esc(r.jobName||'—')}${r.jobNumber?(' · '+esc(r.jobNumber)):''}${dupBadge}</td>
           <td style="font-size:11px">${esc(r._names)}</td>
-          <td style="white-space:nowrap"><button class="ad-edit" data-id="${esc(r.id)}">Edit</button> <button class="ad-dl" data-id="${esc(r.id)}">Download</button> <button class="ad-del" data-id="${esc(r.id)}" data-label="${esc((r.jobName||'report')+' — '+(r.byName||r.byEmail||''))}">Delete</button></td>
+          <td style="white-space:nowrap"><button class="ad-view" data-id="${esc(r.id)}">View</button> <button class="ad-dl" data-id="${esc(r.id)}">Download</button> <button class="ad-del" data-id="${esc(r.id)}" data-label="${esc((r.jobName||'report')+' — '+(r.byName||r.byEmail||''))}">Delete</button></td>
         </tr>`;
       });
       html+='</tbody></table>';
       html+='<div class="ad-count">'+filtered.length+' report'+(filtered.length===1?'':'s')+' · '+y+(q?' · matching "'+esc(q)+'"':'')+'</div>';
       listEl.innerHTML=html;
-      listEl.querySelectorAll('.ad-edit').forEach(btn=>{
-        btn.onclick=()=>{ const rec=rows.find(x=>x.id===btn.getAttribute('data-id')); editCloudReport(rec, close); };
+      listEl.querySelectorAll('.ad-view').forEach(btn=>{
+        btn.onclick=()=>{ const rec=rows.find(x=>x.id===btn.getAttribute('data-id')); viewCloudReport(rec, close); };
       });
       listEl.querySelectorAll('.ad-dl').forEach(btn=>{
         btn.onclick=()=>{ const rec=rows.find(x=>x.id===btn.getAttribute('data-id')); downloadCloudReport(rec); };
@@ -3824,56 +3760,6 @@ async function adminDashboard(){
     yearSel.onchange=draw;
     searchBox.oninput=draw;
     draw();
-  }
-  async function renderArchived(){
-    let snap;
-    try{ snap=await FB_DB.collection('reports').where('archived','==',true).get(); }
-    catch(e){ body.innerHTML='<div style="padding:16px;color:#c00">Could not load archived reports: '+esc(e.message||String(e))+'</div>'; return; }
-    let arows=[]; snap.forEach(d=>arows.push({id:d.id, ...d.data()}));
-    // Auto-delete archived duplicates that have been archived for more than 365 days.
-    const YEAR=365*24*3600*1000, now=Date.now();
-    const expired=arows.filter(r=>{ const dt=r.archivedAt&&r.archivedAt.toDate?r.archivedAt.toDate():null; return dt && (now-dt.getTime())>YEAR; });
-    if(expired.length){
-      try{ const batch=FB_DB.batch(); expired.forEach(r=>batch.delete(FB_DB.collection('reports').doc(r.id))); await batch.commit(); }catch(e){}
-      const ids=new Set(expired.map(r=>r.id)); arows=arows.filter(r=>!ids.has(r.id));
-    }
-    if(!arows.length){ body.innerHTML='<div style="padding:16px;color:#777">No archived duplicate reports. Possible duplicates move here automatically 30 days after submission, and are deleted automatically one (1) year after archiving.</div>'; return; }
-    arows.forEach(r=>{
-      const sdt=r.submittedAt&&r.submittedAt.toDate?r.submittedAt.toDate():null;
-      const adt=r.archivedAt&&r.archivedAt.toDate?r.archivedAt.toDate():null;
-      r._when=sdt?sdt.toLocaleDateString():'—';
-      r._archWhen=adt?adt.toLocaleDateString():'—';
-      r._delWhen=adt?new Date(adt.getTime()+YEAR).toLocaleDateString():'—';
-      r._names=(r.reports||[]).map(id=>{const f=FORMS.find(x=>x.id===id); return f?shortName(f):id;}).join(', ');
-      r._archMs=adt?adt.getTime():0;
-    });
-    arows.sort((a,b)=>b._archMs-a._archMs);
-    let html='<div class="ad-dup-note">Possible duplicate reports move here automatically 30 days after submission, and are deleted automatically one (1) year after archiving. Admins may delete any archived report now.</div>';
-    html+='<table class="ad-table"><thead><tr><th>Submitted</th><th>Tech</th><th>Job</th><th>Reports</th><th>Archived</th><th>Auto-deletes</th><th></th></tr></thead><tbody>';
-    arows.forEach(r=>{
-      html+=`<tr>
-        <td>${esc(r._when)}</td>
-        <td>${esc(r.byName||r.byEmail||'—')}</td>
-        <td>${esc(r.jobName||'—')}${r.jobNumber?(' · '+esc(r.jobNumber)):''}</td>
-        <td style="font-size:11px">${esc(r._names)}</td>
-        <td>${esc(r._archWhen)}</td>
-        <td>${esc(r._delWhen)}</td>
-        <td style="white-space:nowrap"><button class="ad-view" data-id="${esc(r.id)}">View</button> <button class="ad-dl" data-id="${esc(r.id)}">Download</button> <button class="ad-del" data-id="${esc(r.id)}" data-label="${esc((r.jobName||'report')+' — '+(r.byName||r.byEmail||''))}">Delete</button></td>
-      </tr>`;
-    });
-    html+='</tbody></table><div class="ad-count">'+arows.length+' archived duplicate'+(arows.length===1?'':'s')+'</div>';
-    body.innerHTML=html;
-    body.querySelectorAll('.ad-view').forEach(btn=>{ btn.onclick=()=>{ const rec=arows.find(x=>x.id===btn.getAttribute('data-id')); viewCloudReport(rec, close); }; });
-    body.querySelectorAll('.ad-dl').forEach(btn=>{ btn.onclick=()=>{ const rec=arows.find(x=>x.id===btn.getAttribute('data-id')); downloadCloudReport(rec); }; });
-    body.querySelectorAll('.ad-del').forEach(btn=>{
-      btn.onclick=async()=>{
-        const id=btn.getAttribute('data-id'); const label=btn.getAttribute('data-label')||'this report';
-        if(!confirm('Delete this archived report now?\n\n'+label+'\n\nThis permanently removes it and cannot be undone.')) return;
-        btn.disabled=true; btn.textContent='Deleting…';
-        try{ await FB_DB.collection('reports').doc(id).delete(); const i=arows.findIndex(x=>x.id===id); if(i>=0) arows.splice(i,1); renderArchived(); }
-        catch(e){ alert('Delete failed: '+(e.message||e)); btn.disabled=false; btn.textContent='Delete'; }
-      };
-    });
   }
   async function renderUsers(){
     const snap=await FB_DB.collection('users').orderBy('email').get();
@@ -3980,7 +3866,6 @@ function downloadCloudReport(rec){
 /* Load a submitted report straight into the app to view / print / edit. */
 function viewCloudReport(rec, closeDash){
   try{
-    clearEditMode();                 // plain view — not an edit
     ALLVALUES = JSON.parse(JSON.stringify(rec.allValues||{}));
     ADDED = Array.isArray(rec.added)? rec.added.slice() : [];
     let form = (rec.reports && rec.reports[0]) || 'fd17';
@@ -3995,19 +3880,6 @@ function viewCloudReport(rec, closeDash){
     flashCloud('Viewing '+(rec.byName||rec.byEmail||'report')+(rec.jobName?(' · '+rec.jobName):''));
     window.scrollTo({top:0, behavior:'smooth'});
   }catch(e){ alert('Could not open report: '+(e.message||e)); }
-}
-
-/* Admin edit: load the technician's report into the form, then mark edit mode so
-   a resubmit updates (replaces) the original record instead of filing a new one. */
-function editCloudReport(rec, closeDash){
-  viewCloudReport(rec, closeDash);
-  EDIT_DOC = { id:rec.id, byName:rec.byName, byEmail:rec.byEmail, uid:rec.uid };
-  let b=document.getElementById('editModeBar');
-  if(!b){ b=document.createElement('div'); b.id='editModeBar'; b.className='edit-mode-bar no-print'; document.body.appendChild(b); }
-  b.innerHTML='<span>✏️ Editing '+esc(rec.byName||rec.byEmail||'a technician')+'’s report'+(rec.jobName?(' · '+esc(rec.jobName)):'')+' — submitting will <b>replace the original</b>.</span><button type="button" id="editCancelBtn">Cancel edit</button>';
-  b.style.display='flex';
-  const c=document.getElementById('editCancelBtn'); if(c) c.onclick=clearEditMode;
-  flashCloud('Editing '+(rec.byName||rec.byEmail||'report')+' — resubmit will replace it');
 }
 
 function manageUsersModal(){
@@ -4121,7 +3993,6 @@ function draftPicker(keys, drafts){
   bg.querySelector('#dpClose').onclick=close;
   bg.querySelector('#dpFromFile').onclick=()=>{ close(); document.getElementById('draftFileInput').click(); };
   bg.querySelectorAll('[data-load]').forEach(b=> b.onclick=()=>{
-    clearEditMode();   // loading a different draft ends any admin edit session
     const k=b.getAttribute('data-load'); const dr=drafts[k];
     if(dr.allValues){ ALLVALUES=JSON.parse(JSON.stringify(dr.allValues)); }
     else { ALLVALUES={}; ALLVALUES[dr.form]=JSON.parse(JSON.stringify(dr.values||{})); }

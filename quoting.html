@@ -40,15 +40,12 @@
   }
   .suitebar .brand b{font-size:15px; letter-spacing:.04em}
   .suitebar .brand span{font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-top:2px}
-  .suitebar nav{display:flex; align-items:stretch; min-width:0; overflow-x:auto; scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.35) transparent}
-  .suitebar nav::-webkit-scrollbar{height:7px}
-  .suitebar nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.32); border-radius:4px}
+  .suitebar nav{display:flex; align-items:stretch}
   .suitebar button{
     font:inherit; font-size:13px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
     background:transparent; color:var(--muted); border:none; cursor:pointer;
     padding:0 22px; border-bottom:4px solid transparent; margin-bottom:-4px;
     transition:color .12s, border-color .12s;
-    flex:0 0 auto; white-space:nowrap;
   }
   .suitebar button:hover{color:#fff}
   .suitebar button.active{color:#fff; border-bottom-color:var(--red)}
@@ -195,14 +192,11 @@ body>*{position:relative;z-index:1;}
 <meta name="fdec-hide" content=".suitebar .brand">
 <script defer src="fdec-header.js"></script>
 <style>
-/* fdec: keep the suite as ONE full-height column — universal banner, then the
-   tab bar, then the working sheet that fills the rest and scrolls on its own.
-   The body itself does not scroll, so there is a single scrollbar (the sheet's)
-   instead of two stacked on the right. */
-html,body{height:100dvh; height:100svh;}
-body{display:flex !important; flex-direction:column; min-height:0; overflow:hidden;}
-.fdec-ubar{flex:0 0 auto;}
-.views{flex:1 1 auto !important; min-height:0; height:auto !important;}
+/* fdec: let the whole page (and the universal banner) scroll instead of the
+   suite being locked to the viewport. The working sheet stays full-height. */
+html,body{height:auto !important;}
+body{min-height:100dvh;display:block !important;}
+.views{flex:none !important;height:100dvh;height:100svh;}
 </style>
 </head>
 <body>
@@ -7461,11 +7455,10 @@ window.addEventListener('message', function(e){
     autosaveStore(d.page, d.data);
     return;
   }
-  // A page downloaded a file. Keep a central copy in Firebase ONLY when it is
-  // part of an Export Full Package — not for saved drafts or one-off downloads.
-  // runExport() opens a short save window; files arriving outside it are ignored.
+  // A page downloaded a file (draft, Word doc, export). Save a central copy
+  // to Firebase so admins can retrieve it from the Administration page.
   if (d.type === 'filesave' && d.value){
-    if (window.fdecSaveQuoteFile && Date.now() < (window.__fdecExportUntil || 0)) window.fdecSaveQuoteFile(d.value);
+    if (window.fdecSaveQuoteFile) window.fdecSaveQuoteFile(d.value);
     return;
   }
   // Otherwise relay quoting -> all verbiage pages (down payment sync, etc.)
@@ -7520,15 +7513,6 @@ function runExport(){
     return cb && cb.checked;
   });
   if (!selected.length){ alert('Select at least one page to export.'); return; }
-
-  // Save the reopenable quote to Administration — a new record, or, when an admin
-  // is editing a saved quote, a replacement of that same record. Only Export Full
-  // Package saves to quote files; saved drafts and one-off downloads never do.
-  try{
-    buildSuiteBundle().then(function(res){
-      if (window.fdecSaveQuoteBundle) window.fdecSaveQuoteBundle(res.bundle, res.jobName, res.quoteNo);
-    }).catch(function(){});
-  }catch(e){}
 
   var goBtn = document.getElementById('xm-go');
   goBtn.disabled = true;
@@ -7639,18 +7623,6 @@ function askDraft(iframeId){
   });
 }
 
-/* Collect the full reopenable suite state from all four pages. */
-function buildSuiteBundle(){
-  return Promise.all(DRAFT_PAGES.map(function(p){
-    return askDraft(p.frame).then(function(res){ return { id:p.id, res:res||{} }; });
-  })).then(function(results){
-    var bundle = { meta:{ app:'FDEC Quoting & Proposal Suite', kind:'suite-draft', version:1, savedAt:new Date().toISOString() }, pages:{} };
-    results.forEach(function(r){ if (r.res && r.res.data) bundle.pages[r.id] = r.res.data; });
-    var q = bundle.pages.quote && bundle.pages.quote.fields ? bundle.pages.quote.fields : {};
-    return { bundle:bundle, jobName:(q.jobName||''), quoteNo:(q.quoteNo||'') };
-  });
-}
-
 function saveSuiteDraft(){
   var btn = document.getElementById('btn-savedraft');
   btn.disabled = true; var t = btn.textContent; btn.textContent = 'Saving…';
@@ -7714,33 +7686,6 @@ function loadSuiteDraftFile(input){
   };
   reader.readAsText(file);
 }
-
-/* Edit handoff: Administration stores a saved quote here and opens this page to
-   edit it. Load its state into the four pages and arm "replace the original" so
-   the next Export Full Package updates that same quote file. */
-(function(){
-  var raw; try{ raw = localStorage.getItem('fdec_edit_quotefile'); }catch(e){ return; }
-  if(!raw) return;
-  try{ localStorage.removeItem('fdec_edit_quotefile'); }catch(e){}
-  var h; try{ h = JSON.parse(raw); }catch(e){ return; }
-  if(!h || !h.bundle || !h.bundle.pages) return;
-  window.__fdecEditQF = { id:h.id, byName:h.byName||'', byEmail:h.byEmail||'', uid:h.uid||'', chunkCount:h.chunkCount||0 };
-  var bar = document.createElement('div');
-  bar.id='qfEditBar'; bar.className='no-print';
-  bar.style.cssText='position:sticky;top:0;z-index:1200;background:#fff3d6;border-bottom:2px solid #e0b64a;color:#5c4300;font:600 13px/1.4 "Segoe UI",Arial,sans-serif;padding:9px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap';
-  bar.innerHTML='<span>✏️ Editing a saved quote'+(h.byName?(' · '+String(h.byName).replace(/[<>&]/g,'')):'')+' — <b>Export Full Package</b> will replace the original in Administration.</span>';
-  document.body.insertBefore(bar, document.body.firstChild);
-  // Re-post the saved state a few times so it lands after each page finishes loading.
-  var tries=0;
-  (function push(){
-    DRAFT_PAGES.forEach(function(p){
-      var slice = h.bundle.pages[p.id]; if(!slice) return;
-      var f = document.getElementById(p.frame);
-      if(f && f.contentWindow){ try{ f.contentWindow.postMessage({ fdec:true, type:'load-draft', page:p.id, data:slice }, '*'); }catch(e){} }
-    });
-    if(tries++ < 8) setTimeout(push, 500);
-  })();
-})();
 </script>
 
 <script type="module" src="fdec-auth.js" data-page="quoting"></script>
@@ -7752,54 +7697,10 @@ function loadSuiteDraftFile(input){
    origin); here we upload the bytes to Firebase Storage and index the file
    in Firestore (collection "quoteFiles"). */
 import { getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc, serverTimestamp }
+import { getFirestore, collection, addDoc, doc, setDoc, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 function fdecSafe(s){ return String(s || "").replace(/[^\w.-]+/g, "_").slice(0, 90); }
-function fdecB64(str){ try{ return btoa(unescape(encodeURIComponent(str))); }catch(_){ return btoa(str); } }
-
-/* Save the reopenable quote (the suite state) to Administration. When an admin
-   opened a saved quote with "Edit", window.__fdecEditQF holds that record, and
-   this REPLACES it in place (keeping the original author) with an edited-by
-   stamp; otherwise it files a new quote file. Called only by Export Full Package. */
-window.fdecSaveQuoteBundle = async function(bundle, jobName, quoteNo){
-  try{
-    if (window.FDECAuth && window.FDECAuth.ready){ try{ await window.FDECAuth.ready; }catch(_){} }
-    var dbf = getFirestore(getApp("fdec"));
-    var user = (window.FDECAuth && window.FDECAuth.user) || null;
-    var profile = (window.FDECAuth && window.FDECAuth.profile) || null;
-    var userName = (profile && profile.name) || (user && (user.displayName || user.email)) || "Unknown user";
-    var uid = (user && user.uid) || "anon";
-    var b64 = fdecB64(JSON.stringify(bundle));
-    var total = Math.ceil(b64.length / FDEC_CHUNK) || 1;
-    var fname = fdecSafe(quoteNo || jobName || "quote") + ".fdecsuite";
-    var edit = window.__fdecEditQF || null;
-    if (edit && edit.id){
-      var ref = doc(dbf, "quoteFiles", edit.id);
-      // Clear old chunks, then write the new ones.
-      var oldN = Math.max(total, (edit.chunkCount|0) || 0, 1);
-      for (var k=0;k<oldN+2;k++){ try{ await deleteDoc(doc(dbf,"quoteFiles",edit.id,"chunks",String(k))); }catch(_){} }
-      await setDoc(ref, {
-        jobName: jobName||"", quoteNo: quoteNo||"",
-        filename: fname, mime: "application/fdec-suite", size: b64.length, chunkCount: total,
-        editedBy: userName, editedByEmail: (user && user.email) || "", editedAt: serverTimestamp(),
-        ready: false
-      }, { merge:true });
-      for (var i=0;i<total;i++){ await setDoc(doc(dbf,"quoteFiles",edit.id,"chunks",String(i)), { i:i, uid:uid, data:b64.slice(i*FDEC_CHUNK,(i+1)*FDEC_CHUNK) }); }
-      await setDoc(ref, { ready:true }, { merge:true });
-      fdecToast("Updated the quote in Administration — replaced the original.");
-    } else {
-      var metaRef = await addDoc(collection(dbf, "quoteFiles"), {
-        jobName: jobName||"", quoteNo: quoteNo||"", userName: userName, userEmail: (user && user.email) || "",
-        uid: uid, app: "Quoting & Proposal Suite", filename: fname, mime: "application/fdec-suite",
-        size: b64.length, chunkCount: total, ready: false, createdAt: serverTimestamp()
-      });
-      for (var j=0;j<total;j++){ await setDoc(doc(dbf,"quoteFiles",metaRef.id,"chunks",String(j)), { i:j, uid:uid, data:b64.slice(j*FDEC_CHUNK,(j+1)*FDEC_CHUNK) }); }
-      await setDoc(metaRef, { ready:true }, { merge:true });
-      fdecToast("Saved the quote to Administration.");
-    }
-  }catch(err){ console.warn("quote bundle save failed", err); fdecToast("Could not save the quote centrally.", true); }
-};
 
 function fdecToast(msg, bad){
   try{
