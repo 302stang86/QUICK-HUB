@@ -812,6 +812,7 @@ document.addEventListener('click', function(e){
     {name:'Local Dispatch Numbers',  cat:'Field',   access:'',             page:'dispatch',       url:'fire-dispatch-directory.html', color:'#6d3bb5', icon:'pin', desc:'Fire department dispatch numbers by city — searchable, tap to call.'},
     {name:'Troubleshooting Guide',   cat:'Field',   access:'',             page:'troubleshooting',url:'troubleshooting-guide.html', color:'#0e8a84', icon:'search', desc:'Field troubleshooting steps for common system and device issues.'},
     {name:'NFPA 25 Frequencies',     cat:'Field',   access:'',             page:'frequencies',    url:'nfpa25-frequencies.html', color:'#d12f2f', icon:'hourglass', desc:'Searchable test and inspection frequency lookup by device — confirm when an item is due.'},
+    {name:'Library',                 cat:'Field',   access:'',             page:'library',        url:'nfpa-field-library.html', color:'#5e60a8', icon:'book', desc:'NFPA & manufacturer datasheets, recalls, obsolete cross-reference, and field tables.'},
     {name:'Quoting & Proposal Suite',cat:'Quoting', access:'Manager only', page:'quoting',        url:'quoting.html', color:'#1565c0', icon:'quote', desc:'Sprinkler ITM quoting and proposal verbiage.'},
     {name:'Time-Off Requests',       cat:'Team',    access:'Everyone',     page:'timeoff',        url:'timeoff.html', color:'#1f7a3d', icon:'calendar', desc:'Submit paid time-off (PTO) requests and track balances.'},
     {name:'On-Call Rotation',        cat:'Team',    access:'Everyone',     page:'oncall',         url:'oncall.html', color:'#d12f2f', icon:'phone', desc:'Current sprinkler department on-call schedule.'},
@@ -820,6 +821,7 @@ document.addEventListener('click', function(e){
     {name:'Help',                    cat:'Help',    access:'Everyone',     page:'help',           url:'help.html', color:'#5b6570', icon:'hammer', desc:'Report a bug with a photo, and find quick help on using Quick Hub.'}
   ];
   var ICONS = {
+    book:'<path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>',
     megaphone:'<path d="m3 11 15-5v12L3 15v-4z"/><path d="M18 8a3 3 0 0 1 0 6"/><path d="M7 15.5V19a1 1 0 0 0 1 1h1.5a1 1 0 0 0 1-1v-2.5"/>',
     doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/>',
     clipboard:'<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>',

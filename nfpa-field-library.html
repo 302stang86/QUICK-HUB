@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="NFPA Field Library">
+<title>FDEC NFPA Field Library</title>
+<style>
+  :root{
+    --bg:#0f1419;
+    --panel:#1a2129;
+    --panel-2:#222c37;
+    --line:#2e3a46;
+    --text:#e6edf3;
+    --muted:#9fb0c0;
+    --accent:#e8743b;
+    --accent-2:#3b82c4;
+    --radius:10px;
+    --shadow:0 2px 8px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);color:var(--text);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-text-size-adjust:100%;
+  }
+  header:not(.fdec-ubar){
+    position:sticky;top:0;z-index:50;
+    background:linear-gradient(180deg,#151b22,#10151b);
+    border-bottom:1px solid var(--line);padding:14px 16px 10px;box-shadow:var(--shadow);
+  }
+  .brandrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .logo{
+    width:34px;height:34px;border-radius:8px;flex:0 0 auto;background:var(--accent);color:#fff;font-weight:800;
+    display:flex;align-items:center;justify-content:center;font-size:15px;letter-spacing:.5px;
+  }
+  h1{font-size:17px;margin:0;font-weight:700;}
+  .sub{color:var(--muted);font-size:12px;margin-top:1px;}
+  .search-wrap{margin-top:12px;position:relative;}
+  #search{
+    width:100%;padding:12px 14px 12px 40px;font-size:16px;background:var(--panel);
+    border:1px solid var(--line);border-radius:var(--radius);color:var(--text);outline:none;
+  }
+  #search:focus{border-color:var(--accent);}
+  .search-ico{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:16px;}
+  #clear{
+    position:absolute;right:8px;top:50%;transform:translateY(-50%);background:var(--panel-2);
+    border:1px solid var(--line);color:var(--muted);border-radius:6px;padding:4px 9px;font-size:13px;cursor:pointer;display:none;
+  }
+  .cats{display:flex;gap:7px;overflow-x:auto;padding:11px 2px 2px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .cats::-webkit-scrollbar{display:none;}
+  .cat{
+    flex:0 0 auto;padding:7px 13px;border-radius:999px;cursor:pointer;white-space:nowrap;
+    background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:13px;font-weight:600;transition:all .12s;
+  }
+  .cat.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  main{padding:14px 16px 60px;max-width:860px;margin:0 auto;}
+  .section-title{
+    font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);
+    margin:22px 0 10px;font-weight:700;display:flex;align-items:center;gap:8px;
+  }
+  .section-title::after{content:"";flex:1;height:1px;background:var(--line);}
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:13px 14px;margin-bottom:9px;display:block;text-decoration:none;color:inherit;transition:border-color .12s,background .12s;
+  }
+  a.card:hover,.card.pdf:hover{border-color:var(--accent);background:var(--panel-2);}
+  .card-top{display:flex;align-items:flex-start;gap:10px;}
+  .card-title{font-weight:650;font-size:15px;flex:1;text-decoration:none;color:inherit;}
+  a.card-title:hover{color:#fff;}
+  .card-desc{color:var(--muted);font-size:13px;margin-top:4px;}
+  .badge{
+    flex:0 0 auto;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+    padding:3px 7px;border-radius:5px;background:var(--panel-2);color:var(--muted);border:1px solid var(--line);
+  }
+  .badge.recall{background:rgba(217,83,79,.15);color:#f08a86;border-color:rgba(217,83,79,.4);}
+  .badge.ref{background:rgba(59,130,196,.15);color:#79b2e0;border-color:rgba(59,130,196,.4);}
+  .badge.mfr{background:rgba(74,157,91,.15);color:#7fc78f;border-color:rgba(74,157,91,.4);}
+  .badge.pdf{background:rgba(232,116,59,.15);color:#f0a071;border-color:rgba(232,116,59,.4);}
+  .ext::after{content:" \2197";color:var(--muted);font-weight:400;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;align-items:center;}
+  .pill{display:inline-block;font-size:11px;padding:2px 7px;border-radius:4px;background:var(--panel-2);border:1px solid var(--line);color:var(--muted);}
+  .pill.obs{background:rgba(217,83,79,.14);color:#f08a86;border-color:rgba(217,83,79,.35);font-weight:700;}
+  .pill.brand{color:#cdd8e3;}
+  a.pill.src{text-decoration:none;color:#79b2e0;border-color:rgba(59,130,196,.35);}
+  a.pill.src:hover{background:rgba(59,130,196,.15);}
+  details.ref-block{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:9px;overflow:hidden;}
+  details.ref-block>summary{padding:13px 14px;cursor:pointer;font-weight:650;list-style:none;display:flex;align-items:center;gap:10px;}
+  details.ref-block>summary::-webkit-details-marker{display:none;}
+  details.ref-block>summary::before{content:"\25B8";color:var(--accent);transition:transform .15s;font-size:12px;}
+  details.ref-block[open]>summary::before{transform:rotate(90deg);}
+  .ref-body{padding:0 14px 14px;}
+  .ref-note{font-size:12px;color:var(--muted);margin:0 0 10px;}
+  .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:8px;}
+  table{border-collapse:collapse;width:100%;font-size:13px;min-width:460px;}
+  th,td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap;}
+  th{background:var(--panel-2);color:var(--muted);font-weight:700;position:sticky;top:0;font-size:11px;text-transform:uppercase;letter-spacing:.4px;}
+  tr:last-child td{border-bottom:none;}
+  td:first-child{font-weight:650;color:var(--text);}
+  .xref td{white-space:normal;}
+  .noresult{text-align:center;color:var(--muted);padding:40px 10px;display:none;}
+  .disclaimer{margin-top:28px;padding:12px 14px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);font-size:12px;color:var(--muted);}
+  .disclaimer strong{color:var(--text);}
+  footer{text-align:center;color:var(--muted);font-size:11px;padding:20px 10px 10px;}
+  kbd{background:var(--panel-2);border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:11px;}
+  @media (max-width:520px){main{padding:12px 12px 60px;}header{padding:12px 12px 8px;}}
+  #hubLink{position:fixed;left:-9999px;top:-9999px;}
+</style>
+<script defer src="fdec-offline.js"></script>
+<meta name="fdec-page-title" content="NFPA Field Library">
+<meta name="fdec-actions" content="#hubLink">
+<script defer src="fdec-header.js"></script>
+</head>
+<body>
+<a id="hubLink" href="index.html">&larr; Hub</a>
+<header>
+  <div class="brandrow">
+    <div class="logo">FD</div>
+    <div>
+      <h1>NFPA Field Library</h1>
+      <div class="sub">Fire Defense Equipment Co. &bull; Sprinkler Dept. &bull; <span id="count"></span></div>
+    </div>
+  </div>
+  <div class="search-wrap">
+    <span class="search-ico">&#128269;</span>
+    <input id="search" type="search" placeholder="Search: Omega, Ames 4000SS, DV-5A, Gem A-2, flange, ESFR..." autocomplete="off" autocapitalize="off" spellcheck="false">
+    <button id="clear">Clear</button>
+  </div>
+  <div class="cats" id="cats"></div>
+</header>
+
+<main id="main">
+  <div class="noresult" id="noresult">No matches. Try a manufacturer, model, doc number, or keyword.</div>
+</main>
+
+<script>
+/* ============================================================
+   DATA
+   type "pdf"  -> direct datasheet/notice link (file_url), with brand/doc chips
+   type "link" -> portal or guide link
+   type "ref"  -> built-in reference table (inline content)
+   Datasheet links point to manufacturer or CPSC sources.
+   ============================================================ */
+
+const CATS = [
+  ["all","All"],
+  ["recall","Recalls"],
+  ["xref","Cross-Reference"],
+  ["dry","Dry Valves"],
+  ["deluge","Deluge Valves"],
+  ["preaction","Preaction"],
+  ["backflow","Backflow"],
+  ["fittings","Fittings & Flanges"],
+  ["mfr","Mfr Libraries"]
+];
+
+const ITEMS = [
+
+/* ================= RECALLS ================= */
+{cat:"recall",type:"ref",badge:"ref",
+ title:"Recalled Head Markings — Quick ID Cheat Sheet",
+ content:`
+   <p class="ref-note">What to look for stamped on the frame arms or deflector when checking for recalled O-ring heads. When in doubt, do not disturb the head — photograph and reference the CPSC model table.</p>
+   <div class="tbl-scroll"><table>
+     <tr><th>Marking</th><th>Indicates</th><th>Recall</th></tr>
+     <tr><td>CENTRAL</td><td>Central Sprinkler Co.</td><td><span class="pill obs">O-ring 2001</span></td></tr>
+     <tr><td>STAR</td><td>Star Sprinkler Inc.</td><td><span class="pill obs">O-ring 2001</span></td></tr>
+     <tr><td>CSC</td><td>Central Sprinkler Co.</td><td><span class="pill obs">O-ring 2001</span></td></tr>
+     <tr><td>G in triangle</td><td>Gem Sprinkler Co.</td><td><span class="pill obs">O-ring 2001</span></td></tr>
+     <tr><td>Star symbol</td><td>Star Sprinkler Inc.</td><td><span class="pill obs">O-ring 2001</span></td></tr>
+     <tr><td>Omega (model)</td><td>Central Omega</td><td><span class="pill obs">Omega 1998</span></td></tr>
+   </table></div>
+   <p class="ref-note" style="margin-top:10px">Recalled heads are an emergency impairment under NFPA 25. Follow your tagging and notification requirements. The O-ring replacement program officially closed 8/31/2007 but heads remain in service in many buildings.</p>`},
+{cat:"recall",type:"pdf",badge:"recall",brand:"Central / Tyco",doc:"O-Ring Notice",
+ title:"Central O-Ring Sprinkler Identification Guide",
+ desc:"Pictures and markings that identify recalled Central, Star and Gem O-ring sprinklers still installed in a building.",
+ url:"https://tyco.widen.net/s/pzctf2gjhg/identification-guide-central-o-ring-sprinklers",
+ source:"https://www.tyco-fire.com/central-sprinkler-o-ring-notice"},
+{cat:"recall",type:"pdf",badge:"recall",brand:"Central / Tyco",doc:"Replacement Guide",
+ title:"Suitable Replacement Heads for Recalled Central Sprinklers",
+ desc:"Currently listed replacement sprinkler heads approved for the Central O-ring recall program.",
+ url:"https://tyco.widen.net/s/j5gbbrjrxv/central-o-ring-replacement-heads-guide",
+ source:"https://www.tyco-fire.com/central-sprinkler-o-ring-notice"},
+{cat:"recall",type:"pdf",badge:"recall",brand:"Central / Tyco",doc:"FAQ",
+ title:"Central O-Ring Recall — Frequently Asked Questions",
+ desc:"Owner and contractor questions on the recall: affected dates, identification and how a claim is handled.",
+ url:"https://tyco.widen.net/s/kwjfxzjspc/faq-central-o-ring-notice-9.24.2026",
+ source:"https://www.tyco-fire.com/central-sprinkler-o-ring-notice"},
+{cat:"recall",type:"pdf",badge:"recall",brand:"CPSC",doc:"Alert 2026",
+ title:"CPSC & Tyco — Urgent Alert on Recalled Sprinklers (2026)",
+ desc:"Renewed warning that recalled O-ring sprinkler heads may still be installed in homes and commercial buildings.",
+ url:"https://www.cpsc.gov/Newsroom/News-Releases/2026/CPSC-and-Tyco-Fire-Products-LP-Urge-Immediate-Action-on-Recalled-Fire-Sprinklers-that-Can-Fail-in-a-Fire",
+ source:"https://www.cpsc.gov/"},
+{cat:"recall",type:"pdf",badge:"recall",brand:"CPSC",doc:"CPSC 2001",
+ title:"CPSC — Central Sprinkler O-Ring Recall Announcement",
+ desc:"Original federal announcement of the voluntary recall covering Central O-ring sprinkler heads.",
+ url:"https://www.cpsc.gov/Recalls/2001/cpsc-central-sprinkler-company-announce-voluntary-recall-to-replace-o-ring-fire"},
+{cat:"recall",type:"pdf",badge:"recall",brand:"CPSC",doc:"CPSC 2003",
+ title:"CPSC — Central Sprinkler Recall Update (2003)",
+ desc:"2003 modification of the Central O-ring recall, including the expanded list of covered models and claim terms.",
+ url:"https://www.cpsc.gov/Recalls/2003/CPSC-Central-Sprinkler-Company-Update-Voluntary-Recall-To-Replace-O-Ring-Fire-Sprinklers"},
+{cat:"recall",type:"pdf",badge:"recall",brand:"CPSC",doc:"CPSC 1999",
+ title:"CPSC — Mealane / Star Sprinkler Recall",
+ desc:"Recall of 1961–1976 Star dry-type sprinklers, models D-1, RD-1, RE-1, E-1 and ME-1.",
+ url:"https://www.cpsc.gov/Recalls/1999/cpsc-mealane-corp-announce-recall-of-star-fire-sprinklers"},
+{cat:"recall",type:"pdf",badge:"recall",brand:"Central",doc:"Omega 1998",
+ title:"Central Omega Recall — Identification Guide",
+ desc:"1998 recall of ~8.4 million Omega heads (made since 1982). Bellevue FD handout with identification photos and markings.",
+ url:"https://bellevuewa.gov/sites/default/files/media/pdf_document/F-13_CentralOmegaSpnks.pdf"},
+{cat:"recall",type:"link",badge:"recall",
+ title:"CPSC Fire Sprinkler Recalls — Full Search",
+ desc:"Search all CPSC fire sprinkler recall notices by year/manufacturer. Authoritative source for any recall you encounter in the field.",
+ url:"https://www.cpsc.gov/Recalls?search=fire%20sprinkler"},
+
+/* ================= CROSS-REFERENCE ================= */
+{cat:"xref",type:"ref",badge:"ref",
+ title:"Obsolete Sprinkler Cross-Reference — How to Match a Replacement",
+ content:`
+   <p class="ref-note">NFPA 13 / NFPA 25 do not require the same make and model — they require a replacement with the same performance characteristics. Match these before substituting:</p>
+   <div class="tbl-scroll"><table>
+     <tr><th>Must match</th><th>Why</th></tr>
+     <tr><td>K-factor</td><td>Controls flow at given pressure — affects hydraulic design</td></tr>
+     <tr><td>Temperature rating</td><td>Must suit the hazard/ambient per NFPA 13</td></tr>
+     <tr><td>Response (RTI: QR / SR)</td><td>Quick vs standard response cannot be mixed in a design area</td></tr>
+     <tr><td>Orientation</td><td>Pendent / upright / sidewall / dry</td></tr>
+     <tr><td>Coverage &amp; listing</td><td>Standard-spray, residential, ESFR, CMSA, etc.</td></tr>
+     <tr><td>Deflector / spray pattern</td><td>Determines distribution</td></tr>
+   </table></div>
+   <p class="ref-note" style="margin-top:10px">If a required listed accessory (escutcheon, cover plate) for an obsolete head is no longer available, NFPA 25 requires replacing the sprinkler and accessory as a listed assembly.</p>`},
+{cat:"xref",type:"ref",badge:"ref",
+ title:"SIN Prefix Codes — Identify the Manufacturer",
+ content:`
+   <p class="ref-note">The Sprinkler Identification Number (SIN) stamped on the deflector starts with a manufacturer prefix. Use it to find the data sheet.</p>
+   <div class="tbl-scroll"><table>
+     <tr><th>Prefix</th><th>Manufacturer</th></tr>
+     <tr><td>VK</td><td>Viking</td></tr><tr><td>TY</td><td>Tyco</td></tr>
+     <tr><td>V</td><td>Victaulic</td></tr><tr><td>R / RA</td><td>Reliable</td></tr>
+     <tr><td>SS</td><td>Senju</td></tr><tr><td>G</td><td>Gem (legacy)</td></tr>
+     <tr><td>S</td><td>Star (legacy)</td></tr>
+   </table></div>`},
+{cat:"xref",type:"ref",badge:"ref",
+ title:"Legacy Head Cross-Reference — Standard Spray",
+ content:`
+   <p class="ref-note">Common legacy-to-current redesignations and matches. Verify K-factor, temp, and response on the current data sheet before installing. A current listed head with matching characteristics is an acceptable replacement.</p>
+   <div class="tbl-scroll"><table class="xref">
+     <tr><th>Legacy / obsolete</th><th>Brand</th><th>Current equivalent (verify specs)</th></tr>
+     <tr><td>Star S1800</td><td>Star</td><td>Tyco TY3111 (redesignation)</td></tr>
+     <tr><td>Gem G3111</td><td>Gem</td><td>Tyco TY3111 (redesignation)</td></tr>
+     <tr><td>Central / Gem / Star O-ring heads</td><td>Central/Gem/Star</td><td><span class="pill obs">RECALLED</span> replace with any listed head matching K / temp / response</td></tr>
+     <tr><td>Central Omega</td><td>Central</td><td><span class="pill obs">RECALLED</span> replace with current listed standard-spray head</td></tr>
+     <tr><td>GB / Gem GB series</td><td>Gem</td><td>Match to current Tyco standard-spray by K-factor</td></tr>
+     <tr><td>"Old style" (pre-1953 deflector)</td><td>various</td><td>Must be replaced — not listed to current standards</td></tr>
+   </table></div>
+   <p class="ref-note" style="margin-top:10px">For heads not listed here, pull the obsolete data sheet, read off K-factor / temp / response, then select any current listed head that matches.</p>`},
+{cat:"xref",type:"ref",badge:"ref",
+ title:"Obsolete / Discontinued ESFR Cross-Reference",
+ content:`
+   <p class="ref-note">ESFR replacement is design-sensitive: K-factor and minimum operating pressure are tied to the stored-commodity/ceiling-height design. Do not swap K-factors without confirming the hydraulic design still holds. Confirm on the current data sheet and with the AHJ/designer where applicable.</p>
+   <div class="tbl-scroll"><table class="xref">
+     <tr><th>Obsolete / older ESFR</th><th>Brand</th><th>K</th><th>Current equivalent (verify design)</th></tr>
+     <tr><td>ESFR-1 (K14)</td><td>Central/Tyco</td><td>14.0</td><td>Tyco ESFR-14 / current K14 ESFR</td></tr>
+     <tr><td>ESFR-17 (K16.8)</td><td>Central/Tyco</td><td>16.8</td><td>Tyco ESFR-17 / TY7226</td></tr>
+     <tr><td>Reliable Model G ESFR</td><td>Reliable</td><td>14 / 25</td><td>Reliable F1-ESFR series</td></tr>
+     <tr><td>Viking older ESFR</td><td>Viking</td><td>14 / 16.8</td><td>Viking VK500 / VK510 (K25.2) — match K</td></tr>
+     <tr><td>Early K25.2 pendent</td><td>various</td><td>25.2</td><td>Current K25.2 ESFR (Viking VK510, Tyco TY9226, Reliable)</td></tr>
+   </table></div>
+   <p class="ref-note" style="margin-top:10px">Rule of thumb: an ESFR replacement must keep the same K-factor the system was hydraulically designed around, unless the design is re-calculated. When uncertain, treat as a design change.</p>`},
+{cat:"xref",type:"link",badge:"ref",
+ title:"Obsolete Head & Escutcheon Guide (QRFS)",
+ desc:"Identifying and replacing obsolete heads, cover plates, and escutcheons (Gem/Central/Star Style 10–50).",
+ url:"https://blog.qrfs.com/118-how-to-replace-an-obsolete-fire-sprinkler-head-or-component/"},
+{cat:"xref",type:"link",badge:"ref",
+ title:"Finding the Right Replacement — SIN & Specs (QRFS)",
+ desc:"How to read a SIN and match K-factor, temperature, and response when an exact head is gone.",
+ url:"https://blog.qrfs.com/125-how-do-i-find-the-right-replacement-fire-sprinkler-current-or-obsolete/"},
+
+/* ================= DRY PIPE VALVES ================= */
+{cat:"dry",type:"pdf",badge:"pdf",brand:"Central",doc:"TD1-86",obs:true,
+ title:"Central Model D Dry Pipe Valve — Obsolete",
+ desc:"Legacy Central (CSC) dry pipe valve datasheet for identifying and servicing existing installations.",
+ url:"https://docs.johnsoncontrols.com/tycofire/api/khub/documents/Po3NdQA7kR~4dXi6M0XpoA/content",
+ source:"https://docs.johnsoncontrols.com/tycofire"},
+{cat:"dry",type:"pdf",badge:"pdf",brand:"Central",doc:"Flange x Groove",obs:true,
+ title:"Central Dry Pipe Valve — Flange by Groove — Obsolete",
+ desc:"Central dry valve datasheet covering flange-by-groove bodies, air maintenance device and trim.",
+ url:"https://docs.johnsoncontrols.com/tycofire/api/khub/documents/mZpnirKCqjy8yvD~FZHasQ/content",
+ source:"https://docs.johnsoncontrols.com/tycofire"},
+{cat:"dry",type:"pdf",badge:"pdf",brand:"Gem",doc:"TD105",obs:true,
+ title:"Gem Model A-2 Dry Pipe Valve — Datasheet",
+ desc:"Two-inch Gem A-2 dry valve data, trim arrangement and dimensions for existing installations.",
+ url:"https://docs.johnsoncontrols.com/tycofire/v/u/Gem/en-US/Model-A-2-Dry-Pipe-Valve-2-50mm-Datasheet",
+ source:"https://docs.johnsoncontrols.com/tycofire"},
+{cat:"dry",type:"pdf",badge:"pdf",brand:"Grinnell",doc:"TD5-1",obs:true,
+ title:"Grinnell Model E-2 Dry Pipe Valve — Installation and Care",
+ desc:"Basic trim arrangement, resetting steps and maintenance for the Grinnell E-2 dry pipe valve.",
+ url:"https://docs.johnsoncontrols.com/tycofire/v/u/Gem/en-US/Model-E-2-Basic-Trimmings-Instructions-For-Installation-Care-and-Maintenance-Grinnell-Dry-Pipe-Valve-Installation-Guide",
+ source:"https://docs.johnsoncontrols.com/tycofire"},
+{cat:"dry",type:"pdf",badge:"pdf",brand:"Reliable",doc:"Bulletin 351",
+ title:"Reliable Model D Dry Pipe Valve — Bulletin 351",
+ desc:"Dimensional and operational data for the 4 in and 6 in Reliable Model D dry pipe valve.",
+ url:"https://www.reliablesprinkler.com/files/bulletins/351.pdf",
+ source:"https://www.reliablesprinkler.com/product/d-dry-pipe-valve/"},
+{cat:"dry",type:"pdf",badge:"pdf",brand:"Tyco",doc:"TFP1020",
+ title:"Tyco Model DPV-1 Dry Pipe Valve — Technical Data",
+ desc:"Installation and technical data for the DPV-1 pretrim dry pipe valve, 2½ through 6 in.",
+ url:"https://www.brooksequipment.com/resources/spec/BRK-SPEC-TY523103925.pdf",
+ source:"https://www.tyco-fire.com/products-and-solutions/valves-devices-and-components/dry-system-valves/dpv1_pretrim_dry_pipe_valve_fsp/dpv-1-pre-trim-dry-pipe-valve"},
+{cat:"dry",type:"pdf",badge:"pdf",brand:"Victaulic",doc:"30.80",
+ title:"Victaulic FireLock NXT 768N Dry Valve — Technical Data",
+ desc:"Sizing, trim options and installation data for the Series 768N dry pipe valve, 1½–8 in.",
+ url:"https://assets.victaulic.com/assets/uploads/literature/30.80.pdf",
+ source:"https://www.victaulic.com/"},
+{cat:"dry",type:"pdf",badge:"pdf",brand:"Viking",doc:"F-2",obs:true,
+ title:"Viking Model F-2 Dry Pipe Valve — Technical Data",
+ desc:"Trim, dimensions, air and water pressure requirements, and operation of the Viking F-2 latching dry valve.",
+ url:"https://www.vikinggroupinc.com/databook/Old/WetDrySystemsMaster/DrySystems/011507feb2007.pdf",
+ source:"https://www.vikinggroupinc.com/"},
+{cat:"dry",type:"ref",badge:"ref",
+ title:"Obsolete Dry / Preaction / Deluge Valves — Where to Look",
+ content:`
+   <p class="ref-note">Legacy valve brands and where their documentation now lives after acquisitions. Trim parts may still be available through the acquiring manufacturer.</p>
+   <div class="tbl-scroll"><table class="xref">
+     <tr><th>Legacy valve brand</th><th>Now supported by</th><th>Where to find docs</th></tr>
+     <tr><td>Central (dry/deluge/preaction)</td><td>Tyco / Johnson Controls</td><td>JCI / Tyco TFP data sheets</td></tr>
+     <tr><td>Gem valves</td><td>Tyco / Johnson Controls</td><td>JCI / Tyco TFP data sheets</td></tr>
+     <tr><td>Grinnell valves</td><td>Tyco / Johnson Controls</td><td>JCI / Tyco TFP data sheets</td></tr>
+     <tr><td>Star</td><td>Tyco / Johnson Controls</td><td>JCI / Tyco archives</td></tr>
+   </table></div>
+   <p class="ref-note" style="margin-top:10px">Viking Tech Services: 877-384-5464. For legacy valve trim, photograph the valve body casting (model + size + patent/date) before calling.</p>`},
+
+/* ================= DELUGE VALVES ================= */
+{cat:"deluge",type:"pdf",badge:"pdf",brand:"Central",doc:"Model B",obs:true,
+ title:"Central Model B Deluge Valve, 2 in — Obsolete",
+ desc:"Two-inch Central Model B deluge valve — quick opening, hydraulically operated, for identifying existing valves.",
+ url:"https://docs.johnsoncontrols.com/tycofire/api/khub/documents/PnDWaL97JpkLPyZrZ4Ivrg/content",
+ source:"https://docs.johnsoncontrols.com/tycofire"},
+{cat:"deluge",type:"pdf",badge:"pdf",brand:"Central",doc:"System Guide",obs:true,
+ title:"Central Deluge System — Electric Actuation — Obsolete",
+ desc:"Legacy Central deluge system guide using the Model A deluge valve with electric actuation and open sprinklers.",
+ url:"https://docs.johnsoncontrols.com/tycofire/api/khub/documents/EpeGtubvKuHc49~ma56k5A/content",
+ source:"https://docs.johnsoncontrols.com/tycofire"},
+{cat:"deluge",type:"pdf",badge:"pdf",brand:"Grinnell",doc:"F470",obs:true,
+ title:"Grinnell Model F470 Multimatic Deluge Valve — Obsolete",
+ desc:"Model F470 external resetting Multimatic deluge valve, wet or dry pilot actuated, 4 and 6 in.",
+ url:"https://docs.johnsoncontrols.com/tycofire/api/khub/documents/UKluyB~GDeH9eqgk~24Vrw/content",
+ source:"https://docs.johnsoncontrols.com/tycofire"},
+{cat:"deluge",type:"pdf",badge:"pdf",brand:"Reliable",doc:"Bulletin 520",
+ title:"Reliable Model DDX Deluge Valve — Bulletin 520",
+ desc:"Operation, inspection, testing and maintenance manual for the DDX deluge valve.",
+ url:"https://www.reliablesprinkler.com/files/bulletins/520.pdf",
+ source:"https://www.reliablesprinkler.com/products/system-valves/deluge/"},
+{cat:"deluge",type:"pdf",badge:"pdf",brand:"Reliable",doc:"Bulletin 550",
+ title:"Reliable Deluge System — Bulletin 550",
+ desc:"Deluge system configuration, trim schematic and device options for Reliable DDX systems.",
+ url:"https://www.reliablesprinkler.com/files/bulletins/550.pdf",
+ source:"https://www.reliablesprinkler.com/products/system-valves/deluge/"},
+{cat:"deluge",type:"pdf",badge:"pdf",brand:"Tyco",doc:"TFP1321",
+ title:"Tyco DV-5A Deluge Valve — Technical Data",
+ desc:"Diaphragm-style electric-actuation deluge valve data, 1½ through 8 in.",
+ url:"https://docs.johnsoncontrols.com/tycofire/api/khub/documents/rCTH8BJF~DQP9te_L0DdlQ/content",
+ source:"https://www.tyco-fire.com/products-and-solutions/valves-devices-and-components/deluge-and-preaction-valves-and-components/dv5a_pretrim_deluge_valve_fsp/dv-5a-pretrim-deluge-valve"},
+{cat:"deluge",type:"pdf",badge:"pdf",brand:"Tyco",doc:"DV-ME",obs:true,
+ title:"Tyco Model DV-ME Deluge Valve, 2–8 in — Obsolete",
+ desc:"Obsolete Tyco DV-ME deluge valves, 2 through 8 in — hydraulically operated differential type.",
+ url:"https://docs.johnsoncontrols.com/tycofire/api/khub/documents/5MZPZVyQ_jkXlTyd5D1WRg/content",
+ source:"https://docs.johnsoncontrols.com/tycofire"},
+{cat:"deluge",type:"pdf",badge:"pdf",brand:"Victaulic",doc:"31.81",
+ title:"Victaulic FireLock NXT 769N Deluge Valve",
+ desc:"Deluge valve data for the Series 769N, 1½–8 in, rated to 300 psi.",
+ url:"https://assets.victaulic.com/assets/uploads/literature/31.81.pdf",
+ source:"https://www.victaulic.com/"},
+{cat:"deluge",type:"pdf",badge:"pdf",brand:"Viking",doc:"040104",
+ title:"Viking Model F-1 Deluge Valve — Technical Data",
+ desc:"Valve data, trim and dimensions for the Viking F-1 deluge valve, 2½–8 in.",
+ url:"https://www.vikinggroupinc.com/databook/deluge/valves/040104.pdf",
+ source:"https://www.vikinggroupinc.com/"},
+
+/* ================= PREACTION ================= */
+{cat:"preaction",type:"pdf",badge:"pdf",brand:"Globe",doc:"RCW",
+ title:"Globe Model RCW Single Interlock Preaction System",
+ desc:"RCW water control valve applied to electric, wet pilot and dry pilot single interlock preaction systems.",
+ url:"https://www.ziggiotto.it/attachments/download/11658.pdf",
+ source:"https://www.fireengineering.com/fire-safety/globe-fire-sprinkler-corporation-introduces-model-rcw-water-control-valve-2/"},
+{cat:"preaction",type:"pdf",badge:"pdf",brand:"Grinnell",doc:"F445",obs:true,
+ title:"Grinnell Model F445 Single Interlock Preaction System — Obsolete",
+ desc:"Supervised single interlock preaction system built on the Grinnell F445 deluge valve, including trim details.",
+ url:"https://docs.johnsoncontrols.com/tycofire/api/khub/documents/6F_IgxXSiRqxUnr4YRoUQQ/content",
+ source:"https://docs.johnsoncontrols.com/tycofire"},
+{cat:"preaction",type:"pdf",badge:"pdf",brand:"Reliable",doc:"Bulletin 749",
+ title:"Reliable Model DDX Single Interlock Preaction — Bulletin 749",
+ desc:"Single interlock preaction system data, requirements and valve trim for DDX systems.",
+ url:"https://www.reliablesprinkler.com/files/bulletins/749.pdf",
+ source:"https://www.reliablesprinkler.com/products/system-valves/"},
+{cat:"preaction",type:"pdf",badge:"pdf",brand:"Viking",doc:"070889",
+ title:"Viking Double Interlock Preaction System — Technical Data",
+ desc:"Electric/pneumatic double interlock preaction system data built on a Viking deluge valve.",
+ url:"https://www.vikinggroupinc.com/databook/preaction/070889.pdf",
+ source:"https://www.vikinggroupinc.com/"},
+
+/* ================= BACKFLOW ================= */
+{cat:"backflow",type:"ref",badge:"ref",
+ title:"Ames ↔ Watts Backflow Cross-Reference",
+ content:`
+   <p class="ref-note">Ames and Watts share model families (Ames is a Watts brand). Common fire-service assemblies:</p>
+   <div class="tbl-scroll"><table class="xref">
+     <tr><th>Type</th><th>Ames model</th><th>Watts equiv.</th><th>Typical sizes</th></tr>
+     <tr><td>Double Check (DC)</td><td>Colt 200 / 2000SS</td><td>SilverEagle 757 / 709</td><td>2½–10"</td></tr>
+     <tr><td>DC Detector (DCDA)</td><td>Colt 300</td><td>757DCDA / 709DCDA</td><td>2½–10"</td></tr>
+     <tr><td>Reduced Pressure (RP/RPZ)</td><td>Colt 400 / 4000SS</td><td>SilverEagle 957 / 909 / 994</td><td>2½–10"</td></tr>
+     <tr><td>RP Detector (RPDA)</td><td>Colt 400 (DA)</td><td>957RPDA / 909RPDA</td><td>4–10"</td></tr>
+   </table></div>
+   <p class="ref-note" style="margin-top:10px">Orientation codes: H = horizontal, VU = vertical up, VUVD = vertical up / vertical down. Confirm the exact sub-designation and orientation listing against the USC list before quoting.</p>`},
+{cat:"backflow",type:"ref",badge:"ref",
+ title:"Backflow Assembly Types — Quick Reference",
+ content:`
+   <div class="tbl-scroll"><table class="xref">
+     <tr><th>Abbr.</th><th>Assembly</th><th>Test points</th></tr>
+     <tr><td>DCVA</td><td>Double Check Valve Assembly</td><td>2 checks, 4 test cocks</td></tr>
+     <tr><td>DCDA</td><td>Double Check Detector Assembly</td><td>Main + bypass meter</td></tr>
+     <tr><td>RPZ / RP</td><td>Reduced Pressure Zone</td><td>2 checks + relief valve, 4 test cocks</td></tr>
+     <tr><td>RPDA</td><td>Reduced Pressure Detector Assembly</td><td>Main RP + metered bypass</td></tr>
+     <tr><td>PVB</td><td>Pressure Vacuum Breaker</td><td>Not for fire service backpressure</td></tr>
+   </table></div>
+   <p class="ref-note" style="margin-top:10px">Fire service without chemical additive typically uses DC/DCDA; with antifreeze or other additive, RP/RPDA is required. Confirm with local cross-connection AHJ.</p>`},
+{cat:"backflow",type:"pdf",badge:"pdf",brand:"Ames",doc:"ES-A-2000SS",
+ title:"Ames 2000SS Double Check Valve — Specification Sheet",
+ desc:"Dimensions, flow curves and capacities for the Ames 2000SS stainless steel double check assembly, 2½–10 in.",
+ url:"https://www.brooksequipment.com/resources/spec/BRK-SPEC-AM88003348.pdf",
+ source:"https://www.watts.com/products/plumbing-flow-control-solutions/backflow-preventers/double-check-valve-assemblies/2000ss"},
+{cat:"backflow",type:"pdf",badge:"pdf",brand:"Ames",doc:"ES-A-4000SS",
+ title:"Ames 4000SS Reduced Pressure Zone — Specification Sheet",
+ desc:"Weights, dimensions, capacities and pressure loss for the Ames 4000SS reduced pressure zone assembly.",
+ url:"https://www.watts.ca/dfsmedia/0533dbba17714b1ab581ab07a4cbb521/627695-source/639239022280000000/es-a-4000ss-2352.pdf",
+ source:"https://www.watts.com/products/plumbing-flow-control-solutions/backflow-preventers/reduced-pressure-zone-assemblies/4000ss"},
+{cat:"backflow",type:"pdf",badge:"pdf",brand:"Ames",doc:"Parts Guide",
+ title:"Ames 4000SS — Repair Parts and Service",
+ desc:"Exploded parts views and field service steps for repairing the Ames 4000SS RPZ assembly.",
+ url:"https://www.bavco.com/factory-repair/model/ames/AMES-4000SS.pdf"},
+{cat:"backflow",type:"link",badge:"ref",
+ title:"USC FCCCHR — Approved Assemblies List (master)",
+ desc:"The authoritative USC Foundation list of all approved backflow assemblies (DC, DCDA, RP, RPDA) by manufacturer and model.",
+ url:"https://fccchr.usc.edu/list.html"},
+
+/* ================= FITTINGS & FLANGES ================= */
+{cat:"fittings",type:"ref",badge:"ref",
+ title:"ANSI B16.5 Class 150 Flange Dimensions",
+ content:`
+   <p class="ref-note">Class 150 flanges (ASME B16.5) — the common rating for fire sprinkler flanged valves and fittings. Dimensions in inches.</p>
+   <div class="tbl-scroll"><table>
+     <tr><th>Pipe</th><th>Flange OD</th><th>Thk</th><th>Bolt circle</th><th>#</th><th>Bolt dia</th></tr>
+     <tr><td>1"</td><td>4¼</td><td>9/16</td><td>3⅛</td><td>4</td><td>½</td></tr>
+     <tr><td>1¼"</td><td>4⅝</td><td>5/8</td><td>3½</td><td>4</td><td>½</td></tr>
+     <tr><td>1½"</td><td>5</td><td>11/16</td><td>3⅞</td><td>4</td><td>½</td></tr>
+     <tr><td>2"</td><td>6</td><td>3/4</td><td>4¾</td><td>4</td><td>5/8</td></tr>
+     <tr><td>2½"</td><td>7</td><td>7/8</td><td>5½</td><td>4</td><td>5/8</td></tr>
+     <tr><td>3"</td><td>7½</td><td>15/16</td><td>6</td><td>4</td><td>5/8</td></tr>
+     <tr><td>3½"</td><td>8½</td><td>15/16</td><td>7</td><td>8</td><td>5/8</td></tr>
+     <tr><td>4"</td><td>9</td><td>15/16</td><td>7½</td><td>8</td><td>5/8</td></tr>
+     <tr><td>5"</td><td>10</td><td>15/16</td><td>8½</td><td>8</td><td>3/4</td></tr>
+     <tr><td>6"</td><td>11</td><td>1</td><td>9½</td><td>8</td><td>3/4</td></tr>
+     <tr><td>8"</td><td>13½</td><td>1⅛</td><td>11¾</td><td>8</td><td>3/4</td></tr>
+     <tr><td>10"</td><td>16</td><td>1 3/16</td><td>14¼</td><td>12</td><td>7/8</td></tr>
+     <tr><td>12"</td><td>19</td><td>1¼</td><td>17</td><td>12</td><td>7/8</td></tr>
+   </table></div>
+   <p class="ref-note" style="margin-top:10px">Bolt holes are 1/8" larger than bolt diameter. Bolts straddle centerlines. Source: ASME B16.5.</p>`},
+{cat:"fittings",type:"ref",badge:"ref",
+ title:'Flanged Fitting "A" Dimensions & Laying Lengths',
+ content:`
+   <p class="ref-note">Center-to-face / laying-length reference for common flanged cast-iron fittings (AWWA C110, Class 150). Use for cut lengths when swapping flanged fittings. Inches.</p>
+   <div class="tbl-scroll"><table>
+     <tr><th>Size</th><th>90° Ell (C-to-F)</th><th>45° Ell</th><th>Tee (run C-to-F)</th></tr>
+     <tr><td>2"</td><td>3½</td><td>2½</td><td>3½</td></tr>
+     <tr><td>2½"</td><td>4</td><td>3</td><td>4</td></tr>
+     <tr><td>3"</td><td>4½</td><td>3</td><td>4½</td></tr>
+     <tr><td>4"</td><td>5</td><td>3½</td><td>5</td></tr>
+     <tr><td>6"</td><td>6</td><td>4</td><td>6</td></tr>
+     <tr><td>8"</td><td>7</td><td>4½</td><td>7</td></tr>
+     <tr><td>10"</td><td>8</td><td>5</td><td>8</td></tr>
+     <tr><td>12"</td><td>9</td><td>5½</td><td>9</td></tr>
+   </table></div>
+   <p class="ref-note" style="margin-top:10px">Values are nominal AWWA C110 figures and vary by manufacturer and body style (C110 full-body vs C153 compact). Always confirm against the specific fitting's cut sheet before cutting pipe — see the US Pipe C110 and Victaulic documents below.</p>`},
+{cat:"fittings",type:"ref",badge:"ref",
+ title:"Steel Pipe Dimensions (Sch 10 / Sch 40)",
+ content:`
+   <p class="ref-note">Common sprinkler pipe OD and wall. OD is constant across schedules; wall thickness changes. Inches.</p>
+   <div class="tbl-scroll"><table>
+     <tr><th>Nom</th><th>OD</th><th>Sch 10 wall</th><th>Sch 40 wall</th></tr>
+     <tr><td>1"</td><td>1.315</td><td>0.109</td><td>0.133</td></tr>
+     <tr><td>1¼"</td><td>1.660</td><td>0.109</td><td>0.140</td></tr>
+     <tr><td>1½"</td><td>1.900</td><td>0.109</td><td>0.145</td></tr>
+     <tr><td>2"</td><td>2.375</td><td>0.109</td><td>0.154</td></tr>
+     <tr><td>2½"</td><td>2.875</td><td>0.120</td><td>0.203</td></tr>
+     <tr><td>3"</td><td>3.500</td><td>0.120</td><td>0.216</td></tr>
+     <tr><td>4"</td><td>4.500</td><td>0.120</td><td>0.237</td></tr>
+     <tr><td>6"</td><td>6.625</td><td>0.134</td><td>0.280</td></tr>
+     <tr><td>8"</td><td>8.625</td><td>0.148</td><td>0.322</td></tr>
+   </table></div>`},
+{cat:"fittings",type:"pdf",badge:"pdf",brand:"US Pipe",doc:"C110",
+ title:"US Pipe Flanged Fittings — C110 Submittal",
+ desc:"Flanged fitting dimensions and laying lengths, including UL-listed 2–12 in fire protection sizes.",
+ url:"https://www.uspipe.com/wp-content/uploads/2023/03/USP_Flanged_Fittings_C110_Submittal_digital.pdf",
+ source:"https://www.uspipe.com/"},
+{cat:"fittings",type:"pdf",badge:"pdf",brand:"Anvil",doc:"Spec Sheet",
+ title:"Anvil Cast Iron Flanged Fittings — Specification Sheet",
+ desc:"Cast iron flanged fitting dimensions, facings and drilling for 125 lb and 250 lb classes.",
+ url:"https://www.firstsupply.com/UserFiles/Documents/inRiver/Original/140519_Anvil_International_0306031600_Specification_Sheet.pdf",
+ source:"https://www.asc-es.com/brand/spf-anvil"},
+{cat:"fittings",type:"pdf",badge:"pdf",brand:"Victaulic",doc:"I-100",
+ title:"Victaulic Field Installation Handbook — Groove Dimensions",
+ desc:'Field handbook with the "A" groove dimension, roll grooving tolerances and installation checks for couplings.',
+ url:"https://assets.victaulic.com/assets/uploads/literature/I-100.pdf",
+ source:"https://www.victaulic.com/"},
+{cat:"fittings",type:"pdf",badge:"pdf",brand:"Victaulic",doc:"07.01",
+ title:"Victaulic Grooved End Fittings — Dimensions",
+ desc:"Dimensional tables for Victaulic grooved fittings, flange adapters, nipples, tees and reducers.",
+ url:"https://assets.victaulic.com/assets/uploads/literature/07.01.pdf",
+ source:"https://www.victaulic.com/"},
+{cat:"fittings",type:"pdf",badge:"pdf",brand:"Tyco",doc:"G-FIRE",
+ title:"Tyco G-FIRE Grooved Fittings — Ductile Iron and Steel",
+ desc:"Dimensions, materials and friction resistance tables for G-FIRE grooved fittings and couplings.",
+ url:"https://docs.johnsoncontrols.com/tycofire/api/khub/documents/zuh~_nXsLpoEa5DVPBPzIQ/content",
+ source:"https://docs.johnsoncontrols.com/tycofire"},
+
+/* ================= MANUFACTURER LIBRARIES ================= */
+{cat:"mfr",type:"link",badge:"mfr",
+ title:"Viking Group — Document Library",
+ desc:"All Viking sprinklers, valves, trim, and devices. Search by SIN (VK…), model, or doc number.",
+ url:"https://www.vikinggroupinc.com/resources/document-library"},
+{cat:"mfr",type:"link",badge:"mfr",
+ title:"Tyco / Johnson Controls — Document Hub",
+ desc:"Tyco TY-series sprinklers and valves; covers legacy Central, Gem, Grinnell, Star product documentation.",
+ url:"https://docs.johnsoncontrols.com/tycofire"},
+{cat:"mfr",type:"link",badge:"mfr",
+ title:"Reliable Sprinkler — Bulletins & Resources",
+ desc:"Reliable sprinklers (R/RA SINs), DDX dry/deluge valves, bulletins and installation data.",
+ url:"https://www.reliablesprinkler.com/resource-center/"},
+{cat:"mfr",type:"link",badge:"mfr",
+ title:"Victaulic — Literature Library",
+ desc:"FireLock sprinklers, grooved valves, couplings, and the full literature library.",
+ url:"https://www.victaulic.com/resources/literature/"},
+{cat:"mfr",type:"link",badge:"mfr",
+ title:"Senju Sprinkler — Products",
+ desc:"Senju (SS SINs) sprinkler data sheets.",
+ url:"https://www.senju.com/en/product/"},
+{cat:"mfr",type:"link",badge:"mfr",
+ title:"Globe Fire Sprinkler — Products",
+ desc:"Globe sprinklers, dry/deluge/preaction valves and devices.",
+ url:"https://www.globesprinkler.com/products/"},
+{cat:"mfr",type:"link",badge:"mfr",
+ title:"Ames Fire & Waterworks — Products",
+ desc:"Ames Colt / Maxim / SilverEagle backflow assemblies.",
+ url:"https://www.amesfirewater.com/products/"},
+{cat:"mfr",type:"link",badge:"ref",
+ title:"NFPA — Standards (13 / 25 / 72) List of Codes",
+ desc:"Official NFPA code pages. Free read-only access available through the NFPA site after sign-in.",
+ url:"https://www.nfpa.org/codes-and-standards/all-codes-and-standards/list-of-codes-and-standards"}
+
+];
+
+/* ============================================================ RENDER ============================================================ */
+const SECTIONS = {
+  recall:"Recalls & Recalled Head ID",
+  xref:"Obsolete Head Cross-Reference",
+  dry:"Dry Pipe Valves",
+  deluge:"Deluge Valves",
+  preaction:"Preaction Systems",
+  backflow:"Backflow Assemblies",
+  fittings:"Fittings, Flanges & Pipe Data",
+  mfr:"Manufacturer Libraries"
+};
+const ORDER = ["recall","xref","dry","deluge","preaction","backflow","fittings","mfr"];
+
+const main = document.getElementById('main');
+const noresult = document.getElementById('noresult');
+const searchEl = document.getElementById('search');
+const clearBtn = document.getElementById('clear');
+let activeCat = "all";
+
+document.getElementById('count').textContent =
+  ITEMS.filter(i=>i.type==='pdf').length + ' datasheets + reference tables';
+
+function catsBar(){
+  const bar = document.getElementById('cats');
+  bar.innerHTML = CATS.map(([id,label])=>
+    `<div class="cat${id==='all'?' active':''}" data-cat="${id}">${label}</div>`).join('');
+  bar.querySelectorAll('.cat').forEach(c=>{
+    c.addEventListener('click',()=>{
+      bar.querySelectorAll('.cat').forEach(x=>x.classList.remove('active'));
+      c.classList.add('active');
+      activeCat = c.dataset.cat;
+      render();
+    });
+  });
+}
+
+function badgeInfo(b){
+  if(b==='recall')return['recall','Recall'];
+  if(b==='mfr')return['mfr','Library'];
+  if(b==='pdf')return['pdf','PDF'];
+  return['ref','Reference'];
+}
+
+function cardHTML(it){
+  const [bc,bt]=badgeInfo(it.badge);
+  if(it.type==='pdf'){
+    const chips=[];
+    if(it.brand)chips.push(`<span class="pill brand">${it.brand}</span>`);
+    if(it.doc)chips.push(`<span class="pill">${it.doc}</span>`);
+    if(it.obs)chips.push(`<span class="pill obs">Obsolete</span>`);
+    if(it.source)chips.push(`<a class="pill src" href="${it.source}" target="_blank" rel="noopener">source ↗</a>`);
+    return `<div class="card pdf">
+      <div class="card-top">
+        <a class="card-title ext" href="${it.url}" target="_blank" rel="noopener">${it.title}</a>
+        <span class="badge ${bc}">${bt}</span>
+      </div>
+      <div class="card-desc">${it.desc}</div>
+      <div class="chips">${chips.join('')}</div>
+    </div>`;
+  }
+  if(it.type==='link'){
+    return `<a class="card" href="${it.url}" target="_blank" rel="noopener">
+      <div class="card-top">
+        <div class="card-title ext">${it.title}</div>
+        <span class="badge ${bc}">${bt}</span>
+      </div>
+      <div class="card-desc">${it.desc}</div>
+    </a>`;
+  }
+  return `<details class="ref-block">
+    <summary><span style="flex:1">${it.title}</span><span class="badge ${bc}">${bt}</span></summary>
+    <div class="ref-body">${it.content}</div>
+  </details>`;
+}
+
+function matches(it,q){
+  if(!q)return true;
+  const hay=(it.title+' '+(it.desc||'')+' '+(it.content||'')+' '+(it.brand||'')+' '+(it.doc||'')+' '+it.cat).toLowerCase();
+  return q.split(/\s+/).every(t=>hay.includes(t));
+}
+
+function render(){
+  const q=searchEl.value.trim().toLowerCase();
+  clearBtn.style.display=q?'block':'none';
+  let html='',any=false;
+  ORDER.forEach(sec=>{
+    if(activeCat!=='all'&&activeCat!==sec)return;
+    const items=ITEMS.filter(it=>it.cat===sec&&matches(it,q));
+    if(!items.length)return;
+    any=true;
+    html+=`<div class="section-title">${SECTIONS[sec]}</div>`;
+    html+=items.map(cardHTML).join('');
+  });
+  main.querySelectorAll('.section-title,.card,.ref-block').forEach(n=>n.remove());
+  noresult.insertAdjacentHTML('beforebegin',html);
+  noresult.style.display=any?'none':'block';
+}
+
+catsBar();
+render();
+searchEl.addEventListener('input',render);
+clearBtn.addEventListener('click',()=>{searchEl.value='';render();searchEl.focus();});
+document.addEventListener('keydown',e=>{if(e.key==='/'&&document.activeElement!==searchEl){e.preventDefault();searchEl.focus();}});
+</script>
+
+<main style="max-width:860px;margin:0 auto;padding:0 16px 40px;">
+  <div class="disclaimer">
+    <strong>Field use notice.</strong> Datasheet and notice links point to documents published by the manufacturer or CPSC; a few are hosted by distributors where the manufacturer posts no public copy. Always confirm the current revision on the manufacturer's own page before using a document for design or inspection. Cross-reference and dimensional tables are starting points — confirm K-factor, temperature, response, and laying/flange dimensions against the current product data sheet before ordering or installing. ESFR replacements are design-sensitive; treat a K-factor change as a design change. Requires an internet connection for the linked documents.
+  </div>
+  <footer>
+    FDEC Sprinkler Dept. &bull; NFPA Field Library &bull; Updated Oct 2026 &bull; Tap <kbd>/</kbd> to search
+  </footer>
+</main>
+
+<script type="module" src="fdec-auth.js" data-page="library"></script>
+</body>
+</html>

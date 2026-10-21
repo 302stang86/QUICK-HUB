@@ -358,6 +358,7 @@ window.PERM = (function () {
       ["frequencies","NFPA 25 Frequencies","Open the NFPA 25 inspection-frequency reference"],
       ["incident","Incident Reporting","Open and submit incident reports"],
       ["help","Help & Bug Fix","Open the help page, quick help topics, and bug-fix form"],
+      ["library","NFPA Field Library","Open the NFPA Field Library reference page"],
       ["itm","ITM Inspection Reports","Create, view, and submit NFPA 25 ITM reports"],
       ["servicetrade","ServiceTrade","Open the ServiceTrade link"],
       ["timeoff","Time-Off Requests","Submit and view time-off requests"],
@@ -379,10 +380,10 @@ window.PERM = (function () {
   /* Seeded from fdec-auth.js DEFAULT_PAGES so the editor opens showing exactly
      what is already in force. admin = every page. */
   var DEFAULTS = {
-    new:    ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","timeoff"],
-    tech:   ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","timeoff","itm","servicetrade","oncall"],
-    temp:   ["home","troubleshooting","frequencies","help"],
-    manager:["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","timeoff","itm","servicetrade","oncall","quoting","administration"],
+    new:    ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","timeoff"],
+    tech:   ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","timeoff","itm","servicetrade","oncall"],
+    temp:   ["home","troubleshooting","frequencies","help","library"],
+    manager:["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","timeoff","itm","servicetrade","oncall","quoting","administration"],
     admin:null
   };
   var ALL = [];
