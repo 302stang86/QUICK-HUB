@@ -13,7 +13,7 @@
      - Everything else (Firestore API, etc.): straight to network — Firestore's
        own offline mode handles those when there is no signal.
 */
-const CACHE = 'fdec-quickhub-v16';
+const CACHE = 'fdec-quickhub-v24';
 
 const CORE = [
   './',
@@ -22,6 +22,7 @@ const CORE = [
   'announcements.html',
   'fdec-itm-sop.html',
   'fire-dispatch-directory.html',
+  'help.html',
   'incident-report.html',
   'itm-reports.html',
   'nfpa25-frequencies.html',

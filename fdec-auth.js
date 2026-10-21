@@ -46,6 +46,7 @@ const DEFAULT_PAGES = {
   troubleshooting: ["new","tech","manager","admin","temp"],
   frequencies:     ["new","tech","manager","admin","temp"],
   incident:        ["new","tech","manager","admin"],
+  help:            ["new","tech","manager","admin","temp"],
   itm:             ["tech","manager","admin"],
   servicetrade:    ["tech","manager","admin"],
   timeoff:         ["new","tech","manager","admin"],

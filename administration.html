@@ -187,6 +187,9 @@
   .qf-btn.del:hover { background:#9d0e16; color:#fff; }
   .qf-btn.open { background:#1565c0; border-color:#1565c0; }
   .qf-btn.open:hover { background:#0f4e96; }
+  .qf-btn.edit { background:#1f7a3d; border-color:#1f7a3d; }
+  .qf-btn.edit:hover { background:#17602f; }
+  .qf-editedby { color:#7a5c00; font-weight:700; }
   .qf-years { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
   .qf-year { font-size:12.5px; font-weight:700; border:1.5px solid #cdd9e8; background:#fff; color:#1B2A4A; border-radius:999px; padding:5px 12px; cursor:pointer; }
   .qf-year:hover { border-color:#1565c0; }
@@ -551,8 +554,8 @@ function renderQFYears(){
   // Years newest first; "Undated" last.
   var years=order.filter(function(y){ return y!=="Undated"; }).sort(function(a,b){ return Number(b)-Number(a); });
   if(order.indexOf("Undated")>=0) years.push("Undated");
-  // First load: default to the most recent year so older files are tucked away by year.
-  if(typeof QF_YEAR==="undefined"){ QF_YEAR = years.length ? years[0] : ""; }
+  // Default to All years — search spans everything; the admin can narrow by year.
+  if(typeof QF_YEAR==="undefined"){ QF_YEAR = ""; }
   // If the chosen year no longer has files (e.g. after a delete), fall back to All.
   if(QF_YEAR && years.indexOf(QF_YEAR)<0){ QF_YEAR=""; }
   if(!QF.length){ box.innerHTML=""; return; }
@@ -585,20 +588,33 @@ async function loadQuoteFiles(){
 function renderQF(filter){
   var list=$("qfList"); if(!list) return;
   var f=String(filter||"").toLowerCase().trim();
+  var years=$("qfYears");
+  // Keep the list hidden until the admin searches — files appear only on a match.
+  if(!f){
+    if(years) years.style.display="none";
+    list.innerHTML = '<div class="qf-empty">'+(QF.length
+      ? 'Search by job name, quote number, user, or file name to find saved quote files.'
+      : 'No quote files saved yet.')+'</div>';
+    return;
+  }
+  if(years) years.style.display="";
   var rows = QF.filter(function(o){
     if(QF_YEAR && qfYear(o.createdAt)!==QF_YEAR) return false;
-    if(!f) return true;
     return [o.jobName,o.quoteNo,o.userName,o.userEmail,o.filename,o.app].join(" ").toLowerCase().indexOf(f)>=0;
   });
-  if(!rows.length){ list.innerHTML = '<div class="qf-empty">'+(QF.length?"No files match your search.":"No quote files saved yet.")+'</div>'; return; }
+  if(!rows.length){ list.innerHTML = '<div class="qf-empty">No files match your search.</div>'; return; }
   var canDel = me && (me.role==="admin"||isAdminEmail(me.email));
   list.innerHTML = rows.map(function(o){
     var job = o.jobName ? qfEsc(o.jobName) : "(no job name)";
     var qn  = o.quoteNo ? ("Quote #"+qfEsc(o.quoteNo)) : "No quote #";
-    var meta = qn+" &middot; "+qfEsc(o.userName||o.userEmail||"Unknown")+" &middot; "+qfEsc(qfDate(o.createdAt));
+    var meta = qn+" &middot; "+qfEsc(o.userName||o.userEmail||"Unknown")+" &middot; "+qfEsc(qfDate(o.createdAt))
+      + (o.editedBy ? ' &middot; <span class="qf-editedby">✎ Edited by '+qfEsc(o.editedBy)+'</span>' : '');
     var app = o.app ? '<span class="qf-chip">'+qfEsc(o.app)+'</span>' : "";
     var op = (o.ready === false) ? ""
       : '<button class="qf-btn open" data-op="'+qfEsc(o.id)+'">Open</button>';
+    var reopenable = (o.mime==="application/fdec-suite") || /\.(fdecsuite|json)$/i.test(o.filename||"");
+    var ed = (canDel && o.ready!==false && reopenable)
+      ? '<button class="qf-btn edit" data-ed="'+qfEsc(o.id)+'">Edit</button>' : "";
     var dl = (o.ready === false)
       ? '<span class="qf-btn" style="opacity:.5;cursor:default">Saving&hellip;</span>'
       : '<button class="qf-btn" data-dl="'+qfEsc(o.id)+'">Download</button>';
@@ -607,7 +623,7 @@ function renderQF(filter){
       + '<div class="qf-job">'+app+job+'</div>'
       + '<div class="qf-meta">'+meta+'</div>'
       + '<div class="qf-file">'+qfEsc(o.filename||"file")+' &middot; '+qfSize(o.size)+'</div>'
-      + '</div><div class="qf-acts">'+op+dl+del+'</div></div>';
+      + '</div><div class="qf-acts">'+op+ed+dl+del+'</div></div>';
   }).join("");
 }
 
@@ -665,6 +681,24 @@ async function qfOpen(o, win){
   }
 }
 
+/* Edit a reopenable quote: rebuild its saved suite state, hand it to the Quoting
+   suite, and open it there. A re-export in the suite replaces this same record. */
+async function qfEdit(o){
+  try{
+    var snaps = await getDocs(query(collection(db,"quoteFiles",o.id,"chunks"), orderBy("i")));
+    var parts=[]; snaps.forEach(function(s){ var d=s.data()||{}; parts[d.i|0]=d.data||""; });
+    var b64=parts.join("");
+    var text; try{ text=decodeURIComponent(escape(atob(b64))); }catch(_){ text=atob(b64); }
+    var bundle=JSON.parse(text);
+    if(!bundle || !bundle.pages) throw new Error("not a reopenable quote");
+    var handoff={ id:o.id, bundle:bundle, byName:o.userName||"", byEmail:o.userEmail||"", uid:o.uid||"", chunkCount:o.chunkCount||0 };
+    try{ localStorage.setItem("fdec_edit_quotefile", JSON.stringify(handoff)); }
+    catch(e){ P.toast("Could not start edit — this quote is too large to hand off."); return; }
+    window.open("quoting.html","_blank");
+    P.toast("Opening the quote in the Quoting suite to edit…");
+  }catch(e){ P.toast("Could not open for editing: "+(e&&e.message?e.message:"try again")); }
+}
+
 /* Remove a file: its chunk documents first, then the metadata record. */
 async function qfDelete(o){
   var snaps = await getDocs(collection(db,"quoteFiles",o.id,"chunks"));
@@ -685,8 +719,14 @@ async function qfDelete(o){
   });
   if(l) l.addEventListener("click", async function(e){
     var opBtn  = e.target.closest ? e.target.closest("[data-op]")  : null;
+    var edBtn  = e.target.closest ? e.target.closest("[data-ed]")  : null;
     var dlBtn  = e.target.closest ? e.target.closest("[data-dl]")  : null;
     var delBtn = e.target.closest ? e.target.closest("[data-del]") : null;
+    if(edBtn){
+      var oe = QF.filter(function(o){ return o.id===edBtn.getAttribute("data-ed"); })[0];
+      if(oe) qfEdit(oe);
+      return;
+    }
     if(opBtn){
       // open the tab synchronously (within the click) so pop-up blockers allow it.
       // No "noopener" here: that makes window.open return null, which left the
