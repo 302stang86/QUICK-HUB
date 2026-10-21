@@ -2130,7 +2130,7 @@ function reportPickerModal(){
     <div style="max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:6px 4px">${rows}</div>
     <label class="rp-row rp-summary" style="margin-top:8px;${hasSummary?'':'opacity:.5'}">
       <input type="checkbox" id="rpSummary" ${hasSummary?'checked':'disabled'}>
-      <span class="rp-name">Include Deficiencies Summary${hasSummary?'':' (no deficiencies entered)'}</span>
+      <span class="rp-name">Include Critical and Impaired Deficiencies Summary${hasSummary?'':' (no deficiencies entered)'}</span>
     </label>
     <div class="rp-actions">
       <button id="rpAll" class="rp-link">Select all</button>
@@ -3211,7 +3211,7 @@ function buildSummaryPaper(){
     <img class="co-logo" src="${LOGO_DATA}" alt="Fire Defense Equipment Company Inc.">
     <div class="addr">${esc(COMPANY.addr)}</div>
     <div class="contact">${esc(COMPANY.contact)}</div>
-    <div class="rtitle">Deficiencies Summary</div>`;
+    <div class="rtitle">Critical and Impaired Deficiencies Summary</div>`;
   paper.appendChild(head);
 
   // shared job/date header line
