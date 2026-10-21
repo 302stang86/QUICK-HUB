@@ -420,7 +420,7 @@ body>*{position:relative;z-index:1;}
   </div>
 
   <footer>
-    Fire Defense Equipment Co., Inc. — Sprinkler Department. Continuous on-call rotation. Assignments, notes, and roster are stored locally in your browser. "Reset everything" restores the default roster and regenerates the fair rotation.
+    Fire Defense Equipment Co., Inc. — Sprinkler Department. Continuous on-call rotation. When an admin unlocks and edits, the schedule publishes to every device so field techs see the change. "Reset everything" restores the default roster and regenerates the fair rotation.
   </footer>
 </div>
 
@@ -656,7 +656,24 @@ body>*{position:relative;z-index:1;}
     }catch(e){}
     return freshState();
   }
-  function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+  var applyingRemote = false;
+  function save(){
+    try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){}
+    // Publish to the shared schedule so field techs see an admin's change live.
+    if(!applyingRemote && unlocked && window.__oncallPush){ window.__oncallPush(state); }
+  }
+  /* Apply the shared schedule an admin pushed (central Firestore copy). Called
+     by the sync module below whenever the stored schedule changes. */
+  window.__oncallApplyRemote = function(d){
+    if(!d || !Array.isArray(d.roster) || !Array.isArray(d.assign) || d.assign.length!==WEEKS.length) return;
+    applyingRemote = true;
+    state = { roster:d.roster.slice(), assign:d.assign, holBal:d.holBal||1 };
+    try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){}
+    applyingRemote = false;
+    try{ render(); }catch(e){}
+  };
+  /* Lets the sync module read the current schedule (to seed the shared copy). */
+  window.__oncallCurrentState = function(){ return state; };
 
   var state = load();
 
@@ -853,7 +870,7 @@ body>*{position:relative;z-index:1;}
     if(unlocked){
       btn.textContent="🔓 Admin: unlocked";
       btn.classList.add("unlocked");
-      hint.textContent="Editing enabled. Changes save in this browser.";
+      hint.textContent="Editing enabled. Changes publish to every device.";
     }else{
       btn.textContent="🔒 Admin: locked";
       btn.classList.remove("unlocked");
@@ -1125,6 +1142,44 @@ body>*{position:relative;z-index:1;}
   fillReqDropdowns();
 })();
 </script>
+
+<!-- Shared on-call schedule sync: admins publish changes to Firestore; every
+     device (field techs included) reads the same schedule live. -->
+<script type="module">
+  import { getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, doc, onSnapshot, setDoc, serverTimestamp }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  (function run(){
+    if(!(window.FDECAuth && window.FDECAuth.ready)){ setTimeout(run,50); return; }
+    window.FDECAuth.ready.then(function(auth){
+      var db; try{ db = getFirestore(getApp("fdec")); }catch(e){ return; }
+      var ref = doc(db,"config","oncall");
+      var isEditor = !!(auth && (auth.isAdmin || (auth.profile && (auth.profile.role==="admin" || auth.profile.role==="manager"))));
+      // Editors publish the schedule for everyone; others only read it.
+      window.__oncallPush = function(state){
+        if(!isEditor || !state) return;
+        try{
+          setDoc(ref, {
+            roster: state.roster, assign: state.assign, holBal: state.holBal || 1,
+            updatedAt: serverTimestamp(), updatedBy: (auth.profile && auth.profile.email) || ""
+          });
+        }catch(e){}
+      };
+      // Live read: apply the shared schedule to this device whenever it changes.
+      try{
+        onSnapshot(ref, function(snap){
+          if(snap.exists()){
+            if(window.__oncallApplyRemote) window.__oncallApplyRemote(snap.data());
+            return;
+          }
+          // No shared schedule exists yet — an editor seeds it from the current one.
+          if(isEditor && window.__oncallCurrentState){ window.__oncallPush(window.__oncallCurrentState()); }
+        }, function(){});
+      }catch(e){}
+    });
+  })();
+</script>
+
 <script type="module" src="fdec-auth.js" data-page="oncall"></script>
 </body>
 </html>
