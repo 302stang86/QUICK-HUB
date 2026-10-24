@@ -761,6 +761,8 @@ body{display:flex !important; flex-direction:column; min-height:0; overflow:hidd
       </div>
       <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px">
         <button id="matEditToggle" class="small noprint" type="button" onclick="toggleMatEdit()">Edit categories</button>
+        <button id="matSaveMaster" class="small noprint" type="button" onclick="saveMasterCatalog()" title="Save the current item names and prices so every new quote starts from this list">Save to master price list</button>
+        <button id="matResetMaster" class="small noprint" type="button" onclick="resetMasterCatalog()" title="Reset the list back to the built-in defaults for all new quotes">Reset to built-in</button>
         <span id="matEditHint" class="hint" style="margin:0">Editing categories is locked. Item costs and quantities are always editable.</span>
       </div>
       <div class="mat-twopane" id="matTwoPane">
@@ -1762,6 +1764,38 @@ function applyMaterialCatalog(saved){
   buildMaterialCatalog(data);
 }
 
+/* ---- Shared master price list (company-wide, synced through the shell/Firebase) ---- */
+function matMasterToast(msg, bad){
+  try{ var t=document.createElement('div'); t.textContent=msg;
+    t.style.cssText='position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:99999;background:'+(bad?'#9d0e16':'#1B2A4A')+';color:#fff;padding:10px 16px;border-radius:8px;font:600 13px/1.3 -apple-system,Segoe UI,Arial,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.3);max-width:86vw;text-align:center';
+    document.body.appendChild(t); setTimeout(function(){ t.style.transition='opacity .4s'; t.style.opacity='0'; setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); },450); }, 2800);
+  }catch(_){}
+}
+function masterCatalogItems(){
+  // Names, prices and structure only — per-quote quantities are stripped.
+  return collectMaterialCatalog().map(function(c){
+    return { name:c.name, collapsed:c.collapsed, subs:(c.subs||[]).map(function(s){
+      return { name:s.name, collapsed:s.collapsed, items:(s.items||[]).map(function(i){ return { name:i.name, cost:i.cost, qty:'' }; }) };
+    })};
+  });
+}
+function saveMasterCatalog(){
+  if(!confirm('Save the current item names and prices as the master price list?\n\nEvery new quote \u2014 for everyone \u2014 will start from this list. Quantities are not saved.')) return;
+  if(window.parent && window.parent!==window){ window.parent.postMessage({ fdec:true, type:'save-master-catalog', data: masterCatalogItems() }, '*'); matMasterToast('Saving the master price list\u2026'); }
+  else matMasterToast('Master price list needs the hub shell — open this from Quick Hub.', true);
+}
+function resetMasterCatalog(){
+  if(!confirm('Reset the master price list back to the built-in defaults for all new quotes?\n\nThis does not change the quote you are working on now.')) return;
+  if(window.parent && window.parent!==window){ window.parent.postMessage({ fdec:true, type:'reset-master-catalog' }, '*'); }
+}
+(function(){
+  // Any hand edit to the catalog locks it so the shared master never overwrites the user's work.
+  try{ document.addEventListener('input', function(e){ if(e.target && e.target.closest && e.target.closest('#materialCatalog')) window.__quoteCatalogLocked = true; }, true); }catch(_){}
+  function reqMaster(){ if(window.parent && window.parent!==window) window.parent.postMessage({ fdec:true, type:'request-master-catalog' }, '*'); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(reqMaster,80); });
+  else setTimeout(reqMaster,80);
+})();
+
 /* ================= BUILD ================= */
 (function(){
   const build = (tbodyId, dept, table) => {
@@ -2687,6 +2721,14 @@ window.addEventListener('message', function(e){
   const d = e && e.data;
   if (!d || d.fdec !== true) return;
   if (d.type === 'request-sync'){ recalc(); return; }
+  if (d.type === 'master-catalog'){
+    // Shared master price list. Use it as the STARTING catalog for a new quote
+    // only — never overwrite a loaded quote or edits already in progress.
+    if (!window.__quoteCatalogLocked && Array.isArray(d.data) && d.data.length){ try { applyMaterialCatalog(d.data); } catch(ex){ console.error(ex); } }
+    return;
+  }
+  if (d.type === 'master-catalog-saved'){ matMasterToast(d.ok ? 'Saved to the master price list \u2014 new quotes will start from it.' : 'Could not save the master price list.', !d.ok); return; }
+  if (d.type === 'master-catalog-reset'){ if(d.ok){ try{ buildMaterialCatalog(); }catch(ex){} } matMasterToast(d.ok ? 'Master price list reset to the built-in defaults.' : 'Could not reset the master price list.', !d.ok); return; }
   if (d.type === 'send-jobinfo'){
     // The Quoting Template is the master for Job Name / Quote # / Date.
     // Broadcast current values so the verbiage pages can follow.
@@ -2704,6 +2746,7 @@ window.addEventListener('message', function(e){
   }
   if (d.type === 'load-draft'){
     // Apply an incoming draft slice for this page.
+    window.__quoteCatalogLocked = true;   // a loaded quote's catalog wins over the master list
     try { if (d.data) applyDraft(d.data); } catch(ex){ console.error(ex); }
     return;
   }
@@ -3170,6 +3213,28 @@ Cell (248) 797-4488
 Office (248) 549-8113
 Mp1@firedefense.com</textarea>
       </label>
+      <button type="button" class="small" onclick="__fdecSaveMySig()" style="margin-top:8px" title="Save this signature to your account so it fills in on your proposals">Save as my signature</button>
+      <script>
+      (function(){
+        var ta=document.getElementById('jobSignature'); if(!ta) return;
+        var SIG_DEFAULT=ta.value.replace(/\s+$/,'');
+        function sigToast(m,bad){ try{var t=document.createElement('div');t.textContent=m;t.style.cssText='position:fixed;left:50%;bottom:76px;transform:translateX(-50%);z-index:99999;background:'+(bad?'#9d0e16':'#1B2A4A')+';color:#fff;padding:10px 15px;border-radius:8px;font:600 13px/1.3 -apple-system,Segoe UI,Arial,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.3);max-width:86vw;text-align:center';document.body.appendChild(t);setTimeout(function(){t.style.transition='opacity .4s';t.style.opacity='0';setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},450);},2600);}catch(_){}}
+        window.addEventListener('message', function(ev){
+          var d=ev&&ev.data; if(!d||d.fdec!==true) return;
+          if(d.type==='my-signature'){
+            if(ta.value.replace(/\s+$/,'')===SIG_DEFAULT){
+              if(d.sig!=null && String(d.sig).trim()!==''){ ta.value=String(d.sig); }
+              else if(d.name){ var fl=SIG_DEFAULT.split('\n')[0].trim().toLowerCase(); if(fl!==String(d.name).trim().toLowerCase()){ ta.value=String(d.name); } }
+            }
+            return;
+          }
+          if(d.type==='my-signature-saved'){ sigToast(d.ok?'Saved as your signature \u2014 it will fill in on your proposals.':'Could not save your signature.', !d.ok); return; }
+        });
+        window.__fdecSaveMySig=function(){ if(window.parent&&window.parent!==window){ window.parent.postMessage({fdec:true,type:'save-my-signature',text:ta.value},'*'); sigToast('Saving your signature\u2026'); } };
+        function reqSig(){ if(window.parent&&window.parent!==window) window.parent.postMessage({fdec:true,type:'request-my-signature'},'*'); }
+        if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(reqSig,90); }); else setTimeout(reqSig,90);
+      })();
+      <\/script>
     </div>
   </section>
 
@@ -3495,13 +3560,21 @@ function renderIncExc(){
     const seg = document.createElement("div");
     seg.className = "seg";
     const modes = [ ["inc","INCL","on-inc"], ["exc","EXCL","on-exc"], ["off","\u2014","on-off"] ];
+    const segBtns = [];
     modes.forEach(([mode, label, cls]) => {
       const b = document.createElement("button");
       b.type = "button";
       b.textContent = label;
       b.title = mode === "inc" ? "Included" : mode === "exc" ? "Excluded" : "Leave off the proposal";
       if (item.mode === mode) b.classList.add(cls);
-      b.addEventListener("click", () => { item.mode = mode; renderIncExc(); });
+      b.addEventListener("click", () => {
+        item.mode = mode;
+        /* Update THIS item in place. Rebuilding the whole list made Firefox jump to another section. */
+        modes.forEach(([m2,,c2], j) => segBtns[j].classList.toggle(c2, m2 === mode));
+        li.classList.toggle("omitted", mode === "off");
+        updateCount("incexc");
+      });
+      segBtns.push(b);
       seg.appendChild(b);
     });
 
@@ -4710,6 +4783,28 @@ Cell (248) 797-4488
 Office (248) 549-8113
 Mp1@firedefense.com</textarea>
       </label>
+      <button type="button" class="small" onclick="__fdecSaveMySig()" style="margin-top:8px" title="Save this signature to your account so it fills in on your proposals">Save as my signature</button>
+      <script>
+      (function(){
+        var ta=document.getElementById('jobSignature'); if(!ta) return;
+        var SIG_DEFAULT=ta.value.replace(/\s+$/,'');
+        function sigToast(m,bad){ try{var t=document.createElement('div');t.textContent=m;t.style.cssText='position:fixed;left:50%;bottom:76px;transform:translateX(-50%);z-index:99999;background:'+(bad?'#9d0e16':'#1B2A4A')+';color:#fff;padding:10px 15px;border-radius:8px;font:600 13px/1.3 -apple-system,Segoe UI,Arial,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.3);max-width:86vw;text-align:center';document.body.appendChild(t);setTimeout(function(){t.style.transition='opacity .4s';t.style.opacity='0';setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},450);},2600);}catch(_){}}
+        window.addEventListener('message', function(ev){
+          var d=ev&&ev.data; if(!d||d.fdec!==true) return;
+          if(d.type==='my-signature'){
+            if(ta.value.replace(/\s+$/,'')===SIG_DEFAULT){
+              if(d.sig!=null && String(d.sig).trim()!==''){ ta.value=String(d.sig); }
+              else if(d.name){ var fl=SIG_DEFAULT.split('\n')[0].trim().toLowerCase(); if(fl!==String(d.name).trim().toLowerCase()){ ta.value=String(d.name); } }
+            }
+            return;
+          }
+          if(d.type==='my-signature-saved'){ sigToast(d.ok?'Saved as your signature \u2014 it will fill in on your proposals.':'Could not save your signature.', !d.ok); return; }
+        });
+        window.__fdecSaveMySig=function(){ if(window.parent&&window.parent!==window){ window.parent.postMessage({fdec:true,type:'save-my-signature',text:ta.value},'*'); sigToast('Saving your signature\u2026'); } };
+        function reqSig(){ if(window.parent&&window.parent!==window) window.parent.postMessage({fdec:true,type:'request-my-signature'},'*'); }
+        if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(reqSig,90); }); else setTimeout(reqSig,90);
+      })();
+      <\/script>
     </div>
   </section>
 
@@ -4953,13 +5048,21 @@ function renderIncExc(){
     const seg = document.createElement("div");
     seg.className = "seg";
     const modes = [ ["inc","INCL","on-inc"], ["exc","EXCL","on-exc"], ["off","\u2014","on-off"] ];
+    const segBtns = [];
     modes.forEach(([mode, label, cls]) => {
       const b = document.createElement("button");
       b.type = "button";
       b.textContent = label;
       b.title = mode === "inc" ? "Included" : mode === "exc" ? "Excluded" : "Leave off the proposal";
       if (item.mode === mode) b.classList.add(cls);
-      b.addEventListener("click", () => { item.mode = mode; renderIncExc(); });
+      b.addEventListener("click", () => {
+        item.mode = mode;
+        /* Update THIS item in place. Rebuilding the whole list made Firefox jump to another section. */
+        modes.forEach(([m2,,c2], j) => segBtns[j].classList.toggle(c2, m2 === mode));
+        li.classList.toggle("omitted", mode === "off");
+        updateCount("incexc");
+      });
+      segBtns.push(b);
       seg.appendChild(b);
     });
 
@@ -6160,6 +6263,28 @@ Cell (248) 797-4488
 Office (248) 549-8113
 Mp1@firedefense.com</textarea>
       </label>
+      <button type="button" class="small" onclick="__fdecSaveMySig()" style="margin-top:8px" title="Save this signature to your account so it fills in on your proposals">Save as my signature</button>
+      <script>
+      (function(){
+        var ta=document.getElementById('jobSignature'); if(!ta) return;
+        var SIG_DEFAULT=ta.value.replace(/\s+$/,'');
+        function sigToast(m,bad){ try{var t=document.createElement('div');t.textContent=m;t.style.cssText='position:fixed;left:50%;bottom:76px;transform:translateX(-50%);z-index:99999;background:'+(bad?'#9d0e16':'#1B2A4A')+';color:#fff;padding:10px 15px;border-radius:8px;font:600 13px/1.3 -apple-system,Segoe UI,Arial,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.3);max-width:86vw;text-align:center';document.body.appendChild(t);setTimeout(function(){t.style.transition='opacity .4s';t.style.opacity='0';setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},450);},2600);}catch(_){}}
+        window.addEventListener('message', function(ev){
+          var d=ev&&ev.data; if(!d||d.fdec!==true) return;
+          if(d.type==='my-signature'){
+            if(ta.value.replace(/\s+$/,'')===SIG_DEFAULT){
+              if(d.sig!=null && String(d.sig).trim()!==''){ ta.value=String(d.sig); }
+              else if(d.name){ var fl=SIG_DEFAULT.split('\n')[0].trim().toLowerCase(); if(fl!==String(d.name).trim().toLowerCase()){ ta.value=String(d.name); } }
+            }
+            return;
+          }
+          if(d.type==='my-signature-saved'){ sigToast(d.ok?'Saved as your signature \u2014 it will fill in on your proposals.':'Could not save your signature.', !d.ok); return; }
+        });
+        window.__fdecSaveMySig=function(){ if(window.parent&&window.parent!==window){ window.parent.postMessage({fdec:true,type:'save-my-signature',text:ta.value},'*'); sigToast('Saving your signature\u2026'); } };
+        function reqSig(){ if(window.parent&&window.parent!==window) window.parent.postMessage({fdec:true,type:'request-my-signature'},'*'); }
+        if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(reqSig,90); }); else setTimeout(reqSig,90);
+      })();
+      <\/script>
     </div>
   </section>
 
@@ -6381,13 +6506,21 @@ function renderIncExc(){
     const seg = document.createElement("div");
     seg.className = "seg";
     const modes = [ ["inc","INCL","on-inc"], ["exc","EXCL","on-exc"], ["off","\u2014","on-off"] ];
+    const segBtns = [];
     modes.forEach(([mode, label, cls]) => {
       const b = document.createElement("button");
       b.type = "button";
       b.textContent = label;
       b.title = mode === "inc" ? "Included" : mode === "exc" ? "Excluded" : "Leave off the proposal";
       if (item.mode === mode) b.classList.add(cls);
-      b.addEventListener("click", () => { item.mode = mode; renderIncExc(); });
+      b.addEventListener("click", () => {
+        item.mode = mode;
+        /* Update THIS item in place. Rebuilding the whole list made Firefox jump to another section. */
+        modes.forEach(([m2,,c2], j) => segBtns[j].classList.toggle(c2, m2 === mode));
+        li.classList.toggle("omitted", mode === "off");
+        updateCount("incexc");
+      });
+      segBtns.push(b);
       seg.appendChild(b);
     });
 
@@ -7260,6 +7393,11 @@ function loadApps(){
   load("view-install", "src-install");
 }
 loadApps();
+/* On a PC, a vertical mouse wheel should pan the (horizontally scrolling) sub-menu
+   so tabs/buttons past the edge are reachable when the window is narrow. */
+(function(){ var nav=document.querySelector('.suitebar nav'); if(!nav) return;
+  nav.addEventListener('wheel', function(e){ if(e.deltaY!==0 && Math.abs(e.deltaY)>=Math.abs(e.deltaX)){ nav.scrollLeft += e.deltaY; e.preventDefault(); } }, {passive:false});
+})();
 
 /* ============================================================
    AUTO-SAVE (crash protection)
@@ -7466,6 +7604,35 @@ window.addEventListener('message', function(e){
   // runExport() opens a short save window; files arriving outside it are ignored.
   if (d.type === 'filesave' && d.value){
     if (window.fdecSaveQuoteFile && Date.now() < (window.__fdecExportUntil || 0)) window.fdecSaveQuoteFile(d.value);
+    return;
+  }
+  if (d.type === 'request-master-catalog'){
+    var sendMaster = function(items){ var f=document.getElementById('view-quote'); if (f && f.contentWindow) f.contentWindow.postMessage({ fdec:true, type:'master-catalog', data: items||null }, '*'); };
+    if (window.__fdecMasterLoaded){ sendMaster(window.__fdecMasterCatalog); }
+    else if (window.fdecLoadMasterCatalog){ window.fdecLoadMasterCatalog().then(function(items){ window.__fdecMasterCatalog = items||null; window.__fdecMasterLoaded = true; sendMaster(items); }); }
+    else sendMaster(null);
+    return;
+  }
+  if (d.type === 'save-master-catalog'){
+    if (window.fdecSaveMasterCatalog){ window.fdecSaveMasterCatalog(d.data).then(function(ok){ if(ok){ window.__fdecMasterCatalog = d.data; window.__fdecMasterLoaded = true; } var f=document.getElementById('view-quote'); if (f && f.contentWindow) f.contentWindow.postMessage({ fdec:true, type:'master-catalog-saved', ok:!!ok }, '*'); }); }
+    return;
+  }
+  if (d.type === 'reset-master-catalog'){
+    if (window.fdecResetMasterCatalog){ window.fdecResetMasterCatalog().then(function(ok){ if(ok){ window.__fdecMasterCatalog = null; window.__fdecMasterLoaded = true; } var f=document.getElementById('view-quote'); if (f && f.contentWindow) f.contentWindow.postMessage({ fdec:true, type:'master-catalog-reset', ok:!!ok }, '*'); }); }
+    return;
+  }
+  if (d.type === 'request-my-signature'){
+    var nm=(window.FDECAuth&&window.FDECAuth.profile&&window.FDECAuth.profile.name)||'';
+    var replySig=function(sig){ var pl={fdec:true,type:'my-signature',sig:(sig==null?null:sig),name:nm};
+      try{ if(e.source&&e.source.postMessage){ e.source.postMessage(pl,'*'); return; } }catch(_){}
+      ['view-proposal','view-annual','view-install'].forEach(function(id){var f=document.getElementById(id); if(f&&f.contentWindow) f.contentWindow.postMessage(pl,'*');}); };
+    if(window.__fdecMySigLoaded){ replySig(window.__fdecMySig); }
+    else if(window.fdecLoadMySignature){ window.fdecLoadMySignature().then(function(s){ window.__fdecMySig=s; window.__fdecMySigLoaded=true; replySig(s); }); }
+    else replySig(null);
+    return;
+  }
+  if (d.type === 'save-my-signature'){
+    if(window.fdecSaveMySignature){ window.fdecSaveMySignature(d.text).then(function(ok){ if(ok) window.__fdecMySig=d.text; var pl={fdec:true,type:'my-signature-saved',ok:!!ok}; try{ if(e.source&&e.source.postMessage) e.source.postMessage(pl,'*'); }catch(_){} }); }
     return;
   }
   // Otherwise relay quoting -> all verbiage pages (down payment sync, etc.)
@@ -7752,7 +7919,7 @@ function loadSuiteDraftFile(input){
    origin); here we upload the bytes to Firebase Storage and index the file
    in Firestore (collection "quoteFiles"). */
 import { getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc, serverTimestamp }
+import { getFirestore, collection, addDoc, doc, getDoc, setDoc, deleteDoc, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 function fdecSafe(s){ return String(s || "").replace(/[^\w.-]+/g, "_").slice(0, 90); }
@@ -7861,6 +8028,60 @@ window.fdecSaveQuoteFile = async function(v){
     fdecToast("Could not save a central copy (saved to your device).", true);
   }
 };
+
+/* ---- Shared master price list (config/materialCatalog) ----
+   Managers/admins save the itemized material names + prices once; every new
+   quote on any device starts from that list. Quantities are never stored. */
+window.fdecLoadMasterCatalog = async function(){
+  try{
+    if (window.FDECAuth && window.FDECAuth.ready){ try{ await window.FDECAuth.ready; }catch(_){} }
+    var snap = await getDoc(doc(getFirestore(getApp("fdec")), "config", "materialCatalog"));
+    if (snap.exists()){ var dd = snap.data(); return Array.isArray(dd.items) ? dd.items : null; }
+    return null;
+  }catch(err){ console.warn("master catalog load failed", err); return null; }
+};
+window.fdecSaveMasterCatalog = async function(items){
+  try{
+    if (window.FDECAuth && window.FDECAuth.ready){ try{ await window.FDECAuth.ready; }catch(_){} }
+    var user = (window.FDECAuth && window.FDECAuth.user) || null;
+    var profile = (window.FDECAuth && window.FDECAuth.profile) || null;
+    var who = (profile && profile.name) || (user && user.email) || "";
+    await setDoc(doc(getFirestore(getApp("fdec")), "config", "materialCatalog"),
+      { items: Array.isArray(items)?items:[], updatedAt: serverTimestamp(), updatedBy: who });
+    return true;
+  }catch(err){ console.warn("master catalog save failed", err); return false; }
+};
+window.fdecResetMasterCatalog = async function(){
+  try{
+    if (window.FDECAuth && window.FDECAuth.ready){ try{ await window.FDECAuth.ready; }catch(_){} }
+    await deleteDoc(doc(getFirestore(getApp("fdec")), "config", "materialCatalog"));
+    return true;
+  }catch(err){ console.warn("master catalog reset failed", err); return false; }
+};
+window.__fdecMasterLoaded = false; window.__fdecMasterCatalog = null;
+(async function(){ try{ window.__fdecMasterCatalog = await window.fdecLoadMasterCatalog(); }catch(_){} window.__fdecMasterLoaded = true; })();
+
+/* ---- Per-user signature block (stored on the signed-in user's own users/{uid}
+   doc as quoteSignature; existing rules let a user write their own doc). ---- */
+window.fdecLoadMySignature = async function(){
+  try{
+    if (window.FDECAuth && window.FDECAuth.ready){ try{ await window.FDECAuth.ready; }catch(_){} }
+    var user=(window.FDECAuth&&window.FDECAuth.user)||null; if(!user) return null;
+    var snap=await getDoc(doc(getFirestore(getApp("fdec")),"users",user.uid));
+    if(snap.exists()){ var dd=snap.data(); return (typeof dd.quoteSignature==="string") ? dd.quoteSignature : null; }
+    return null;
+  }catch(err){ console.warn("signature load failed", err); return null; }
+};
+window.fdecSaveMySignature = async function(text){
+  try{
+    if (window.FDECAuth && window.FDECAuth.ready){ try{ await window.FDECAuth.ready; }catch(_){} }
+    var user=(window.FDECAuth&&window.FDECAuth.user)||null; if(!user) return false;
+    await setDoc(doc(getFirestore(getApp("fdec")),"users",user.uid), { quoteSignature: String(text==null?"":text) }, { merge:true });
+    return true;
+  }catch(err){ console.warn("signature save failed", err); return false; }
+};
+window.__fdecMySigLoaded=false; window.__fdecMySig=null;
+(async function(){ try{ window.__fdecMySig=await window.fdecLoadMySignature(); }catch(_){} window.__fdecMySigLoaded=true; })();
 </script>
 </body>
 </html>

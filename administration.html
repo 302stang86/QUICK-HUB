@@ -363,6 +363,7 @@ window.PERM = (function () {
       ["servicetrade","ServiceTrade","Open the ServiceTrade link"],
       ["timeoff","Time-Off Requests","Submit and view time-off requests"],
       ["oncall","On-Call Rotation","View the on-call rotation schedule"],
+      ["inventory","Personal Inventory","Open the per-vehicle stock / inventory tracker"],
       ["timesheet","Weekly Time Sheet","Open and submit the weekly time sheet"],
       ["quoting","Quoting & Proposal Suite","Open the quoting and proposal builder"],
       ["administration","Administration","Open this Administration page — manage users, quote files, and permissions"]
@@ -381,9 +382,9 @@ window.PERM = (function () {
      what is already in force. admin = every page. */
   var DEFAULTS = {
     new:    ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","timeoff"],
-    tech:   ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","timeoff","itm","servicetrade","oncall"],
+    tech:   ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","timeoff","itm","servicetrade","oncall","inventory"],
     temp:   ["home","troubleshooting","frequencies","help","library"],
-    manager:["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","timeoff","itm","servicetrade","oncall","quoting","administration"],
+    manager:["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","timeoff","itm","servicetrade","oncall","inventory","quoting","administration"],
     admin:null
   };
   var ALL = [];
@@ -564,11 +565,15 @@ async function loadQuoteFiles(){
   wrap.style.display="";
   try{
     var snaps;
-    if(isMgr){ snaps = await getDocs(query(collection(db,"quoteFiles"), orderBy("createdAt","desc"))); }
+    // Admins/managers load EVERY quote file. We sort client-side rather than with
+    // orderBy("createdAt"), because a Firestore orderBy silently drops any document
+    // missing that field — which hid quotes from admins (Wade could not find quotes
+    // that had no createdAt value).
+    if(isMgr){ snaps = await getDocs(collection(db,"quoteFiles")); }
     else { snaps = await getDocs(query(collection(db,"quoteFiles"), where("uid","==",me.uid))); }
     QF = [];
     snaps.forEach(function(s){ var o=s.data()||{}; o.id=s.id; QF.push(o); });
-    if(!isMgr) QF.sort(function(a,b){ return qfMs(b.createdAt) - qfMs(a.createdAt); });
+    QF.sort(function(a,b){ return qfMs(b.createdAt) - qfMs(a.createdAt); });
     renderQFYears();
     renderQF($("qfSearch").value||"");
   }catch(e){
@@ -591,7 +596,7 @@ function renderQF(filter){
   if(years) years.style.display="";
   var rows = QF.filter(function(o){
     if(QF_YEAR && qfYear(o.createdAt)!==QF_YEAR) return false;
-    return [o.jobName,o.quoteNo,o.userName,o.userEmail,o.filename,o.app].join(" ").toLowerCase().indexOf(f)>=0;
+    return [o.jobName,o.quoteNo,o.userName,o.userEmail,o.filename,o.app,o.editedBy].join(" ").toLowerCase().indexOf(f)>=0;
   });
   if(!rows.length){ list.innerHTML = '<div class="qf-empty">No files match your search.</div>'; return; }
   var canDel = me && (me.role==="admin"||isAdminEmail(me.email));

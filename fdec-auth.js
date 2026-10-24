@@ -52,6 +52,7 @@ const DEFAULT_PAGES = {
   servicetrade:    ["tech","manager","admin"],
   timeoff:         ["new","tech","manager","admin"],
   oncall:          ["tech","manager","admin"],
+  inventory:       ["tech","manager","admin"],
   timesheet:       ["admin"],   // LOCKED to admin until released to technicians
   quoting:         ["manager","admin"],
   administration:  ["manager","admin"]   // managers reach the quote files here; roster/resets/permissions stay admin-only inside the page
