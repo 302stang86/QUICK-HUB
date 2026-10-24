@@ -43,6 +43,7 @@ input.invalid,select.invalid{border-color:#e0918b;background:#fff6f5}
 .ratehint{font-size:12px;font-weight:700;padding:5px 9px;border-radius:7px;background:#eef4f8;color:var(--blue)}
 .ratehint.ot{background:#fff8e8;color:#8a6400}
 .ratehint.dt{background:#fdeceb;color:#9a3b33}
+input.autofield{background:#eef1f4;color:#5a6472;cursor:not-allowed}
 .remove{border:1px solid #f0c4c0;background:#fff0ef;color:#a3312a;border-radius:7px;padding:9px 14px;font-weight:700;cursor:pointer}
 
 .btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
@@ -174,7 +175,7 @@ header,main{position:relative;z-index:1;}
   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
     <div>
       <h2>Hours Worked</h2>
-      <p class="sub">Add a card for each department, customer/job, or leave type. Type/Department and Customer/Job are required on every card. Rate rule: Monday–Friday is Regular (straight time), Saturday is Time &amp; Half (1.5×), Sunday is Double Time (2×).</p>
+      <p class="sub">Add a card for each department, customer/job, or leave type. Type/Department and Customer/Job are required on every card. Rate rule: Monday–Friday is Regular (straight time), Saturday is Time &amp; Half (1.5×), Sunday is Double Time (2×). Monday–Friday Regular hours over eight (8) in a day, or over forty (40) in the week, move to Overtime automatically on the same card.</p>
     </div>
   </div>
   <div class="rows" id="rows"></div>
@@ -459,12 +460,17 @@ function makeRow(data={}){
   card.querySelector('.day').value=data.day||'Monday';
   ['st','ot','dt'].forEach(k=>card.querySelector('.'+k).value=data[k]??0);
   card.querySelector('.notes').value=data.notes||'';
+  if(isWeekdayCard(card)){ card.dataset.rawst = String((+(data.st)||0)+(+(data.ot)||0)); }
 
   card.querySelectorAll('input,select').forEach(x=>x.addEventListener('input',()=>{clearInvalid(x);calculate();}));
-  card.querySelector('.day').addEventListener('change',()=>updateHint(card));
-  card.querySelector('.remove').addEventListener('click',()=>{card.remove();if(!$('rows').children.length)makeRow();calculate();});
+  card.querySelector('.st').addEventListener('input',()=>{ if(isWeekdayCard(card)) card.dataset.rawst=card.querySelector('.st').value; });
+  card.querySelectorAll('.st,.ot,.dt').forEach(x=>x.addEventListener('change',()=>{ applyOvertimeRules(); calculate(); }));
+  card.querySelector('.day').addEventListener('change',()=>{ updateHint(card); syncCardMode(card); applyOvertimeRules(); calculate(); });
+  card.querySelector('.remove').addEventListener('click',()=>{card.remove();if(!$('rows').children.length)makeRow();applyOvertimeRules();calculate();});
   $('rows').appendChild(card);
   updateHint(card);
+  syncCardMode(card);
+  applyOvertimeRules();
   calculate();
   return card;
 }
@@ -479,6 +485,33 @@ function updateHint(card){
 
 function num(card,c){return Math.max(0,Number(card.querySelector('.'+c).value)||0);}
 
+function setNum(card,c,v){ var el=card.querySelector('.'+c); if(el){ el.value = Math.round((+v||0)*100)/100; } }
+function isWeekdayCard(card){ var el=card.querySelector('.day'); return el ? rateForDay(dayNames.indexOf(el.value))==='st' : false; }
+function syncCardMode(card){
+  var wd=isWeekdayCard(card), ot=card.querySelector('.ot');
+  if(ot){ ot.readOnly=wd; ot.classList.toggle('autofield',wd);
+    ot.title = wd ? 'Overtime is figured automatically from Regular hours (over 8 in a day, or over 40 Mon–Fri).' : ''; }
+  if(!wd){ delete card.dataset.rawst; }
+}
+/* Monday–Friday: Regular (ST) hours over 8 in a day, or over 40 in the Mon–Fri week,
+   move to Overtime on the same card (same Type/Dept, Job, day). Saturday/Sunday are
+   untouched. A card's ST+OT always equals its raw regular hours, so saved sheets reload
+   to the same split. */
+function applyOvertimeRules(){
+  var DAY=8, WEEK=40, cum=0;
+  var wd=[].slice.call(document.querySelectorAll('#rows .rowcard')).filter(isWeekdayCard);
+  wd.sort(function(a,b){ return dayNames.indexOf(a.querySelector('.day').value)-dayNames.indexOf(b.querySelector('.day').value); });
+  wd.forEach(function(card){
+    var raw = (card.dataset.rawst!==undefined && card.dataset.rawst!=='') ? Math.max(0,+card.dataset.rawst||0) : (num(card,'st')+num(card,'ot'));
+    card.dataset.rawst=raw;
+    var dayST=Math.min(raw,DAY), dayOT=raw-dayST;
+    var allowed=Math.max(0,WEEK-cum);
+    var stFinal=Math.min(dayST,allowed), weeklyOT=dayST-stFinal;
+    cum+=stFinal;
+    setNum(card,'st',stFinal);
+    setNum(card,'ot',dayOT+weeklyOT);
+  });
+}
 function calculate(){
   let st=0,ot=0,dt=0;
   document.querySelectorAll('#rows .rowcard').forEach(card=>{
@@ -525,6 +558,7 @@ $('submit').onclick=()=>saveSheet('submitted');
 
 /* ----- gather / validate ----- */
 function gather(){
+  applyOvertimeRules();
   return {
     employee:$('employee').value.trim(),
     employeeUid:CURRENT.uid||null,
