@@ -295,6 +295,7 @@ const FIREBASE_CONFIG = {
 const COL_USERS  = "users";        // user records: {name, email, role}
 const COL_SHEETS = "timesheets";   // submitted + draft timesheets
 const MANAGER_ROLES = ["manager","admin"];
+const ADMIN_EMAILS = ["mp1@firedefense.com","302stang86@gmail.com","wh1@firedefense.com"];  // always admin, like the rest of the hub
 </script>
 
 <!-- Firebase SDK (compat build keeps this single-file + offline friendly) -->
@@ -368,6 +369,12 @@ function start(){
         CURRENT.name=u.displayName||u.email||'';
       }
     }catch(e){ console.warn('user lookup failed',e); CURRENT.name=u.displayName||u.email||''; }
+    // Use the same identity the Quick Hub gate established, so role matches the rest of the hub.
+    try{ if(window.FDECAuth){ if(window.FDECAuth.ready){ await window.FDECAuth.ready; }
+      if(window.FDECAuth.isAdmin){ CURRENT.role='admin'; }
+      else if(window.FDECAuth.profile && ['manager','admin'].indexOf(window.FDECAuth.profile.role)>=0){ CURRENT.role=window.FDECAuth.profile.role; }
+    } }catch(_){}
+    if(ADMIN_EMAILS.map(x=>x.toLowerCase()).includes((u.email||'').toLowerCase())) CURRENT.role='admin';
     afterIdentity();
   });
 }
