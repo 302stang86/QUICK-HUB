@@ -44,6 +44,18 @@ input.invalid,select.invalid{border-color:#e0918b;background:#fff6f5}
 .ratehint.ot{background:#fff8e8;color:#8a6400}
 .ratehint.dt{background:#fdeceb;color:#9a3b33}
 input.autofield{background:#eef1f4;color:#5a6472;cursor:not-allowed}
+.ibx-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.ibx-years{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}
+.ibx-year{border:1px solid #d8dee6;background:#fff;border-radius:999px;padding:6px 13px;font-size:13px;font-weight:600;color:#33415a;cursor:pointer}
+.ibx-year.active{background:var(--navy,#010039);color:#fff;border-color:var(--navy,#010039)}
+.ibx-year .n{display:inline-block;margin-left:6px;background:rgba(0,0,0,.12);border-radius:8px;padding:0 7px;font-size:11px}
+.ibx-year.active .n{background:rgba(255,255,255,.25)}
+.ibx-group{margin:16px 0 8px;font-size:12px;font-weight:800;letter-spacing:.5px;color:#55617a;text-transform:uppercase}
+.ibx-item{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;border:1px solid #e2e7ee;border-radius:10px;padding:11px 14px;margin-bottom:8px;background:#fff;cursor:pointer;text-decoration:none;color:inherit}
+.ibx-item:hover{border-color:var(--navy,#3281b9);background:#f6f9fc}
+.ibx-item .lbl{font-weight:650;font-size:14px}
+.ibx-item .meta{font-size:12px;color:#66707f;white-space:nowrap}
+.ibx-empty{padding:20px;text-align:center;color:#777;font-size:13px}
 .remove{border:1px solid #f0c4c0;background:#fff0ef;color:#a3312a;border-radius:7px;padding:9px 14px;font-weight:700;cursor:pointer}
 
 .btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
@@ -272,6 +284,18 @@ header,main{position:relative;z-index:1;}
   </section>
 </div><!-- /managerView -->
 
+<div id="inboxView" class="hide">
+  <section class="panel">
+    <div class="ibx-head">
+      <h2 style="margin:0">Submitted Timesheets</h2>
+      <button class="ghost no-print" id="inboxBack" type="button">Back to My Timesheet</button>
+    </div>
+    <p class="sub">Timesheets submitted to you, archived by year. Tap one to open and review.</p>
+    <div id="inboxYears" class="ibx-years"></div>
+    <div id="inboxList" class="ibx-list"></div>
+  </section>
+</div><!-- /inboxView -->
+
 </main>
 
 <script>
@@ -406,6 +430,7 @@ async function enterTechMode(sheetId){
   MODE='tech';
   $('techView').classList.remove('hide');
   $('managerView').classList.add('hide');
+  $('inboxView')&&$('inboxView').classList.add('hide');
   renderModeActions();
   if(CURRENT.name && !$('employee').value) $('employee').value=CURRENT.name;
   defaultSunday();
@@ -718,6 +743,19 @@ function downloadCSV(){
 /* =====================================================================
    MANAGER INBOX + REVIEW MODE
    ===================================================================== */
+let INBOX_ITEMS=[], INBOX_YEAR='';
+function tsSheetYear(it){ if(!it.weekStart) return 'Undated'; var y=new Date(it.weekStart+'T12:00:00').getFullYear(); return (y>1970&&y<3000)?String(y):'Undated'; }
+function tsSheetLabel(it){
+  var ds=it.weekStart?new Date(it.weekStart+'T12:00:00'):null;
+  var de=it.weekEnd?new Date(it.weekEnd+'T12:00:00'):(ds?new Date(ds.getTime()+6*86400000):null);
+  function md(d){ return d?d.toLocaleString('en-US',{month:'short',day:'numeric'}):'—'; }
+  var mon=ds?ds.toLocaleString('en-US',{month:'long'}):'—';
+  var yr=ds?ds.getFullYear():'—';
+  var period = (ds&&de)?(md(ds)+' – '+md(de)):(it.weekStart||'?');
+  var tech = it.employee||'Employee';
+  // Month · Week of <period> · Year · Tech
+  return mon+' · Week of '+period+' · '+yr+' · '+tech;
+}
 async function showInbox(){
   if(!FB_OK)return;
   cloudMsg('info','Loading submitted timesheets…');
@@ -726,28 +764,53 @@ async function showInbox(){
       .where('managerUid','==',CURRENT.uid)
       .where('status','in',['submitted','reviewed'])
       .get();
-    const items=[];q.forEach(d=>items.push({id:d.id,...d.data()}));
-    items.sort((a,b)=>(b.submittedAt&&b.submittedAt.seconds||0)-(a.submittedAt&&a.submittedAt.seconds||0));
-    if(!items.length){cloudMsg('info','No submitted timesheets for you right now.');return;}
-    const html='<b>Submitted timesheets ('+items.length+'):</b><ul style="margin:8px 0 0;padding-left:18px">'+
-      items.map(it=>{
-        const tot=(it.entries||[]).reduce((s,e)=>s+(+e.st||0)+(+e.ot||0)+(+e.dt||0),0).toFixed(2);
-        return '<li style="margin-bottom:6px"><a href="#" data-open="'+it.id+'">'+esc(it.employee||'Employee')+' — week of '+esc(it.weekStart||'?')+'</a>'+
-          ' · '+tot+' hrs <span class="badge '+(it.status==='reviewed'?'reviewed':'submitted')+'">'+(it.status==='reviewed'?'Reviewed':'Submitted')+'</span></li>';
-      }).join('')+'</ul>';
-    const box=$('cloudStatus');box.className='status info no-print';box.innerHTML=html;box.classList.remove('hide');
-    box.querySelectorAll('[data-open]').forEach(a=>a.onclick=ev=>{ev.preventDefault();openManagerReview(a.getAttribute('data-open'));});
-  }catch(e){console.error(e);cloudMsg('error','Could not load inbox: '+(e.message||e));}
+    INBOX_ITEMS=[];q.forEach(d=>INBOX_ITEMS.push({id:d.id,...d.data()}));
+    INBOX_ITEMS.sort((a,b)=>(b.submittedAt&&b.submittedAt.seconds||0)-(a.submittedAt&&a.submittedAt.seconds||0));
+    $('techView').classList.add('hide');
+    $('managerView').classList.add('hide');
+    $('cloudStatus').classList.add('hide');
+    $('inboxView').classList.remove('hide');
+    renderInbox();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }catch(e){console.error(e);cloudMsg('error','Could not load submitted timesheets: '+(e.message||e));}
+}
+function renderInbox(){
+  var counts={}, order=[];
+  INBOX_ITEMS.forEach(function(it){ var y=tsSheetYear(it); if(!(y in counts)){counts[y]=0;order.push(y);} counts[y]++; });
+  var years=order.filter(y=>y!=='Undated').sort((a,b)=>Number(b)-Number(a)); if(order.indexOf('Undated')>=0) years.push('Undated');
+  if(INBOX_YEAR && years.indexOf(INBOX_YEAR)<0) INBOX_YEAR='';
+  var chips=['<button class="ibx-year'+(INBOX_YEAR===''?' active':'')+'" data-y="">All<span class="n">'+INBOX_ITEMS.length+'</span></button>'];
+  years.forEach(y=>chips.push('<button class="ibx-year'+(INBOX_YEAR===y?' active':'')+'" data-y="'+esc(y)+'">'+esc(y)+'<span class="n">'+counts[y]+'</span></button>'));
+  $('inboxYears').innerHTML = INBOX_ITEMS.length?chips.join(''):'';
+  var shown = INBOX_YEAR?[INBOX_YEAR]:years;
+  var html='';
+  if(!INBOX_ITEMS.length){ html='<div class="ibx-empty">No submitted timesheets for you right now.</div>'; }
+  else shown.forEach(function(y){
+    var its=INBOX_ITEMS.filter(it=>tsSheetYear(it)===y);
+    if(!its.length) return;
+    html+='<div class="ibx-group">'+esc(y)+'</div>';
+    its.forEach(function(it){
+      var tot=(it.entries||[]).reduce((s,e)=>s+(+e.st||0)+(+e.ot||0)+(+e.dt||0),0).toFixed(2);
+      html+='<a href="#" class="ibx-item" data-open="'+esc(it.id)+'">'+
+        '<span class="lbl">'+esc(tsSheetLabel(it))+'</span>'+
+        '<span class="meta">'+tot+' hrs &nbsp;<span class="badge '+(it.status==='reviewed'?'reviewed':'submitted')+'">'+(it.status==='reviewed'?'Reviewed':'Submitted')+'</span></span></a>';
+    });
+  });
+  $('inboxList').innerHTML=html;
+  $('inboxList').querySelectorAll('[data-open]').forEach(a=>a.onclick=ev=>{ev.preventDefault();openManagerReview(a.getAttribute('data-open'),true);});
+  $('inboxYears').querySelectorAll('[data-y]').forEach(bn=>bn.onclick=()=>{INBOX_YEAR=bn.getAttribute('data-y');renderInbox();});
 }
 
-async function openManagerReview(id){
+async function openManagerReview(id, fromInbox){
   if(!FB_OK)return;
   try{
     const snap=await db.collection(COL_SHEETS).doc(id).get();
     if(!snap.exists){cloudMsg('error','That timesheet was not found.');return;}
     OPEN_SHEET={...snap.data()};OPEN_SHEET_ID=id;
     MODE='manager';
+    window.__fromInbox=!!fromInbox;
     $('techView').classList.add('hide');
+    $('inboxView')&&$('inboxView').classList.add('hide');
     $('managerView').classList.remove('hide');
     $('cloudStatus').classList.add('hide');
     renderManagerReview();
@@ -894,13 +957,15 @@ $('mgrApprove')&&($('mgrApprove').onclick=()=>saveManagerReview(true));
 $('mgrSaveOnly')&&($('mgrSaveOnly').onclick=()=>saveManagerReview(false));
 $('mgrPrint')&&($('mgrPrint').onclick=()=>window.print());
 $('mgrBack')&&($('mgrBack').onclick=()=>{
-  $('managerView').classList.add('hide');$('techView').classList.remove('hide');
+  $('managerView').classList.add('hide');
   OPEN_SHEET=null;OPEN_SHEET_ID=null;
   // strip ?sheet= from URL so it does not reopen
   const u=new URL(location.href);u.searchParams.delete('sheet');u.searchParams.delete('id');
   history.replaceState({},'',u.toString());
-  enterTechMode(null);
+  if(window.__fromInbox){ $('inboxView').classList.remove('hide'); window.scrollTo({top:0,behavior:'smooth'}); }
+  else { enterTechMode(null); }
 });
+$('inboxBack')&&($('inboxBack').onclick=()=>{ $('inboxView').classList.add('hide'); enterTechMode(null); });
 
 /* ---------- helpers ---------- */
 function cloudMsg(kind,msg){
