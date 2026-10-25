@@ -20394,7 +20394,8 @@ var __async = (__this, __arguments, generator) => {
 </style>
 <script defer src="fdec-offline.js"></script>
 <meta name="fdec-page-title" content="Personal Inventory">
-<meta name="fdec-actions" content="#hubLink">
+<meta name="fdec-actions" content="#techPicker, #authStatus, #authBtn">
+<meta name="fdec-hide" content="#invMast">
 <script defer src="fdec-header.js"></script>
 </head>
 <body>
@@ -20412,14 +20413,14 @@ window.onerror=function(msg,src,line){
   return false;
 };
 </script>
-<header>
+<header id="invMast">
   <h1>FDEC INVENTORY TRACKER</h1>
   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;">
     <!-- Admin-only: pick whose vehicle sheet to view/edit -->
     <select id="techPicker" onchange="onTechPicked()" style="display:none;padding:7px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:#0a0a46;color:#fff;font-size:13px;font-weight:600;max-width:200px;">
       <option value="">Loading techs…</option>
     </select>
-    <span class="ver" id="authStatus">Read-only</span>
+    <span class="ver admin-note" id="authStatus">Read-only</span>
     <button id="authBtn" class="cat-btn" style="background:rgba(255,255,255,.16);" onclick="toggleAuth()">Log In</button>
   </div>
 </header>
