@@ -77,6 +77,33 @@
     document.body.insertBefore(header, document.body.firstChild);
     document.body.insertBefore(actions, header.nextSibling);
     relocate(actions);
+    addHubButton(actions);
+  }
+
+  /* The Home page (index.html, or the site root) needs no "back to hub". */
+  function isHubPage() {
+    try { return /\/(index\.html)?$/i.test(location.pathname); } catch (e) { return false; }
+  }
+
+  /* Put one consistent "Back to Hub" button on every tool page. Any hub link the
+     page already supplies is hidden first, so there is never a duplicate. */
+  function addHubButton(actions) {
+    if (isHubPage()) return;
+    var hubHref;
+    try { hubHref = new URL("index.html", location.href).href; } catch (e) { hubHref = "index.html"; }
+    try {
+      [].forEach.call(document.querySelectorAll("a[href]"), function (a) {
+        var h; try { h = new URL(a.getAttribute("href"), location.href).href; } catch (e) { return; }
+        if (h === hubHref) { a.style.display = "none"; }
+      });
+    } catch (e) {}
+    var btn = document.createElement("a");
+    btn.className = "fdec-hub-btn no-print";
+    btn.href = "index.html";
+    btn.textContent = "← Hub";
+    btn.setAttribute("aria-label", "Back to Hub");
+    if (actions.firstChild) actions.insertBefore(btn, actions.firstChild);
+    else actions.appendChild(btn);
   }
 
   /* Move each page's real buttons into the banner (keeps their click handlers),
