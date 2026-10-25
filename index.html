@@ -314,7 +314,7 @@
 
   <div id="sopList">
 
-    <a class="doclink" href="fdec-itm-sop.html" target="_blank" rel="noopener">
+    <a class="doclink" href="fdec-itm-sop.html">
       <span class="docicon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8"/></svg></span>
       <span class="doctext">
         <span class="docname">ITM-SOP</span>
@@ -849,7 +849,7 @@ document.addEventListener('click', function(e){
       var set = l.url && l.url !== '#';
       a.className = 'hublink' + (set ? '' : ' unset');
       if(l.color){ a.style.setProperty('--cc', l.color); }
-      if(set){ a.href = l.url; a.target = '_blank'; a.rel = 'noopener'; }
+      if(set){ a.href = l.url; }   // internal hub pages open in the same tab
       else { a.href = '#'; a.addEventListener('click',function(e){e.preventDefault();}); }
       a.innerHTML =
         '<span class="hubicon"><svg viewBox="0 0 24 24" aria-hidden="true">' + (ICONS[l.icon] || '') + '</svg></span>' +

@@ -695,7 +695,7 @@ async function qfEdit(o){
     var handoff={ id:o.id, bundle:bundle, byName:o.userName||"", byEmail:o.userEmail||"", uid:o.uid||"", chunkCount:o.chunkCount||0 };
     try{ localStorage.setItem("fdec_edit_quotefile", JSON.stringify(handoff)); }
     catch(e){ P.toast("Could not start edit — this quote is too large to hand off."); return; }
-    window.open("quoting.html","_blank");
+    window.location.href="quoting.html";   // internal hub page: same tab
     P.toast("Opening the quote in the Quoting suite to edit…");
   }catch(e){ P.toast("Could not open for editing: "+(e&&e.message?e.message:"try again")); }
 }
