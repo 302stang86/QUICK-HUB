@@ -187,7 +187,7 @@ header,main{position:relative;z-index:1;}
   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
     <div>
       <h2>Hours Worked</h2>
-      <p class="sub">Add a card for each department, customer/job, or leave type. Type/Department and Customer/Job are required on every card. Rate rule: Monday–Friday is Regular (straight time), Saturday is Time &amp; Half (1.5×), Sunday is Double Time (2×). Monday–Friday Regular hours over eight (8) in a day, or over forty (40) in the week, move to Overtime automatically on the same card.</p>
+      <p class="sub">Add a card for each department, customer/job, or leave type. Type/Department and Customer/Job are required on every card. Rate rule: Monday–Friday is Regular (straight time), Saturday is Time &amp; Half (1.5×), Sunday is Double Time (2×). Monday–Friday Regular hours over eight (8) in a day move to Overtime automatically; when a day has more than one card, the day's later card carries the Overtime. Because each weekday caps at eight (8) Regular hours, the Mon–Friday week never exceeds forty (40) Regular hours.</p>
     </div>
   </div>
   <div class="rows" id="rows"></div>
@@ -522,26 +522,37 @@ function isWeekdayCard(card){ var el=card.querySelector('.day'); return el ? rat
 function syncCardMode(card){
   var wd=isWeekdayCard(card), ot=card.querySelector('.ot');
   if(ot){ ot.readOnly=wd; ot.classList.toggle('autofield',wd);
-    ot.title = wd ? 'Overtime is figured automatically from Regular hours (over 8 in a day, or over 40 Mon–Fri).' : ''; }
+    ot.title = wd ? 'Overtime is figured automatically: Monday–Friday Regular hours over 8 in a day move to Overtime, on the day’s later card.' : ''; }
   if(!wd){ delete card.dataset.rawst; }
 }
-/* Monday–Friday: Regular (ST) hours over 8 in a day, or over 40 in the Mon–Fri week,
-   move to Overtime on the same card (same Type/Dept, Job, day). Saturday/Sunday are
-   untouched. A card's ST+OT always equals its raw regular hours, so saved sheets reload
-   to the same split. */
+/* Monday–Friday overtime, figured per DAY (not per card). For each weekday, the
+   first eight (8) Regular hours worked that day stay Regular; every remaining hour
+   that day becomes Overtime. Regular fills the day's earlier card(s) first, so the
+   overtime lands on the day's later card(s) — same Type/Dept, Job, and day. Only days
+   whose total exceeds eight (8) produce overtime; a day at or under eight is left as
+   Regular. Because each day caps at eight (8) Regular, Mon–Fri Regular can never top
+   forty (40) in a week. Saturday/Sunday are untouched. A card's ST+OT always equals
+   its raw regular hours, so saved sheets reload to the same split. */
 function applyOvertimeRules(){
-  var DAY=8, WEEK=40, cum=0;
+  var DAY=8;
   var wd=[].slice.call(document.querySelectorAll('#rows .rowcard')).filter(isWeekdayCard);
-  wd.sort(function(a,b){ return dayNames.indexOf(a.querySelector('.day').value)-dayNames.indexOf(b.querySelector('.day').value); });
+  // Group the day's cards in on-screen order so Regular fills earlier cards first.
+  var byDay={};
   wd.forEach(function(card){
-    var raw = (card.dataset.rawst!==undefined && card.dataset.rawst!=='') ? Math.max(0,+card.dataset.rawst||0) : (num(card,'st')+num(card,'ot'));
-    card.dataset.rawst=raw;
-    var dayST=Math.min(raw,DAY), dayOT=raw-dayST;
-    var allowed=Math.max(0,WEEK-cum);
-    var stFinal=Math.min(dayST,allowed), weeklyOT=dayST-stFinal;
-    cum+=stFinal;
-    setNum(card,'st',stFinal);
-    setNum(card,'ot',dayOT+weeklyOT);
+    var d=card.querySelector('.day').value;
+    (byDay[d]=byDay[d]||[]).push(card);
+  });
+  Object.keys(byDay).forEach(function(d){
+    var remaining=DAY;                 // Regular hours still available to assign this day
+    byDay[d].forEach(function(card){
+      var raw = (card.dataset.rawst!==undefined && card.dataset.rawst!=='') ? Math.max(0,+card.dataset.rawst||0) : (num(card,'st')+num(card,'ot'));
+      card.dataset.rawst=raw;
+      var stFinal=Math.min(raw,remaining); // earlier cards soak up the 8 Regular hours
+      var otFinal=raw-stFinal;             // the rest spills to Overtime on later cards
+      remaining-=stFinal;
+      setNum(card,'st',stFinal);
+      setNum(card,'ot',otFinal);
+    });
   });
 }
 function calculate(){
