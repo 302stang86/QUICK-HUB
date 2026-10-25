@@ -290,7 +290,7 @@ header,main{position:relative;z-index:1;}
       <h2 style="margin:0">Submitted Timesheets</h2>
       <button class="ghost no-print" id="inboxBack" type="button">Back to My Timesheet</button>
     </div>
-    <p class="sub">Timesheets submitted to you, archived by year. Tap one to open and review.</p>
+    <p class="sub">Submitted timesheets, archived by year. Tap one to open and review.</p>
     <div id="inboxYears" class="ibx-years"></div>
     <div id="inboxList" class="ibx-list"></div>
   </section>
@@ -760,11 +760,21 @@ async function showInbox(){
   if(!FB_OK)return;
   cloudMsg('info','Loading submitted timesheets…');
   try{
-    const q=await db.collection(COL_SHEETS)
-      .where('managerUid','==',CURRENT.uid)
-      .where('status','in',['submitted','reviewed'])
-      .get();
-    INBOX_ITEMS=[];q.forEach(d=>INBOX_ITEMS.push({id:d.id,...d.data()}));
+    const wanted={submitted:1,reviewed:1};
+    let rows=[];
+    if(CURRENT.role==='admin'){
+      // Admins oversee every submitted sheet (including their own).
+      const q=await db.collection(COL_SHEETS).where('status','in',['submitted','reviewed']).get();
+      q.forEach(d=>rows.push({id:d.id,...d.data()}));
+    } else {
+      // Managers see sheets submitted TO them plus their own submitted sheets.
+      // Single-field queries (no composite index needed); status filtered here.
+      const seen={};
+      const q1=await db.collection(COL_SHEETS).where('managerUid','==',CURRENT.uid).get();
+      const q2=await db.collection(COL_SHEETS).where('employeeUid','==',CURRENT.uid).get();
+      [q1,q2].forEach(q=>q.forEach(d=>{ const dt=d.data()||{}; if(wanted[dt.status] && !seen[d.id]){ seen[d.id]=1; rows.push({id:d.id,...dt}); } }));
+    }
+    INBOX_ITEMS=rows;
     INBOX_ITEMS.sort((a,b)=>(b.submittedAt&&b.submittedAt.seconds||0)-(a.submittedAt&&a.submittedAt.seconds||0));
     $('techView').classList.add('hide');
     $('managerView').classList.add('hide');
