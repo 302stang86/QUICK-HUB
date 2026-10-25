@@ -165,7 +165,8 @@ header,main{position:relative;z-index:1;}
   <div class="grid">
     <div>
       <label for="employee">Employee Name <span class="req">*</span></label>
-      <input id="employee" placeholder="Enter full name" required autocomplete="name">
+      <input id="employee" class="autofield" placeholder="Set by your administrator" required autocomplete="name" readonly title="Your name is managed by an administrator on the Quick Hub Administration page.">
+      <div class="hint" style="font-size:12px;color:#5a6472;margin-top:4px">Managed by your administrator. If it&rsquo;s wrong or blank, ask an admin to set it on the Administration page.</div>
     </div>
     <div>
       <label for="weekStart">Week Start (Sunday) <span class="req">*</span></label>
@@ -423,6 +424,15 @@ async function afterIdentity(){
   }
 }
 
+/* The employee name is managed by an administrator (users/{uid}.name, edited on
+   the Administration page) and is the single source of truth for the technician
+   name across the hub, so the field is locked here and always reflects it. */
+function setLockedEmployeeName(){
+  var el=$('employee'); if(!el) return;
+  el.value = CURRENT.name || '';
+  el.readOnly = true; el.classList.add('autofield');
+}
+
 /* =====================================================================
    TECH MODE
    ===================================================================== */
@@ -432,7 +442,7 @@ async function enterTechMode(sheetId){
   $('managerView').classList.add('hide');
   $('inboxView')&&$('inboxView').classList.add('hide');
   renderModeActions();
-  if(CURRENT.name && !$('employee').value) $('employee').value=CURRENT.name;
+  setLockedEmployeeName();
   defaultSunday();
   await loadManagersIntoDropdown();
   // Load this tech's existing draft for the current week if present
@@ -710,7 +720,7 @@ async function loadMyDraftForWeek(){
 }
 
 function fillTechForm(d){
-  $('employee').value=d.employee||CURRENT.name||'';
+  setLockedEmployeeName();   // always the admin-managed name, not the saved draft's
   if(d.weekStart){$('weekStart').value=d.weekStart;setWeek();}
   $('comments').value=d.comments||'';
   if(d.managerUid){const o=[...$('manager').options].find(o=>o.value===d.managerUid);if(o)$('manager').value=d.managerUid;}

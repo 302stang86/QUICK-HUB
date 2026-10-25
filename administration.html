@@ -229,7 +229,12 @@
   .er-btn.del { background:#fff; color:#9d0e16; border-color:#9d0e16; }
   .er-btn.del:hover { background:#9d0e16; color:#fff; }
   .er-empty { font-size:13px; color:#5c6470; font-style:italic; padding:8px 2px; }
-  @media(max-width:620px){ .er-row { grid-template-columns:1fr; } .er-acts { justify-content:flex-start; } }
+  .er-edit { margin-top:8px; display:grid; grid-template-columns:1fr 1fr; gap:8px; align-items:end; }
+  .er-edit label { font-size:11px; font-weight:600; color:#5c6470; display:block; margin-bottom:3px; }
+  .er-ein { width:100%; border:1.5px solid #cdd9e8; border-radius:7px; padding:8px 10px; font-size:14px; color:#20262d; box-sizing:border-box; }
+  .er-ein:focus { outline:2px solid rgba(193,18,28,.24); border-color:#C1121C; }
+  .er-edit-acts { grid-column:1 / -1; display:flex; gap:6px; }
+  @media(max-width:620px){ .er-row { grid-template-columns:1fr; } .er-acts { justify-content:flex-start; } .er-edit { grid-template-columns:1fr; } }
 </style>
 <!-- FDEC PWA / offline -->
 <link rel="manifest" href="manifest.webmanifest">
@@ -291,7 +296,7 @@
       <div class="er-head">
         <div>
           <h2>Employee roster</h2>
-          <p>Approve new sign-ups, change roles, and archive or remove accounts. Pending accounts are highlighted and listed first.</p>
+          <p>Edit employee names and phone numbers, approve new sign-ups, change roles, and archive or remove accounts. The name set here is used wherever a technician name appears &mdash; time sheets, ITM reports, and proposals. Pending accounts are highlighted and listed first.</p>
         </div>
         <span class="er-count" id="erCount"></span>
       </div>
@@ -799,13 +804,22 @@ function renderRoster(filter){
     }).join("");
     var roleSel = '<select class="er-sel" data-role="'+qfEsc(o.uid)+'"'+(((!canAdmin&&isAdm)||isSelf)?" disabled":"")+'>'+roleOpts+'</select>';
     var acts = "";
+    if(canAdmin) acts += '<button class="er-btn" data-edit="'+qfEsc(o.uid)+'">Edit</button>';
     if(st!=="approved") acts += '<button class="er-btn ok" data-appr="'+qfEsc(o.uid)+'">'+(st==="archived"?"Reactivate":"Approve")+'</button>';
     if(st==="pending")  acts += '<button class="er-btn warn" data-deny="'+qfEsc(o.uid)+'">Deny</button>';
     if(st!=="archived" && !isSelf) acts += '<button class="er-btn warn" data-arch="'+qfEsc(o.uid)+'">Archive</button>';
     if(canAdmin && !isSelf) acts += '<button class="er-btn del" data-del="'+qfEsc(o.uid)+'">Delete</button>';
+    var sub = qfEsc(o.email||"") + (o.phone?(' &middot; '+qfEsc(o.phone)):"");
+    var editor = canAdmin
+      ? '<div class="er-edit" data-editrow="'+qfEsc(o.uid)+'" style="display:none">'
+        + '<div><label>Employee name</label><input class="er-ein" type="text" data-ename="'+qfEsc(o.uid)+'" placeholder="Full name" value="'+qfEsc(o.name||"")+'" autocomplete="off"></div>'
+        + '<div><label>Phone</label><input class="er-ein" type="tel" data-ephone="'+qfEsc(o.uid)+'" placeholder="Phone (optional)" value="'+qfEsc(o.phone||"")+'" autocomplete="off"></div>'
+        + '<div class="er-edit-acts"><button class="er-btn ok" data-save="'+qfEsc(o.uid)+'">Save</button><button class="er-btn" data-cancel="'+qfEsc(o.uid)+'">Cancel</button></div>'
+        + '</div>'
+      : "";
     return '<div class="er-row '+(st==="pending"?"pending":(st==="archived"?"archived":""))+'">'
       + '<div><div class="er-name">'+qfEsc(o.name||"(no name)")+'<span class="er-badge '+qfEsc(st)+'">'+qfEsc(st)+'</span></div>'
-      + '<div class="er-sub">'+qfEsc(o.email||"")+'</div></div>'
+      + '<div class="er-sub">'+sub+'</div>'+editor+'</div>'
       + '<div class="er-acts">'+roleSel+acts+'</div></div>';
   }).join("");
 }
@@ -831,6 +845,19 @@ async function erUpdate(uid, fields, okMsg){
     });
     l.addEventListener("click", async function(e){
       var t=e.target;
+      var ed=t.closest("[data-edit]"), sv=t.closest("[data-save]"), cx=t.closest("[data-cancel]");
+      if(ed){ var uid=ed.getAttribute("data-edit"); var box=l.querySelector('[data-editrow="'+(window.CSS&&CSS.escape?CSS.escape(uid):uid)+'"]');
+        if(box){ var open=box.style.display!=="none"; box.style.display=open?"none":""; if(!open){ var nm=box.querySelector("[data-ename]"); if(nm) nm.focus(); } } return; }
+      if(cx){ var box2=cx.closest("[data-editrow]"); if(box2) box2.style.display="none"; return; }
+      if(sv){
+        var uid2=sv.getAttribute("data-save");
+        var box3=l.querySelector('[data-editrow="'+(window.CSS&&CSS.escape?CSS.escape(uid2):uid2)+'"]');
+        var nameEl=box3&&box3.querySelector("[data-ename]"), phoneEl=box3&&box3.querySelector("[data-ephone]");
+        var nm2=nameEl?nameEl.value.trim():"", ph=phoneEl?phoneEl.value.trim():"";
+        if(!nm2){ P.toast("Employee name cannot be blank."); if(nameEl) nameEl.focus(); return; }
+        await erUpdate(uid2, { name:nm2, phone:ph }, "Employee details saved.");
+        return;
+      }
       var ap=t.closest("[data-appr]"), dn=t.closest("[data-deny]"), ar=t.closest("[data-arch]"), dl=t.closest("[data-del]");
       if(ap){ await erUpdate(ap.getAttribute("data-appr"), { status:"approved" }, "User approved."); return; }
       if(dn){ await erUpdate(dn.getAttribute("data-deny"), { status:"denied" }, "User denied."); return; }
