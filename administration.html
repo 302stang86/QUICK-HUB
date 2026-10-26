@@ -235,6 +235,27 @@
   .er-ein:focus { outline:2px solid rgba(193,18,28,.24); border-color:#C1121C; }
   .er-edit-acts { grid-column:1 / -1; display:flex; gap:6px; }
   @media(max-width:620px){ .er-row { grid-template-columns:1fr; } .er-acts { justify-content:flex-start; } .er-edit { grid-template-columns:1fr; } }
+  /* Announcement marquee control */
+  #mqWrap .mq-prev{overflow:hidden;white-space:nowrap;border-radius:10px;margin:2px 0 14px;min-height:40px;background:linear-gradient(90deg,#C1121C 0%,#6a0c12 40%,#130a0b 78%,#050505 100%)}
+  #mqWrap .mq-prev.off{opacity:.4;filter:grayscale(.35)}
+  #mqWrap .mq-prev-track{display:inline-flex;will-change:transform;animation:mqprev linear infinite}
+  #mqWrap .mq-prev-item{display:inline-block;padding:0 42px;color:#fff;font-weight:800;font-size:14px;letter-spacing:.3px;line-height:40px;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.35)}
+  @keyframes mqprev{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  #mqWrap .mq-controls{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  #mqWrap .mq-switch{position:relative;display:inline-block;width:52px;height:28px;flex:0 0 auto}
+  #mqWrap .mq-switch input{opacity:0;width:0;height:0}
+  #mqWrap .mq-slider{position:absolute;inset:0;background:#c3ccd6;border-radius:28px;transition:.18s;cursor:pointer}
+  #mqWrap .mq-slider:before{content:"";position:absolute;height:22px;width:22px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.18s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+  #mqWrap .mq-switch input:checked + .mq-slider{background:#1f7a3d}
+  #mqWrap .mq-switch input:checked + .mq-slider:before{transform:translateX(24px)}
+  #mqWrap .mq-state{font-weight:800;font-size:.9rem;color:#9d0e16}
+  #mqWrap .mq-state.on{color:#1f7a3d}
+  #mqWrap .mq-lbl{display:block;font-size:.8rem;font-weight:700;color:#5c6470;margin:0 0 6px}
+  #mqWrap textarea{width:100%;border:1.5px solid #cdd9e8;border-radius:10px;padding:10px 12px;font:inherit;font-size:15px;color:#20262d;resize:vertical;min-height:54px;box-sizing:border-box}
+  #mqWrap textarea:focus{outline:2px solid rgba(193,18,28,.26);border-color:#C1121C}
+  #mqWrap .mq-count{text-align:right;font-size:12px;font-weight:700;color:#5c6470;margin-top:6px}
+  #mqWrap .mq-count.warn{color:#b4690e}#mqWrap .mq-count.max{color:#9d0e16}
+  #mqWrap .mq-actions{display:flex;gap:10px;margin-top:12px;align-items:center}
 </style>
 <!-- FDEC PWA / offline -->
 <link rel="manifest" href="manifest.webmanifest">
@@ -290,6 +311,27 @@
       <input id="qfSearch" class="qf-search" type="search" placeholder="Search job name, quote number, user, or file name&hellip;" autocomplete="off">
       <div id="qfYears" class="qf-years"></div>
       <div id="qfList" class="qf-list"></div>
+    </div>
+
+    <div class="er-wrap" id="mqWrap" style="display:none">
+      <div class="er-head">
+        <div>
+          <h2>Announcement marquee</h2>
+          <p>A scrolling alert bar shown at the top of the Quick Hub home page for every tech. Turn it on, type a short message, and Save &amp; publish &mdash; it updates live. Techs can dismiss it; posting a new message brings it back for everyone.</p>
+        </div>
+      </div>
+      <div id="mqPrev" class="mq-prev off"><div class="mq-prev-track"></div></div>
+      <div class="mq-controls">
+        <label class="mq-switch"><input type="checkbox" id="mqEnabled"><span class="mq-slider"></span></label>
+        <span class="mq-state" id="mqState">OFF</span>
+      </div>
+      <label class="mq-lbl" for="mqText">Announcement text</label>
+      <textarea id="mqText" maxlength="160" rows="2" placeholder="Type a short announcement or critical update&hellip;"></textarea>
+      <div class="mq-count" id="mqCount">0 / 160</div>
+      <div class="mq-actions">
+        <button class="er-btn ok" id="mqSave">Save &amp; publish</button>
+        <span id="mqMsg" class="small" style="color:#5c6470"></span>
+      </div>
     </div>
 
     <div class="er-wrap" id="erWrap" style="display:none">
@@ -478,7 +520,7 @@ const isAdminEmail = e => ADMIN_EMAILS.includes(String(e||"").toLowerCase());
 
 const P = window.PERM;
 const $ = (id)=>document.getElementById(id);
-let auth=null, db=null, me=null, PERM_REF=null;
+let auth=null, db=null, me=null, PERM_REF=null, MARQUEE_REF=null;
 
 /* sign-in modal */
 const overlay=$("overlay"), emailInput=$("email"), passInput=$("pass"), passErr=$("passErr");
@@ -519,7 +561,7 @@ function adminOnlyPanels(on){
   ["saveBtn","resetBtn","exportBtn"].forEach(function(id){ var b=document.getElementById(id); if(b) b.style.display = on?"":"none"; });
 }
 async function onAuth(user){
-  if(!user){ me=null; P.setAuth({signedIn:false,isAdmin:false,me:null}); P.setState(P.deepDefault()); adminOnlyPanels(true); var w=$("qfWrap"); if(w) w.style.display="none"; var rw=$("erWrap"); if(rw) rw.style.display="none"; var pw=$("prWrap"); if(pw) pw.style.display="none"; return; }
+  if(!user){ me=null; P.setAuth({signedIn:false,isAdmin:false,me:null}); P.setState(P.deepDefault()); adminOnlyPanels(true); var w=$("qfWrap"); if(w) w.style.display="none"; var rw=$("erWrap"); if(rw) rw.style.display="none"; var pw=$("prWrap"); if(pw) pw.style.display="none"; var mw=$("mqWrap"); if(mw) mw.style.display="none"; return; }
   try {
     const usnap = await getDoc(doc(db,"users",user.uid));
     const d = usnap.exists()? usnap.data():{};
@@ -532,7 +574,61 @@ async function onAuth(user){
   await loadRoster();
   await loadResetRequests();
   await loadQuoteFiles();
+  await loadMarquee();
 }
+
+/* ---------- Announcement marquee (admin only) ---------- */
+var MQ_LIMIT=160;
+function mqRenderPreview(){
+  var prev=$("mqPrev"); if(!prev) return;
+  var track=prev.querySelector(".mq-prev-track");
+  var on=$("mqEnabled").checked;
+  var text=($("mqText").value||"").trim()||"Your announcement will appear here…";
+  track.innerHTML="";
+  for(var i=0;i<2;i++){ var s=document.createElement("span"); s.className="mq-prev-item"; s.textContent=text; track.appendChild(s); }
+  prev.classList.toggle("off",!on);
+  requestAnimationFrame(function(){ var wid=track.scrollWidth/2; track.style.animationDuration=Math.max(6,wid/80).toFixed(1)+"s"; });
+}
+function mqUpdateCount(){
+  var n=$("mqText").value.length, c=$("mqCount");
+  c.textContent=n+" / "+MQ_LIMIT;
+  c.className="mq-count"+(n>=MQ_LIMIT?" max":(n>=MQ_LIMIT-20?" warn":""));
+}
+function mqUpdateState(){
+  var on=$("mqEnabled").checked, s=$("mqState");
+  s.textContent=on?"ON — live":"OFF"; s.className="mq-state"+(on?" on":"");
+}
+async function loadMarquee(){
+  var wrap=$("mqWrap"); if(!wrap) return;
+  if(!db || !erIsAdmin()){ wrap.style.display="none"; return; }
+  wrap.style.display="";
+  try{
+    var snap=await getDoc(MARQUEE_REF);
+    var d=snap.exists()?snap.data():{};
+    $("mqEnabled").checked=!!d.enabled;
+    $("mqText").value=d.text||"";
+  }catch(e){ $("mqMsg").textContent="Could not load current setting."; }
+  mqUpdateState(); mqUpdateCount(); mqRenderPreview();
+}
+async function saveMarquee(){
+  if(!db || !erIsAdmin()){ P.toast("Admins only."); return; }
+  var text=($("mqText").value||"").trim().slice(0,MQ_LIMIT);
+  var enabled=$("mqEnabled").checked;
+  if(enabled && !text){ $("mqMsg").textContent="Enter a message to turn the bar on."; $("mqText").focus(); return; }
+  var btn=$("mqSave"); btn.disabled=true;
+  try{
+    await setDoc(MARQUEE_REF, { enabled:enabled, text:text, rev:String(Date.now()), updatedAt:new Date().toISOString(), updatedBy:(me&&me.email)||"" });
+    $("mqMsg").textContent=enabled?"Published — live for techs now.":"Saved — the bar is off.";
+    P.toast("Announcement saved.");
+  }catch(e){ $("mqMsg").textContent="Save failed: "+((e&&e.code)||"check permissions"); P.toast("Save failed."); }
+  btn.disabled=false;
+}
+(function(){
+  var t=$("mqText"), en=$("mqEnabled"), sv=$("mqSave");
+  if(t){ t.addEventListener("input",function(){ mqUpdateCount(); mqRenderPreview(); }); }
+  if(en){ en.addEventListener("change",function(){ mqUpdateState(); mqRenderPreview(); }); }
+  if(sv){ sv.addEventListener("click",saveMarquee); }
+})();
 
 /* ---------- Quote files (drafts, Word docs & exports from the Quoting Suite) ---------- */
 let QF = [];
@@ -962,6 +1058,7 @@ if(configured){
     try { enableIndexedDbPersistence(db).catch(function(){}); } catch(e){}
     (window.__fdecWaiters = window.__fdecWaiters || []).push(function(){ return waitForPendingWrites(db); });
     PERM_REF = doc(db,"config","permissions");
+    MARQUEE_REF = doc(db,"config","marquee");
     onAuthStateChanged(auth, onAuth);
   } catch(e){ P.toast("Firebase failed to initialize."); }
 } else {

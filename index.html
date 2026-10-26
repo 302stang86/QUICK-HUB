@@ -264,6 +264,15 @@
   .hubnote.dot{min-width:0;width:15px;height:15px;padding:0;}
   @keyframes fdecflash{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.82)}}
   @media (prefers-reduced-motion:reduce){.hubnote{animation:none}}
+  /* Announcement marquee (admin-controlled; sits directly under the universal banner) */
+  .fdec-mq{position:relative;overflow:hidden;white-space:nowrap;background:linear-gradient(90deg,#C1121C 0%,#6a0c12 40%,#130a0b 78%,#050505 100%);box-shadow:0 2px 10px rgba(0,0,0,.35);border-bottom:1px solid rgba(255,255,255,.08);z-index:4}
+  .fdec-mq .mq-track{display:inline-flex;will-change:transform;animation:fdecmq linear infinite}
+  .fdec-mq .mq-item{display:inline-block;padding:0 46px;color:#fff;font-weight:800;font-size:15px;letter-spacing:.35px;line-height:42px;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.35)}
+  .fdec-mq:hover .mq-track{animation-play-state:paused}
+  @keyframes fdecmq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  .fdec-mq .mq-x{position:absolute;top:0;right:0;height:42px;width:46px;border:0;background:linear-gradient(90deg,rgba(5,5,5,0),#050505 45%);color:#fff;font-size:24px;line-height:40px;cursor:pointer;opacity:.85;padding:0}
+  .fdec-mq .mq-x:hover{opacity:1}
+  @media print{.fdec-mq{display:none !important}}
 </style>
 <script type="module" src="fdec-auth.js" data-page="home"></script>
 <!-- FDEC PWA / offline -->
@@ -280,6 +289,10 @@
 <script defer src="fdec-header.js"></script>
 </head>
 <body>
+<div id="fdecMarquee" class="fdec-mq no-print" style="display:none" role="status" aria-live="polite">
+  <div class="mq-track"></div>
+  <button type="button" id="fdecMarqueeDismiss" class="mq-x" aria-label="Dismiss announcement" title="Dismiss">&times;</button>
+</div>
 <div class="bg-layer" aria-hidden="true"></div>
 
 <header>
@@ -1166,6 +1179,43 @@ document.addEventListener('click', function(e){
     });
   }
 })();
+</script>
+<script type="module">
+  /* Live announcement marquee: reads config/marquee and shows the bar under the
+     banner. Only on this (home) page. Techs can dismiss; a new message (new rev)
+     brings it back. */
+  import { getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  (function(){
+    var KEY='fdec_marquee_dismissed';
+    var bar=document.getElementById('fdecMarquee'); if(!bar) return;
+    var track=bar.querySelector('.mq-track');
+    function hide(){ bar.style.display='none'; }
+    function retime(){ var w=track.scrollWidth/2; track.style.animationDuration=Math.max(6,w/80).toFixed(1)+'s'; }
+    function show(text,rev){
+      track.innerHTML='';
+      for(var i=0;i<2;i++){ var s=document.createElement('span'); s.className='mq-item'; s.textContent=text; track.appendChild(s); }
+      bar.dataset.rev=rev; bar.style.display=''; requestAnimationFrame(retime);
+    }
+    function apply(d){
+      if(!d || !d.enabled){ hide(); return; }
+      var text=String(d.text||'').trim(); if(!text){ hide(); return; }
+      var rev=String(d.rev||d.updatedAt||text);
+      var dismissed=''; try{ dismissed=localStorage.getItem(KEY)||''; }catch(e){}
+      if(dismissed===rev){ hide(); return; }
+      show(text,rev);
+    }
+    document.getElementById('fdecMarqueeDismiss').addEventListener('click',function(){
+      try{ localStorage.setItem(KEY, bar.dataset.rev||''); }catch(e){} hide();
+    });
+    window.addEventListener('resize',function(){ if(bar.style.display!=='none') retime(); });
+    if(!window.FDECAuth || !window.FDECAuth.ready) return;
+    window.FDECAuth.ready.then(function(auth){
+      if(!auth || !auth.user) return;
+      var app; try{ app=getApp('fdec'); }catch(e){ try{ app=getApp(); }catch(_){ return; } }
+      try{ onSnapshot(doc(getFirestore(app),'config','marquee'), function(snap){ apply(snap.exists()?snap.data():null); }, function(){}); }catch(e){}
+    });
+  })();
 </script>
 </body>
 </html>
