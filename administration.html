@@ -256,6 +256,17 @@
   #mqWrap .mq-count{text-align:right;font-size:12px;font-weight:700;color:#5c6470;margin-top:6px}
   #mqWrap .mq-count.warn{color:#b4690e}#mqWrap .mq-count.max{color:#9d0e16}
   #mqWrap .mq-actions{display:flex;gap:10px;margin-top:12px;align-items:center}
+  /* Admin card menu (hub-style section picker) */
+  .adm-menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:4px 0 8px}
+  .adm-card{display:flex;align-items:center;gap:14px;text-align:left;text-decoration:none;cursor:pointer;background:#fff;border:1px solid #dfe3e8;border-left:5px solid var(--cc,#1B2A4A);border-radius:10px;padding:15px 16px;box-shadow:0 1px 3px rgba(16,24,40,.08);font:inherit;width:100%;transition:transform .1s,box-shadow .1s}
+  .adm-card:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(16,24,40,.14)}
+  .adm-card .adm-ic{font-size:22px;line-height:1;flex:0 0 auto}
+  .adm-card .adm-body{flex:1 1 auto;min-width:0}
+  .adm-card .adm-body b{display:block;font-size:15px;color:#1B2A4A}
+  .adm-card .adm-body small{color:#5c6470;font-size:12.5px}
+  .adm-card .adm-go{font-size:20px;color:var(--cc,#C1121C);font-weight:700;flex:0 0 auto}
+  .adm-back{display:flex;align-items:center;gap:12px;margin:4px 0 16px}
+  .adm-view-title{font-weight:800;color:#1B2A4A;font-size:1.05rem}
 </style>
 <!-- FDEC PWA / offline -->
 <link rel="manifest" href="manifest.webmanifest">
@@ -294,14 +305,43 @@
       <button class="btn btn-ghost btn-sm" id="exportBtn">Export Config</button>
     </div>
 
-    <a href="itm-reports.html#admin" style="display:flex;align-items:center;gap:14px;text-decoration:none;background:#fff;border:1px solid #dfe3e8;border-left:5px solid #C1121C;border-radius:10px;padding:14px 16px;margin:4px 0 18px;box-shadow:0 1px 3px rgba(16,24,40,.08)">
-      <span style="font-size:22px;line-height:1" aria-hidden="true">&#128203;</span>
-      <span style="flex:1;min-width:0;color:#1b1f24">
-        <b style="display:block;font-size:15px;color:#1B2A4A">ITM Reports &mdash; Admin Dashboard</b>
-        <small style="color:#5c6470;font-size:12.5px">Open all submitted inspection reports, the technician roster, and account approvals</small>
-      </span>
-      <span style="font-size:20px;color:#C1121C;font-weight:700" aria-hidden="true">&rarr;</span>
-    </a>
+    <div class="adm-back" id="admBack" style="display:none">
+      <button class="btn btn-ghost btn-sm" id="admBackBtn">&larr; Back to Admin menu</button>
+      <span class="adm-view-title" id="admViewTitle"></span>
+    </div>
+
+    <div class="adm-menu" id="adminMenu" style="display:none">
+      <a class="adm-card" data-admin="1" href="itm-reports.html#admin" style="--cc:#C1121C">
+        <span class="adm-ic" aria-hidden="true">&#128203;</span>
+        <span class="adm-body"><b>ITM Reports &mdash; Admin Dashboard</b><small>All submitted inspection reports, technician roster, and approvals</small></span>
+        <span class="adm-go" aria-hidden="true">&rarr;</span>
+      </a>
+      <button type="button" class="adm-card" data-view="qfWrap" style="--cc:#1565c0">
+        <span class="adm-ic" aria-hidden="true">&#128196;</span>
+        <span class="adm-body"><b>Quote files</b><small>Drafts, Word docs, and export packages from the Quoting Suite</small></span>
+        <span class="adm-go" aria-hidden="true">&rarr;</span>
+      </button>
+      <button type="button" class="adm-card" data-admin="1" data-view="mqWrap" style="--cc:#9d0e16">
+        <span class="adm-ic" aria-hidden="true">&#128226;</span>
+        <span class="adm-body"><b>Announcement marquee</b><small>Scrolling alert bar on the hub home page &mdash; on/off and text</small></span>
+        <span class="adm-go" aria-hidden="true">&rarr;</span>
+      </button>
+      <button type="button" class="adm-card" data-admin="1" data-view="erWrap" style="--cc:#1f7a3d">
+        <span class="adm-ic" aria-hidden="true">&#128101;</span>
+        <span class="adm-body"><b>Employee roster</b><small>Names, phones, roles, approvals, and account status</small></span>
+        <span class="adm-go" aria-hidden="true">&rarr;</span>
+      </button>
+      <button type="button" class="adm-card" data-admin="1" data-view="prWrap" style="--cc:#b4690e">
+        <span class="adm-ic" aria-hidden="true">&#128273;</span>
+        <span class="adm-body"><b>Password resets</b><small>Approve or deny reset requests from the sign-in screen</small></span>
+        <span class="adm-go" aria-hidden="true">&rarr;</span>
+      </button>
+      <button type="button" class="adm-card" data-admin="1" data-view="permWrap" style="--cc:#6d3bb5">
+        <span class="adm-ic" aria-hidden="true">&#128275;</span>
+        <span class="adm-body"><b>Role &amp; page permissions</b><small>Which Quick Hub tools each role can open</small></span>
+        <span class="adm-go" aria-hidden="true">&rarr;</span>
+      </button>
+    </div>
 
     <div class="qf-wrap" id="qfWrap" style="display:none">
       <div class="qf-head">
@@ -357,16 +397,22 @@
       <div id="prList" class="er-list"></div>
     </div>
 
-    <div class="tabs" id="tabs"></div>
-    <div id="roleHead"></div>
-    <div id="groups"></div>
+    <div class="perm-wrap" id="permWrap" style="display:none">
+      <div class="er-head"><div>
+        <h2>Role &amp; page permissions</h2>
+        <p>Control which Quick Hub pages each role can open. Toggle pages, then Save Changes &mdash; it applies for everyone on their next sign-in or refresh.</p>
+      </div></div>
+      <div class="tabs" id="tabs"></div>
+      <div id="roleHead"></div>
+      <div id="groups"></div>
 
-    <p class="foot">
-      Each box controls whether that role can open that Quick Hub page. Toggle the pages a role may use, then Save Changes —
-      the setting is stored in your Firebase project (<code>config/permissions</code>) and takes effect for everyone on their next sign-in or refresh.
-      Only administrators can change and save access. Administrators can always open every page.<br>
-      Export Config downloads a backup copy of the current settings as a JSON file.
-    </p>
+      <p class="foot">
+        Each box controls whether that role can open that Quick Hub page. Toggle the pages a role may use, then Save Changes —
+        the setting is stored in your Firebase project (<code>config/permissions</code>) and takes effect for everyone on their next sign-in or refresh.
+        Only administrators can change and save access. Administrators can always open every page.<br>
+        Export Config downloads a backup copy of the current settings as a JSON file.
+      </p>
+    </div>
   </div>
 
   <!-- Sign-in modal -->
@@ -553,15 +599,42 @@ async function loadPerms(){
   } catch(e){ P.setState(P.deepDefault()); P.toast("Could not load saved permissions."); }
 }
 
-/* Managers may open this page for the Quote files only — hide the role/permissions
-   editor (and its Save/Reset/Export) from anyone who is not an administrator. */
-function adminOnlyPanels(on){
-  ["tabs","roleHead","groups"].forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display = on?"":"none"; });
-  var foot=document.querySelector(".foot"); if(foot) foot.style.display = on?"":"none";
-  ["saveBtn","resetBtn","exportBtn"].forEach(function(id){ var b=document.getElementById(id); if(b) b.style.display = on?"":"none"; });
+/* ---------- Admin card menu (hub-style section picker) ---------- */
+var VIEW_TITLES={qfWrap:"Quote files",mqWrap:"Announcement marquee",erWrap:"Employee roster",prWrap:"Password resets",permWrap:"Role & page permissions"};
+var ADMIN_SECTIONS=["qfWrap","mqWrap","erWrap","prWrap","permWrap"];
+/* Save / Reset / Export belong to the permissions view, so they only show there. */
+function togglePermButtons(on){ ["saveBtn","resetBtn","exportBtn"].forEach(function(id){ var b=$(id); if(b) b.style.display=on?"":"none"; }); }
+function resetAdminViews(){
+  ["adminMenu","admBack"].concat(ADMIN_SECTIONS).forEach(function(id){ var el=$(id); if(el) el.style.display="none"; });
+  togglePermButtons(false);
 }
+function showAdminMenu(){
+  if($("adminMenu")) $("adminMenu").style.display="";
+  if($("admBack")) $("admBack").style.display="none";
+  ADMIN_SECTIONS.forEach(function(id){ var el=$(id); if(el) el.style.display="none"; });
+  togglePermButtons(false);
+}
+function openAdminView(view){
+  if($("adminMenu")) $("adminMenu").style.display="none";
+  ADMIN_SECTIONS.forEach(function(id){ var el=$(id); if(el) el.style.display=(id===view?"":"none"); });
+  if($("admBack")) $("admBack").style.display="";
+  if($("admViewTitle")) $("admViewTitle").textContent=VIEW_TITLES[view]||"";
+  togglePermButtons(view==="permWrap");
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+/* ITM + admin-only sections show for admins; Quote files also for managers. */
+function setMenuForRole(amAdmin){
+  var cards=document.querySelectorAll('#adminMenu [data-admin="1"]');
+  [].forEach.call(cards,function(c){ c.style.display = amAdmin ? "" : "none"; });
+}
+(function(){
+  var menu=$("adminMenu");
+  if(menu){ menu.addEventListener("click",function(e){ var c=e.target.closest("[data-view]"); if(c){ openAdminView(c.getAttribute("data-view")); } }); }
+  var bb=$("admBackBtn"); if(bb){ bb.addEventListener("click",showAdminMenu); }
+})();
+
 async function onAuth(user){
-  if(!user){ me=null; P.setAuth({signedIn:false,isAdmin:false,me:null}); P.setState(P.deepDefault()); adminOnlyPanels(true); var w=$("qfWrap"); if(w) w.style.display="none"; var rw=$("erWrap"); if(rw) rw.style.display="none"; var pw=$("prWrap"); if(pw) pw.style.display="none"; var mw=$("mqWrap"); if(mw) mw.style.display="none"; return; }
+  if(!user){ me=null; P.setAuth({signedIn:false,isAdmin:false,me:null}); P.setState(P.deepDefault()); resetAdminViews(); return; }
   try {
     const usnap = await getDoc(doc(db,"users",user.uid));
     const d = usnap.exists()? usnap.data():{};
@@ -569,12 +642,13 @@ async function onAuth(user){
   } catch(e){ me = { uid:user.uid, name:user.email.split("@")[0], email:user.email, role:isAdminEmail(user.email)?"admin":"tech" }; }
   const amAdmin = me.role==="admin"||isAdminEmail(me.email);
   P.setAuth({ signedIn:true, isAdmin: amAdmin, me });
-  adminOnlyPanels(amAdmin);
   await loadPerms();
   await loadRoster();
   await loadResetRequests();
   await loadQuoteFiles();
   await loadMarquee();
+  setMenuForRole(amAdmin);
+  showAdminMenu();
 }
 
 /* ---------- Announcement marquee (admin only) ---------- */
