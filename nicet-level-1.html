@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NICET Level I ITM Study Center | NFPA 25 (2023)</title>
+<style>
+:root{--navy:#10381f;--blue:#1f8a52;--cyan:#4fc48a;--ink:#17261d;--muted:#5c6f62;--bg:#f1f8f3;--card:#fff;--line:#d9e7de;--green:#16845b;--amber:#d78a16;--red:#c74343;--shadow:0 10px 28px rgba(16,56,31,.08)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Inter,Segoe UI,Arial,sans-serif;color:var(--ink);line-height:1.55}
+header{background:linear-gradient(120deg,#0e3a24,#17623e 65%,#1f8a52);color:white;padding:30px max(20px,calc((100% - 1200px)/2));position:relative;overflow:hidden}
+header:after{content:"";position:absolute;width:300px;height:300px;border:35px solid #ffffff12;border-radius:50%;right:4%;top:-170px}
+.eyebrow{text-transform:uppercase;letter-spacing:.15em;font-size:.75rem;font-weight:800;color:#9ff0c7}
+h1{font-size:clamp(1.8rem,4vw,3rem);line-height:1.1;margin:.4rem 0 .7rem;max-width:850px}
+header p{max-width:800px;color:#e3f4e9;margin:0}
+.header-meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}.pill{border:1px solid #ffffff45;background:#ffffff12;border-radius:99px;padding:5px 11px;font-size:.82rem}
+.levelbadge{display:inline-block;background:#ffffff;color:#126139;font-weight:850;border-radius:8px;padding:4px 12px;font-size:.82rem;letter-spacing:.04em;margin-bottom:6px}
+.shell{max-width:1200px;margin:24px auto;padding:0 18px;display:grid;grid-template-columns:250px minmax(0,1fr);gap:22px}
+aside{align-self:start;position:sticky;top:14px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:var(--shadow)}
+.navtitle{font-size:.72rem;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.12em;padding:8px 10px}
+nav button{width:100%;text-align:left;border:0;background:transparent;padding:11px 12px;border-radius:10px;color:#33493a;font-weight:650;cursor:pointer;margin:2px 0}
+nav button:hover,nav button.active{background:#e6f6ec;color:#0c6e41}
+.progressbox{margin:15px 8px 4px;padding:12px;background:#f1f8f3;border-radius:12px;font-size:.84rem;color:var(--muted)}
+progress{width:100%;height:8px;accent-color:var(--blue)}
+main{min-width:0}.page{display:none}.page.active{display:block}
+.pagehead{margin:4px 0 18px}.pagehead h2{margin:0 0 5px;font-size:1.7rem;color:var(--navy)}.pagehead p{margin:0;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:19px;box-shadow:var(--shadow);margin-bottom:16px}
+.card h3{margin:0 0 8px;color:var(--navy);font-size:1.12rem}.card p{margin:7px 0}.stat{font-size:1.8rem;font-weight:850;color:var(--blue);line-height:1.1}
+.small{font-size:.86rem;color:var(--muted)}.tag{display:inline-block;background:#e7f5ec;color:#116945;border-radius:6px;padding:3px 8px;font-size:.76rem;font-weight:800;margin:2px}
+.btn{border:0;border-radius:10px;background:var(--blue);color:white;font-weight:750;padding:10px 15px;cursor:pointer}.btn:hover{filter:brightness(.94)}.btn.secondary{background:#e5efe8;color:#214636}.btn.outline{background:white;color:var(--blue);border:1px solid #b2d8c2}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.callout{border-left:4px solid var(--cyan);background:#eafaf1;padding:13px 15px;border-radius:8px;margin:14px 0}
+.warning{border-left-color:var(--amber);background:#fff7e8}.danger{border-left-color:var(--red);background:#fff0f0}
+ul,ol{padding-left:22px}li{margin:5px 0}
+.module{border:1px solid var(--line);border-radius:12px;margin:10px 0;overflow:hidden;background:white}
+.module summary{padding:13px 15px;cursor:pointer;font-weight:750;color:var(--navy);background:#f6faf7}
+.module .inside{padding:15px}
+figure{margin:10px 0 0;background:#f4faf6;border:1px solid var(--line);border-radius:12px;padding:12px}
+figure svg{display:block;width:100%;height:auto;max-height:270px}
+figcaption{font-size:.8rem;color:var(--muted);margin-top:7px}
+.question{font-weight:750;font-size:1.05rem;margin-bottom:12px}
+.option{display:flex;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;margin:8px 0;cursor:pointer}
+.option:hover{border-color:#8fcca8;background:#f6fdf9}.option input{margin-top:5px;accent-color:var(--blue)}
+.feedback{padding:12px;border-radius:10px;margin-top:12px;display:none}.feedback.good{display:block;background:#eaf8f0;color:#145b3d}.feedback.bad{display:block;background:#fff1e8;color:#7b3d13}
+.quiztop{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:.85rem}
+.flashcard{min-height:200px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;background:linear-gradient(145deg,#fff,#edf8f1);border:1px solid #cfe7d8;border-radius:16px;padding:24px;cursor:pointer}
+.flashcard .term{font-size:1.5rem;font-weight:850;color:var(--navy)}.flashcard .answer{display:none;margin-top:15px;max-width:650px}.flashcard.revealed .answer{display:block}.flashcard.revealed .hint{display:none}
+input[type=text],input[type=number],select,textarea{width:100%;padding:10px;border:1px solid #c7ddce;border-radius:9px;font:inherit;background:white}
+table{border-collapse:collapse;width:100%;font-size:.91rem}th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#f3f9f5;color:var(--navy)}
+footer{max-width:1200px;margin:0 auto;padding:0 18px 30px;color:var(--muted);font-size:.82rem}
+@media(max-width:850px){.shell{grid-template-columns:1fr}aside{position:static}.grid,.grid.three{grid-template-columns:1fr}nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.navtitle{grid-column:1/-1}}
+@media print{aside,.actions,.btn{display:none!important}.shell{display:block}.page{display:block!important}.card{box-shadow:none;break-inside:avoid}body{background:white}}
+</style>
+</head>
+<body>
+<header>
+  <a href="nicet-study.html" style="display:inline-block;margin-bottom:12px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.45);color:#fff;text-decoration:none;font:700 12px/1 Arial,Helvetica,sans-serif;padding:7px 12px;border-radius:8px">← Study guides</a>
+  <div class="eyebrow">Certification preparation • Interactive learning</div>
+  <div class="levelbadge">LEVEL I — TECHNICIAN TRAINEE</div>
+  <h1>NICET Level I<br>Water-Based Systems ITM</h1>
+  <p>A visual study center for entry-level Inspection, Testing &amp; Maintenance technicians. Focused on identifying components and conditions, verifying control-valve position, preparing preliminary documentation, and operating components under direct supervision.</p>
+  <div class="header-meta"><span class="pill">Primary standard: NFPA 25 (2023)</span><span class="pill">Level I exam practice</span><span class="pill">Study guides • quizzes • visuals</span></div>
+</header>
+<div class="shell">
+<aside>
+  <div class="navtitle">Study workspace</div>
+  <nav id="nav">
+    <button class="active" data-page="dashboard">▦ &nbsp; Dashboard</button>
+    <button data-page="study">▤ &nbsp; Study guides</button>
+    <button data-page="visuals">◉ &nbsp; Visual references</button>
+    <button data-page="quiz">✓ &nbsp; Practice quiz</button>
+    <button data-page="flashcards">▣ &nbsp; Flashcards</button>
+    <button data-page="lab">↗ &nbsp; Main drain lab</button>
+    <button data-page="notes">✎ &nbsp; My notes</button>
+  </nav>
+  <div class="progressbox">
+    <strong>Study progress</strong>
+    <div id="progressText">0 of 2 sections reviewed</div>
+    <progress id="progress" value="0" max="2"></progress>
+    <button class="btn secondary" style="width:100%;margin-top:10px" onclick="resetProgress()">Reset progress</button>
+  </div>
+</aside>
+<main>
+<section class="page active" id="dashboard">
+  <div class="pagehead"><h2>Welcome to your study center</h2><p>Start with the topic guides, then test recall with the quiz and flashcards.</p></div>
+  <div class="grid three">
+    <div class="card"><div class="stat">4</div><p><strong>Exam content domains</strong></p><p class="small">Safety; identify condition and operation of components; preliminary documentation; operate components under direct supervision.</p></div>
+    <div class="card"><div class="stat">115</div><p><strong>Exam questions</strong></p><p class="small">NICET lists 115 questions and 125 minutes for the current ITWBS Level I exam.</p></div>
+    <div class="card"><div class="stat">2023</div><p><strong>NFPA 25 edition</strong></p><p class="small">The updated Level I exam (released June 2, 2025) is keyed to NFPA 25 (2023).</p></div>
+  </div>
+  <div class="card">
+    <h3>Recommended study order</h3>
+    <ol>
+      <li>Identify components and read gauges &mdash; pipe, hangers, bracing, sprinklers, fittings, FDC, hose connections, and supply/system gauges.</li>
+      <li>Locate and identify control valves, drain valves, and test valves &mdash; and confirm the indicator position of each control valve.</li>
+      <li>Identify system types and water supply &mdash; wet, dry, and standpipe systems; fire pumps, tanks, and municipal supply.</li>
+      <li>Identify alarm and supervisory devices &mdash; and verify trouble, supervisory, and alarm signals.</li>
+      <li>Prepare preliminary documentation &mdash; select the correct report, inventory components, and record make, type, and model.</li>
+      <li>Operate components under direct supervision &mdash; exercise control valves, test the water-flow alarm, perform the main drain test, and flush hydrants.</li>
+    </ol>
+    <div class="callout">This is an original study aid, not an official NICET product. Use the complete adopted standard and current NICET content outline and reference list to confirm exact requirements.</div>
+    <button class="btn" onclick="showPage('study')">Start studying &rarr;</button>
+  </div>
+  <div class="card"><h3>Official exam scope</h3>
+    <table>
+      <tr><th>Level I content domain</th><th>Approx. weight</th></tr>
+      <tr><td>1.1 &mdash; Safety</td><td>5&ndash;15%</td></tr>
+      <tr><td>1.2 &mdash; Identify condition and operation of system components</td><td>32&ndash;43%</td></tr>
+      <tr><td>1.3 &mdash; Prepare preliminary documentation</td><td>17&ndash;27%</td></tr>
+      <tr><td>1.4 &mdash; Operate components under direct supervision</td><td>26&ndash;36%</td></tr>
+    </table>
+    <p class="small" style="margin-top:12px">The Level I technician works under the direct supervision of a qualified technician and assists with inspection and testing. Always check the current NICET handbook and reference list before exam day; details can change.</p>
+    <div class="actions"><a class="btn outline" href="https://www.nicet.org/certification-programs/electrical-and-mechanical-systems/inspection-and-testing-of-water-based-systems/" target="_blank" rel="noopener">NICET ITWBS program &#8599;</a><a class="btn outline" href="https://www.nicet.org/nicetorg/assets/File/public/ITWBS_I_Content_Outline.pdf" target="_blank" rel="noopener">Level I content outline &#8599;</a></div></div>
+</section>
+
+<section class="page" id="study">
+  <div class="pagehead"><h2>Study guides</h2><p>High-level learning notes organized around the NICET Level I content outline. Mark the section reviewed as you go.</p></div>
+  <div class="callout warning"><strong>Code-use reminder:</strong> This guide intentionally summarizes concepts rather than reproducing NFPA text. Exact intervals, acceptance criteria, exceptions, and section numbers must be checked in your licensed NFPA 25 (2023) copy.</div>
+  <details class="module" open><summary>1.1 &mdash; Safety</summary><div class="inside">
+    <p><strong>Be ready to explain:</strong> personal protective equipment (PPE), lockout/tagout (LOTO), common jobsite hazards, ladder and lift use, and tool condition &mdash; and how a system that is being tested can create an impairment.</p>
+    <ul><li>Wear and maintain required PPE, and inspect tools and ground-fault circuit interrupters (GFCI) before use.</li><li>Recognize mechanical and electrical lockout/tagout, and when it applies to a water-based system task.</li><li>Recognize hazards such as confined spaces, floor and ceiling openings, poor lighting, ladders, and aerial or scissor lifts.</li><li>Recognize when work creates a safety or system impairment, and raise it to your supervising technician before proceeding.</li></ul>
+  </div></details>
+  <details class="module"><summary>1.2 &mdash; Identify condition and operation of system components</summary><div class="inside">
+    <p>This is the largest Level I domain. You are expected to reliably locate and identify equipment, read gauges, and recognize damage &mdash; without necessarily operating the system.</p>
+    <ul><li>Locate and read supply-side and system-side gauges, and recognize a reading that looks abnormal.</li><li>Locate and identify control valves, drain valves, and test valves, and confirm the indicator position of each control valve (open versus shut).</li><li>Visually inspect pipe, hangers, seismic bracing, sprinklers, fittings, the fire department connection (FDC), and hose connections for damage or deficiencies.</li><li>Identify electronic and mechanical alarm and supervisory devices, and verify trouble, supervisory, and alarm signals.</li><li>Identify the system type &mdash; wet, dry, or standpipe &mdash; and the water supply, including fire pumps, tanks, and municipal supply.</li></ul>
+    <p><strong>Level I mindset:</strong> Identification first. Know what the component is, where it belongs, and whether it looks right &mdash; then report what you find to a Level II or III technician.</p>
+  </div></details>
+  <details class="module"><summary>1.3 &mdash; Prepare preliminary documentation</summary><div class="inside">
+    <p>Accurate records begin at Level I. You support the inspection by capturing an accurate picture of what is installed.</p>
+    <ul><li>Identify the correct report for the ITM task being performed.</li><li>Inventory system components and record the size, make, type, and model of sprinklers and valves.</li><li>Prepare preliminary reports under the direction of a Level II or III technician.</li><li>Note any damage, missing components, or questionable conditions so they can be evaluated.</li></ul>
+  </div></details>
+  <details class="module"><summary>1.4 &mdash; Operate components under direct supervision</summary><div class="inside">
+    <p>At Level I you perform hands-on tasks while supervised. Know the purpose of each task and the safe sequence before touching the system.</p>
+    <ul><li>Fully exercise control valves &mdash; OS&amp;Y valves, post indicator valves (PIVs), wall post indicator valves (WPIVs), and butterfly valves &mdash; and return them to the correct position.</li><li>Test the water-flow alarm, including the water motor gong, pressure switch, and vane-type devices.</li><li>Perform the main drain test to confirm the water supply is available and the supply path is not obstructed.</li><li>Flush hydrants, exercise hose connections, and test electronic valve supervisory devices.</li><li>Before operating anything, coordinate the impairment and notification steps with your supervising technician.</li></ul>
+    <div class="callout warning">A control valve left in the wrong position after a task can take the system out of service. Always confirm valves are returned to normal and supervisory signals are restored.</div>
+  </div></details>
+  <button class="btn" onclick="markReviewed()">Mark study guides reviewed</button> <span id="reviewMsg" class="small"></span>
+</section>
+
+<section class="page" id="visuals">
+  <div class="pagehead"><h2>Visual references</h2><p>Schematic training illustrations&mdash;not installation drawings. Use them to practice component identification at Level I.</p></div>
+  <div class="grid">
+    <div class="card"><h3>Wet system riser &mdash; component ID</h3><figure>
+      <svg viewBox="0 0 520 270" role="img" aria-label="Wet system riser with backflow assembly in correct bottom-to-top order">
+        <defs><marker id="fl1" markerWidth="9" markerHeight="9" refX="4" refY="4" orient="auto"><path d="M1,7 L4,1 L7,7" fill="none" stroke="#9db3a6" stroke-width="1.6"/></marker></defs>
+        <path d="M24 234 V82" stroke="#9db3a6" stroke-width="2" fill="none" marker-end="url(#fl1)"/><text x="24" y="250" text-anchor="middle" font-size="9" fill="#9db3a6">flow</text>
+        <line x1="108" y1="248" x2="108" y2="60" stroke="#1f8a52" stroke-width="10" stroke-linecap="round"/>
+        <path d="M82 248 H134" stroke="#1f8a52" stroke-width="10" stroke-linecap="round"/>
+        <text x="108" y="264" text-anchor="middle" font-size="11" fill="#5c6f62">City / supply</text>
+        <path d="M108 60 H430" stroke="#1f8a52" stroke-width="7"/><text x="300" y="50" text-anchor="middle" font-size="11" fill="#5c6f62">System / branch piping (closed sprinklers)</text>
+        <path d="M200 60 V80 M280 60 V80 M360 60 V80" stroke="#1f8a52" stroke-width="3"/><path d="M190 80 L200 92 L210 80 M270 80 L280 92 L290 80 M350 80 L360 92 L370 80" fill="none" stroke="#4fc48a" stroke-width="3"/>
+        <path d="M430 60 V96 H462" stroke="#1f8a52" stroke-width="3" fill="none"/><circle cx="467" cy="96" r="6" fill="#fff2dc" stroke="#d78a16" stroke-width="2"/><text x="455" y="116" text-anchor="middle" font-size="9" fill="#5c6f62">Inspector's test</text>
+        <rect x="92" y="210" width="32" height="22" rx="4" fill="#fff2dc" stroke="#d78a16" stroke-width="2"/><path d="M124 221 H150" stroke="#5c6f62" stroke-width="1.5"/><text x="154" y="225" font-size="11" fill="#17261d">1 &mdash; City-side control valve</text>
+        <rect x="92" y="172" width="32" height="26" rx="4" fill="#eafaf1" stroke="#10381f" stroke-width="2"/><path d="M98 193 L108 185 L118 193 M98 189 L108 181 L118 189" fill="none" stroke="#10381f" stroke-width="1.6"/><path d="M124 185 H150" stroke="#5c6f62" stroke-width="1.5"/><text x="154" y="189" font-size="11" fill="#17261d">2 &mdash; Backflow assembly (e.g., DCVA)</text>
+        <rect x="92" y="135" width="32" height="22" rx="4" fill="#fff2dc" stroke="#d78a16" stroke-width="2"/><path d="M124 146 H150" stroke="#5c6f62" stroke-width="1.5"/><text x="154" y="150" font-size="11" fill="#17261d">3 &mdash; System-side control valve</text>
+        <rect x="92" y="94" width="32" height="26" rx="4" fill="#eafaf1" stroke="#10381f" stroke-width="2"/><path d="M96 116 L118 100" stroke="#10381f" stroke-width="1.8"/><path d="M124 107 H150" stroke="#5c6f62" stroke-width="1.5"/><text x="154" y="111" font-size="11" fill="#17261d">4 &mdash; Alarm check valve (if installed)</text>
+        <path d="M108 80 H150 V98" stroke="#4fc48a" stroke-width="4" fill="none"/><path d="M144 94 L150 102 L156 94" fill="none" stroke="#1f8a52" stroke-width="2"/><text x="160" y="90" font-size="9" fill="#5c6f62">Main drain</text>
+        <circle cx="56" cy="82" r="10" fill="#fff" stroke="#5c6f62" stroke-width="2"/><path d="M56 82 L50 75" stroke="#c74343" stroke-width="2"/><path d="M66 82 H108" stroke="#5c6f62" stroke-width="1.3"/><text x="56" y="66" text-anchor="middle" font-size="9" fill="#5c6f62">System gauge</text>
+        <circle cx="56" cy="130" r="10" fill="#fff" stroke="#5c6f62" stroke-width="2"/><path d="M56 130 L62 123" stroke="#c74343" stroke-width="2"/><path d="M66 130 H108" stroke="#5c6f62" stroke-width="1.3"/><text x="56" y="152" text-anchor="middle" font-size="9" fill="#5c6f62">Supply gauge</text>
+      </svg><figcaption>Study prompt: on a riser with a backflow assembly, give the correct bottom-to-top order &mdash; city-side control valve, backflow (or check) assembly, system-side control valve, then the alarm check valve where installed &mdash; and name which gauge reads the supply side and which the system side.</figcaption></figure></div>
+    <div class="card"><h3>Control-valve position</h3><figure>
+      <svg viewBox="0 0 520 270" role="img" aria-label="OS and Y and PIV valve positions">
+        <text x="130" y="28" text-anchor="middle" font-size="13" font-weight="bold" fill="#10381f">OS&amp;Y valve</text>
+        <line x1="60" y1="120" x2="200" y2="120" stroke="#1f8a52" stroke-width="10" stroke-linecap="round"/>
+        <rect x="115" y="100" width="30" height="40" rx="4" fill="#eafaf1" stroke="#10381f" stroke-width="2"/>
+        <line x1="130" y1="100" x2="130" y2="55" stroke="#5c6f62" stroke-width="4"/><circle cx="130" cy="50" r="12" fill="none" stroke="#5c6f62" stroke-width="4"/>
+        <text x="130" y="165" text-anchor="middle" font-size="12" fill="#16845b" font-weight="bold">OPEN</text><text x="130" y="182" text-anchor="middle" font-size="10" fill="#5c6f62">stem projects out</text>
+        <text x="390" y="28" text-anchor="middle" font-size="13" font-weight="bold" fill="#10381f">OS&amp;Y valve</text>
+        <line x1="320" y1="120" x2="460" y2="120" stroke="#9db3a6" stroke-width="10" stroke-linecap="round"/>
+        <rect x="375" y="100" width="30" height="40" rx="4" fill="#f0f3f1" stroke="#5c6f62" stroke-width="2"/>
+        <line x1="390" y1="100" x2="390" y2="88" stroke="#5c6f62" stroke-width="4"/><circle cx="390" cy="82" r="12" fill="none" stroke="#5c6f62" stroke-width="4"/>
+        <text x="390" y="165" text-anchor="middle" font-size="12" fill="#c74343" font-weight="bold">SHUT</text><text x="390" y="182" text-anchor="middle" font-size="10" fill="#5c6f62">stem withdrawn</text>
+        <rect x="150" y="210" width="90" height="42" rx="8" fill="#eafaf1" stroke="#1f8a52" stroke-width="2"/><text x="195" y="230" text-anchor="middle" font-size="12" font-weight="bold" fill="#10381f">PIV target</text><text x="195" y="245" text-anchor="middle" font-size="12" fill="#16845b" font-weight="bold">OPEN</text>
+        <rect x="285" y="210" width="90" height="42" rx="8" fill="#f0f3f1" stroke="#5c6f62" stroke-width="2"/><text x="330" y="230" text-anchor="middle" font-size="12" font-weight="bold" fill="#10381f">PIV target</text><text x="330" y="245" text-anchor="middle" font-size="12" fill="#c74343" font-weight="bold">SHUT</text>
+      </svg><figcaption>Study prompt: how do you confirm an OS&amp;Y valve is open? What does a PIV target window show?</figcaption></figure></div>
+    <div class="card"><h3>Reading gauges</h3><figure>
+      <svg viewBox="0 0 520 270" role="img" aria-label="Supply and system pressure gauges">
+        <circle cx="150" cy="120" r="70" fill="#fff" stroke="#10381f" stroke-width="4"/><circle cx="150" cy="120" r="5" fill="#10381f"/>
+        <g stroke="#9db3a6" stroke-width="2"><line x1="150" y1="60" x2="150" y2="72"/><line x1="210" y1="120" x2="198" y2="120"/><line x1="90" y1="120" x2="102" y2="120"/><line x1="150" y1="180" x2="150" y2="168"/></g>
+        <line x1="150" y1="120" x2="192" y2="92" stroke="#c74343" stroke-width="4"/>
+        <text x="150" y="215" text-anchor="middle" font-size="12" font-weight="bold" fill="#10381f">Supply-side gauge</text>
+        <circle cx="370" cy="120" r="70" fill="#fff" stroke="#10381f" stroke-width="4"/><circle cx="370" cy="120" r="5" fill="#10381f"/>
+        <g stroke="#9db3a6" stroke-width="2"><line x1="370" y1="60" x2="370" y2="72"/><line x1="430" y1="120" x2="418" y2="120"/><line x1="310" y1="120" x2="322" y2="120"/><line x1="370" y1="180" x2="370" y2="168"/></g>
+        <line x1="370" y1="120" x2="408" y2="96" stroke="#c74343" stroke-width="4"/>
+        <text x="370" y="215" text-anchor="middle" font-size="12" font-weight="bold" fill="#10381f">System-side gauge</text>
+        <rect x="40" y="235" width="440" height="26" rx="7" fill="#fff2dc" stroke="#d78a16"/><text x="260" y="252" text-anchor="middle" font-size="11" fill="#6c4510">Record both readings; a large unexplained difference is worth reporting</text>
+      </svg><figcaption>Study prompt: on a wet system, how should the supply and system gauges normally compare, and what might a mismatch indicate?</figcaption></figure></div>
+    <div class="card"><h3>System types</h3><figure>
+      <svg viewBox="0 0 520 270" role="img" aria-label="Wet, dry, and standpipe system comparison">
+        <rect x="18" y="30" width="150" height="210" rx="10" fill="#eafaf1" stroke="#1f8a52" stroke-width="2"/><text x="93" y="52" text-anchor="middle" font-size="13" font-weight="bold" fill="#10381f">WET</text>
+        <line x1="50" y1="90" x2="140" y2="90" stroke="#1f8a52" stroke-width="7"/><text x="93" y="78" text-anchor="middle" font-size="10" fill="#5c6f62">water-filled</text>
+        <path d="M70 90 V110 M116 90 V110" stroke="#1f8a52" stroke-width="3"/><text x="93" y="150" text-anchor="middle" font-size="10" fill="#17261d">Closed sprinklers,</text><text x="93" y="164" text-anchor="middle" font-size="10" fill="#17261d">water always present</text>
+        <rect x="185" y="30" width="150" height="210" rx="10" fill="#fff7e8" stroke="#d78a16" stroke-width="2"/><text x="260" y="52" text-anchor="middle" font-size="13" font-weight="bold" fill="#6c4510">DRY</text>
+        <line x1="217" y1="90" x2="307" y2="90" stroke="#d78a16" stroke-width="7" stroke-dasharray="6 5"/><text x="260" y="78" text-anchor="middle" font-size="10" fill="#6c4510">air / nitrogen</text>
+        <rect x="245" y="105" width="30" height="22" rx="4" fill="#fff" stroke="#6c4510" stroke-width="2"/><text x="260" y="150" text-anchor="middle" font-size="10" fill="#17261d">Dry valve holds</text><text x="260" y="164" text-anchor="middle" font-size="10" fill="#17261d">water back until trip</text>
+        <rect x="352" y="30" width="150" height="210" rx="10" fill="#eef4ff" stroke="#3b6fb0" stroke-width="2"/><text x="427" y="52" text-anchor="middle" font-size="13" font-weight="bold" fill="#234a79">STANDPIPE</text>
+        <line x1="427" y1="70" x2="427" y2="210" stroke="#3b6fb0" stroke-width="7"/><path d="M427 100 H460 M427 140 H460 M427 180 H460" stroke="#3b6fb0" stroke-width="4"/>
+        <text x="427" y="232" text-anchor="middle" font-size="10" fill="#17261d">Hose connections</text>
+      </svg><figcaption>Study prompt: what single clue most quickly distinguishes a wet system from a dry system at the riser?</figcaption></figure></div>
+    <div class="card"><h3>Main drain test</h3><figure>
+      <svg viewBox="0 0 520 270" role="img" aria-label="Main drain test concept">
+        <line x1="120" y1="40" x2="120" y2="210" stroke="#1f8a52" stroke-width="10"/>
+        <circle cx="95" cy="90" r="16" fill="#fff" stroke="#5c6f62" stroke-width="3"/><path d="M95 90 L85 80" stroke="#c74343" stroke-width="3"/><text x="60" y="94" text-anchor="end" font-size="11" fill="#17261d">Gauge</text>
+        <rect x="104" y="130" width="32" height="22" rx="4" fill="#fff7e8" stroke="#d78a16" stroke-width="2"/><text x="155" y="146" font-size="11" fill="#17261d">Main control valve</text>
+        <path d="M120 180 H200" stroke="#1f8a52" stroke-width="8"/><rect x="200" y="168" width="26" height="24" rx="4" fill="#eafaf1" stroke="#10381f" stroke-width="2"/><text x="213" y="160" text-anchor="middle" font-size="10" fill="#17261d">Drain valve</text>
+        <path d="M226 180 H300" stroke="#4fc48a" stroke-width="8" marker-end="url(#a1)"/><defs><marker id="a1" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6Z" fill="#1f8a52"/></marker></defs>
+        <text x="300" y="165" text-anchor="middle" font-size="11" fill="#17261d">Full flow to drain</text>
+        <rect x="320" y="60" width="180" height="110" rx="10" fill="#f4faf6" stroke="#1f8a52"/>
+        <text x="410" y="84" text-anchor="middle" font-size="12" font-weight="bold" fill="#10381f">Record</text>
+        <text x="335" y="106" font-size="11" fill="#17261d">1. Static (no flow)</text>
+        <text x="335" y="128" font-size="11" fill="#17261d">2. Residual (full flow)</text>
+        <text x="335" y="150" font-size="11" fill="#17261d">3. Compare to last test</text>
+        <rect x="40" y="226" width="440" height="30" rx="7" fill="#fff7e8" stroke="#d78a16"/><text x="260" y="246" text-anchor="middle" font-size="11" fill="#6c4510">Verifies supply is available and unobstructed &mdash; not a pass/fail of sprinklers</text>
+      </svg><figcaption>Study prompt: what does the main drain test confirm, and why compare today's residual to the previous test?</figcaption></figure></div>
+  </div>
+</section>
+
+<section class="page" id="quiz">
+  <div class="pagehead"><h2>Practice quiz</h2><p>Original practice questions for learning&mdash;not actual or recalled NICET exam questions.</p></div>
+  <div class="card">
+    <div class="quiztop"><span id="qCount">Question 1 of 10</span><span id="score">Score: 0</span></div>
+    <div style="height:8px"></div><progress id="quizProgress" value="1" max="10"></progress>
+    <div id="quizArea"></div>
+    <div class="actions"><button class="btn" id="checkBtn" onclick="checkAnswer()">Check answer</button><button class="btn secondary" id="nextBtn" onclick="nextQuestion()" style="display:none">Next question &rarr;</button><button class="btn outline" onclick="restartQuiz()">Restart quiz</button></div>
+  </div>
+</section>
+
+<section class="page" id="flashcards">
+  <div class="pagehead"><h2>Flashcards</h2><p>Click a card to reveal the answer. Use the arrows to cycle through concepts.</p></div>
+  <div class="card"><div class="quiztop"><span id="flashCount">Card 1 of 8</span><span>Active recall</span></div>
+    <div id="flashcard" class="flashcard" onclick="flipFlash()"><div class="term" id="flashTerm"></div><div class="hint">Click to reveal answer</div><div class="answer" id="flashAnswer"></div></div>
+    <div class="actions"><button class="btn secondary" onclick="prevFlash()">&larr; Previous</button><button class="btn" onclick="flipFlash()">Reveal / hide</button><button class="btn secondary" onclick="nextFlash()">Next &rarr;</button></div>
+  </div>
+</section>
+
+<section class="page" id="lab">
+  <div class="pagehead"><h2>Main drain &amp; gauge lab</h2><p>Use sample readings to practice the arithmetic and evidence-based reporting expected at Level I.</p></div>
+  <div class="card"><h3>Main drain test &mdash; pressure-drop calculator</h3><p class="small">This tool compares the static (no-flow) reading with the residual (full-flow) reading, and against your previous main drain test. It is not a standalone pass/fail determination and does not replace the NFPA 25 procedure.</p>
+    <div class="grid"><div><label for="staticP">Static pressure &mdash; no flow (psi)</label><input id="staticP" type="number" min="0" step=".1" value="68"></div><div><label for="residualP">Residual pressure &mdash; full flow (psi)</label><input id="residualP" type="number" min="0" step=".1" value="54"></div></div>
+    <div><label for="priorDrop" style="display:block;margin-top:10px">Previous test drop, if known (psi) &mdash; optional</label><input id="priorDrop" type="number" min="0" step=".1" value="12"></div>
+    <div class="actions"><button class="btn" onclick="calcDrain()">Calculate drop</button></div><div id="calcResult" class="callout" aria-live="polite">Enter readings and select Calculate.</div>
+    <details class="module"><summary>How to interpret this comparison</summary><div class="inside"><p>Drop = static &minus; residual. A larger drop than the previous main drain test can indicate a supply-side restriction, such as a partially closed valve or a developing obstruction. A number alone does not establish a cause.</p><p>Before concluding anything, confirm the control valves are fully open, the test was taken at the same point under full flow, and the gauge is serviceable &mdash; then report the finding to your supervising technician.</p></div></details>
+  </div>
+  <div class="card"><h3>Scenario: unexpected main drain result</h3><p>During a main drain test, the residual pressure dropped much more than the last recorded test. As a Level I technician, what should you do first?</p><div id="scenarioOptions">
+    <label class="option"><input type="radio" name="scenario" value="a"> Adjust or throttle the control valve yourself to improve the reading.</label>
+    <label class="option"><input type="radio" name="scenario" value="b"> Verify the control valves are fully open and the test setup is correct, then report the finding to your supervising technician.</label>
+    <label class="option"><input type="radio" name="scenario" value="c"> Record it as normal and move on, since the system still flowed water.</label>
+  </div><button class="btn" onclick="checkScenario()">Check scenario</button><div id="scenarioFeedback" class="feedback"></div></div>
+</section>
+
+<section class="page" id="notes">
+  <div class="pagehead"><h2>My notes</h2><p>Keep your own reminders and section references on this device/browser.</p></div>
+  <div class="card"><h3>Personal study notes</h3><p class="small">Do not paste copyrighted NFPA text into shared materials. Record short reminders, questions to verify, or your own field examples.</p><textarea id="notesText" rows="12" placeholder="Example: Confirm how to verify a butterfly valve's supervisory indicator, and review the main drain test steps..."></textarea><div class="actions"><button class="btn" onclick="saveNotes()">Save notes</button><button class="btn secondary" onclick="downloadNotes()">Export notes (.txt)</button><span id="notesStatus" class="small"></span></div></div>
+  <div class="card"><h3>Reference links</h3><ul><li><a href="https://www.nicet.org/certification-programs/electrical-and-mechanical-systems/inspection-and-testing-of-water-based-systems/" target="_blank" rel="noopener">NICET Inspection and Testing of Water-Based Systems program page</a></li><li><a href="https://www.nicet.org/nicetorg/assets/File/public/ITWBS_I_Content_Outline.pdf" target="_blank" rel="noopener">NICET Level I content outline (PDF)</a></li><li><a href="https://www.nicet.org/exams/references/" target="_blank" rel="noopener">NICET exam reference list</a></li><li><a href="https://www.nfpa.org/codes-and-standards/nfpa-25-standard-development/25" target="_blank" rel="noopener">NFPA 25 standard information</a></li></ul></div>
+</section>
+</main>
+</div>
+<footer>Training aid only. Not affiliated with or endorsed by NICET or NFPA. Verify all requirements against the licensed NFPA 25 (2023) text, equipment listings, manufacturer instructions, adopted codes, and AHJ direction. This page is a local HTML file; notes and progress use browser local storage when available.</footer>
+<script>
+const pages=[...document.querySelectorAll('.page')];
+function showPage(id){pages.forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===id));window.scrollTo({top:0,behavior:'smooth'});}
+document.querySelectorAll('#nav button').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));
+let reviewed=JSON.parse(localStorage.getItem('itmL1Reviewed')||'[]');
+function updateProgress(){document.getElementById('progressText').textContent=reviewed.length+' of 2 sections reviewed';document.getElementById('progress').value=reviewed.length}
+function markReviewed(){if(!reviewed.includes('study'))reviewed.push('study');localStorage.setItem('itmL1Reviewed',JSON.stringify(reviewed));updateProgress();document.getElementById('reviewMsg').textContent='Study guides marked reviewed.'}
+function resetProgress(){reviewed=[];localStorage.setItem('itmL1Reviewed','[]');updateProgress()}
+updateProgress();
+const questions=[
+{q:"Which NFPA 25 edition is referenced for the current NICET ITWBS Level I exam?",opts:["NFPA 25 (2017)","NFPA 25 (2020)","NFPA 25 (2023)","NFPA 25 (2026)"],a:2,why:"The updated Level I exam released June 2, 2025 is keyed to NFPA 25 (2023)."},
+{q:"A Level I technician typically works under what level of oversight?",opts:["No supervision","Direct supervision of a qualified technician","Supervision only by the AHJ","Remote supervision only"],a:1,why:"Level I is the technician-trainee level; work is performed under the direct supervision of a qualified technician."},
+{q:"How do you confirm an OS&Y control valve is open?",opts:["The handwheel is removed","The stem is projecting out through the yoke","The stem is fully withdrawn into the body","The valve body feels warm"],a:1,why:"On an outside-screw-and-yoke valve, the rising stem projects outward when the valve is open and is withdrawn when shut."},
+{q:"What does the main drain test primarily confirm?",opts:["That every sprinkler works","That the water supply is available and the supply path is not obstructed","That the fire pump is sized correctly","That the alarm panel passes its self-test"],a:1,why:"The main drain test checks that water is available to the system and compares results to the previous test to flag a restricted supply."},
+{q:"A water motor gong is an example of which kind of device?",opts:["A control valve","A mechanical water-flow alarm","A pressure-reducing valve","A supervisory air device"],a:1,why:"The water motor gong is a mechanical water-flow alarm; pressure switches and vane-type devices are the electronic/mechanical alternatives."},
+{q:"Which is a Level I documentation task?",opts:["Approving the hydraulic design","Recording the size, make, type, and model of sprinklers and valves","Signing off the AHJ acceptance test","Setting the required inspection frequencies for the owner"],a:1,why:"Level I supports documentation by inventorying components and recording their make, type, and model under direction of a higher-level technician."},
+{q:"At the riser, a system holding pressurized air above its main valve is most likely a:",opts:["Wet system","Dry system","Standpipe with no supply","Antifreeze loop"],a:1,why:"A dry system keeps the piping filled with pressurized air (or nitrogen) held back by a dry pipe valve until the system trips."},
+{q:"A post indicator valve (PIV) target window reads OPEN. This tells you:",opts:["The valve seat is leaking","The control valve is in the open position","The system has tripped","The gauge needs calibration"],a:1,why:"The PIV target window shows the control-valve position; confirming indicator position is a core Level I task."},
+{q:"Before exercising a control valve during an inspection, a Level I technician should first:",opts:["Operate it immediately to save time","Coordinate impairment and notification steps with the supervising technician","Close every valve in the building","Remove the valve supervisory switch"],a:1,why:"Operating a control valve can impair the system; coordinate notifications and impairment handling before operating."},
+{q:"Which reading pair is recorded during a main drain test?",opts:["Static (no-flow) and residual (full-flow) pressure","Churn and overload pressure","Inlet and outlet of a PRV","Freeze point and specific gravity"],a:0,why:"The main drain test records the static no-flow pressure and the residual full-flow pressure for comparison."}
+];
+let qi=0,answered=false,score=0;
+function renderQuestion(){let q=questions[qi];document.getElementById('qCount').textContent=`Question ${qi+1} of ${questions.length}`;document.getElementById('quizProgress').value=qi+1;document.getElementById('score').textContent=`Score: ${score}`;document.getElementById('quizArea').innerHTML=`<div class="question">${q.q}</div>`+q.opts.map((o,i)=>`<label class="option"><input type="radio" name="answer" value="${i}"> <span>${o}</span></label>`).join('')+`<div id="quizFeedback" class="feedback"></div>`;document.getElementById('checkBtn').style.display='inline-block';document.getElementById('nextBtn').style.display='none';answered=false}
+function checkAnswer(){if(answered)return;let pick=document.querySelector('input[name="answer"]:checked');if(!pick){alert('Select an answer first.');return}let q=questions[qi],correct=Number(pick.value)===q.a;if(correct)score++;answered=true;let f=document.getElementById('quizFeedback');f.className='feedback '+(correct?'good':'bad');f.innerHTML=`<strong>${correct?'Correct.':'Not quite.'}</strong> ${q.why}`;document.getElementById('score').textContent=`Score: ${score}`;document.getElementById('checkBtn').style.display='none';document.getElementById('nextBtn').style.display='inline-block';document.querySelectorAll('input[name="answer"]').forEach(x=>x.disabled=true)}
+function nextQuestion(){if(qi<questions.length-1){qi++;renderQuestion()}else{document.getElementById('quizArea').innerHTML=`<h3>Quiz complete</h3><p>You scored <strong>${score} / ${questions.length}</strong> (${Math.round(score/questions.length*100)}%). Review explanations for any missed questions, then try again.</p>`;document.getElementById('qCount').textContent='Complete';document.getElementById('quizProgress').value=questions.length;document.getElementById('checkBtn').style.display='none';document.getElementById('nextBtn').style.display='none';if(!reviewed.includes('quiz'))reviewed.push('quiz');localStorage.setItem('itmL1Reviewed',JSON.stringify(reviewed));updateProgress()}}
+function restartQuiz(){qi=0;score=0;renderQuestion()}
+renderQuestion();
+const cards=[
+["OS&Y valve","Outside screw and yoke control valve. Open when the stem projects out through the yoke; shut when the stem is withdrawn. Confirm its position during inspection."],
+["PIV / WPIV","Post indicator valve (or wall post indicator valve). A target window shows OPEN or SHUT so the control-valve position can be confirmed from outside."],
+["Main drain test","A Level I test that opens the main drain under full flow to confirm the water supply is available and unobstructed; record static and residual pressure and compare to the last test."],
+["Water-flow alarm","Device that signals water moving in the system. Mechanical (water motor gong) or electronic (pressure switch, vane-type). Tested by flowing water, often through the inspector's test connection."],
+["Supply vs system gauge","Two gauges at the riser. The supply-side gauge reads incoming pressure; the system-side gauge reads piping pressure. Record both and report a large unexplained difference."],
+["Fire department connection (FDC)","An external inlet that lets the fire department pump into the system. Inspect for caps, damage, and obstructions; it is a required visual-inspection item at Level I."],
+["Supervisory signal","A signal indicating an off-normal condition of a monitored component, such as a closed control valve or low air pressure &mdash; distinct from an alarm (water flow) and a trouble signal."],
+["Impairment","A condition where a system or portion is out of service or its ability to perform is reduced. A Level I technician recognizes it and coordinates notification before and after work."]
+];let fi=0;
+function renderFlash(){document.getElementById('flashCount').textContent=`Card ${fi+1} of ${cards.length}`;document.getElementById('flashTerm').textContent=cards[fi][0];document.getElementById('flashAnswer').innerHTML=cards[fi][1];document.getElementById('flashcard').classList.remove('revealed')}
+function flipFlash(){document.getElementById('flashcard').classList.toggle('revealed')}
+function nextFlash(){fi=(fi+1)%cards.length;renderFlash()}
+function prevFlash(){fi=(fi-1+cards.length)%cards.length;renderFlash()}
+renderFlash();
+function calcDrain(){let s=Number(document.getElementById('staticP').value),r=Number(document.getElementById('residualP').value),prior=document.getElementById('priorDrop').value,el=document.getElementById('calcResult');if(!Number.isFinite(s)||!Number.isFinite(r)||s<=0||r<0){el.textContent='Enter a static pressure greater than zero and a residual pressure of zero or greater.';return}let drop=s-r,pct=(drop/s)*100,msg=`<strong>Drop:</strong> ${drop.toFixed(1)} psi (${pct.toFixed(1)}% of static).`;if(prior!==''&&Number.isFinite(Number(prior))&&Number(prior)>0){let pd=Number(prior),diff=drop-pd;msg+=`<br><span class="small">Previous test drop: ${pd.toFixed(1)} psi. This test is ${Math.abs(diff).toFixed(1)} psi ${diff>0?'greater':'less'} than last time.${diff>0?' A greater drop can point to a supply-side restriction &mdash; verify valves and setup.':''}</span>`}else{msg+=`<br><span class="small">Record the drop and compare it to the previous main drain test.</span>`}msg+=`<br><span class="small">This comparison is not a pass/fail result; confirm valves are fully open and the setup is correct, then report to your supervising technician.</span>`;el.innerHTML=msg}
+function checkScenario(){let p=document.querySelector('input[name="scenario"]:checked'),f=document.getElementById('scenarioFeedback');if(!p){alert('Select an answer first.');return}let ok=p.value==='b';f.className='feedback '+(ok?'good':'bad');f.textContent=ok?'Correct. Verify the valves and test setup, then report the finding up the chain. A Level I technician does not adjust the valve or dismiss the result.':'Review the result first. Do not adjust the valve or ignore the reading; verify the setup and report the finding to your supervising technician.'}
+const noteBox=document.getElementById('notesText');noteBox.value=localStorage.getItem('itmL1Notes')||'';
+function saveNotes(){localStorage.setItem('itmL1Notes',noteBox.value);document.getElementById('notesStatus').textContent='Saved in this browser.'}
+function downloadNotes(){let blob=new Blob([noteBox.value],{type:'text/plain'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='NICET_Level_I_ITM_Study_Notes.txt';a.click();URL.revokeObjectURL(url)}
+</script>
+</body>
+</html>

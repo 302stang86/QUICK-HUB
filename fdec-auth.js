@@ -48,6 +48,7 @@ const DEFAULT_PAGES = {
   incident:        ["new","tech","manager","admin"],
   help:            ["new","tech","manager","admin","temp"],
   library:         ["new","tech","manager","admin","temp"],
+  nicet:           ["new","tech","manager","admin","temp"],
   itm:             ["tech","manager","admin"],
   servicetrade:    ["tech","manager","admin"],
   timeoff:         ["new","tech","manager","admin"],

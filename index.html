@@ -813,6 +813,7 @@ document.addEventListener('click', function(e){
     {name:'Troubleshooting Guide',   cat:'Field',   access:'',             page:'troubleshooting',url:'troubleshooting-guide.html', color:'#0e8a84', icon:'search', desc:'Field troubleshooting steps for common system and device issues.'},
     {name:'NFPA 25 Frequencies',     cat:'Field',   access:'',             page:'frequencies',    url:'nfpa25-frequencies.html', color:'#d12f2f', icon:'hourglass', desc:'Searchable test and inspection frequency lookup by device — confirm when an item is due.'},
     {name:'Library',                 cat:'Field',   access:'',             page:'library',        url:'nfpa-field-library.html', color:'#5e60a8', icon:'book', desc:'NFPA & manufacturer datasheets, recalls, obsolete cross-reference, and field tables.'},
+    {name:'NICET',                   cat:'Field',   access:'Everyone',     page:'nicet',          url:'nicet-study.html', color:'#0e7490', icon:'nicet', desc:'NICET ITM certification study centers — Levels I, II, and III (NFPA 25).'},
     {name:'Personal Inventory',      cat:'Field',   access:'',             page:'inventory',      url:'inventory-tracker.html', color:'#4a7b9d', icon:'gearwrench', desc:'Your vehicle stock — on-hand counts and reorder flags by category.'},
     {name:'Quoting & Proposal Suite',cat:'Quoting', access:'Manager only', page:'quoting',        url:'quoting.html', color:'#1565c0', icon:'quote', desc:'Sprinkler ITM quoting and proposal verbiage.'},
     {name:'Time-Off Requests',       cat:'Team',    access:'Everyone',     page:'timeoff',        url:'timeoff.html', color:'#1f7a3d', icon:'calendar', desc:'Submit paid time-off (PTO) requests and track balances.'},
@@ -837,7 +838,8 @@ document.addEventListener('click', function(e){
     calendar:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/>',
     phone:'<path d="M6.6 10.8c1.4 2.8 3.8 5.2 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.2c1.1.4 2.4.6 3.6.6a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.6 21 3 13.4 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.2.2 2.5.6 3.6a1 1 0 0 1-.2 1l-2.3 2.2z"/>',
     clock:'<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>',
-    admin:'<circle cx="12" cy="8" r="3.2"/><path d="M5.5 20a6.5 6.5 0 0 1 10-.3"/><circle cx="18" cy="17" r="2.3"/><path d="M18 14.3v-1.1M18 20.8v-1.1M20.3 15.7l-.9.5M16.6 17.8l-.9.5M20.3 18.3l-.9-.5M16.6 16.2l-.9-.5"/>'
+    admin:'<circle cx="12" cy="8" r="3.2"/><path d="M5.5 20a6.5 6.5 0 0 1 10-.3"/><circle cx="18" cy="17" r="2.3"/><path d="M18 14.3v-1.1M18 20.8v-1.1M20.3 15.7l-.9.5M16.6 17.8l-.9.5M20.3 18.3l-.9-.5M16.6 16.2l-.9-.5"/>',
+    nicet:'<circle cx="12" cy="4.3" r="1.6"/><path d="M12 1.2v1.1M12 6.2v1.1M9 4.3h1.1M13.9 4.3h1.1M9.9 2.2l.8.8M13.3 5.6l.8.8M14.1 2.2l-.8.8M10.7 5.6l-.8.8"/><rect x="3.5" y="8.6" width="17" height="9.4" rx="1.6"/><path d="M2 21h20"/><path d="M6.3 13.4l1.5 1.5 2.6-3"/><path d="M14 12.3l3.2 3.2M17.2 12.3l-3.2 3.2"/>'
   };
   function renderHub(auth){
     var hub = document.getElementById('hubLinks');

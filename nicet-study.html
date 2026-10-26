@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NICET Study Centers | FDEC Quick Hub</title>
+<meta name="fdec-page-title" content="NICET Study">
+<style>
+  :root{--navy:#10253f;--ink:#182638;--muted:#5c6470;--line:#dbe4ed;--card:#fff;
+        --l1:#1f8a52;--l2:#1787a0;--l3:#1769aa;}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:Inter,"Segoe UI",Arial,sans-serif;color:var(--ink);min-height:100vh;
+       background:linear-gradient(180deg,#0e1a30 0%,#142a49 100%);}
+  .bg-layer{position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,#0e1a30 0%,#152c4c 100%);}
+  main{max-width:960px;margin:0 auto;padding:22px 16px calc(40px + env(safe-area-inset-bottom));}
+  .intro{color:#dbe6f4;margin:6px 2px 20px}
+  .intro h1{font-size:1.5rem;margin:0 0 6px;color:#fff;font-weight:800}
+  .intro p{margin:0;color:#aebdd2;font-size:.95rem;line-height:1.5;max-width:640px}
+  .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+  @media(max-width:760px){.grid{grid-template-columns:1fr}}
+  a.lvl{display:flex;flex-direction:column;gap:10px;text-decoration:none;color:var(--ink);
+        background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;
+        box-shadow:0 10px 26px rgba(8,16,30,.28);transition:transform .12s,box-shadow .12s;
+        border-top:5px solid var(--cc)}
+  a.lvl:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(8,16,30,.36)}
+  .lvl .ic{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+           background:var(--cc)}
+  .lvl .ic svg{width:26px;height:26px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .lvl .badge{align-self:flex-start;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
+              color:#fff;background:var(--cc);border-radius:20px;padding:3px 11px}
+  .lvl h2{margin:2px 0 0;font-size:1.15rem;color:var(--navy)}
+  .lvl p{margin:0;font-size:.88rem;color:var(--muted);line-height:1.45}
+  .lvl .go{margin-top:auto;font-weight:750;color:var(--cc);font-size:.9rem}
+  .note{margin:22px 2px 0;color:#90a2bd;font-size:.8rem;line-height:1.5}
+</style>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1B2A4A">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Quick Hub">
+</head>
+<body>
+<div class="bg-layer"></div>
+<main>
+  <div class="intro">
+    <h1>NICET ITM Study Centers</h1>
+    <p>Interactive study guides for the NICET Inspection, Testing &amp; Maintenance of Water-Based Systems (ITWBS) certification, keyed to NFPA&nbsp;25 (2023). Choose your level to open its study center &mdash; dashboards, study guides, visuals, practice quizzes, and flashcards.</p>
+  </div>
+  <div class="grid">
+    <a class="lvl" href="nicet-level-1.html" style="--cc:var(--l1)">
+      <span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg></span>
+      <span class="badge">Level I</span>
+      <h2>Technician Trainee</h2>
+      <p>Identify components, verify control-valve position, prepare preliminary documentation, and operate components under direct supervision.</p>
+      <span class="go">Open study center &rarr;</span>
+    </a>
+    <a class="lvl" href="nicet-level-2.html" style="--cc:var(--l2)">
+      <span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg></span>
+      <span class="badge">Level II</span>
+      <h2>Associate Technician</h2>
+      <p>Routine ITM of wet, dry, and standpipe systems, fire pumps, mains and tanks, deficiency classification, communication, and obstruction investigation.</p>
+      <span class="go">Open study center &rarr;</span>
+    </a>
+    <a class="lvl" href="nicet-level-3.html" style="--cc:var(--l3)">
+      <span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg></span>
+      <span class="badge">Level III</span>
+      <h2>Senior Technician</h2>
+      <p>Complex systems, interpreting test results, obstruction investigations, impairments, PRVs, flow-test analysis, and technical judgment.</p>
+      <span class="go">Open study center &rarr;</span>
+    </a>
+  </div>
+  <p class="note">Training aid only. Not affiliated with or endorsed by NICET or NFPA. Verify all requirements against the licensed NFPA&nbsp;25 (2023) text, equipment listings, manufacturer instructions, adopted codes, and AHJ direction.</p>
+</main>
+<script src="fdec-header.js"></script>
+</body>
+</html>

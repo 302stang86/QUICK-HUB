@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NICET Level II ITM Study Center | NFPA 25 (2023)</title>
+<style>
+:root{--navy:#0c2f3f;--blue:#1787a0;--cyan:#46c4d1;--ink:#152430;--muted:#5a6f78;--bg:#eef7f9;--card:#fff;--line:#d5e5ea;--green:#16845b;--amber:#d78a16;--red:#c74343;--shadow:0 10px 28px rgba(12,47,63,.08)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Inter,Segoe UI,Arial,sans-serif;color:var(--ink);line-height:1.55}
+header{background:linear-gradient(120deg,#0b2b3a,#135f6e 65%,#1787a0);color:white;padding:30px max(20px,calc((100% - 1200px)/2));position:relative;overflow:hidden}
+header:after{content:"";position:absolute;width:300px;height:300px;border:35px solid #ffffff12;border-radius:50%;right:4%;top:-170px}
+.eyebrow{text-transform:uppercase;letter-spacing:.15em;font-size:.75rem;font-weight:800;color:#8fe9f2}
+h1{font-size:clamp(1.8rem,4vw,3rem);line-height:1.1;margin:.4rem 0 .7rem;max-width:850px}
+header p{max-width:800px;color:#dff2f6;margin:0}
+.header-meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}.pill{border:1px solid #ffffff45;background:#ffffff12;border-radius:99px;padding:5px 11px;font-size:.82rem}
+.levelbadge{display:inline-block;background:#ffffff;color:#0f6276;font-weight:850;border-radius:8px;padding:4px 12px;font-size:.82rem;letter-spacing:.04em;margin-bottom:6px}
+.shell{max-width:1200px;margin:24px auto;padding:0 18px;display:grid;grid-template-columns:250px minmax(0,1fr);gap:22px}
+aside{align-self:start;position:sticky;top:14px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:var(--shadow)}
+.navtitle{font-size:.72rem;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.12em;padding:8px 10px}
+nav button{width:100%;text-align:left;border:0;background:transparent;padding:11px 12px;border-radius:10px;color:#2f4954;font-weight:650;cursor:pointer;margin:2px 0}
+nav button:hover,nav button.active{background:#e3f4f7;color:#0a6076}
+.progressbox{margin:15px 8px 4px;padding:12px;background:#eef7f9;border-radius:12px;font-size:.84rem;color:var(--muted)}
+progress{width:100%;height:8px;accent-color:var(--blue)}
+main{min-width:0}.page{display:none}.page.active{display:block}
+.pagehead{margin:4px 0 18px}.pagehead h2{margin:0 0 5px;font-size:1.7rem;color:var(--navy)}.pagehead p{margin:0;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:19px;box-shadow:var(--shadow);margin-bottom:16px}
+.card h3{margin:0 0 8px;color:var(--navy);font-size:1.12rem}.card p{margin:7px 0}.stat{font-size:1.8rem;font-weight:850;color:var(--blue);line-height:1.1}
+.small{font-size:.86rem;color:var(--muted)}.tag{display:inline-block;background:#e2f4f7;color:#0d6478;border-radius:6px;padding:3px 8px;font-size:.76rem;font-weight:800;margin:2px}
+.btn{border:0;border-radius:10px;background:var(--blue);color:white;font-weight:750;padding:10px 15px;cursor:pointer}.btn:hover{filter:brightness(.94)}.btn.secondary{background:#e3ecef;color:#1f3b45}.btn.outline{background:white;color:var(--blue);border:1px solid #abd6df}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.callout{border-left:4px solid var(--cyan);background:#e7f8fb;padding:13px 15px;border-radius:8px;margin:14px 0}
+.warning{border-left-color:var(--amber);background:#fff7e8}.danger{border-left-color:var(--red);background:#fff0f0}
+ul,ol{padding-left:22px}li{margin:5px 0}
+.module{border:1px solid var(--line);border-radius:12px;margin:10px 0;overflow:hidden;background:white}
+.module summary{padding:13px 15px;cursor:pointer;font-weight:750;color:var(--navy);background:#f5fafb}
+.module .inside{padding:15px}
+figure{margin:10px 0 0;background:#f3fafb;border:1px solid var(--line);border-radius:12px;padding:12px}
+figure svg{display:block;width:100%;height:auto;max-height:270px}
+figcaption{font-size:.8rem;color:var(--muted);margin-top:7px}
+.question{font-weight:750;font-size:1.05rem;margin-bottom:12px}
+.option{display:flex;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;margin:8px 0;cursor:pointer}
+.option:hover{border-color:#86c7d4;background:#f5fdff}.option input{margin-top:5px;accent-color:var(--blue)}
+.feedback{padding:12px;border-radius:10px;margin-top:12px;display:none}.feedback.good{display:block;background:#eaf8f0;color:#145b3d}.feedback.bad{display:block;background:#fff1e8;color:#7b3d13}
+.quiztop{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:.85rem}
+.flashcard{min-height:200px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;background:linear-gradient(145deg,#fff,#e9f7fa);border:1px solid #c8e5eb;border-radius:16px;padding:24px;cursor:pointer}
+.flashcard .term{font-size:1.5rem;font-weight:850;color:var(--navy)}.flashcard .answer{display:none;margin-top:15px;max-width:650px}.flashcard.revealed .answer{display:block}.flashcard.revealed .hint{display:none}
+input[type=text],input[type=number],select,textarea{width:100%;padding:10px;border:1px solid #c3dbe1;border-radius:9px;font:inherit;background:white}
+table{border-collapse:collapse;width:100%;font-size:.91rem}th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#f2f9fa;color:var(--navy)}
+footer{max-width:1200px;margin:0 auto;padding:0 18px 30px;color:var(--muted);font-size:.82rem}
+@media(max-width:850px){.shell{grid-template-columns:1fr}aside{position:static}.grid,.grid.three{grid-template-columns:1fr}nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.navtitle{grid-column:1/-1}}
+@media print{aside,.actions,.btn{display:none!important}.shell{display:block}.page{display:block!important}.card{box-shadow:none;break-inside:avoid}body{background:white}}
+</style>
+</head>
+<body>
+<header>
+  <a href="nicet-study.html" style="display:inline-block;margin-bottom:12px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.45);color:#fff;text-decoration:none;font:700 12px/1 Arial,Helvetica,sans-serif;padding:7px 12px;border-radius:8px">← Study guides</a>
+  <div class="eyebrow">Certification preparation • Interactive learning</div>
+  <div class="levelbadge">LEVEL II — ASSOCIATE ENGINEERING TECHNICIAN</div>
+  <h1>NICET Level II<br>Water-Based Systems ITM</h1>
+  <p>A visual study center for associate-level Inspection, Testing &amp; Maintenance technicians. Focused on routine ITM of wet, dry, and standpipe systems, fire pumps, private mains and tanks, deficiency classification, customer communication, and internal obstruction investigation.</p>
+  <div class="header-meta"><span class="pill">Primary standard: NFPA 25 (2023)</span><span class="pill">Level II exam practice</span><span class="pill">Study guides • quizzes • visuals</span></div>
+</header>
+<div class="shell">
+<aside>
+  <div class="navtitle">Study workspace</div>
+  <nav id="nav">
+    <button class="active" data-page="dashboard">▦ &nbsp; Dashboard</button>
+    <button data-page="study">▤ &nbsp; Study guides</button>
+    <button data-page="visuals">◉ &nbsp; Visual references</button>
+    <button data-page="quiz">✓ &nbsp; Practice quiz</button>
+    <button data-page="flashcards">▣ &nbsp; Flashcards</button>
+    <button data-page="lab">↗ &nbsp; Pump &amp; dry-valve lab</button>
+    <button data-page="notes">✎ &nbsp; My notes</button>
+  </nav>
+  <div class="progressbox">
+    <strong>Study progress</strong>
+    <div id="progressText">0 of 2 sections reviewed</div>
+    <progress id="progress" value="0" max="2"></progress>
+    <button class="btn secondary" style="width:100%;margin-top:10px" onclick="resetProgress()">Reset progress</button>
+  </div>
+</aside>
+<main>
+<section class="page active" id="dashboard">
+  <div class="pagehead"><h2>Welcome to your study center</h2><p>Start with the topic guides, then test recall with the quiz and flashcards.</p></div>
+  <div class="grid three">
+    <div class="card"><div class="stat">5</div><p><strong>Exam content domains</strong></p><p class="small">Safety; communication; intermediate ITM tasks; ITM tasks for water supplies; internal obstruction investigation.</p></div>
+    <div class="card"><div class="stat">168</div><p><strong>Exam questions</strong></p><p class="small">NICET lists 168 questions and 185 minutes for the current ITWBS Level II exam.</p></div>
+    <div class="card"><div class="stat">2023</div><p><strong>NFPA 25 edition</strong></p><p class="small">The updated Level II exam (released June 2, 2025) is keyed to NFPA 25 (2023).</p></div>
+  </div>
+  <div class="card">
+    <h3>Recommended study order</h3>
+    <ol>
+      <li>Dry system ITM &mdash; quick-opening devices (QODs), air compressors, nitrogen generators, air maintenance devices, and trip-test concepts.</li>
+      <li>Wet system ITM &mdash; including antifreeze systems and automatic air vents.</li>
+      <li>Standpipe system ITM &mdash; classes, hose connections, and required tests.</li>
+      <li>Fire pump ITM &mdash; routine inspection and the churn, rated, and overload flow points.</li>
+      <li>Private fire service mains and water storage tanks.</li>
+      <li>Deficiency classification &mdash; critical, non-critical, and impairment &mdash; and how each is handled and communicated.</li>
+      <li>Communication &mdash; coordinating with customers, alarm companies, owners, and AHJs.</li>
+      <li>Internal obstruction investigation &mdash; determining the need and assessing internal pipe condition.</li>
+    </ol>
+    <div class="callout">This is an original study aid, not an official NICET product. Use the complete adopted standard and current NICET content outline and reference list to confirm exact requirements.</div>
+    <button class="btn" onclick="showPage('study')">Start studying &rarr;</button>
+  </div>
+  <div class="card"><h3>Official exam scope</h3>
+    <table>
+      <tr><th>Level II content domain</th><th>Approx. weight</th></tr>
+      <tr><td>2.1 &mdash; Safety</td><td>5&ndash;15%</td></tr>
+      <tr><td>2.2 &mdash; Communication</td><td>5&ndash;15%</td></tr>
+      <tr><td>2.3 &mdash; Perform, document, and interpret intermediate ITM tasks</td><td>30&ndash;40%</td></tr>
+      <tr><td>2.4 &mdash; Perform, document, and interpret ITM tasks for water supplies</td><td>25&ndash;35%</td></tr>
+      <tr><td>2.5 &mdash; Internal obstruction investigation</td><td>10&ndash;20%</td></tr>
+    </table>
+    <p class="small" style="margin-top:12px">The Level II technician works under limited supervision, inspecting and testing wet and dry systems, standpipes, fire pumps, private service mains, and water tanks. Always check the current NICET handbook and reference list before exam day; details can change.</p>
+    <div class="actions"><a class="btn outline" href="https://www.nicet.org/certification-programs/electrical-and-mechanical-systems/inspection-and-testing-of-water-based-systems/" target="_blank" rel="noopener">NICET ITWBS program &#8599;</a><a class="btn outline" href="https://www.nicet.org/nicetorg/assets/File/public/ITWBS_II_Content_Outline.pdf" target="_blank" rel="noopener">Level II content outline &#8599;</a></div></div>
+</section>
+
+<section class="page" id="study">
+  <div class="pagehead"><h2>Study guides</h2><p>High-level learning notes organized around the NICET Level II content outline. Mark the section reviewed as you go.</p></div>
+  <div class="callout warning"><strong>Code-use reminder:</strong> This guide intentionally summarizes concepts rather than reproducing NFPA text. Exact intervals, acceptance criteria, exceptions, and section numbers must be checked in your licensed NFPA 25 (2023) copy.</div>
+  <details class="module" open><summary>2.1 &mdash; Safety</summary><div class="inside">
+    <p><strong>Be ready to explain:</strong> how a Level II technician implements (not just recognizes) safety procedures while performing ITM with limited supervision.</p>
+    <ul><li>Implement proper use and maintenance of PPE and lockout/tagout (LOTO).</li><li>Address work hazards and apply procedures for confined spaces, openings, lighting, ceilings, ladders, and lifts.</li><li>Verify correct tools and equipment are used and maintained, and ensure safe ladder use.</li><li>Implement safety and system impairment procedures before, during, and after testing.</li></ul>
+  </div></details>
+  <details class="module"><summary>2.2 &mdash; Communication</summary><div class="inside">
+    <p>At Level II you coordinate the people and parties affected by an inspection, not just the equipment.</p>
+    <ul><li>Coordinate with customers &mdash; pre-inspection reviews, scope of work, and notifications.</li><li>Verify that the alarm company, owner, and AHJ are contacted for testing and maintenance that affects monitoring or takes the system out of service.</li><li>Document and communicate the results and findings of ITM tasks to the customer or responsible party.</li></ul>
+    <div class="callout">Notification is a recurring exam theme: before any test that trips a signal or impairs a system, confirm the monitoring company and owner are informed, and confirm restoration afterward.</div>
+  </div></details>
+  <details class="module"><summary>2.3 &mdash; Perform, document, and interpret intermediate ITM tasks</summary><div class="inside">
+    <p>This is the largest Level II domain and covers routine ITM across system types, plus classifying what you find.</p>
+    <ul><li><strong>Dry systems:</strong> inspect and test quick-opening devices (QODs), air compressors, nitrogen generators, and air maintenance devices; understand the purpose of a trip test and how air pressure and priming water affect it.</li><li><strong>Wet systems:</strong> perform ITM including antifreeze systems and automatic air vents; know how antifreeze solution is sampled and checked.</li><li><strong>Standpipe systems:</strong> perform ITM and recognize the class of standpipe (occupant use, fire-department use, or both).</li><li><strong>Deficiencies:</strong> identify and classify findings as critical, non-critical, or impairment, and apply the correct handling and notification for each.</li></ul>
+  </div></details>
+  <details class="module"><summary>2.4 &mdash; Perform, document, and interpret ITM tasks for water supplies</summary><div class="inside">
+    <p>Water-supply ITM at Level II covers the source and delivery path: pumps, mains, and tanks.</p>
+    <ul><li><strong>Fire pumps:</strong> perform routine inspection and testing; understand the no-flow (churn), rated (100%), and overload (150%) points and what each one checks.</li><li><strong>Private fire service mains:</strong> perform ITM including flow testing and forward-flow verification of backflow preventers where applicable.</li><li><strong>Water storage tanks:</strong> perform ITM of tank components, levels, and related equipment.</li><li>Record readings against the correct baseline and the applicable acceptance criteria, and account for differences in test conditions.</li></ul>
+  </div></details>
+  <details class="module"><summary>2.5 &mdash; Internal obstruction investigation</summary><div class="inside">
+    <p>At Level II you determine when an investigation is warranted and assess the internal condition of piping &mdash; a foundation for the more complex analysis expected at Level III.</p>
+    <ul><li>Determine the need for an obstruction investigation and recognize conditions that support prevention.</li><li>Plan safe access and impairment handling before opening piping.</li><li>Assess and document the internal condition of piping &mdash; deposits, corrosion products, tuberculation, or foreign material &mdash; without overdiagnosing the cause.</li></ul>
+    <div class="callout warning">Opening piping can impair protection and release stored pressure or water. Follow the approved impairment and safety process, and restore the system afterward.</div>
+  </div></details>
+  <button class="btn" onclick="markReviewed()">Mark study guides reviewed</button> <span id="reviewMsg" class="small"></span>
+</section>
+
+<section class="page" id="visuals">
+  <div class="pagehead"><h2>Visual references</h2><p>Schematic training illustrations&mdash;not installation drawings. Use them to practice component identification and sequence-of-operation reasoning at Level II.</p></div>
+  <div class="grid">
+    <div class="card"><h3>Dry pipe valve &amp; trip test</h3><figure>
+      <svg viewBox="0 0 520 270" role="img" aria-label="Simplified dry pipe valve and trip test">
+        <defs><marker id="arrB" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6Z" fill="#1787a0"/></marker></defs>
+        <line x1="160" y1="245" x2="160" y2="150" stroke="#1787a0" stroke-width="10" stroke-linecap="round"/><text x="160" y="262" text-anchor="middle" font-size="10" fill="#5a6f78">Water supply</text>
+        <rect x="140" y="112" width="40" height="40" rx="5" fill="#e7f8fb" stroke="#0c2f3f" stroke-width="2"/><text x="230" y="135" font-size="11" fill="#152430">Dry pipe valve</text><path d="M180 132 H224" stroke="#5a6f78" stroke-width="1.5"/>
+        <line x1="160" y1="112" x2="160" y2="45" stroke="#d78a16" stroke-width="7" stroke-dasharray="7 5"/><line x1="160" y1="45" x2="420" y2="45" stroke="#d78a16" stroke-width="7" stroke-dasharray="7 5"/><text x="300" y="35" text-anchor="middle" font-size="10" fill="#6c4510">System piping &mdash; air / nitrogen</text>
+        <circle cx="95" cy="80" r="26" fill="#fff" stroke="#5a6f78" stroke-width="2"/><text x="95" y="77" text-anchor="middle" font-size="10" fill="#152430">air</text><text x="95" y="90" text-anchor="middle" font-size="10" fill="#152430">comp.</text><path d="M121 80 H150" stroke="#5a6f78" stroke-width="3"/>
+        <rect x="70" y="140" width="50" height="22" rx="4" fill="#fff7e8" stroke="#d78a16" stroke-width="2"/><text x="95" y="155" text-anchor="middle" font-size="9" fill="#6c4510">QOD</text>
+        <path d="M160 180 H235" stroke="#1787a0" stroke-width="6"/><rect x="235" y="169" width="24" height="22" rx="4" fill="#e7f8fb" stroke="#0c2f3f" stroke-width="2"/><text x="247" y="205" text-anchor="middle" font-size="9" fill="#152430">test valve</text><path d="M259 180 H320" stroke="#46c4d1" stroke-width="6" marker-end="url(#arrB)"/>
+        <rect x="335" y="150" width="165" height="96" rx="10" fill="#f3fafb" stroke="#1787a0"/><text x="417" y="172" text-anchor="middle" font-size="11" font-weight="bold" fill="#0c2f3f">Trip test checks</text>
+        <text x="348" y="193" font-size="10" fill="#152430">• air pressure &amp; QOD action</text><text x="348" y="211" font-size="10" fill="#152430">• priming water level</text><text x="348" y="229" font-size="10" fill="#152430">• time / pressure to trip</text>
+      </svg><figcaption>Study prompt: in a trip test, what role do the air maintenance device, QOD, and priming water each play?</figcaption></figure></div>
+    <div class="card"><h3>Fire pump test points</h3><figure>
+      <svg viewBox="0 0 520 270" role="img" aria-label="Fire pump performance curve with test points">
+        <line x1="60" y1="30" x2="60" y2="215" stroke="#5a6f78" stroke-width="2"/><line x1="60" y1="215" x2="490" y2="215" stroke="#5a6f78" stroke-width="2"/>
+        <text x="30" y="120" text-anchor="middle" font-size="11" fill="#5a6f78" transform="rotate(-90 30 120)">Pressure</text><text x="275" y="245" text-anchor="middle" font-size="11" fill="#5a6f78">Flow (% of rated capacity)</text>
+        <path d="M90 70 Q250 90 300 120 Q390 165 455 205" fill="none" stroke="#1787a0" stroke-width="4"/>
+        <circle cx="90" cy="70" r="7" fill="#16845b"/><text x="90" y="56" text-anchor="middle" font-size="10" fill="#0c2f3f" font-weight="bold">Churn (0%)</text>
+        <circle cx="300" cy="120" r="7" fill="#d78a16"/><text x="300" y="106" text-anchor="middle" font-size="10" fill="#0c2f3f" font-weight="bold">Rated (100%)</text>
+        <circle cx="455" cy="205" r="7" fill="#c74343"/><text x="455" y="192" text-anchor="middle" font-size="10" fill="#0c2f3f" font-weight="bold">Overload (150%)</text>
+        <line x1="300" y1="120" x2="300" y2="215" stroke="#d2dde1" stroke-width="1.5" stroke-dasharray="4 4"/><line x1="455" y1="205" x2="455" y2="215" stroke="#d2dde1" stroke-width="1.5" stroke-dasharray="4 4"/>
+        <text x="110" y="200" font-size="10" fill="#5a6f78">Compare each point to the pump's rated / baseline data</text>
+      </svg><figcaption>Study prompt: what does each of the three points &mdash; churn, rated, and overload &mdash; tell you about the pump?</figcaption></figure></div>
+    <div class="card"><h3>Standpipe classes</h3><figure>
+      <svg viewBox="0 0 520 270" role="img" aria-label="Standpipe classes">
+        <line x1="90" y1="40" x2="90" y2="235" stroke="#1787a0" stroke-width="9"/><text x="90" y="252" text-anchor="middle" font-size="10" fill="#5a6f78">Riser</text>
+        <circle cx="135" cy="80" r="11" fill="#e7f8fb" stroke="#0c2f3f" stroke-width="2"/><path d="M90 80 H124" stroke="#1787a0" stroke-width="4"/><text x="155" y="84" font-size="11" fill="#152430">2&frac12;&quot; connection &mdash; fire department</text>
+        <circle cx="135" cy="140" r="11" fill="#e7f8fb" stroke="#0c2f3f" stroke-width="2"/><path d="M90 140 H124" stroke="#1787a0" stroke-width="4"/><text x="155" y="144" font-size="11" fill="#152430">1&frac12;&quot; connection &mdash; occupant / trained use</text>
+        <rect x="35" y="30" width="40" height="40" rx="6" fill="#fff7e8" stroke="#d78a16" stroke-width="2"/><text x="55" y="20" text-anchor="middle" font-size="10" fill="#6c4510">FDC</text><path d="M55 70 V110" stroke="#d78a16" stroke-width="4"/>
+        <rect x="150" y="185" width="330" height="56" rx="10" fill="#f3fafb" stroke="#1787a0"/>
+        <text x="165" y="205" font-size="11" fill="#152430"><tspan font-weight="bold">Class I</tspan> &mdash; 2&frac12;&quot; only &nbsp; | &nbsp; <tspan font-weight="bold">Class II</tspan> &mdash; 1&frac12;&quot; only</text>
+        <text x="165" y="227" font-size="11" fill="#152430"><tspan font-weight="bold">Class III</tspan> &mdash; both 2&frac12;&quot; and 1&frac12;&quot; connections</text>
+      </svg><figcaption>Study prompt: how do you tell Class I, II, and III standpipes apart by their hose connections?</figcaption></figure></div>
+    <div class="card"><h3>Antifreeze loop</h3><figure>
+      <svg viewBox="0 0 520 270" role="img" aria-label="Antifreeze system loop and solution test">
+        <line x1="60" y1="60" x2="300" y2="60" stroke="#1787a0" stroke-width="7"/><text x="180" y="48" text-anchor="middle" font-size="10" fill="#5a6f78">Wet system main</text>
+        <rect x="150" y="48" width="26" height="24" rx="4" fill="#fff7e8" stroke="#d78a16" stroke-width="2"/><text x="163" y="92" text-anchor="middle" font-size="9" fill="#6c4510">check / backflow</text>
+        <path d="M300 60 V110 H110 V200 H360 V110" fill="none" stroke="#46c4d1" stroke-width="6"/><text x="235" y="150" text-anchor="middle" font-size="11" fill="#0c2f3f" font-weight="bold">Antifreeze solution loop</text>
+        <path d="M150 200 V220 M230 200 V220 M310 200 V220" stroke="#46c4d1" stroke-width="3"/>
+        <circle cx="400" cy="150" r="34" fill="#fff" stroke="#0c2f3f" stroke-width="2"/><text x="400" y="146" text-anchor="middle" font-size="10" fill="#152430">sample</text><text x="400" y="160" text-anchor="middle" font-size="10" fill="#152430">+ test</text><path d="M366 150 H345" stroke="#5a6f78" stroke-width="3"/>
+        <rect x="330" y="205" width="160" height="46" rx="10" fill="#f3fafb" stroke="#1787a0"/><text x="410" y="225" text-anchor="middle" font-size="10" fill="#152430">Draw a sample; check</text><text x="410" y="241" text-anchor="middle" font-size="10" fill="#152430">concentration / freeze point</text>
+      </svg><figcaption>Study prompt: why must an antifreeze solution be sampled and tested rather than assumed from records?</figcaption></figure></div>
+    <div class="card"><h3>Deficiency classification</h3><figure>
+      <svg viewBox="0 0 520 270" role="img" aria-label="Deficiency classification decision">
+        <rect x="185" y="18" width="150" height="46" rx="8" fill="#e7f8fb" stroke="#1787a0" stroke-width="2"/><text x="260" y="38" text-anchor="middle" font-size="12" font-weight="bold" fill="#0c2f3f">Observation</text><text x="260" y="54" text-anchor="middle" font-size="10" fill="#0c2f3f">what did you find?</text>
+        <path d="M260 64 V90" stroke="#5a6f78" stroke-width="2"/><path d="M120 110 H400" stroke="#5a6f78" stroke-width="2"/><path d="M120 90 V110 M260 90 V110 M400 90 V110" stroke="#5a6f78" stroke-width="2"/><path d="M260 90 V64" stroke="#5a6f78" stroke-width="2"/>
+        <rect x="55" y="110" width="130" height="70" rx="8" fill="#fff7e8" stroke="#d78a16" stroke-width="2"/><text x="120" y="134" text-anchor="middle" font-size="12" font-weight="bold" fill="#6c4510">Non-critical</text><text x="120" y="153" text-anchor="middle" font-size="10" fill="#6c4510">reduced performance;</text><text x="120" y="167" text-anchor="middle" font-size="10" fill="#6c4510">correct in due course</text>
+        <rect x="195" y="110" width="130" height="70" rx="8" fill="#fff0f0" stroke="#c74343" stroke-width="2"/><text x="260" y="134" text-anchor="middle" font-size="12" font-weight="bold" fill="#8a2525">Critical</text><text x="260" y="153" text-anchor="middle" font-size="10" fill="#8a2525">major impact on</text><text x="260" y="167" text-anchor="middle" font-size="10" fill="#8a2525">system operation</text>
+        <rect x="335" y="110" width="130" height="70" rx="8" fill="#eef0ff" stroke="#5b58b0" stroke-width="2"/><text x="400" y="134" text-anchor="middle" font-size="12" font-weight="bold" fill="#38357a">Impairment</text><text x="400" y="153" text-anchor="middle" font-size="10" fill="#38357a">system / portion</text><text x="400" y="167" text-anchor="middle" font-size="10" fill="#38357a">out of service</text>
+        <rect x="90" y="205" width="340" height="44" rx="8" fill="#f3fafb" stroke="#1787a0"/><text x="260" y="225" text-anchor="middle" font-size="11" font-weight="bold" fill="#0c2f3f">Classify &rarr; document &rarr; notify per the finding</text><text x="260" y="241" text-anchor="middle" font-size="10" fill="#5a6f78">impairments trigger the impairment / notification process</text>
+      </svg><figcaption>Study prompt: what distinguishes a critical deficiency from an impairment, and how does each change your notifications?</figcaption></figure></div>
+  </div>
+</section>
+
+<section class="page" id="quiz">
+  <div class="pagehead"><h2>Practice quiz</h2><p>Original practice questions for learning&mdash;not actual or recalled NICET exam questions.</p></div>
+  <div class="card">
+    <div class="quiztop"><span id="qCount">Question 1 of 10</span><span id="score">Score: 0</span></div>
+    <div style="height:8px"></div><progress id="quizProgress" value="1" max="10"></progress>
+    <div id="quizArea"></div>
+    <div class="actions"><button class="btn" id="checkBtn" onclick="checkAnswer()">Check answer</button><button class="btn secondary" id="nextBtn" onclick="nextQuestion()" style="display:none">Next question &rarr;</button><button class="btn outline" onclick="restartQuiz()">Restart quiz</button></div>
+  </div>
+</section>
+
+<section class="page" id="flashcards">
+  <div class="pagehead"><h2>Flashcards</h2><p>Click a card to reveal the answer. Use the arrows to cycle through concepts.</p></div>
+  <div class="card"><div class="quiztop"><span id="flashCount">Card 1 of 8</span><span>Active recall</span></div>
+    <div id="flashcard" class="flashcard" onclick="flipFlash()"><div class="term" id="flashTerm"></div><div class="hint">Click to reveal answer</div><div class="answer" id="flashAnswer"></div></div>
+    <div class="actions"><button class="btn secondary" onclick="prevFlash()">&larr; Previous</button><button class="btn" onclick="flipFlash()">Reveal / hide</button><button class="btn secondary" onclick="nextFlash()">Next &rarr;</button></div>
+  </div>
+</section>
+
+<section class="page" id="lab">
+  <div class="pagehead"><h2>Pump &amp; dry-valve lab</h2><p>Use sample readings to practice calculations and evidence-based interpretation at Level II.</p></div>
+  <div class="card"><h3>Fire pump net-pressure calculator</h3><p class="small">Net pressure = discharge pressure &minus; suction pressure at a given flow point. This tool does the arithmetic; it is not a pass/fail result and does not replace the NFPA 25 test procedure or the pump's rated data.</p>
+    <div class="grid"><div><label for="dischP">Discharge pressure (psi)</label><input id="dischP" type="number" min="0" step=".1" value="125"></div><div><label for="suctP">Suction pressure (psi)</label><input id="suctP" type="number" step=".1" value="40"></div></div>
+    <div><label for="ratedNet" style="display:block;margin-top:10px">Rated net pressure at this point, if known (psi) &mdash; optional</label><input id="ratedNet" type="number" min="0" step=".1" value="90"></div>
+    <div class="actions"><button class="btn" onclick="calcPump()">Calculate net pressure</button></div><div id="calcResult" class="callout" aria-live="polite">Enter readings and select Calculate.</div>
+    <details class="module"><summary>How to interpret this comparison</summary><div class="inside"><p>Compare net pressure at churn (no flow), rated (100%), and overload (150%) against the pump's rated/baseline values. A meaningful shortfall at a flow point warrants evaluation, but confirm the flow rate, gauge accuracy, suction conditions, and test setup first.</p><p>A single reading does not establish compliance or a cause. Record conditions and compare like-for-like against the correct baseline and acceptance criteria.</p></div></details>
+  </div>
+  <div class="card"><h3>Scenario: dry pipe valve trips slowly</h3><p>During a trip test, the dry pipe valve trips and delivers water later than expected. What should you do first?</p><div id="scenarioOptions">
+    <label class="option"><input type="radio" name="scenario" value="a"> Conclude the dry valve has failed and recommend replacement.</label>
+    <label class="option"><input type="radio" name="scenario" value="b"> Verify air pressure, QOD operation, priming water level, and the test setup, then compare to prior results and acceptance criteria.</label>
+    <label class="option"><input type="radio" name="scenario" value="c"> Ignore the delay as long as water eventually reached the inspector's test connection.</label>
+  </div><button class="btn" onclick="checkScenario()">Check scenario</button><div id="scenarioFeedback" class="feedback"></div></div>
+</section>
+
+<section class="page" id="notes">
+  <div class="pagehead"><h2>My notes</h2><p>Keep your own reminders and section references on this device/browser.</p></div>
+  <div class="card"><h3>Personal study notes</h3><p class="small">Do not paste copyrighted NFPA text into shared materials. Record short reminders, questions to verify, or your own field examples.</p><textarea id="notesText" rows="12" placeholder="Example: Review the difference between critical, non-critical, and impairment, and the notification steps for each..."></textarea><div class="actions"><button class="btn" onclick="saveNotes()">Save notes</button><button class="btn secondary" onclick="downloadNotes()">Export notes (.txt)</button><span id="notesStatus" class="small"></span></div></div>
+  <div class="card"><h3>Reference links</h3><ul><li><a href="https://www.nicet.org/certification-programs/electrical-and-mechanical-systems/inspection-and-testing-of-water-based-systems/" target="_blank" rel="noopener">NICET Inspection and Testing of Water-Based Systems program page</a></li><li><a href="https://www.nicet.org/nicetorg/assets/File/public/ITWBS_II_Content_Outline.pdf" target="_blank" rel="noopener">NICET Level II content outline (PDF)</a></li><li><a href="https://www.nicet.org/exams/references/" target="_blank" rel="noopener">NICET exam reference list</a></li><li><a href="https://www.nfpa.org/codes-and-standards/nfpa-25-standard-development/25" target="_blank" rel="noopener">NFPA 25 standard information</a></li></ul></div>
+</section>
+</main>
+</div>
+<footer>Training aid only. Not affiliated with or endorsed by NICET or NFPA. Verify all requirements against the licensed NFPA 25 (2023) text, equipment listings, manufacturer instructions, adopted codes, and AHJ direction. This page is a local HTML file; notes and progress use browser local storage when available.</footer>
+<script>
+const pages=[...document.querySelectorAll('.page')];
+function showPage(id){pages.forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===id));window.scrollTo({top:0,behavior:'smooth'});}
+document.querySelectorAll('#nav button').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));
+let reviewed=JSON.parse(localStorage.getItem('itmL2Reviewed')||'[]');
+function updateProgress(){document.getElementById('progressText').textContent=reviewed.length+' of 2 sections reviewed';document.getElementById('progress').value=reviewed.length}
+function markReviewed(){if(!reviewed.includes('study'))reviewed.push('study');localStorage.setItem('itmL2Reviewed',JSON.stringify(reviewed));updateProgress();document.getElementById('reviewMsg').textContent='Study guides marked reviewed.'}
+function resetProgress(){reviewed=[];localStorage.setItem('itmL2Reviewed','[]');updateProgress()}
+updateProgress();
+const questions=[
+{q:"Which NFPA 25 edition is referenced for the current NICET ITWBS Level II exam?",opts:["NFPA 25 (2017)","NFPA 25 (2020)","NFPA 25 (2023)","NFPA 25 (2026)"],a:2,why:"The updated Level II exam released June 2, 2025 is keyed to NFPA 25 (2023)."},
+{q:"A Level II (associate) technician generally works under what level of supervision?",opts:["Direct supervision at all times","Limited supervision, performing ITM independently on routine systems","No contact with any supervisor","Only under the AHJ's supervision"],a:1,why:"Level II works under limited supervision, inspecting and testing wet/dry systems, standpipes, pumps, mains, and tanks."},
+{q:"What is the primary purpose of a quick-opening device (QOD) on a dry system?",opts:["To hold air pressure indefinitely","To speed the loss of air so the dry valve trips faster","To reduce the water supply pressure","To drain the antifreeze loop"],a:1,why:"A QOD accelerates the pressure drop in the system air so the dry pipe valve trips and delivers water more quickly."},
+{q:"The fire pump churn condition refers to operation at:",opts:["150% of rated flow","100% of rated flow","No flow (shutoff)","The point of pump failure"],a:2,why:"Churn is the no-flow / shutoff condition; rated (100%) and overload (150%) are the other key flow points."},
+{q:"A finding that leaves the system or a portion of it out of service is classified as:",opts:["A non-critical deficiency","A critical deficiency","An impairment","A design change"],a:2,why:"An impairment means the system (or part of it) is out of service; critical and non-critical deficiencies reduce performance without necessarily taking it out of service."},
+{q:"Antifreeze system ITM at Level II includes:",opts:["Assuming the concentration from the install records","Sampling the solution and checking its concentration / freeze point","Replacing the antifreeze every inspection","Converting the loop to a dry system"],a:1,why:"The antifreeze solution must be sampled and tested; records alone do not confirm the current concentration or freeze point."},
+{q:"A Class II standpipe provides which hose connections?",opts:["2\u00bd\u2033 for fire-department use only","1\u00bd\u2033 for occupant or trained personnel use","No hose connections","Only an FDC inlet"],a:1,why:"Class II standpipes provide 1\u00bd\u2033 connections for occupant/trained use; Class I provides 2\u00bd\u2033 for the fire department, and Class III provides both."},
+{q:"A dry pipe valve trips later than expected during a trip test. What should you do first?",opts:["Replace the valve immediately","Verify air pressure, QOD, priming water, and setup, then compare to prior results and criteria","Increase the supply pressure","Close the inspection with no notes"],a:1,why:"Check the prerequisites and setup and compare the result before assigning a cause or recommending replacement."},
+{q:"Before performing a test that trips a monitored signal or takes the system out of service, you should:",opts:["Proceed without notice to save time","Notify the owner, monitoring/alarm company, and AHJ as applicable","Only tell the building occupants","Wait for the next scheduled inspection"],a:1,why:"Coordinating notifications with the owner, monitoring company, and AHJ is a core Level II communication task; confirm restoration afterward."},
+{q:"At Level II, an internal obstruction investigation primarily involves:",opts:["Performing complex root-cause analysis and advising the AHJ","Determining the need for the investigation and assessing/documenting internal pipe condition","Redesigning the piping system","Replacing all affected piping on the spot"],a:1,why:"Level II determines whether an investigation is warranted and assesses the internal condition; the more complex interpretation is a Level III focus."}
+];
+let qi=0,answered=false,score=0;
+function renderQuestion(){let q=questions[qi];document.getElementById('qCount').textContent=`Question ${qi+1} of ${questions.length}`;document.getElementById('quizProgress').value=qi+1;document.getElementById('score').textContent=`Score: ${score}`;document.getElementById('quizArea').innerHTML=`<div class="question">${q.q}</div>`+q.opts.map((o,i)=>`<label class="option"><input type="radio" name="answer" value="${i}"> <span>${o}</span></label>`).join('')+`<div id="quizFeedback" class="feedback"></div>`;document.getElementById('checkBtn').style.display='inline-block';document.getElementById('nextBtn').style.display='none';answered=false}
+function checkAnswer(){if(answered)return;let pick=document.querySelector('input[name="answer"]:checked');if(!pick){alert('Select an answer first.');return}let q=questions[qi],correct=Number(pick.value)===q.a;if(correct)score++;answered=true;let f=document.getElementById('quizFeedback');f.className='feedback '+(correct?'good':'bad');f.innerHTML=`<strong>${correct?'Correct.':'Not quite.'}</strong> ${q.why}`;document.getElementById('score').textContent=`Score: ${score}`;document.getElementById('checkBtn').style.display='none';document.getElementById('nextBtn').style.display='inline-block';document.querySelectorAll('input[name="answer"]').forEach(x=>x.disabled=true)}
+function nextQuestion(){if(qi<questions.length-1){qi++;renderQuestion()}else{document.getElementById('quizArea').innerHTML=`<h3>Quiz complete</h3><p>You scored <strong>${score} / ${questions.length}</strong> (${Math.round(score/questions.length*100)}%). Review explanations for any missed questions, then try again.</p>`;document.getElementById('qCount').textContent='Complete';document.getElementById('quizProgress').value=questions.length;document.getElementById('checkBtn').style.display='none';document.getElementById('nextBtn').style.display='none';if(!reviewed.includes('quiz'))reviewed.push('quiz');localStorage.setItem('itmL2Reviewed',JSON.stringify(reviewed));updateProgress()}}
+function restartQuiz(){qi=0;score=0;renderQuestion()}
+renderQuestion();
+const cards=[
+["Dry pipe valve","Holds pressurized air (or nitrogen) on the system side and water on the supply side. When system air is lost, it trips and admits water. Priming water sits above the clapper."],
+["Quick-opening device (QOD)","An accelerator that speeds the loss of system air pressure so the dry pipe valve trips faster. Inspected and tested as part of dry-system ITM."],
+["Air maintenance device","Regulates the supply of air (or a nitrogen generator feeds it) to keep a dry or preaction system at its required supervisory air pressure without overfilling."],
+["Antifreeze solution test","Draw a sample and check its concentration / freeze point rather than relying on records. Part of wet-system ITM for antifreeze loops."],
+["Fire pump test points","Churn (no flow), rated (100% flow), and overload (150% flow). Compare pressure and flow at each point to the pump's rated/baseline data and the acceptance criteria."],
+["Deficiency classes","Critical (major impact), non-critical (reduced performance, corrected in due course), and impairment (system or portion out of service). Each has its own handling and notification."],
+["Standpipe classes","Class I = 2\u00bd\u2033 fire-department connections; Class II = 1\u00bd\u2033 occupant/trained-use connections; Class III = both."],
+["Forward-flow test","Flowing a backflow preventer on a private main at system demand to verify it does not unduly restrict supply. Compare to the applicable criteria and prior results."]
+];let fi=0;
+function renderFlash(){document.getElementById('flashCount').textContent=`Card ${fi+1} of ${cards.length}`;document.getElementById('flashTerm').textContent=cards[fi][0];document.getElementById('flashAnswer').innerHTML=cards[fi][1];document.getElementById('flashcard').classList.remove('revealed')}
+function flipFlash(){document.getElementById('flashcard').classList.toggle('revealed')}
+function nextFlash(){fi=(fi+1)%cards.length;renderFlash()}
+function prevFlash(){fi=(fi-1+cards.length)%cards.length;renderFlash()}
+renderFlash();
+function calcPump(){let d=Number(document.getElementById('dischP').value),s=Number(document.getElementById('suctP').value),rated=document.getElementById('ratedNet').value,el=document.getElementById('calcResult');if(!Number.isFinite(d)||!Number.isFinite(s)){el.textContent='Enter numeric discharge and suction pressures.';return}let net=d-s,msg=`<strong>Net pressure:</strong> ${net.toFixed(1)} psi (discharge ${d.toFixed(1)} &minus; suction ${s.toFixed(1)}).`;if(rated!==''&&Number.isFinite(Number(rated))&&Number(rated)>0){let rn=Number(rated),diff=net-rn,pct=(diff/rn)*100;msg+=`<br><span class="small">Rated net at this point: ${rn.toFixed(1)} psi. This reading is ${Math.abs(diff).toFixed(1)} psi (${pct>=0?'+':''}${pct.toFixed(1)}%) ${diff>=0?'at or above':'below'} rated.${diff<0?' A shortfall warrants evaluation &mdash; verify flow, gauges, and suction first.':''}</span>`}else{msg+=`<br><span class="small">Compare to the pump's rated net pressure at the same flow point.</span>`}msg+=`<br><span class="small">This is not a pass/fail result; confirm the flow rate, instruments, and test conditions, then evaluate against the correct baseline and criteria.</span>`;el.innerHTML=msg}
+function checkScenario(){let p=document.querySelector('input[name="scenario"]:checked'),f=document.getElementById('scenarioFeedback');if(!p){alert('Select an answer first.');return}let ok=p.value==='b';f.className='feedback '+(ok?'good':'bad');f.textContent=ok?'Correct. Verify air pressure, the QOD, priming water, and the setup, then compare to prior results and acceptance criteria before assigning a cause.':'Check the prerequisites first. Do not conclude failure or dismiss the delay until air pressure, the QOD, priming water, and setup are verified and the result is compared to the criteria.'}
+const noteBox=document.getElementById('notesText');noteBox.value=localStorage.getItem('itmL2Notes')||'';
+function saveNotes(){localStorage.setItem('itmL2Notes',noteBox.value);document.getElementById('notesStatus').textContent='Saved in this browser.'}
+function downloadNotes(){let blob=new Blob([noteBox.value],{type:'text/plain'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='NICET_Level_II_ITM_Study_Notes.txt';a.click();URL.revokeObjectURL(url)}
+</script>
+</body>
+</html>
