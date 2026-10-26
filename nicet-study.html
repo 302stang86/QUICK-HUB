@@ -7,7 +7,7 @@
 <meta name="fdec-page-title" content="NICET Study">
 <style>
   :root{--navy:#10253f;--ink:#182638;--muted:#5c6470;--line:#dbe4ed;--card:#fff;
-        --l1:#1f8a52;--l2:#1787a0;--l3:#1769aa;}
+        --l1:#1f8a52;--l2:#1787a0;--l3:#1769aa;--l4:#0b3d5c;}
   *{box-sizing:border-box}
   html,body{margin:0}
   body{font-family:Inter,"Segoe UI",Arial,sans-serif;color:var(--ink);min-height:100vh;
@@ -17,8 +17,8 @@
   .intro{color:#dbe6f4;margin:6px 2px 20px}
   .intro h1{font-size:1.5rem;margin:0 0 6px;color:#fff;font-weight:800}
   .intro p{margin:0;color:#aebdd2;font-size:.95rem;line-height:1.5;max-width:640px}
-  .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-  @media(max-width:760px){.grid{grid-template-columns:1fr}}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+  @media(max-width:480px){.grid{grid-template-columns:1fr}}
   a.lvl{display:flex;flex-direction:column;gap:10px;text-decoration:none;color:var(--ink);
         background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;
         box-shadow:0 10px 26px rgba(8,16,30,.28);transition:transform .12s,box-shadow .12s;
@@ -46,7 +46,7 @@
 <main>
   <div class="intro">
     <h1>NICET ITM Study Centers</h1>
-    <p>Interactive study guides for the NICET Inspection, Testing &amp; Maintenance of Water-Based Systems (ITWBS) certification, keyed to NFPA&nbsp;25 (2023). Choose your level to open its study center &mdash; dashboards, study guides, visuals, practice quizzes, and flashcards.</p>
+    <p>Interactive study guides for the NICET Inspection, Testing &amp; Maintenance of Water-Based Systems (ITWBS) certification, keyed to NFPA&nbsp;25 (2023). Choose your level to open its study center &mdash; dashboards, study guides, visuals, practice quizzes, and flashcards &mdash; or open the Portal Guide for CPD, Work History, and recertification.</p>
   </div>
   <div class="grid">
     <a class="lvl" href="nicet-level-1.html" style="--cc:var(--l1)">
@@ -69,6 +69,13 @@
       <h2>Senior Technician</h2>
       <p>Complex systems, interpreting test results, obstruction investigations, impairments, PRVs, flow-test analysis, and technical judgment.</p>
       <span class="go">Open study center &rarr;</span>
+    </a>
+    <a class="lvl" href="nicet-cpd-guide.html" style="--cc:var(--l4)">
+      <span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M8.5 13.5h7M8.5 16.5h5"/></svg></span>
+      <span class="badge">Portal Guide</span>
+      <h2>CPD &amp; Work History</h2>
+      <p>Logging in to the NICET portal, understanding and adding CPD points, managing Work History, and submitting for recertification.</p>
+      <span class="go">Open guide &rarr;</span>
     </a>
   </div>
   <p class="note">Training aid only. Not affiliated with or endorsed by NICET or NFPA. Verify all requirements against the licensed NFPA&nbsp;25 (2023) text, equipment listings, manufacturer instructions, adopted codes, and AHJ direction.</p>

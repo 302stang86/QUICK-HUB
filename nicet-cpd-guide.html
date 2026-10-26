@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NICET Portal Guide: Login, CPD &amp; Work History</title>
+  <style>
+    :root {
+      --primary: #0b3d5c;
+      --accent: #1a6a9a;
+      --light: #e8f1f8;
+      --border: #c5d6e4;
+      --text: #1a1a1a;
+      --muted: #555;
+      --success: #1b7a3d;
+      --warn: #b45309;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.6;
+      color: var(--text);
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 1.5rem;
+      background: #f7f9fb;
+    }
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 1.75rem 1.5rem;
+      border-radius: 10px;
+      margin-bottom: 2rem;
+    }
+    header h1 {
+      margin: 0 0 0.4rem;
+      font-size: 1.65rem;
+    }
+    header p {
+      margin: 0;
+      opacity: 0.9;
+      font-size: 0.95rem;
+    }
+    nav.toc {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 2rem;
+    }
+    nav.toc h2 {
+      margin: 0 0 0.6rem;
+      font-size: 1.05rem;
+      color: var(--primary);
+    }
+    nav.toc ol {
+      margin: 0;
+      padding-left: 1.3rem;
+    }
+    nav.toc a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    nav.toc a:hover { text-decoration: underline; }
+    section {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    h2 {
+      color: var(--primary);
+      margin-top: 0;
+      border-bottom: 2px solid var(--light);
+      padding-bottom: 0.4rem;
+      font-size: 1.35rem;
+    }
+    h3 {
+      color: var(--accent);
+      margin-top: 1.4rem;
+      font-size: 1.1rem;
+    }
+    h4 {
+      margin-bottom: 0.35rem;
+      color: var(--text);
+    }
+    p, li { font-size: 0.95rem; }
+    .note {
+      background: var(--light);
+      border-left: 4px solid var(--accent);
+      padding: 0.75rem 1rem;
+      margin: 1rem 0;
+      border-radius: 0 6px 6px 0;
+      font-size: 0.9rem;
+    }
+    .warn {
+      background: #fff7ed;
+      border-left: 4px solid var(--warn);
+      padding: 0.75rem 1rem;
+      margin: 1rem 0;
+      border-radius: 0 6px 6px 0;
+      font-size: 0.9rem;
+    }
+    .success {
+      background: #ecfdf5;
+      border-left: 4px solid var(--success);
+      padding: 0.75rem 1rem;
+      margin: 1rem 0;
+      border-radius: 0 6px 6px 0;
+      font-size: 0.9rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.55rem 0.7rem;
+      text-align: left;
+    }
+    th {
+      background: var(--light);
+      color: var(--primary);
+    }
+    ol.steps {
+      padding-left: 1.4rem;
+    }
+    ol.steps > li {
+      margin-bottom: 0.7rem;
+    }
+    ol.steps > li strong {
+      color: var(--primary);
+    }
+    ul { padding-left: 1.3rem; }
+    a { color: var(--accent); }
+    code, .url {
+      background: #eef2f6;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-family: ui-monospace, monospace;
+      font-size: 0.88em;
+    }
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+    @media print {
+      body { background: white; padding: 0; }
+      section, nav.toc, header { break-inside: avoid; }
+    }
+  </style>
+  <meta name="fdec-page-title" content="NICET CPD Guide">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#1B2A4A">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Quick Hub">
+  <style>
+    body{max-width:none;margin:0;padding:0;background:transparent;}
+    .bg-layer{position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,#0e1a30 0%,#152c4c 100%);}
+    main{max-width:900px;margin:0 auto;padding:1.25rem 16px calc(40px + env(safe-area-inset-bottom));}
+    .intro{margin:4px 2px 18px;color:#dbe6f4;}
+    .intro h1{font-size:1.5rem;margin:.2rem 0 6px;color:#fff;font-weight:800;}
+    .intro p{margin:0;color:#aebdd2;font-size:.95rem;max-width:660px;}
+    a.hubback{display:inline-block;margin-bottom:12px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.42);color:#fff;text-decoration:none;font:700 12px/1 Arial,Helvetica,sans-serif;padding:7px 12px;border-radius:8px;}
+    a.hubback:hover{background:rgba(255,255,255,.26);}
+    footer{color:#90a2bd;border-top-color:rgba(255,255,255,.18);}
+    @media print{.bg-layer{display:none}a.hubback{display:none}main{max-width:none;padding:0}body{background:#fff}footer{color:#555}}
+  </style>
+</head>
+<body>
+<div class="bg-layer"></div>
+<main>
+<div class="intro">
+  <a class="hubback" href="nicet-study.html">← Study guides</a>
+  <h1>NICET Candidate Portal Guide</h1>
+  <p>How to log in, understand CPD, add CPD points, and manage Work History at nicet.useclarus.com.</p>
+</div>
+
+<nav class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#login">Logging in to the portal</a></li>
+    <li><a href="#what-is-cpd">What is CPD?</a></li>
+    <li><a href="#how-to-earn">How to earn CPD points</a></li>
+    <li><a href="#manage-cpd">Managing and adding CPD in the portal</a></li>
+    <li><a href="#work-history">Adding and modifying Work History</a></li>
+    <li><a href="#recertify">Submitting for recertification</a></li>
+    <li><a href="#tips">Tips and common issues</a></li>
+  </ol>
+</nav>
+
+<!-- ========== LOGIN ========== -->
+<section id="login">
+  <h2>1. Logging in to the NICET Portal</h2>
+  <p>The official candidate portal is hosted at:</p>
+  <p class="url">https://nicet.useclarus.com/login</p>
+
+  <h3>Steps to log in</h3>
+  <ol class="steps">
+    <li><strong>Go to the login page</strong> — Open <a href="https://nicet.useclarus.com/login" target="_blank" rel="noopener">https://nicet.useclarus.com/login</a> in your browser.</li>
+    <li><strong>Enter your credentials</strong> — Use the email address that is on file with NICET and your password.</li>
+    <li><strong>Forgot password?</strong> — Click “Forgot your password? Reset it here.” A reset link will be sent from <strong>nicet-noreply@useclarus.com</strong>. Check spam/junk and add that address to your safe senders list.</li>
+    <li><strong>New users</strong> — If you have never had a NICET account, use the “fill out a basic profile” / registration link. If you already applied or tested in the past, do <em>not</em> create a new profile — contact NICET instead.</li>
+  </ol>
+
+  <div class="note">
+    <strong>Note:</strong> Portal messages and password resets come from <code>nicet-noreply@useclarus.com</code>. Make sure this address is allowed by your email system (especially work email).
+  </div>
+
+  <h3>After you log in</h3>
+  <p>Your home screen shows your certification cards (each certification/level you hold), expiration timing, and CPD progress. The left-side navigation includes options such as:</p>
+  <ul>
+    <li><strong>Manage your CPD</strong> (under Continuing Professional Development)</li>
+    <li><strong>Apply</strong> (for new or upgrade applications)</li>
+    <li>Your email address (top right) → <strong>Profile</strong> (for contact info and Work History)</li>
+  </ul>
+</section>
+
+<!-- ========== WHAT IS CPD ========== -->
+<section id="what-is-cpd">
+  <h2>2. What is CPD?</h2>
+  <p><strong>CPD</strong> stands for <strong>Continuing Professional Development</strong>.</p>
+  <p>NICET uses a points-based system so certificants keep their knowledge and skills current after initial certification. Every certification runs on a <strong>three-year (36-month) cycle</strong>. To keep a certification in Active status, you must document <strong>90 CPD points</strong> for that certification during the three-year period and pay the recertification fee.</p>
+
+  <div class="success">
+    <strong>Key rule:</strong> 90 CPD points are required per certification (per subfield) every three years. Points must come from <strong>two or more</strong> of the five CPD categories. Each category has a maximum that can count toward the 90.
+  </div>
+
+  <h3>CPD categories and limits</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Category</th>
+        <th>Max points (3 years)</th>
+        <th>% of 90</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Active Practitioner</strong></td>
+        <td>72 (up to 24 per year)</td>
+        <td>80%</td>
+      </tr>
+      <tr>
+        <td><strong>Additional Education</strong></td>
+        <td>72</td>
+        <td>80%</td>
+      </tr>
+      <tr>
+        <td><strong>Advance Profession</strong></td>
+        <td>45</td>
+        <td>50%</td>
+      </tr>
+      <tr>
+        <td><strong>Certification Activity</strong></td>
+        <td>90</td>
+        <td>100%</td>
+      </tr>
+      <tr>
+        <td><strong>Special Exam</strong></td>
+        <td>45</td>
+        <td>50%</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>Full official details: <a href="https://www.nicet.org/recertify" target="_blank" rel="noopener">https://www.nicet.org/recertify</a></p>
+</section>
+
+<!-- ========== HOW TO EARN ========== -->
+<section id="how-to-earn">
+  <h2>3. How to earn CPD points</h2>
+
+  <h3>Active Practitioner (up to 72 points)</h3>
+  <p>You are an active practitioner if your main job regularly involves the technical tasks of your certification area (hands-on, immediate supervisor, or technical project manager).</p>
+  <ul>
+    <li>Full-time work that meets the criteria: up to <strong>24 points per year</strong> (72 over three years).</li>
+    <li>Minimum threshold for a year: about 1,000 hours or 120 work days (7+ hours each day).</li>
+    <li>Part-time or partial years: use NICET’s formula and round to the nearest whole number. Only totals of 8 or more may be claimed.</li>
+    <li><strong>Required:</strong> An up-to-date Work History in the portal must support Active Practitioner claims.</li>
+  </ul>
+
+  <h3>Additional Education (up to 72 points)</h3>
+  <p>Courses, seminars, workshops, distance learning, in-house training, and technical presentations that increase your knowledge in the practice area.</p>
+  <ul>
+    <li>Generally <strong>1 CPD point per contact hour</strong> (45–60 minute learning period).</li>
+    <li>College courses: 15 points per semester hour or 10 per quarter hour.</li>
+    <li>NICET does <em>not</em> pre-approve courses. The activity must genuinely develop your knowledge, not just review what you already know.</li>
+    <li>Document date(s), location, sponsor/organization, subject, and relevance to your practice area. Certificates of completion are often requested on audit.</li>
+  </ul>
+
+  <h3>Advance Profession (up to 45 points)</h3>
+  <p>Giving back to the profession: committee work, presentations, teaching, professional society membership/meetings, career-day or STEM outreach, NICET subject-matter-expert (SME) participation, etc. Point values vary by activity (see the Recertify page for the full table).</p>
+
+  <h3>Certification Activity (up to 90 points)</h3>
+  <p>Earning or upgrading a NICET certification (or meeting higher-level exam requirements) during the period can award substantial points — up to the full 90 for an upgrade in the same practice area, or 30 for a related subfield certification.</p>
+
+  <h3>Special Recertification Exam (45 points)</h3>
+  <p>A special written exam for your practice area and level. Contact NICET (test@nicet.org or 888-476-4238) well before your expiration date if you need this option.</p>
+
+  <div class="note">
+    Activities that are relevant to more than one of your certifications can often be counted toward each of those certifications (for example, an 8-hour relevant course can give 8 education points to each applicable subfield).
+  </div>
+</section>
+
+<!-- ========== MANAGE CPD ========== -->
+<section id="manage-cpd">
+  <h2>4. Managing and adding CPD in the portal</h2>
+  <p>You can (and should) enter CPD points as you earn them. The portal keeps a running total and stores your documentation.</p>
+
+  <h3>How to add CPD credits</h3>
+  <ol class="steps">
+    <li><strong>Log in</strong> at <a href="https://nicet.useclarus.com/login" target="_blank" rel="noopener">https://nicet.useclarus.com/login</a>.</li>
+    <li>On the home screen, either:
+      <ul>
+        <li>Click <strong>“Manage your CPD”</strong> in the left navigation under Continuing Professional Development, or</li>
+        <li>On a certification card, click the <strong>“90 CPD points”</strong> (or similar) link under Renewal Requirements.</li>
+      </ul>
+    </li>
+    <li>Click <strong>“Add CPD credits”</strong>.</li>
+    <li>A form opens. Use the dropdown to select a <strong>CPD category</strong> (Active Practitioner, Additional Education, etc.).</li>
+    <li>The form expands with fields for points and supporting information. Enter the required details. Descriptions and guidance appear for the selected category.</li>
+    <li>Upload supporting documentation when available (certificates, agendas, etc.).</li>
+    <li>Save the entry. Repeat for additional activities.</li>
+  </ol>
+
+  <div class="warn">
+    <strong>Active Practitioner:</strong> Claims in this category must be backed by an updated Work History. Links to your profile/Work History appear on the home screen, when you add Active Practitioner points, and during checkout.
+  </div>
+
+  <h3>Tracking progress</h3>
+  <p>Your home screen and certification cards show points claimed so far and time remaining until expiration. Enter points throughout the three-year period so you are ready when the renewal window opens (typically within about 6 months of expiration).</p>
+</section>
+
+<!-- ========== WORK HISTORY ========== -->
+<section id="work-history">
+  <h2>5. Adding and modifying Work History</h2>
+  <p>Work History is stored in your <strong>Profile</strong>. It is required for Active Practitioner CPD points and for applications/upgrades. Returning candidates (recertification or upgrades) should add only the period since their last submitted work history — do not delete or alter previously submitted entries.</p>
+
+  <h3>How to open Work History</h3>
+  <ol class="steps">
+    <li>Log in to the portal.</li>
+    <li>Click your <strong>email address</strong> (usually top right).</li>
+    <li>Choose <strong>Profile</strong>.</li>
+    <li>Click the prompt to <strong>Update profile</strong>.</li>
+    <li>Scroll down to the <strong>Work History</strong> section.</li>
+  </ol>
+  <p>You can also reach Work History from links when adding Active Practitioner CPD or during the renewal/checkout flow.</p>
+
+  <h3>How to add a Work History entry</h3>
+  <ol class="steps">
+    <li>Click <strong>“+ Add”</strong>.</li>
+    <li>Fill in employment details:
+      <ul>
+        <li>Employer name</li>
+        <li>Position / title</li>
+        <li>Supervisor name(s)</li>
+        <li>Employment dates</li>
+        <li>Location (city, state)</li>
+        <li>Employment level (full-time / part-time)</li>
+      </ul>
+    </li>
+    <li>At the bottom of the entry, use the <strong>“+”</strong> control to add Subfield / Technical Area (S/TA) breakouts:
+      <ul>
+        <li>Select the S/TA from the dropdown.</li>
+        <li>Enter the <strong>percentage</strong> of work devoted to that area.</li>
+        <li>Write a <strong>detailed description</strong> (in your own words) of the work performed in that area.</li>
+      </ul>
+    </li>
+    <li>Percentages for the period must total <strong>100%</strong>. Add as many S/TA lines as needed.</li>
+    <li>Click <strong>“+ Add”</strong> again if you need another time period or another position (e.g., promotion or change of duties at the same employer).</li>
+    <li><strong>Save</strong> all entries.</li>
+  </ol>
+
+  <h3>Important rules for Work History</h3>
+  <ul>
+    <li><strong>First-time applicants:</strong> Document the entire career. Create a separate entry for each position and for any significant change in responsibilities.</li>
+    <li><strong>Returning applicants / recertification:</strong> Only add the period from the end of your last submitted work history to the present. Do not delete or rewrite old entries.</li>
+    <li>Include all work activities (relevant and non-relevant). Break experience into applicable technical areas with percentages and descriptions.</li>
+    <li>Do not copy-paste identical descriptions across different positions or periods; each description should reflect the actual work.</li>
+    <li>Work History accepted for Active Practitioner points may not by itself be enough for a higher-level or new-subfield application.</li>
+  </ul>
+
+  <div class="note">
+    Official Work Experience guidance: <a href="https://www.nicet.org/work-experience" target="_blank" rel="noopener">https://www.nicet.org/work-experience</a>
+  </div>
+</section>
+
+<!-- ========== RECERTIFY ========== -->
+<section id="recertify">
+  <h2>6. Submitting for recertification</h2>
+  <ol class="steps">
+    <li>Ensure you have entered at least <strong>90 CPD points</strong> for each certification you wish to renew (from two or more categories).</li>
+    <li>Update Work History if you are claiming Active Practitioner points.</li>
+    <li>Within roughly <strong>6 months</strong> of expiration, a <strong>“Submit Renewal”</strong> / pay option appears on the home screen.</li>
+    <li>Review your entries, then proceed to payment and checkout.</li>
+    <li>NICET reviews the submission. You will be notified through the portal (approval or request for more information). Typical response window is a few weeks.</li>
+  </ol>
+  <p>Base recertification fee and incremental fees for additional subfields are published on the Recertify page. Late/reinstatement rules apply if the certification has already expired.</p>
+</section>
+
+<!-- ========== TIPS ========== -->
+<section id="tips">
+  <h2>7. Tips and common issues</h2>
+  <ul>
+    <li><strong>Enter CPD as you go</strong> — Don’t wait until the last month. The portal stores points and documents for you.</li>
+    <li><strong>Email deliverability</strong> — Whitelist <code>nicet-noreply@useclarus.com</code>. Check spam for password resets and portal messages.</li>
+    <li><strong>Existing candidates</strong> — Never create a second profile. Use Forgot Password or contact NICET if you can’t log in.</li>
+    <li><strong>Audits</strong> — Keep certificates, agendas, and employer letters. NICET may request them after you submit.</li>
+    <li><strong>Multiple certifications</strong> — You need 90 points per certification/subfield. Some activities can count toward more than one if relevant.</li>
+    <li><strong>Need help?</strong> Use the messaging feature in the portal when possible, or contact NICET:
+      <ul>
+        <li>Phone: 888-476-4238 or 703-548-1518</li>
+        <li>Email (evaluations): evaluations@nicet.org</li>
+        <li>Contact page: <a href="https://www.nicet.org/about-us/contact/" target="_blank" rel="noopener">https://www.nicet.org/about-us/contact/</a></li>
+      </ul>
+    </li>
+  </ul>
+  <div class="success">
+    Primary official references: <a href="https://www.nicet.org/recertify" target="_blank" rel="noopener">Recertify / CPD</a> · <a href="https://www.nicet.org/work-experience" target="_blank" rel="noopener">Work Experience</a> · Portal login: <a href="https://nicet.useclarus.com/login" target="_blank" rel="noopener">nicet.useclarus.com/login</a>
+  </div>
+</section>
+
+<footer>
+  Unofficial educational summary based on NICET public guidance. Always confirm requirements and fees on nicet.org and in your candidate portal. Policies can be updated by NICET.
+</footer>
+
+</main>
+<script src="fdec-header.js"></script>
+</body>
+</html>
