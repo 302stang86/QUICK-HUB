@@ -457,6 +457,7 @@ window.PERM = (function () {
       ["timeoff","Time-Off Requests","Submit and view time-off requests"],
       ["oncall","On-Call Rotation","View the on-call rotation schedule"],
       ["inventory","Personal Inventory","Open the per-vehicle stock / inventory tracker"],
+      ["fleet","Fleet Service","Submit vehicle service requests to managers and administrators"],
       ["timesheet","Weekly Time Sheet","Open and submit the weekly time sheet"],
       ["quoting","Quoting & Proposal Suite","Open the quoting and proposal builder"],
       ["administration","Administration","Open this Administration page — manage users, quote files, and permissions"]
@@ -474,10 +475,10 @@ window.PERM = (function () {
   /* Seeded from fdec-auth.js DEFAULT_PAGES so the editor opens showing exactly
      what is already in force. admin = every page. */
   var DEFAULTS = {
-    new:    ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","timeoff"],
-    tech:   ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","timeoff","itm","servicetrade","oncall","inventory"],
-    temp:   ["home","troubleshooting","frequencies","help","library"],
-    manager:["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","timeoff","itm","servicetrade","oncall","inventory","quoting","administration"],
+    new:    ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","timeoff","fleet"],
+    tech:   ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","timeoff","itm","servicetrade","oncall","inventory","fleet"],
+    temp:   ["home","troubleshooting","frequencies","help","library","fleet"],
+    manager:["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","timeoff","itm","servicetrade","oncall","inventory","quoting","administration","fleet"],
     admin:null
   };
   var ALL = [];

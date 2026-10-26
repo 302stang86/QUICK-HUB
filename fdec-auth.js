@@ -54,7 +54,7 @@ const DEFAULT_PAGES = {
   timeoff:         ["new","tech","manager","admin"],
   oncall:          ["tech","manager","admin"],
   inventory:       ["tech","manager","admin"],
-  fleet:           ["tech","manager","admin"],
+  fleet:           ["new","tech","manager","admin","temp"],
   timesheet:       ["admin"],   // LOCKED to admin until released to technicians
   quoting:         ["manager","admin"],
   administration:  ["manager","admin"]   // managers reach the quote files here; roster/resets/permissions stay admin-only inside the page

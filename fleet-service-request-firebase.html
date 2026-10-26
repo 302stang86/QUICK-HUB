@@ -240,12 +240,12 @@
         </select>
       </label>
       <label class="fld">
-        <span>Send service report to manager</span>
+        <span>Send service report to manager or administrator</span>
         <select id="manager" aria-label="Manager to receive report">
-          <option value="">Select a manager</option>
+          <option value="">Select a manager or administrator</option>
           <!-- Manager records load from your existing integration after setup. -->
         </select>
-        <div class="errmsg" id="err-manager">Select a manager to receive the service report.</div>
+        <div class="errmsg" id="err-manager">Select a manager or administrator to receive the service report.</div>
       </label>
       <div class="hint">Managers load from your Employee Hub. PDF reports are saved to Firebase; automatic email requires a separately deployed email service.</div>
     </div>
@@ -363,7 +363,7 @@
   var pendingManager = "";
   function applyManagers(list){
     var el=$("manager"), selected=pendingManager||el.value;
-    el.innerHTML='<option value="">Select a manager</option>';
+    el.innerHTML='<option value="">Select a manager or administrator</option>';
     (Array.isArray(list)?list:[]).forEach(function(m){
       if(!m || !m.id || !m.name) return;
       var op=document.createElement("option");op.value=String(m.id);op.textContent=String(m.name);el.appendChild(op);
@@ -376,16 +376,7 @@
       try{applyManagers(await window.FDECFleet.listManagers());}catch(e){console.warn("Manager directory unavailable",e);setStatus("Could not load managers: "+e.message,true);}
       return;
     }
-    if(Array.isArray(CONFIG.managers)) applyManagers(CONFIG.managers);
-    if(CONFIG.managersUrl){
-      try{
-        var headers={};
-        if(typeof CONFIG.getIdToken==="function") headers.Authorization="Bearer "+await CONFIG.getIdToken();
-        var res=await fetch(CONFIG.managersUrl,{headers:headers});
-        if(!res.ok) throw new Error("Manager list request failed: "+res.status);
-        var data=await res.json(); applyManagers(Array.isArray(data)?data:data.managers);
-      }catch(err){ console.warn("Manager directory unavailable",err); }
-    }
+    setStatus("Recipient directory unavailable. Contact an administrator to deploy the Fleet recipient service.",true);
   }
   function updateSchedule(){
     var no=$("scheduleStatus").value==="not-scheduled";
@@ -760,7 +751,7 @@
       try{
         var receipt=await submitReport(pdf,lastData,filename);
         setStatus("",false);
-        $("toast").textContent=receipt.sent===true ? "PDF downloaded and emailed to "+lastData.managerName+". Reference: "+receipt.reportId : "PDF downloaded and saved to Firestore. NOT EMAILED: no email delivery backend is connected. Report ID: "+receipt.reportId;
+        $("toast").textContent=receipt.sent===true ? "PDF downloaded and emailed to "+lastData.managerName+". Reference: "+receipt.reportId : "PDF downloaded and saved. Email not confirmed: "+(receipt.deliveryError||"delivery service unavailable")+". Report ID: "+receipt.reportId;
         $("toast").classList.add("show");
       }catch(err){
         $("toast").textContent="PDF saved locally. NOT SENT: "+err.message;
