@@ -5,7 +5,7 @@
    - Assets: managers/admins assign a vehicle to a technician (fleetAssets/{uid});
      a technician reads only their OWN assignment. */
 import { getApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getFirestore, doc, getDoc, setDoc, collection, getDocs, addDoc, serverTimestamp }
+import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs, addDoc, serverTimestamp }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 const db = getFirestore(getApp('fdec'));
@@ -96,5 +96,14 @@ async function saveAsset(techUid, techName, v){
   return payload;
 }
 
-window.FDECFleet = { submitReport, getMyAsset, listTechnicians, listAssets, saveAsset, FLEET_RECIPIENTS };
+/* Manager/admin: remove a technician's assigned vehicle. */
+async function deleteAsset(techUid){
+  await window.FDECAuth.ready;
+  const auth = window.FDECAuth;
+  if(!isManagerOrAdmin(auth)) throw new Error('Managers and administrators only.');
+  if(!techUid) throw new Error('No technician selected.');
+  await deleteDoc(doc(db, 'fleetAssets', String(techUid)));
+}
+
+window.FDECFleet = { submitReport, getMyAsset, listTechnicians, listAssets, saveAsset, deleteAsset, FLEET_RECIPIENTS };
 window.dispatchEvent(new Event('fdec-fleet-ready'));

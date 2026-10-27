@@ -215,6 +215,10 @@
   .asset-grid input:focus{outline:2px solid rgba(27,49,88,.25);border-color:#1b3158}
   .asset-actions{display:flex;align-items:center;gap:12px;margin-top:12px}
   .asset-msg{font-size:12.5px;font-weight:700}
+  #assetsView .asset-grid input, #assetsView input, #assetPicker{background:#fff !important;color:#000 !important}
+  #assetsView .asset-name, #assetsView .asset-name small, #assetsView h2{color:#13233c !important}
+  #assetsView .hint, #assetsStatus, #assetsView .asset-grid label span{color:#33445c !important}
+  #assetPicker{width:100%;padding:9px 10px;border:1.5px solid #c7d4e1;border-radius:8px;font:inherit;font-size:14px}
 </style>
 </head>
 <body>
@@ -247,6 +251,7 @@
       <div class="row">
         <label class="fld">
           <span>Technician name</span>
+          <select id="assetPicker" hidden aria-label="Select a technician and assigned vehicle" style="margin-bottom:8px"><option value="">Select a technician / asset&hellip;</option></select>
           <input type="text" id="name" placeholder="Full name" autocomplete="name">
           <div class="errmsg" id="err-name">Enter the technician name.</div>
         </label>
@@ -307,7 +312,11 @@
         <label class="fld"><span>Vehicle Make</span><input id="otherMake" type="text" placeholder="e.g., Chevrolet" autocomplete="off"><div class="errmsg" id="err-otherMake">Enter the vehicle make.</div></label>
         <label class="fld"><span>Vehicle Model</span><input id="otherModel" type="text" placeholder="e.g., Silverado" autocomplete="off"><div class="errmsg" id="err-otherModel">Enter the vehicle model.</div></label>
       </div>
-      <label class="fld"><span>Model Year (optional)</span><input id="otherYear" type="number" min="1900" max="2100" placeholder="e.g., 2024"></label>
+      <label class="fld"><span>Model Year</span><input id="otherYear" type="number" min="1900" max="2100" placeholder="e.g., 2024"><div class="errmsg" id="err-otherYear">Enter the model year.</div></label>
+      <div class="row" style="margin-top:12px">
+        <label class="fld"><span>Vehicle Number</span><input type="text" id="vin" placeholder="e.g., Van 37" autocapitalize="characters"><div class="errmsg" id="err-vin">Enter the vehicle number (e.g., Van 37).</div></label>
+        <label class="fld"><span>License plate</span><input type="text" id="plate" placeholder="ABC-1234" autocapitalize="characters"><div class="errmsg" id="err-plate">Enter the plate number.</div></label>
+      </div>
       <label class="fld" style="margin-top:12px"><span>Vehicle Issues / Service Needed</span><textarea id="otherIssue" placeholder="Describe the vehicle issue, affected area, or work requested…" rows="4"></textarea></label>
     </div>
 
@@ -324,21 +333,6 @@
         <button type="button" class="btn sm" id="clearBtn">Clear all pins</button>
       </div>
       <div class="markers" id="markerList"></div>
-    </div>
-
-    <div class="section">
-      <div class="row">
-        <label class="fld">
-          <span>Vehicle Number</span>
-          <input type="text" id="vin" placeholder="e.g., Van 37" autocapitalize="characters">
-          <div class="errmsg" id="err-vin">Enter the vehicle number (e.g., Van 37).</div>
-        </label>
-        <label class="fld">
-          <span>License plate</span>
-          <input type="text" id="plate" placeholder="ABC-1234" autocapitalize="characters">
-          <div class="errmsg" id="err-plate">Enter the plate number.</div>
-        </label>
-      </div>
     </div>
 
     <div class="section">
@@ -477,7 +471,7 @@
     var other=v==="other";
     $("otherVehicleSection").hidden=!other;
     $("vehicleDiagramSection").hidden=other;
-    ["otherMake","otherModel"].forEach(function(id){$(id).required=other;});
+    ["otherMake","otherModel","otherYear","vin","plate"].forEach(function(id){$(id).required=other;});
     if(!other){img.src = VEHICLES[v].img; img.alt = VEHICLES[v].label + " diagram";render();}
     else { save(); }
   }
@@ -594,12 +588,12 @@
   /* ---------- validation + report ---------- */
   function validate(){
     var ok=true;
-    [["name","err-name"],["vin","err-vin"],["plate","err-plate"]].forEach(function(p){
+    [["name","err-name"]].forEach(function(p){
       var el=$(p[0]), msg=$(p[1]);
       if(!el.value.trim()){ ok=false; el.classList.add("err"); msg.classList.add("show"); }
       else{ el.classList.remove("err"); msg.classList.remove("show"); }
     });
-    ["otherMake","otherModel"].forEach(function(id){
+    ["otherMake","otherModel","otherYear","vin","plate"].forEach(function(id){
       var el=$(id), msg=$("err-"+id), missing=state.vehicle==="other"&&!el.value.trim();
       el.classList.toggle("err",missing);msg.classList.toggle("show",missing);
       if(missing) ok=false;
@@ -637,8 +631,8 @@
       otherModel:state.vehicle==="other"?$("otherModel").value.trim():"",
       otherYear:state.vehicle==="other"?$("otherYear").value.trim():"",
       otherIssue:state.vehicle==="other"?$("otherIssue").value.trim():"",
-      vin:$("vin").value.trim(),
-      plate:$("plate").value.trim().toUpperCase(),
+      vin:(state.vehicle==="other"?$("vin").value.trim():((window.__fleetAsset&&window.__fleetAsset.vehicleNumber)||"")),
+      plate:(state.vehicle==="other"?$("plate").value.trim().toUpperCase():((window.__fleetAsset&&window.__fleetAsset.plate)||"")),
       checklist:getChecks(),
       points:(state.vehicle==="other"?[]:state.markers[state.vehicle]).map(function(m){ return { n:m.n, x:m.x, y:m.y, note:(m.note||"").trim() }; }),
       notes:$("notes").value.trim()
@@ -927,18 +921,43 @@
     if(!auth||!auth.user||!window.FDECFleet) return;
     var isMgr = !!(auth.isAdmin || (auth.profile&&(auth.profile.role==='manager'||auth.profile.role==='admin')));
 
-    /* Technician view: show the vehicle assigned to this user, and prefill the form. */
-    try{
-      var mine=await window.FDECFleet.getMyAsset();
-      if(mine){
-        var cells=[['Vehicle #',mine.vehicleNumber],['Make',mine.make],['Model',mine.model],['Year',mine.year],['Plate',mine.plate],['VIN',mine.vin]];
+    /* Map an assignment's make/model to the Fleet vehicle options. */
+    function vehicleTypeFromAsset(a){
+      var t=((a&&a.make||'')+' '+(a&&a.model||'')).toLowerCase();
+      if(t.indexOf('promaster')>=0 || t.indexOf('ram')>=0) return 'ram';
+      if(t.indexOf('maverick')>=0 || t.indexOf('ford')>=0) return 'ford';
+      return '';
+    }
+    /* Shared: apply an asset (the tech's own, or one an admin/manager selected). */
+    function applyAsset(asset){
+      window.__fleetAsset = asset || null;
+      if(asset){
+        var cells=[['Vehicle #',asset.vehicleNumber],['Make',asset.make],['Model',asset.model],['Year',asset.year],['Plate',asset.plate],['VIN',asset.vin]];
         $('assignedVehicleBody').innerHTML=cells.map(function(c){return '<div class="cell"><span>'+esc(c[0])+'</span><b>'+esc(c[1]||'—')+'</b></div>';}).join('');
         $('assignedVehiclePanel').hidden=false;
-        var vinEl=$('vin'), plateEl=$('plate');
-        if(vinEl && !vinEl.value && mine.vehicleNumber) vinEl.value=mine.vehicleNumber;
-        if(plateEl && !plateEl.value && mine.plate) plateEl.value=mine.plate;
-      }
-    }catch(e){}
+        var vt=vehicleTypeFromAsset(asset), vsel=$('vehicle');
+        if(vt && vsel && vsel.value!==vt){ vsel.value=vt; vsel.dispatchEvent(new Event('change')); }
+      } else { $('assignedVehiclePanel').hidden=true; }
+    }
+    /* Technician: show the vehicle assigned to this user. */
+    try{ var mine=await window.FDECFleet.getMyAsset(); if(mine) applyAsset(mine); }catch(e){}
+    /* Admin/manager: choose a technician's asset from the dropdown in the name box. */
+    if(isMgr){
+      try{
+        var picker=$('assetPicker');
+        var assetsMap=await window.FDECFleet.listAssets();
+        var entries=Object.keys(assetsMap).map(function(uid){ var a=assetsMap[uid]||{}; a.techUid=a.techUid||uid; return a; })
+          .sort(function(x,y){ return String(x.techName||'').localeCompare(String(y.techName||'')); });
+        if(picker && entries.length){
+          entries.forEach(function(a){ var o=document.createElement('option'); o.value=a.techUid; o.textContent=(a.techName||'Technician')+' — '+(a.vehicleNumber||[a.make,a.model].filter(Boolean).join(' ')||'vehicle'); picker.appendChild(o); });
+          picker.hidden=false;
+          picker.addEventListener('change',function(){
+            var a=entries.filter(function(x){return x.techUid===picker.value;})[0];
+            if(a){ var nm=$('name'); if(nm) nm.value=a.techName||''; applyAsset(a); } else { applyAsset(null); }
+          });
+        }
+      }catch(e){}
+    }
 
     /* Manager/admin: the Assets tab to assign vehicles. */
     if(isMgr){
@@ -959,14 +978,21 @@
             function fld(key,label,val){ return '<label><span>'+esc(label)+'</span><input data-f="'+key+'" value="'+esc(val||'')+'" autocomplete="off"></label>'; }
             card.innerHTML='<div class="asset-name">'+esc(t.name)+' <small>'+esc(t.role)+'</small></div>'+
               '<div class="asset-grid">'+fld('make','Make',a.make)+fld('model','Model',a.model)+fld('year','Year',a.year)+fld('plate','Plate #',a.plate)+fld('vin','VIN #',a.vin)+fld('vehicleNumber','Vehicle #',a.vehicleNumber)+'</div>'+
-              '<div class="asset-actions"><button type="button" class="btn sm primary" data-save>Save</button><span class="asset-msg"></span></div>';
-            var btn=card.querySelector('[data-save]'), msg=card.querySelector('.asset-msg');
+              '<div class="asset-actions"><button type="button" class="btn sm primary" data-save>Save</button><button type="button" class="btn sm" data-remove>Remove asset</button><span class="asset-msg"></span></div>';
+            var btn=card.querySelector('[data-save]'), rm=card.querySelector('[data-remove]'), msg=card.querySelector('.asset-msg');
             btn.addEventListener('click',async function(){
               var v={}; card.querySelectorAll('[data-f]').forEach(function(i){ v[i.getAttribute('data-f')]=i.value.trim(); });
               btn.disabled=true; msg.style.color='#5c6b7e'; msg.textContent='Saving…';
               try{ await window.FDECFleet.saveAsset(t.uid,t.name,v); msg.style.color='#176a36'; msg.textContent='Saved.'; }
               catch(e){ msg.style.color='#b4232c'; msg.textContent='Not saved: '+((e&&e.message)||'error'); }
               finally{ btn.disabled=false; }
+            });
+            rm.addEventListener('click',async function(){
+              if(!confirm('Remove the assigned vehicle for '+t.name+'?')) return;
+              rm.disabled=true; msg.style.color='#5c6b7e'; msg.textContent='Removing…';
+              try{ await window.FDECFleet.deleteAsset(t.uid); card.querySelectorAll('[data-f]').forEach(function(i){ i.value=''; }); var opt=document.querySelector('#assetPicker option[value="'+t.uid+'"]'); if(opt) opt.remove(); msg.style.color='#176a36'; msg.textContent='Removed.'; }
+              catch(e){ msg.style.color='#b4232c'; msg.textContent='Not removed: '+((e&&e.message)||'error'); }
+              finally{ rm.disabled=false; }
             });
             list.appendChild(card);
           });
