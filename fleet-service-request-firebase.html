@@ -197,6 +197,24 @@
   .wrap select{color-scheme:light}
   .wrap header.app h1,.wrap header.app p{color:#111!important}
   @media print{body>.bg-layer,.fleet-user-actions{display:none!important}body>.wrap{margin-top:0}.wrap>.app,.wrap .section{box-shadow:none}}
+  /* Fleet tabs + assigned vehicle + assets */
+  .fleet-tabs{display:flex;gap:8px;margin:0 0 14px;flex-wrap:wrap}
+  .fleet-tabs .ftab{padding:9px 16px;border:1px solid #c7d4e1;background:#fff;color:#1b2f52;border-radius:9px;font-weight:700;cursor:pointer;font:inherit;font-weight:700}
+  .fleet-tabs .ftab.active{background:#1b3158;color:#fff;border-color:#1b3158}
+  .assigned-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  .assigned-grid .cell{background:#f4f8fc;border:1px solid #dfe7f0;border-radius:8px;padding:9px 11px}
+  .assigned-grid .cell span{display:block;font-size:11px;color:#5c6b7e;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+  .assigned-grid .cell b{font-size:15px;color:#13233c;overflow-wrap:anywhere}
+  .asset-card{border:1px solid #d9e2ec;border-radius:10px;padding:14px;margin-bottom:12px;background:#fbfcfe}
+  .asset-card .asset-name{font-weight:800;color:#13233c;font-size:15px;margin-bottom:10px}
+  .asset-card .asset-name small{font-weight:600;color:#6a7a8c;text-transform:uppercase;font-size:11px;margin-left:6px}
+  .asset-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  .asset-grid label{display:block}
+  .asset-grid label span{display:block;font-size:11px;font-weight:700;color:#5c6b7e;margin-bottom:4px}
+  .asset-grid input{width:100%;padding:9px 10px;border:1.5px solid #c7d4e1;border-radius:8px;font:inherit;font-size:14px;color:#13233c;box-sizing:border-box}
+  .asset-grid input:focus{outline:2px solid rgba(27,49,88,.25);border-color:#1b3158}
+  .asset-actions{display:flex;align-items:center;gap:12px;margin-top:12px}
+  .asset-msg{font-size:12.5px;font-weight:700}
 </style>
 </head>
 <body>
@@ -212,8 +230,18 @@
     </div>
   </header>
 
+  <div class="fleet-tabs no-print" id="fleetTabs">
+    <button type="button" class="ftab active" data-pane="formView">Service Request</button>
+    <button type="button" class="ftab" data-pane="assetsView" id="assetsTabBtn" hidden>Assets</button>
+  </div>
+
   <!-- ============ FORM VIEW ============ -->
   <div id="formView">
+
+    <div id="assignedVehiclePanel" class="section" hidden style="border-left:5px solid #2c6950">
+      <h2 style="margin-top:0">Your assigned vehicle</h2>
+      <div class="assigned-grid" id="assignedVehicleBody"></div>
+    </div>
 
     <div class="section">
       <div class="row">
@@ -240,16 +268,8 @@
           <option value="other">Other</option>
         </select>
       </label>
-      <label class="fld">
-        <span>Send service report to manager or administrator</span>
-        <select id="manager" aria-label="Manager to receive report">
-          <option value="">Select a manager or administrator</option>
-          <!-- Manager records load from your existing integration after setup. -->
-        </select>
-        <div style="display:flex;align-items:center;gap:10px;margin-top:7px;flex-wrap:wrap"><button type="button" id="reloadRecipients" style="padding:7px 12px;border:1px solid #bac7d5;border-radius:7px;background:#fff;color:#152238;cursor:pointer;font-weight:700">Reload Recipients</button><span id="recipientLoadStatus" role="status" aria-live="polite" style="font-size:12px;color:#263746">Loading recipient list…</span></div>
-        <div class="errmsg" id="err-manager">Select a manager or administrator to receive the service report.</div>
-      </label>
-      <div class="hint">Assign the request to a manager or administrator. Submitting saves the request directly in Employee Hub; no email or PDF attachment is required.</div>
+      <select id="manager" hidden></select>
+      <div class="hint">Submitting saves the request to the manager dashboard and opens your email app addressed to the fleet managers (mp1, wh1, and neal) with the details filled in &mdash; just press Send.</div>
     </div>
 
     <div class="section logistics-panel" id="transportationSection">
@@ -345,6 +365,16 @@
     </footer>
   </div>
 
+  <!-- ============ ASSETS VIEW (managers/admins only) ============ -->
+  <div id="assetsView" hidden>
+    <div class="section">
+      <h2 style="margin-top:0">Vehicle assignments</h2>
+      <div class="hint">Assign a vehicle to each technician. They will see it when they open Fleet Service Request.</div>
+      <div id="assetsStatus" class="hint" role="status" aria-live="polite" style="margin-top:10px">Loading technicians&hellip;</div>
+      <div id="assetsList" style="margin-top:12px"></div>
+    </div>
+  </div>
+
   <!-- ============ REPORT VIEW ============ -->
   <div id="reportView" hidden>
     <div id="reportBody"></div>
@@ -376,35 +406,6 @@
   // Never place email-provider secrets or Firebase Admin credentials in a browser file.
   var CONFIG = window.FLEET_SERVICE_CONFIG || {};
   var pendingManager = "";
-  function applyManagers(list){
-    var el=$("manager"), selected=pendingManager||el.value;
-    el.innerHTML='<option value="">Select a manager or administrator</option>';
-    (Array.isArray(list)?list:[]).forEach(function(m){
-      if(!m || !m.id || !m.name || !m.email) return;
-      var op=document.createElement("option");op.value=String(m.id);op.dataset.email=String(m.email);op.textContent=String(m.name)+" ("+String(m.role||"recipient")+")";el.appendChild(op);
-    });
-    el.value=selected;
-    if(el.selectedIndex<0) el.value="";
-  }
-  async function loadManagers(){
-    var btn=$('reloadRecipients'), msg=$('recipientLoadStatus');
-    if(btn) btn.disabled=true;
-    if(msg){msg.style.color='#263746'; msg.textContent='Loading approved manager/admin recipients…';}
-    try {
-      // Module load and authentication can finish independently; wait for both.
-      if(window.FDECAuth && window.FDECAuth.ready) await window.FDECAuth.ready;
-      if(!window.FDECFleet || typeof window.FDECFleet.listManagers !== 'function')
-        throw new Error('Recipient connection did not load. Verify fdec-fleet-integration.js was uploaded to GitHub.');
-      var managers=await window.FDECFleet.listManagers();
-      applyManagers(managers);
-      if(!managers.length) throw new Error('The recipient directory has no valid managers/admins. Check the recipients array for id, name, email, and role fields.');
-      if(msg) { msg.style.color='#176a36'; msg.textContent=managers.length+' manager/admin recipient'+(managers.length===1?'':'s')+' available.'; }
-    } catch(e) {
-      console.error('Fleet recipient lookup failed:',e);
-      applyManagers([]);
-      if(msg) { msg.style.color='#b4232c'; msg.textContent='Unable to load recipients: '+(e && e.message || 'Unknown error'); }
-    } finally { if(btn) btn.disabled=false; }
-  }
   function updateSchedule(){
     var no=$("scheduleStatus").value==="not-scheduled";
     $("date").hidden=no;
@@ -572,7 +573,7 @@
 
   $("vehicle").addEventListener("change", function(){ setVehicle(this.value); });
 
-  ["name","date","vin","plate","notes","manager"].forEach(function(id){
+  ["name","date","vin","plate","notes"].forEach(function(id){
     $(id).addEventListener("input", save);
   });
   Array.prototype.forEach.call(document.querySelectorAll("#checks input"), function(cb){
@@ -589,7 +590,6 @@
   $("dropOff").addEventListener("change",updateDropOff);
   ["dropOffDays","spareVehicle","transportNeeded"].forEach(function(id){$(id).addEventListener("change",save);$(id).addEventListener("input",save);});
   $("scheduleStatus").addEventListener("change",updateSchedule);
-  $("manager").addEventListener("change",function(){ $("manager").classList.remove("err");$("err-manager").classList.remove("show"); });
 
   /* ---------- validation + report ---------- */
   function validate(){
@@ -605,8 +605,7 @@
       if(missing) ok=false;
     });
     var scheduled=$("scheduleStatus").value==="scheduled";
-    var needs=[{el:$("manager"),msg:$("err-manager"),missing:!$("manager").value},
-               {el:$("date"),msg:$("err-date"),missing:scheduled&&!$("date").value}];
+    var needs=[{el:$("date"),msg:$("err-date"),missing:scheduled&&!$("date").value}];
     needs.forEach(function(item){item.el.classList.toggle("err",item.missing);item.msg.classList.toggle("show",item.missing);if(item.missing) ok=false;});
     var days=$("dropOffDays").value.trim();
     var invalidDays=$("dropOff").value==="yes"&&(!/^[0-9]+$/.test(days)||Number(days)<1||Number(days)>365);
@@ -668,7 +667,7 @@
         '<div class="cell"><span>Scheduled Service Date</span><b>'+esc(d.date)+'</b></div>'+
         '<div class="cell"><span>Vehicle Number</span><b>'+esc(d.vin)+'</b></div>'+
         '<div class="cell"><span>Plate</span><b>'+esc(d.plate)+'</b></div>'+ 
-        '<div class="cell"><span>Report recipient</span><b>'+esc(d.managerName)+'</b></div>'+ 
+        '<div class="cell"><span>Emailed to</span><b>'+esc(FLEET_EMAILS_LABEL)+'</b></div>'+ 
         '<div class="cell"><span>Vehicle drop-off</span><b>'+esc(d.dropOff)+'</b></div>'+ 
         '<div class="cell"><span>Estimated drop-off duration</span><b>'+esc(d.dropOffDays?d.dropOffDays+' day(s)':'Not applicable')+'</b></div>'+ 
         '<div class="cell"><span>Spare vehicle required</span><b>'+esc(d.spareVehicle)+'</b></div>'+ 
@@ -691,7 +690,7 @@
     L.push("");
     L.push("Technician: "+d.technician);
     L.push("Scheduled Service Date: "+d.date);
-    L.push("Report recipient: "+d.managerName);
+    L.push("Emailed to: "+FLEET_EMAILS_LABEL);
     L.push("Vehicle drop-off: "+d.dropOff);
     L.push("Drop-off duration: "+(d.dropOffDays?d.dropOffDays+" day(s)":"Not applicable"));
     L.push("Spare vehicle required: "+d.spareVehicle);
@@ -764,7 +763,7 @@
     doc.setFont("helvetica","bold");doc.setFontSize(18);doc.text("FLEET SERVICE REPORT",margin,y);y+=25;
     doc.setFont("helvetica","normal");doc.setFontSize(9);doc.text("Fire Defense Equipment Co.",margin,y);y+=24;
     line("Technician",d.technician);line("Vehicle",d.vehicle);
-    line("Scheduled Service Date",d.date);line("Report recipient",d.managerName);
+    line("Scheduled Service Date",d.date);line("Emailed to",FLEET_EMAILS_LABEL);
     line("Vehicle Number",d.vin);line("License plate",d.plate);
     if(d.vehicleType==="other"){section("OTHER VEHICLE INFORMATION");line("Make",d.otherMake);line("Model",d.otherModel);line("Model Year",d.otherYear||"Not specified");section("VEHICLE ISSUES / SERVICE NEEDED");paragraph(d.otherIssue||"None provided");}
     section("DROP-OFF & TRANSPORTATION");
@@ -802,15 +801,24 @@
     $("deliveryStatus").textContent=message;
     $("deliveryStatus").style.color=error?"var(--accent)":"var(--ink-2)";
   }
+  var FLEET_EMAILS=["mp1@firedefense.com","wh1@firedefense.com","neal@firedefense.com"];
+  var FLEET_EMAILS_LABEL="Fleet Managers (mp1, wh1, neal)";
   function openFleetEmail(d, filename){
-    if(!d || !d.managerEmail){setStatus('Select a recipient with an email address.',true);return;}
+    if(!d){ return; }
     var subject='Fleet Service Request - '+(d.vin||d.vehicle)+' - '+d.technician;
-    var message='Hello '+d.managerName+',\n\nPlease review the attached Fleet Service Request PDF.\n\n'
-      +'Vehicle: '+d.vehicle+'\nVehicle Number: '+(d.vin||'Not provided')
-      +'\nLicense Plate: '+(d.plate||'Not provided')+'\nTechnician: '+d.technician
-      +'\nScheduled Service Date: '+d.date+'\n\n'
-      +'IMPORTANT: Attach the downloaded PDF file named "'+filename+'" before sending.\n\nThank you.';
-    window.location.href='mailto:'+encodeURIComponent(d.managerEmail)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(message);
+    var message='Fleet Service Request\n\n'
+      +'Technician: '+d.technician+'\n'
+      +'Vehicle: '+d.vehicle+'\n'
+      +'Vehicle Number: '+(d.vin||'Not provided')+'\n'
+      +'License Plate: '+(d.plate||'Not provided')+'\n'
+      +'Scheduled Service Date: '+d.date+'\n'
+      +'Drop-off: '+d.dropOff+(d.dropOffDays?(' ('+d.dropOffDays+' days)'):'')+'\n'
+      +'Spare vehicle: '+d.spareVehicle+'\n'
+      +'Transportation: '+d.transportNeeded+'\n\n'
+      +'Service checklist: '+((d.checklist||[]).join(', ')||'None')+'\n\n'
+      +'Marked areas:\n'+((d.points&&d.points.length)?d.points.map(function(p){return '  '+p.n+'. '+(p.note||'(no note)');}).join('\n'):'  None')+'\n\n'
+      +'Inspection notes:\n'+(d.notes||'None')+'\n';
+    window.location.href='mailto:'+encodeURIComponent(FLEET_EMAILS.join(','))+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(message);
   }
   $("genBtn").addEventListener("click", async function(){
     if(!validate()){
@@ -822,9 +830,10 @@
         throw new Error("Fleet submission connection is unavailable. Refresh the page and retry.");
       lastData=currentData();
       var saved=await window.FDECFleet.submitReport(lastData);
-      $("reportBody").innerHTML='<div class="section" style="border-left:5px solid #1b793e"><h2 style="color:#146332">Service Request Submitted</h2><p><strong>Reference: '+esc(saved.reference)+'</strong></p><p>Assigned to '+esc(lastData.managerName)+'. Your request is now available to managers and administrators inside Employee Hub.</p><p class="hint">No email was sent and you do not need to download or attach a PDF.</p></div>'+buildReport(lastData);
+      $("reportBody").innerHTML='<div class="section" style="border-left:5px solid #1b793e"><h2 style="color:#146332">Service Request Submitted</h2><p><strong>Reference: '+esc(saved.reference)+'</strong></p><p>Saved to the manager dashboard, and your email app is opening addressed to the fleet managers &mdash; press <strong>Send</strong> there to deliver it.</p></div>'+buildReport(lastData);
       $("formView").hidden=true;$("reportView").hidden=false;window.scrollTo(0,0);
-      setStatus("Submitted successfully. Reference: "+saved.reference,false);
+      setStatus("Submitted. Reference: "+saved.reference+" \u2014 your email app is opening.",false);
+      openFleetEmail(lastData, pdfFileName(lastData));
     }catch(err){setStatus("Request was NOT submitted. "+(err.message||err)+" Check your connection and try again.",true);}
     finally{btn.disabled=false;}
   });
@@ -869,14 +878,7 @@
     var di=$("date"); if(di && !di.value){ di.value=new Date().toISOString().slice(0,10); }
     load();
     updateSchedule();
-    $('reloadRecipients').addEventListener('click',loadManagers);
-    if(window.FDECFleet) loadManagers();
-    else {
-      window.addEventListener('fdec-fleet-ready',loadManagers,{once:true});
-      window.addEventListener('load',function(){
-        if(!window.FDECFleet) loadManagers();
-      },{once:true});
-    }
+    /* recipient selection removed — requests email the fixed fleet managers */
     setVehicle(state.vehicle);
     save();
   })();
@@ -898,6 +900,82 @@
       if (techInput && !techInput.value && auth?.profile?.name) techInput.value = auth.profile.name;
     });
   }
+</script>
+<script type="module">
+(function(){
+  var $=function(id){return document.getElementById(id);};
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+
+  /* Tabs: Service Request <-> Assets */
+  function showPane(pane){
+    var assets = pane==='assetsView';
+    $('assetsView').hidden = !assets;
+    $('formView').hidden = assets;
+    $('reportView').hidden = true;
+    document.querySelectorAll('#fleetTabs .ftab').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-pane')===pane); });
+    window.scrollTo(0,0);
+  }
+  var tabs=$('fleetTabs');
+  if(tabs){ tabs.addEventListener('click',function(e){ var b=e.target.closest('[data-pane]'); if(b) showPane(b.getAttribute('data-pane')); }); }
+
+  function waitFleet(){ return new Promise(function(res){ if(window.FDECFleet) return res(); window.addEventListener('fdec-fleet-ready',function(){res();},{once:true}); setTimeout(res,4000); }); }
+
+  (async function(){
+    if(!window.FDECAuth||!window.FDECAuth.ready) return;
+    var auth=await window.FDECAuth.ready;
+    await waitFleet();
+    if(!auth||!auth.user||!window.FDECFleet) return;
+    var isMgr = !!(auth.isAdmin || (auth.profile&&(auth.profile.role==='manager'||auth.profile.role==='admin')));
+
+    /* Technician view: show the vehicle assigned to this user, and prefill the form. */
+    try{
+      var mine=await window.FDECFleet.getMyAsset();
+      if(mine){
+        var cells=[['Vehicle #',mine.vehicleNumber],['Make',mine.make],['Model',mine.model],['Year',mine.year],['Plate',mine.plate],['VIN',mine.vin]];
+        $('assignedVehicleBody').innerHTML=cells.map(function(c){return '<div class="cell"><span>'+esc(c[0])+'</span><b>'+esc(c[1]||'—')+'</b></div>';}).join('');
+        $('assignedVehiclePanel').hidden=false;
+        var vinEl=$('vin'), plateEl=$('plate');
+        if(vinEl && !vinEl.value && mine.vehicleNumber) vinEl.value=mine.vehicleNumber;
+        if(plateEl && !plateEl.value && mine.plate) plateEl.value=mine.plate;
+      }
+    }catch(e){}
+
+    /* Manager/admin: the Assets tab to assign vehicles. */
+    if(isMgr){
+      var tabBtn=$('assetsTabBtn'); if(tabBtn) tabBtn.hidden=false;
+      var built=false;
+      async function buildAssets(){
+        if(built) return; built=true;
+        var status=$('assetsStatus'), list=$('assetsList');
+        try{
+          var techs=await window.FDECFleet.listTechnicians();
+          var assets=await window.FDECFleet.listAssets();
+          if(!techs.length){ status.textContent='No approved employees found.'; return; }
+          status.textContent=techs.length+' employee'+(techs.length===1?'':'s')+'. Fill in a vehicle and press Save.';
+          list.innerHTML='';
+          techs.forEach(function(t){
+            var a=assets[t.uid]||{};
+            var card=document.createElement('div'); card.className='asset-card';
+            function fld(key,label,val){ return '<label><span>'+esc(label)+'</span><input data-f="'+key+'" value="'+esc(val||'')+'" autocomplete="off"></label>'; }
+            card.innerHTML='<div class="asset-name">'+esc(t.name)+' <small>'+esc(t.role)+'</small></div>'+
+              '<div class="asset-grid">'+fld('make','Make',a.make)+fld('model','Model',a.model)+fld('year','Year',a.year)+fld('plate','Plate #',a.plate)+fld('vin','VIN #',a.vin)+fld('vehicleNumber','Vehicle #',a.vehicleNumber)+'</div>'+
+              '<div class="asset-actions"><button type="button" class="btn sm primary" data-save>Save</button><span class="asset-msg"></span></div>';
+            var btn=card.querySelector('[data-save]'), msg=card.querySelector('.asset-msg');
+            btn.addEventListener('click',async function(){
+              var v={}; card.querySelectorAll('[data-f]').forEach(function(i){ v[i.getAttribute('data-f')]=i.value.trim(); });
+              btn.disabled=true; msg.style.color='#5c6b7e'; msg.textContent='Saving…';
+              try{ await window.FDECFleet.saveAsset(t.uid,t.name,v); msg.style.color='#176a36'; msg.textContent='Saved.'; }
+              catch(e){ msg.style.color='#b4232c'; msg.textContent='Not saved: '+((e&&e.message)||'error'); }
+              finally{ btn.disabled=false; }
+            });
+            list.appendChild(card);
+          });
+        }catch(e){ status.textContent='Could not load: '+((e&&e.message)||'error'); }
+      }
+      if(tabBtn) tabBtn.addEventListener('click',buildAssets);
+    }
+  })();
+})();
 </script>
 </body>
 </html>
