@@ -249,7 +249,7 @@
         <div style="display:flex;align-items:center;gap:10px;margin-top:7px;flex-wrap:wrap"><button type="button" id="reloadRecipients" style="padding:7px 12px;border:1px solid #bac7d5;border-radius:7px;background:#fff;color:#152238;cursor:pointer;font-weight:700">Reload Recipients</button><span id="recipientLoadStatus" role="status" aria-live="polite" style="font-size:12px;color:#263746">Loading recipient list…</span></div>
         <div class="errmsg" id="err-manager">Select a manager or administrator to receive the service report.</div>
       </label>
-      <div class="hint">Recipient names and addresses come from the protected Fleet recipient list. The PDF downloads to your device; you attach it to the email draft before sending. No automatic email is sent.</div>
+      <div class="hint">Assign the request to a manager or administrator. Submitting saves the request directly in Employee Hub; no email or PDF attachment is required.</div>
     </div>
 
     <div class="section logistics-panel" id="transportationSection">
@@ -340,7 +340,7 @@
     </div>
 
     <footer class="actions">
-      <button type="button" class="btn primary block" id="genBtn">Generate PDF &amp; Prepare Email</button>
+      <button type="button" class="btn primary block" id="genBtn">Submit Service Request</button>
       <div class="hint" id="deliveryStatus" role="status" aria-live="polite" style="margin-top:10px"></div>
     </footer>
   </div>
@@ -352,7 +352,7 @@
       <button type="button" class="btn" id="backBtn">&larr; Back to edit</button>
       <button type="button" class="btn" id="copyBtn">Copy summary</button>
       <button type="button" class="btn" id="jsonBtn">Download JSON</button>
-      <button type="button" class="btn primary" id="emailBtn">Open Email Draft</button>
+      <button type="button" class="btn primary" id="emailBtn">Share by Email (optional)</button>
       <button type="button" class="btn" id="printBtn">Print / Save PDF</button>
     </div>
     <div class="toast" id="toast">Copied to clipboard.</div>
@@ -816,26 +816,16 @@
     if(!validate()){
       var first=document.querySelector(".err"); if(first) first.scrollIntoView({behavior:"smooth",block:"center"});return;
     }
-    var btn=this;btn.disabled=true;setStatus("Creating PDF report…",false);
+    var btn=this;btn.disabled=true;setStatus("Submitting service request…",false);
     try{
+      if(!window.FDECFleet || typeof window.FDECFleet.submitReport!=="function")
+        throw new Error("Fleet submission connection is unavailable. Refresh the page and retry.");
       lastData=currentData();
-      var pdf=await buildPdf(lastData),filename=pdfFileName(lastData);
-      var url=URL.createObjectURL(pdf),a=document.createElement("a");
-      a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
-      setTimeout(function(){URL.revokeObjectURL(url);},30000);
-      $("reportBody").innerHTML=buildReport(lastData);
+      var saved=await window.FDECFleet.submitReport(lastData);
+      $("reportBody").innerHTML='<div class="section" style="border-left:5px solid #1b793e"><h2 style="color:#146332">Service Request Submitted</h2><p><strong>Reference: '+esc(saved.reference)+'</strong></p><p>Assigned to '+esc(lastData.managerName)+'. Your request is now available to managers and administrators inside Employee Hub.</p><p class="hint">No email was sent and you do not need to download or attach a PDF.</p></div>'+buildReport(lastData);
       $("formView").hidden=true;$("reportView").hidden=false;window.scrollTo(0,0);
-      $("toast").textContent="PDF downloaded as "+filename+". Attach it to the email draft before sending. Nothing has been emailed automatically.";
-      $("toast").classList.add("show");
-      setStatus("PDF downloaded. Opening your email app — attach the PDF and press Send.",false);
-      openFleetEmail(lastData,filename);
-    }catch(err){
-      // Browser print-to-PDF does not need any external JavaScript libraries.
-      lastData=lastData||currentData();
-      $("reportBody").innerHTML=buildReport(lastData);
-      $("formView").hidden=true;$("reportView").hidden=false;window.scrollTo(0,0);
-      setStatus("PDF download unavailable. Click Print / Save PDF, choose Save as PDF, then click Open Email Draft and attach your PDF. " + err.message,true);
-    }
+      setStatus("Submitted successfully. Reference: "+saved.reference,false);
+    }catch(err){setStatus("Request was NOT submitted. "+(err.message||err)+" Check your connection and try again.",true);}
     finally{btn.disabled=false;}
   });
 

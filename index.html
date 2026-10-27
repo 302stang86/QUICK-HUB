@@ -829,6 +829,7 @@ document.addEventListener('click', function(e){
     {name:'NICET',                   cat:'Field',   access:'Everyone',     page:'nicet',          url:'nicet-study.html', color:'#0e7490', icon:'nicet', desc:'NICET ITM certification study centers — Levels I, II, and III (NFPA 25).'},
     {name:'Personal Inventory',      cat:'Field',   access:'',             page:'inventory',      url:'inventory-tracker.html', color:'#4a7b9d', icon:'gearwrench', desc:'Your vehicle stock — on-hand counts and reorder flags by category.'},
     {name:'Fleet Service',           cat:'Field',   access:'',             page:'fleet',          url:'fleet-service-request-firebase.html', color:'#376c91', icon:'truck', desc:'Submit vehicle service requests, mark problem areas, and generate service reports.'},
+    {name:'Fleet Requests',          cat:'Management', access:'', page:'fleet', url:'fleet-requests.html', color:'#2c6950', icon:'clipboard-check', desc:'Review assigned fleet requests, update status, and print service reports.', roles:['manager','admin']},
     {name:'Quoting & Proposal Suite',cat:'Quoting', access:'Manager only', page:'quoting',        url:'quoting.html', color:'#1565c0', icon:'quote', desc:'Sprinkler ITM quoting and proposal verbiage.'},
     {name:'Time-Off Requests',       cat:'Team',    access:'Everyone',     page:'timeoff',        url:'timeoff.html', color:'#1f7a3d', icon:'calendar', desc:'Submit paid time-off (PTO) requests and track balances.'},
     {name:'On-Call Rotation',        cat:'Team',    access:'Everyone',     page:'oncall',         url:'oncall.html', color:'#d12f2f', icon:'phone', desc:'Current sprinkler department on-call schedule.'},
@@ -846,6 +847,7 @@ document.addEventListener('click', function(e){
     pin:'<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
     wrench:'<path d="M14.7 6.3a4 4 0 0 1 5.2 5.2l-7.6 7.6a2.1 2.1 0 0 1-3-3l7.6-7.6a4 4 0 0 1 .8-.8z"/><path d="M14.7 6.3 18 3"/>',
     droplet:'<path d="M12 2.7s7 7.3 7 12a7 7 0 0 1-14 0c0-4.7 7-12 7-12z"/>',
+    'clipboard-check':'<rect x="5" y="4" width="14" height="18" rx="2"/><path d="M9 4.5h6M9 12l2 2 4-4M9 18h6"/>',
     search:'<circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/>',
     hourglass:'<path d="M6 3h12M6 21h12"/><path d="M8 3v3.5L12 11l4-4.5V3M8 21v-3.5L12 13l4 4.5V21"/>',
     hammer:'<path d="m15 12-8.5 8.5a2.12 2.12 0 1 1-3-3L12 9"/><path d="M17.64 15 22 10.64"/><path d="m20.91 11.7-1.25-1.25c-.6-.6-.93-1.4-.93-2.25v-.86L16.01 4.6a5.56 5.56 0 0 0-3.94-1.64H9l.92.82A6.18 6.18 0 0 1 12 8.4v1.56l2 2h2.47l2.26 1.91"/>',
@@ -862,6 +864,7 @@ document.addEventListener('click', function(e){
     hub.innerHTML = '';
     LINKS.forEach(function(l){
       if(auth && typeof auth.canOpen === 'function' && !auth.canOpen(l.page)) return;
+      if(l.roles && !(auth && (auth.isAdmin || l.roles.includes(auth.profile && auth.profile.role)) && (auth.isAdmin || auth.profile?.status==='approved'))) return;
       var a = document.createElement('a');
       var set = l.url && l.url !== '#';
       a.className = 'hublink' + (set ? '' : ' unset');
