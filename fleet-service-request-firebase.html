@@ -359,7 +359,7 @@
 
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+<!-- Load jsPDF on demand; CDN failover and browser Print-to-PDF fallback below. -->
 <script type="module" src="fdec-auth.js" data-page="fleet"></script>
 <script type="module" src="fdec-fleet-integration.js"></script>
 <script>
@@ -705,8 +705,36 @@
     var tag=(d.plate||d.vin||"vehicle").replace(/[^A-Za-z0-9]+/g,"-");
     return "fleet-service-"+tag+"-"+new Date().toISOString().slice(0,10)+".pdf";
   }
+  var pdfLoaderPromise=null;
+  function loadPdfLibrary(){
+    if(window.jspdf && window.jspdf.jsPDF) return Promise.resolve(true);
+    if(pdfLoaderPromise) return pdfLoaderPromise;
+    var providers=[
+      "https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js",
+      "https://unpkg.com/jspdf@2.5.2/dist/jspdf.umd.min.js",
+      "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"
+    ];
+    pdfLoaderPromise=(async function(){
+      for(var i=0;i<providers.length;i++){
+        var ok=await new Promise(function(resolve){
+          var script=document.createElement("script");
+          script.src=providers[i];script.async=true;
+          var timer=setTimeout(function(){cleanup();resolve(false);},7500);
+          function cleanup(){clearTimeout(timer);script.onload=null;script.onerror=null;}
+          script.onload=function(){cleanup();resolve(!!(window.jspdf&&window.jspdf.jsPDF));};
+          script.onerror=function(){cleanup();script.remove();resolve(false);};
+          document.head.appendChild(script);
+        });
+        if(ok) return true;
+      }
+      return false;
+    })();
+    var result=await pdfLoaderPromise;
+    if(!result) pdfLoaderPromise=null; // Allow retry after connection returns
+    return result;
+  }
   async function buildPdf(d){
-    if(!window.jspdf || !window.jspdf.jsPDF) throw new Error("PDF library did not load. Check your network connection.");
+    if(!await loadPdfLibrary()) throw new Error("PDF download library is unavailable. Use the Print / Save PDF option to save your report instead.");
     var doc=new window.jspdf.jsPDF({unit:"pt",format:"letter",compress:true});
     var W=612,margin=42,y=45,pageBottom=750;
     function next(h){if(y+h>pageBottom){doc.addPage();y=45;}}
@@ -788,7 +816,13 @@
       $("toast").classList.add("show");
       setStatus("PDF downloaded. Opening your email app — attach the PDF and press Send.",false);
       openFleetEmail(lastData,filename);
-    }catch(err){setStatus("Unable to create PDF: "+err.message,true);}
+    }catch(err){
+      // Browser print-to-PDF does not need any external JavaScript libraries.
+      lastData=lastData||currentData();
+      $("reportBody").innerHTML=buildReport(lastData);
+      $("formView").hidden=true;$("reportView").hidden=false;window.scrollTo(0,0);
+      setStatus("PDF download unavailable. Click Print / Save PDF, choose Save as PDF, then click Open Email Draft and attach your PDF. " + err.message,true);
+    }
     finally{btn.disabled=false;}
   });
 
