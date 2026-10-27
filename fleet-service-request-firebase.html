@@ -216,8 +216,11 @@
   .asset-actions{display:flex;align-items:center;gap:12px;margin-top:12px}
   .asset-msg{font-size:12.5px;font-weight:700}
   #assetsView .asset-grid input, #assetsView input, #assetPicker{background:#fff !important;color:#000 !important}
-  #assetsView .asset-name, #assetsView .asset-name small, #assetsView h2{color:#13233c !important}
-  #assetsView .hint, #assetsStatus, #assetsView .asset-grid label span{color:#33445c !important}
+  #assetsView .asset-card .asset-name, #assetsView .asset-card .asset-name small{color:#13233c !important}
+  #assetsView .asset-grid label span{color:#33445c !important}
+  /* Header/intro text sits over the themed page (not a white card), so use theme ink so it stays readable in light AND dark mode */
+  #assetsView h2{color:var(--ink) !important;font-size:16px;text-transform:none;letter-spacing:0}
+  #assetsView .hint, #assetsView #assetsStatus{color:var(--ink-2) !important}
   #assetPicker{width:100%;padding:9px 10px;border:1.5px solid #c7d4e1;border-radius:8px;font:inherit;font-size:14px}
 </style>
 </head>
@@ -962,40 +965,77 @@
     /* Manager/admin: the Assets tab to assign vehicles. */
     if(isMgr){
       var tabBtn=$('assetsTabBtn'); if(tabBtn) tabBtn.hidden=false;
-      var built=false;
+      function mkField(key,label,val){ return '<label><span>'+esc(label)+'</span><input data-f="'+key+'" value="'+esc(val||'')+'" autocomplete="off"></label>'; }
+      function mkGrid(a){ a=a||{}; return '<div class="asset-grid">'+mkField('make','Make',a.make)+mkField('model','Model',a.model)+mkField('year','Year',a.year)+mkField('plate','Plate #',a.plate)+mkField('vin','VIN #',a.vin)+mkField('vehicleNumber','Vehicle #',a.vehicleNumber)+'</div>'; }
+      function gatherFields(card){ var v={}; card.querySelectorAll('[data-f]').forEach(function(i){ v[i.getAttribute('data-f')]=i.value.trim(); }); return v; }
+      function dropPickerOption(id){ var opt=document.querySelector('#assetPicker option[value="'+id+'"]'); if(opt) opt.remove(); }
+
       async function buildAssets(){
-        if(built) return; built=true;
         var status=$('assetsStatus'), list=$('assetsList');
         try{
           var techs=await window.FDECFleet.listTechnicians();
           var assets=await window.FDECFleet.listAssets();
-          if(!techs.length){ status.textContent='No approved employees found.'; return; }
-          status.textContent=techs.length+' employee'+(techs.length===1?'':'s')+'. Fill in a vehicle and press Save.';
+          var techSet={}; techs.forEach(function(t){ techSet[t.uid]=true; });
+          status.textContent=techs.length+' employee'+(techs.length===1?'':'s')+' below. Fill in a vehicle and press Save, or add a spare vehicle at the bottom.';
           list.innerHTML='';
+
+          /* ---- One card per technician ---- */
           techs.forEach(function(t){
             var a=assets[t.uid]||{};
             var card=document.createElement('div'); card.className='asset-card';
-            function fld(key,label,val){ return '<label><span>'+esc(label)+'</span><input data-f="'+key+'" value="'+esc(val||'')+'" autocomplete="off"></label>'; }
-            card.innerHTML='<div class="asset-name">'+esc(t.name)+' <small>'+esc(t.role)+'</small></div>'+
-              '<div class="asset-grid">'+fld('make','Make',a.make)+fld('model','Model',a.model)+fld('year','Year',a.year)+fld('plate','Plate #',a.plate)+fld('vin','VIN #',a.vin)+fld('vehicleNumber','Vehicle #',a.vehicleNumber)+'</div>'+
+            card.innerHTML='<div class="asset-name">'+esc(t.name)+' <small>'+esc(t.role)+'</small></div>'+mkGrid(a)+
               '<div class="asset-actions"><button type="button" class="btn sm primary" data-save>Save</button><button type="button" class="btn sm" data-remove>Remove asset</button><span class="asset-msg"></span></div>';
             var btn=card.querySelector('[data-save]'), rm=card.querySelector('[data-remove]'), msg=card.querySelector('.asset-msg');
             btn.addEventListener('click',async function(){
-              var v={}; card.querySelectorAll('[data-f]').forEach(function(i){ v[i.getAttribute('data-f')]=i.value.trim(); });
               btn.disabled=true; msg.style.color='#5c6b7e'; msg.textContent='Saving…';
-              try{ await window.FDECFleet.saveAsset(t.uid,t.name,v); msg.style.color='#176a36'; msg.textContent='Saved.'; }
+              try{ await window.FDECFleet.saveAsset(t.uid,t.name,gatherFields(card)); msg.style.color='#176a36'; msg.textContent='Saved.'; }
               catch(e){ msg.style.color='#b4232c'; msg.textContent='Not saved: '+((e&&e.message)||'error'); }
               finally{ btn.disabled=false; }
             });
             rm.addEventListener('click',async function(){
               if(!confirm('Remove the assigned vehicle for '+t.name+'?')) return;
               rm.disabled=true; msg.style.color='#5c6b7e'; msg.textContent='Removing…';
-              try{ await window.FDECFleet.deleteAsset(t.uid); card.querySelectorAll('[data-f]').forEach(function(i){ i.value=''; }); var opt=document.querySelector('#assetPicker option[value="'+t.uid+'"]'); if(opt) opt.remove(); msg.style.color='#176a36'; msg.textContent='Removed.'; }
-              catch(e){ msg.style.color='#b4232c'; msg.textContent='Not removed: '+((e&&e.message)||'error'); }
-              finally{ rm.disabled=false; }
+              try{ await window.FDECFleet.deleteAsset(t.uid); dropPickerOption(t.uid); card.remove(); }
+              catch(e){ msg.style.color='#b4232c'; msg.textContent='Not removed: '+((e&&e.message)||'error'); rm.disabled=false; }
             });
             list.appendChild(card);
           });
+
+          /* ---- Spare / shared vehicles (not tied to a technician) ---- */
+          var head=document.createElement('div');
+          head.innerHTML='<h2 style="margin-top:22px">Spare &amp; shared vehicles</h2><div class="hint">Vehicles not assigned to a specific technician (for example, spare vehicles). A manager can pick these on a request.</div>';
+          list.appendChild(head);
+          var spareList=document.createElement('div'); spareList.style.marginTop='12px'; list.appendChild(spareList);
+          var addWrap=document.createElement('div'); addWrap.style.margin='8px 0 4px';
+          addWrap.innerHTML='<button type="button" class="btn sm primary" id="addSpareBtn">+ Add spare vehicle</button>';
+          list.appendChild(addWrap);
+
+          function makeSpareCard(id,a){
+            a=a||{};
+            var card=document.createElement('div'); card.className='asset-card';
+            if(id) card.dataset.assetId=id;
+            card.innerHTML='<div class="asset-grid" style="margin-bottom:0"><label style="grid-column:1 / -1"><span>Label</span><input data-label value="'+esc(a.techName||'')+'" placeholder="e.g., Spare Vehicle 1" autocomplete="off"></label></div>'+mkGrid(a)+
+              '<div class="asset-actions"><button type="button" class="btn sm primary" data-save>Save</button><button type="button" class="btn sm" data-remove>Remove</button><span class="asset-msg"></span></div>';
+            var btn=card.querySelector('[data-save]'), rm=card.querySelector('[data-remove]'), msg=card.querySelector('.asset-msg'), lbl=card.querySelector('[data-label]');
+            btn.addEventListener('click',async function(){
+              var name=(lbl.value.trim()||'Spare vehicle');
+              var aid=card.dataset.assetId || ('spare-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7));
+              btn.disabled=true; msg.style.color='#5c6b7e'; msg.textContent='Saving…';
+              try{ await window.FDECFleet.saveAsset(aid,name,gatherFields(card)); card.dataset.assetId=aid; msg.style.color='#176a36'; msg.textContent='Saved.'; }
+              catch(e){ msg.style.color='#b4232c'; msg.textContent='Not saved: '+((e&&e.message)||'error'); }
+              finally{ btn.disabled=false; }
+            });
+            rm.addEventListener('click',async function(){
+              if(!confirm('Remove this vehicle?')) return;
+              rm.disabled=true; msg.style.color='#5c6b7e'; msg.textContent='Removing…';
+              try{ if(card.dataset.assetId){ await window.FDECFleet.deleteAsset(card.dataset.assetId); dropPickerOption(card.dataset.assetId); } card.remove(); }
+              catch(e){ msg.style.color='#b4232c'; msg.textContent='Not removed: '+((e&&e.message)||'error'); rm.disabled=false; }
+            });
+            return card;
+          }
+
+          Object.keys(assets).filter(function(k){ return !techSet[k]; }).forEach(function(id){ spareList.appendChild(makeSpareCard(id,assets[id])); });
+          document.getElementById('addSpareBtn').addEventListener('click',function(){ spareList.appendChild(makeSpareCard(null,{})); });
         }catch(e){ status.textContent='Could not load: '+((e&&e.message)||'error'); }
       }
       if(tabBtn) tabBtn.addEventListener('click',buildAssets);
