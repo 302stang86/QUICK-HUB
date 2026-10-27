@@ -247,7 +247,7 @@
         </select>
         <div class="errmsg" id="err-manager">Select a manager or administrator to receive the service report.</div>
       </label>
-      <div class="hint">Managers load from your Employee Hub. PDF reports are saved to Firebase; automatic email requires a separately deployed email service.</div>
+      <div class="hint">Recipient names and addresses come from the protected Fleet recipient list. The PDF downloads to your device; you attach it to the email draft before sending. No automatic email is sent.</div>
     </div>
 
     <div class="section logistics-panel" id="transportationSection">
@@ -327,7 +327,7 @@
     </div>
 
     <footer class="actions">
-      <button type="button" class="btn primary block" id="genBtn">Generate Service Report</button>
+      <button type="button" class="btn primary block" id="genBtn">Generate PDF &amp; Prepare Email</button>
       <div class="hint" id="deliveryStatus" role="status" aria-live="polite" style="margin-top:10px"></div>
     </footer>
   </div>
@@ -339,7 +339,8 @@
       <button type="button" class="btn" id="backBtn">&larr; Back to edit</button>
       <button type="button" class="btn" id="copyBtn">Copy summary</button>
       <button type="button" class="btn" id="jsonBtn">Download JSON</button>
-      <button type="button" class="btn primary" id="printBtn">Print / Save PDF</button>
+      <button type="button" class="btn primary" id="emailBtn">Open Email Draft</button>
+      <button type="button" class="btn" id="printBtn">Print / Save PDF</button>
     </div>
     <div class="toast" id="toast">Copied to clipboard.</div>
   </div>
@@ -365,8 +366,8 @@
     var el=$("manager"), selected=pendingManager||el.value;
     el.innerHTML='<option value="">Select a manager or administrator</option>';
     (Array.isArray(list)?list:[]).forEach(function(m){
-      if(!m || !m.id || !m.name) return;
-      var op=document.createElement("option");op.value=String(m.id);op.textContent=String(m.name);el.appendChild(op);
+      if(!m || !m.id || !m.name || !m.email) return;
+      var op=document.createElement("option");op.value=String(m.id);op.dataset.email=String(m.email);op.textContent=String(m.name)+" ("+String(m.role||"recipient")+")";el.appendChild(op);
     });
     el.value=selected;
     if(el.selectedIndex<0) el.value="";
@@ -376,7 +377,7 @@
       try{applyManagers(await window.FDECFleet.listManagers());}catch(e){console.warn("Manager directory unavailable",e);setStatus("Could not load managers: "+e.message,true);}
       return;
     }
-    setStatus("Recipient directory unavailable. Contact an administrator to deploy the Fleet recipient service.",true);
+    setStatus("Recipient list unavailable. Ask an administrator to configure the Fleet recipients document in Firestore.",true);
   }
   function updateSchedule(){
     var no=$("scheduleStatus").value==="not-scheduled";
@@ -591,6 +592,7 @@
       transportNeeded:$("transportNeeded").value||"not specified",
       managerId:$("manager").value,
       managerName:$("manager").selectedOptions[0] ? $("manager").selectedOptions[0].textContent : "",
+      managerEmail:$("manager").selectedOptions[0] ? ($("manager").selectedOptions[0].dataset.email||"") : "",
       vehicle:VEHICLES[state.vehicle].label,
       vin:$("vin").value.trim(),
       plate:$("plate").value.trim().toUpperCase(),
@@ -723,17 +725,15 @@
     $("deliveryStatus").textContent=message;
     $("deliveryStatus").style.color=error?"var(--accent)":"var(--ink-2)";
   }
-  async function submitReport(pdf,d,filename){
-    if(window.FDECFleet) return window.FDECFleet.submitReport(pdf,d,filename);
-    if(!CONFIG.submitUrl) throw new Error("Automatic sending is not configured. The PDF was downloaded, but no manager has been emailed.");
-    var headers={};
-    if(typeof CONFIG.getIdToken==="function") headers.Authorization="Bearer "+await CONFIG.getIdToken();
-    var body=new FormData();body.append("report",new Blob([JSON.stringify(d)],{type:"application/json"}),"report.json");
-    body.append("pdf",pdf,filename);
-    var response=await fetch(CONFIG.submitUrl,{method:"POST",headers:headers,body:body});
-    var result=await response.json().catch(function(){return {};});
-    if(!response.ok || result.sent!==true) throw new Error(result.error||"The server did not confirm manager delivery.");
-    return result;
+  function openFleetEmail(d, filename){
+    if(!d || !d.managerEmail){setStatus('Select a recipient with an email address.',true);return;}
+    var subject='Fleet Service Request - '+(d.vin||d.vehicle)+' - '+d.technician;
+    var message='Hello '+d.managerName+',\n\nPlease review the attached Fleet Service Request PDF.\n\n'
+      +'Vehicle: '+d.vehicle+'\nVehicle Number: '+(d.vin||'Not provided')
+      +'\nLicense Plate: '+(d.plate||'Not provided')+'\nTechnician: '+d.technician
+      +'\nScheduled Service Date: '+d.date+'\n\n'
+      +'IMPORTANT: Attach the downloaded PDF file named "'+filename+'" before sending.\n\nThank you.';
+    window.location.href='mailto:'+encodeURIComponent(d.managerEmail)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(message);
   }
   $("genBtn").addEventListener("click", async function(){
     if(!validate()){
@@ -748,16 +748,10 @@
       setTimeout(function(){URL.revokeObjectURL(url);},30000);
       $("reportBody").innerHTML=buildReport(lastData);
       $("formView").hidden=true;$("reportView").hidden=false;window.scrollTo(0,0);
-      try{
-        var receipt=await submitReport(pdf,lastData,filename);
-        setStatus("",false);
-        $("toast").textContent=receipt.sent===true ? "PDF downloaded and emailed to "+lastData.managerName+". Reference: "+receipt.reportId : "PDF downloaded and saved. Email not confirmed: "+(receipt.deliveryError||"delivery service unavailable")+". Report ID: "+receipt.reportId;
-        $("toast").classList.add("show");
-      }catch(err){
-        $("toast").textContent="PDF saved locally. NOT SENT: "+err.message;
-        $("toast").classList.add("show");
-        $("toast").style.color="var(--accent)";
-      }
+      $("toast").textContent="PDF downloaded as "+filename+". Attach it to the email draft before sending. Nothing has been emailed automatically.";
+      $("toast").classList.add("show");
+      setStatus("PDF downloaded. Opening your email app — attach the PDF and press Send.",false);
+      openFleetEmail(lastData,filename);
     }catch(err){setStatus("Unable to create PDF: "+err.message,true);}
     finally{btn.disabled=false;}
   });
@@ -767,6 +761,7 @@
   });
 
   $("printBtn").addEventListener("click", function(){ window.print(); });
+  $("emailBtn").addEventListener("click", function(){ if(lastData) openFleetEmail(lastData,pdfFileName(lastData)); });
 
   $("jsonBtn").addEventListener("click", function(){
     if(!lastData) return;
