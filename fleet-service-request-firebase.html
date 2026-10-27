@@ -246,6 +246,7 @@
           <option value="">Select a manager or administrator</option>
           <!-- Manager records load from your existing integration after setup. -->
         </select>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:7px;flex-wrap:wrap"><button type="button" id="reloadRecipients" style="padding:7px 12px;border:1px solid #bac7d5;border-radius:7px;background:#fff;color:#152238;cursor:pointer;font-weight:700">Reload Recipients</button><span id="recipientLoadStatus" role="status" aria-live="polite" style="font-size:12px;color:#263746">Loading recipient list…</span></div>
         <div class="errmsg" id="err-manager">Select a manager or administrator to receive the service report.</div>
       </label>
       <div class="hint">Recipient names and addresses come from the protected Fleet recipient list. The PDF downloads to your device; you attach it to the email draft before sending. No automatic email is sent.</div>
@@ -386,11 +387,23 @@
     if(el.selectedIndex<0) el.value="";
   }
   async function loadManagers(){
-    if(window.FDECFleet){
-      try{applyManagers(await window.FDECFleet.listManagers());}catch(e){console.warn("Manager directory unavailable",e);setStatus("Could not load managers: "+e.message,true);}
-      return;
-    }
-    setStatus("Recipient list unavailable. Ask an administrator to configure the Fleet recipients document in Firestore.",true);
+    var btn=$('reloadRecipients'), msg=$('recipientLoadStatus');
+    if(btn) btn.disabled=true;
+    if(msg){msg.style.color='#263746'; msg.textContent='Loading approved manager/admin recipients…';}
+    try {
+      // Module load and authentication can finish independently; wait for both.
+      if(window.FDECAuth && window.FDECAuth.ready) await window.FDECAuth.ready;
+      if(!window.FDECFleet || typeof window.FDECFleet.listManagers !== 'function')
+        throw new Error('Recipient connection did not load. Verify fdec-fleet-integration.js was uploaded to GitHub.');
+      var managers=await window.FDECFleet.listManagers();
+      applyManagers(managers);
+      if(!managers.length) throw new Error('The recipient directory has no valid managers/admins. Check the recipients array for id, name, email, and role fields.');
+      if(msg) { msg.style.color='#176a36'; msg.textContent=managers.length+' manager/admin recipient'+(managers.length===1?'':'s')+' available.'; }
+    } catch(e) {
+      console.error('Fleet recipient lookup failed:',e);
+      applyManagers([]);
+      if(msg) { msg.style.color='#b4232c'; msg.textContent='Unable to load recipients: '+(e && e.message || 'Unknown error'); }
+    } finally { if(btn) btn.disabled=false; }
   }
   function updateSchedule(){
     var no=$("scheduleStatus").value==="not-scheduled";
@@ -706,7 +719,7 @@
     return "fleet-service-"+tag+"-"+new Date().toISOString().slice(0,10)+".pdf";
   }
   var pdfLoaderPromise=null;
-  function loadPdfLibrary(){
+  async function loadPdfLibrary(){
     if(window.jspdf && window.jspdf.jsPDF) return Promise.resolve(true);
     if(pdfLoaderPromise) return pdfLoaderPromise;
     var providers=[
@@ -866,8 +879,14 @@
     var di=$("date"); if(di && !di.value){ di.value=new Date().toISOString().slice(0,10); }
     load();
     updateSchedule();
+    $('reloadRecipients').addEventListener('click',loadManagers);
     if(window.FDECFleet) loadManagers();
-    else window.addEventListener("fdec-fleet-ready",loadManagers,{once:true});
+    else {
+      window.addEventListener('fdec-fleet-ready',loadManagers,{once:true});
+      window.addEventListener('load',function(){
+        if(!window.FDECFleet) loadManagers();
+      },{once:true});
+    }
     setVehicle(state.vehicle);
     save();
   })();
