@@ -61,7 +61,7 @@
     // second time — just hide the page's own masthead so only the form shows.
     var framed = false;
     try { framed = window.top !== window.self; } catch (e) { framed = true; }
-    if (framed) { relocate(document.createElement("div")); return; }
+    if (framed) { relocate(document.createElement("div")); document.documentElement.classList.remove("fdec-header-boot"); return; }
     injectCSS();
     var header = document.createElement("header");
     header.className = "fdec-ubar no-print";
@@ -78,6 +78,7 @@
     document.body.insertBefore(actions, header.nextSibling);
     relocate(actions);
     addHubButton(actions);
+    document.documentElement.classList.remove("fdec-header-boot");
   }
 
   /* The Home page (index.html, or the site root) needs no "back to hub". */

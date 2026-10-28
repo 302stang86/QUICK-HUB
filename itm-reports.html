@@ -590,7 +590,13 @@ body>*{position:relative;z-index:1;}
 <script defer src="fdec-offline.js"></script>
 <meta name="fdec-page-title" content="ITM Reports">
 <!-- Apply the direct-admin route guard before the first render. -->
-<script>(function(){if(location.hash.toLowerCase()==='#admin'||/[?&](admin=1|view=admin)/i.test(location.search)){document.documentElement.classList.add('fdec-direct-admin');}})();</script>
+<script>(function(){if(location.hash.toLowerCase()==='#admin'||/[?&](admin=1|view=admin)/i.test(location.search)){document.documentElement.classList.add('fdec-direct-admin','fdec-direct-admin-boot','fdec-header-boot');}})();</script>
+<style id="fdec-direct-boot-css">
+html.fdec-header-boot body::before{content:"";display:block;height:calc(100vw * 135 / 1600 + 39px)}
+html.fdec-direct-admin-boot #authScreen{display:none!important}
+html.fdec-direct-admin-boot body::after{content:"Loading ITM Administration…";position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#12213c;color:white;font:600 15px Arial,sans-serif;padding:15px 24px;border-radius:9px;z-index:10000}
+@media print{html.fdec-direct-admin-boot body::after,html.fdec-header-boot body::before{display:none!important}}
+</style>
 <style id="fdec-first-paint">.topbar .brand{display:none !important;}html.fdec-direct-admin #appScreen{display:none !important;}@media print{.topbar .brand{display:none !important;}}</style>
 <meta name="fdec-hide" content=".topbar .brand">
 <script defer src="fdec-header.js"></script>
@@ -1587,6 +1593,7 @@ async function enterApp(fbUser){
   // Admins always get in. Everyone else must be approved.
   if(!IS_ADMIN && status!=='approved'){
     showPendingScreen(disp, status);
+    document.documentElement.classList.remove('fdec-direct-admin-boot');
     return;
   }
   document.getElementById('whoami').innerHTML = esc(disp) + (IS_ADMIN?' <span class="badge">ADMIN</span>':'');
@@ -1604,6 +1611,7 @@ async function enterApp(fbUser){
   ADMIN_UNLOCKED=true;   // fields editable (locking feature unused)
   updateLockPill();
   authScreen.classList.add('hidden');
+  document.documentElement.classList.remove('fdec-direct-admin-boot');
   if(IS_ADMIN && __wantAdmin){ return; } // Standalone admin dashboard owns this view.
   appScreen.classList.remove('hidden');
   loadFormValues(ACTIVE_FORM);
@@ -3718,6 +3726,7 @@ async function adminDashboard(fullPage){
       <div id="adBody" style="margin-top:10px">Loading…</div>
     </div>`;
     document.body.appendChild(bg);
+    document.documentElement.classList.remove('fdec-direct-admin-boot');
     close=()=>{ if(bg.parentNode) bg.parentNode.removeChild(bg); if(appScreen) appScreen.classList.remove('hidden'); window.scrollTo(0,0); };
   } else {
     const mh=document.getElementById('modalHost')||document.body;
@@ -4197,6 +4206,7 @@ function draftPicker(keys, drafts){
   if(!FB_READY){
     // Firebase couldn't load (offline / blocked). Show login with a message.
     const err=document.getElementById('loginErr');
+    document.documentElement.classList.remove('fdec-direct-admin-boot');
     if(err) err.textContent='Could not reach sign-in service. Check your internet connection and reload.';
     return;
   }
@@ -4205,6 +4215,7 @@ function draftPicker(keys, drafts){
   FB_AUTH.onAuthStateChanged((user)=>{
     if(user){ enterApp(user); }
     else {
+      document.documentElement.classList.remove('fdec-direct-admin-boot');
       appScreen.classList.add('hidden');
       authScreen.classList.remove('hidden');
       document.getElementById('loginBox').classList.remove('hidden');

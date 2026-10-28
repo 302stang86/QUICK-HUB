@@ -279,6 +279,14 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <script defer src="fdec-offline.js"></script>
 <meta name="fdec-page-title" content="Administration">
+<!-- First-render route: keep uninitialized permissions/cards offscreen until auth is resolved. -->
+<script>document.documentElement.classList.add('fdec-admin-boot','fdec-header-boot');</script>
+<style id="fdec-boot-css">
+html.fdec-admin-boot .wrap{visibility:hidden!important}
+html.fdec-header-boot body::before{content:"";display:block;height:calc(100vw * 135 / 1600 + 39px)}
+html.fdec-admin-boot body::after{content:"Loading Administration…";position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font:600 15px Arial,sans-serif;color:#fff;background:#12213c;padding:15px 24px;border-radius:9px;z-index:100}
+@media print{html.fdec-admin-boot .wrap{visibility:visible!important}html.fdec-admin-boot body::after,html.fdec-header-boot body::before{display:none!important}}
+</style>
 <!-- First-paint guard: original masthead is superseded by fdec-header.js. -->
 <style id="fdec-first-paint">body > .masthead{display:none !important;}@media print{body > .masthead{display:flex !important;}}</style>
 <meta name="fdec-hide" content=".masthead">
@@ -637,7 +645,7 @@ function setMenuForRole(amAdmin){
 })();
 
 async function onAuth(user){
-  if(!user){ me=null; P.setAuth({signedIn:false,isAdmin:false,me:null}); P.setState(P.deepDefault()); resetAdminViews(); return; }
+  if(!user){ document.documentElement.classList.remove("fdec-admin-boot"); me=null; P.setAuth({signedIn:false,isAdmin:false,me:null}); P.setState(P.deepDefault()); resetAdminViews(); return; }
   try {
     const usnap = await getDoc(doc(db,"users",user.uid));
     const d = usnap.exists()? usnap.data():{};
@@ -652,6 +660,7 @@ async function onAuth(user){
   await loadMarquee();
   setMenuForRole(amAdmin);
   showAdminMenu();
+  document.documentElement.classList.remove("fdec-admin-boot");
 }
 
 /* ---------- Announcement marquee (admin only) ---------- */
@@ -1137,8 +1146,9 @@ if(configured){
     PERM_REF = doc(db,"config","permissions");
     MARQUEE_REF = doc(db,"config","marquee");
     onAuthStateChanged(auth, onAuth);
-  } catch(e){ P.toast("Firebase failed to initialize."); }
+  } catch(e){ document.documentElement.classList.remove("fdec-admin-boot"); P.toast("Firebase failed to initialize."); }
 } else {
+  document.documentElement.classList.remove("fdec-admin-boot");
   $("adminNote").textContent = "Firebase not configured — paste your project keys in this file to enable sign-in and saving.";
 }
 </script>
