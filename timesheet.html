@@ -115,7 +115,10 @@ table.review tbody tr.job-number-alpha > td:first-child{box-shadow:inset 2px 0 #
 table.review tbody tr.job-number-alpha > td:last-child{box-shadow:inset -2px 0 #D58229,inset 0 1px #D58229,inset 0 -1px #D58229}
 @media print{table.review tbody tr.job-number-alpha > td{background:#F7C58D!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 td.rowtot{font-weight:700;color:var(--navy)}
-.edited{background:var(--edit-bg)!important;outline:2px solid var(--edit);outline-offset:-2px;border-radius:4px}
+.edited{background:#fff1f2!important;outline:3px solid #c40018!important;outline-offset:-2px;border-radius:4px}
+/* Manager changes: outline the actual editable control, without altering row dimensions. */
+#managerView .edited > input,#managerView .edited > select,#managerView .edited > textarea{outline:3px solid #c40018!important;outline-offset:-2px;background:#fff1f2!important;border-color:#c40018!important}
+@media print{#managerView .edited{outline:3px solid #c40018!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}#managerView .edited > input,#managerView .edited > select,#managerView .edited > textarea{outline:3px solid #c40018!important;outline-offset:-2px;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 .edit-flag{display:inline-block;font-size:10px;font-weight:700;color:#fff;background:var(--edit);border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle}
 .editlog{margin:10px 0 0;padding:12px 14px;border-left:3px solid var(--edit);background:var(--edit-bg);border-radius:0 8px 8px 0;font-size:13px}
 .editlog b{color:var(--edit)}
