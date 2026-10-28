@@ -13,7 +13,7 @@
      - Everything else (Firestore API, etc.): straight to network — Firestore's
        own offline mode handles those when there is no signal.
 */
-const CACHE = 'fdec-quickhub-v85-help-refresh';
+const CACHE = 'fdec-quickhub-v86-nicet-study';
 
 const CORE = [
   './',
@@ -34,6 +34,7 @@ const CORE = [
   'nicet-level-1.html',
   'nicet-level-2.html',
   'nicet-level-3.html',
+  'nicet-common.js',
   'oncall.html',
   'quoting.html',
   'timeoff.html',
