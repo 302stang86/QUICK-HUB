@@ -478,6 +478,14 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:18px}
 .modal .mbtns button{flex:1;padding:11px;border-radius:8px;border:1px solid var(--line);background:#fff;font-weight:600;cursor:pointer}
 .modal .mbtns .go{background:var(--navy);color:#fff;border-color:var(--navy)}
 .modal .merr{color:var(--red);font-size:12px;min-height:15px;margin-top:8px}
+/* Full-page admin dashboard (opened in its own tab) */
+.ad-fullwrap{max-width:1080px;margin:18px auto;padding:0 16px calc(40px + env(safe-area-inset-bottom))}
+.ad-fullpanel{background:#fff;border-radius:14px;padding:20px;box-shadow:0 10px 30px rgba(8,16,30,.28)}
+.ad-fulltop{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.ad-fulltop h3{margin:0;color:var(--navy);font-size:18px}
+.ad-hub{display:inline-block;background:var(--navy);color:#fff;text-decoration:none;font-weight:700;font-size:13px;padding:8px 14px;border-radius:8px}
+.ad-hub:hover{background:var(--navy2)}
+@media print{.ad-fullwrap{display:none !important}}
 
 @page{ size: Letter; margin: 0.4in 0.45in; }
 @media print{
@@ -1587,7 +1595,7 @@ async function enterApp(fbUser){
   var __wantAdmin = location.hash.toLowerCase()==='#admin' || /[?&](admin=1|view=admin)/i.test(location.search);
   if(IS_ADMIN && __wantAdmin && !window.__itmAdminOpened){
     window.__itmAdminOpened = true;
-    setTimeout(function(){ try{ adminDashboard(); }catch(e){} }, 350);
+    setTimeout(function(){ try{ adminDashboard(true); }catch(e){} }, 350);
   }
   ADMIN_UNLOCKED=true;   // fields editable (locking feature unused)
   updateLockPill();
@@ -3687,12 +3695,29 @@ if(document.getElementById('manageUsersBtn')){
    ADMIN DASHBOARD — users + submitted reports (admin only)
 ============================================================================ */
 if(document.getElementById('adminDashBtn')){
-  document.getElementById('adminDashBtn').onclick=()=>{ if(isAdminUser()) adminDashboard(); };
+  document.getElementById('adminDashBtn').onclick=()=>{ if(isAdminUser()) window.open('itm-reports.html#admin','_blank','noopener'); };
 }
-async function adminDashboard(){
-  const mh=document.getElementById('modalHost')||document.body;
-  const bg=document.createElement('div'); bg.className='modal-bg';
-  bg.innerHTML=`<div class="modal" style="max-width:720px">
+async function adminDashboard(fullPage){
+  let bg, close;
+  const appScreen=document.getElementById('appScreen');
+  if(fullPage){
+    if(appScreen) appScreen.classList.add('hidden');
+    bg=document.createElement('div'); bg.className='ad-fullwrap';
+    bg.innerHTML=`<div class="ad-fullpanel">
+      <div class="ad-fulltop"><h3>ITM Reports — Admin Dashboard</h3><a class="ad-hub" href="index.html">← Back to Hub</a></div>
+      <div class="ad-tabs">
+        <button class="ad-tab active" data-tab="reports">Submitted Reports</button>
+        <button class="ad-tab" data-tab="archived">Archived Duplicates</button>
+        <button class="ad-tab" data-tab="users">Users</button>
+      </div>
+      <div id="adBody" style="margin-top:10px">Loading…</div>
+    </div>`;
+    document.body.appendChild(bg);
+    close=()=>{ if(bg.parentNode) bg.parentNode.removeChild(bg); if(appScreen) appScreen.classList.remove('hidden'); window.scrollTo(0,0); };
+  } else {
+    const mh=document.getElementById('modalHost')||document.body;
+    bg=document.createElement('div'); bg.className='modal-bg';
+    bg.innerHTML=`<div class="modal" style="max-width:720px">
     <h3>Admin Dashboard</h3>
     <div class="ad-tabs">
       <button class="ad-tab active" data-tab="reports">Submitted Reports</button>
@@ -3702,9 +3727,10 @@ async function adminDashboard(){
     <div id="adBody" style="max-height:60vh;overflow:auto;margin-top:10px">Loading…</div>
     <div class="mbtns"><button id="adClose">Close</button></div>
   </div>`;
-  mh.appendChild(bg);
-  const close=()=>{ if(bg.parentNode) mh.removeChild(bg); };
-  bg.querySelector('#adClose').onclick=close;
+    mh.appendChild(bg);
+    close=()=>{ if(bg.parentNode) mh.removeChild(bg); };
+    bg.querySelector('#adClose').onclick=close;
+  }
   const body=bg.querySelector('#adBody');
   const tabs=[...bg.querySelectorAll('.ad-tab')];
   tabs.forEach(t=>t.onclick=()=>{ tabs.forEach(x=>x.classList.remove('active')); t.classList.add('active'); render(t.getAttribute('data-tab')); });
