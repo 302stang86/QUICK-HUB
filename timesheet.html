@@ -180,6 +180,18 @@ header,main{position:relative;z-index:1;}
 .expense-scroll{overflow:auto;margin:12px 0}.expense-table{width:100%;border-collapse:collapse;font-size:13px;min-width:420px}.expense-table th,.expense-table td{text-align:left;border-bottom:1px solid #dce4ec;padding:7px}.expense-table th{background:#edf3f8;color:#142b46}.expense-table td:last-child{text-align:right;white-space:nowrap}.expense-totals{display:flex;gap:12px;flex-wrap:wrap;background:#edf3f8;border-radius:8px;padding:12px;margin:10px 0}.expense-meta{margin-top:9px}
 @media print{#mgrExpenseSection .expense-attached{break-inside:avoid}#mgrExpenseSection .expense-scroll{overflow:visible}#mgrExpenseSection .expense-table{min-width:0;width:100%;font-size:11px}}
 @media(max-width:600px){.expense-totals{display:grid;gap:5px}.expense-table{font-size:12px}}
+
+/* Pay period folders. Presentation only; no Firestore schema or migrations. */
+.pay-folder-wrap{border:1px solid #d8e0ea;border-radius:11px;overflow:hidden;margin:8px 0 12px;background:#fff}
+.pay-folder{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;background:#f5f8fc;padding:13px 15px;color:#19334c;cursor:pointer;font:inherit}
+.pay-folder:hover{background:#eaf2fa}.pay-folder-icon{font-size:22px;color:#285e91}.pay-folder-info{flex:1;min-width:0;display:grid;gap:3px}.pay-folder-info strong{font-size:15px}.pay-folder-info small{font-size:12px;color:#5b6e81}.pay-folder-meta{white-space:nowrap;font-size:12px;color:#49617c}.pay-folder-items{padding:11px}.pay-folder-items .ibx-item:last-child{margin-bottom:0}
+.ibx-warning{display:block;color:#92400e;font-size:11px;font-weight:600;margin-top:3px}
+@media(max-width:600px){.pay-folder{padding:10px;gap:8px;flex-wrap:wrap}.pay-folder-info strong{font-size:13px}.pay-folder-info small{font-size:11px}.pay-folder-meta{width:100%;padding-left:28px}.pay-folder-items{padding:7px}}
+
+/* Keep the per-period export action separate from the folder expand control. */
+.pay-export-bar{padding:6px 12px 10px;display:flex;justify-content:flex-end}
+.pay-export-bar button{font-size:13px;padding:8px 12px}
+@media(max-width:600px){.pay-export-bar button{width:100%}}
 </style>
 <!-- FDEC PWA / offline -->
 <link rel="manifest" href="manifest.webmanifest">
@@ -358,7 +370,7 @@ header,main{position:relative;z-index:1;}
       <h2 style="margin:0">Submitted Timesheets</h2>
       <button class="ghost no-print" id="inboxBack" type="button">Back to My Timesheet</button>
     </div>
-    <p class="sub">Submitted timesheets, archived by year. Tap one to open and review.</p>
+    <p class="sub">Weekly submissions grouped by FDEC biweekly pay period. Past periods appear in the archive after every submitted sheet in that period has been reviewed. Existing records are never moved or deleted.</p>
     <div id="inboxYears" class="ibx-years"></div>
     <div id="inboxList" class="ibx-list"></div>
   </section>
@@ -834,7 +846,7 @@ function downloadCSV(){
     [],
     ['Total Regular',$('sumST').textContent],['Total Time&Half',$('sumOT').textContent],
     ['Total Double',$('sumDT').textContent],['Total Hours',$('sumAll').textContent],
-    [],...(d.expenseReports||[]).flatMap((r,i)=>[['Expense Report '+(i+1),r.jobName,r.jobNumber],['Expense Total',r.total],['Expense Reimbursement',r.owed],...(r.items||[]).map(e=>['Expense',e.date,e.account,e.description,r.jobName,r.jobNumber,e.amount])]),
+    [],...(d.expenseReports||[]).flatMap((r,i)=>[['Expense Report '+(i+1),r.jobName,r.jobNumber],['Expense Total',expenseAmounts(r).total],['Company Card',expenseAmounts(r).companyCard],['Reimbursable',expenseAmounts(r).reimbursable],['Expense Reimbursement',expenseAmounts(r).owed],...(r.items||[]).map(e=>['Expense',e.date,e.account,e.description,r.jobName,r.jobNumber,e.amount,expensePayment(e)])]),
     [],['Comments',d.comments]
   ];
   const csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
@@ -846,18 +858,30 @@ function downloadCSV(){
 /* =====================================================================
    MANAGER INBOX + REVIEW MODE
    ===================================================================== */
-let INBOX_ITEMS=[], INBOX_YEAR='';
-function tsSheetYear(it){ if(!it.weekStart) return 'Undated'; var y=new Date(it.weekStart+'T12:00:00').getFullYear(); return (y>1970&&y<3000)?String(y):'Undated'; }
+let INBOX_ITEMS=[], INBOX_YEAR='', INBOX_EXPANDED={};
+// Pay period anchor: Monday Oct 12–Sunday Oct 25, 2026; payday Wed Oct 28.
+// Work weeks are currently Sunday–Saturday, so a week can cross a pay-period boundary.
+// Until FDEC adopts an allocation rule, show these exceptions explicitly instead of changing hour records.
+const PAY_ANCHOR=Date.UTC(2026,9,12), PAY_DAY_ANCHOR=Date.UTC(2026,9,28), PAY_MS=86400000;
+function payDate(s){if(!/^\d{4}-\d{2}-\d{2}$/.test(String(s||'')))return NaN; const d=new Date(s+'T00:00:00Z');return d.getTime();}
+function payISO(t){return new Date(t).toISOString().slice(0,10);}
+function payFmt(t){return new Date(t).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'});}
+function payPeriod(it){
+  // Assign by the ending date of a submitted work week; flag any boundary crossing.
+  // Historical documents keep their original weekStart/weekEnd fields unchanged.
+  let ws=payDate(it.weekStart), we=payDate(it.weekEnd);
+  if(!Number.isFinite(ws)&&Number.isFinite(we))ws=we-6*PAY_MS;
+  if(!Number.isFinite(we)&&Number.isFinite(ws))we=ws+6*PAY_MS;
+  if(!Number.isFinite(we)||!Number.isFinite(ws))return {key:'undated',undated:true,year:'Undated',title:'Undated submissions',sort:-Infinity};
+  const n=Math.floor((we-PAY_ANCHOR)/(14*PAY_MS));
+  const from=PAY_ANCHOR+n*14*PAY_MS, to=from+13*PAY_MS;
+  const fromWeek=Math.floor((ws-PAY_ANCHOR)/(14*PAY_MS));
+  return {key:payISO(from),year:String(new Date(to).getUTCFullYear()),title:payFmt(from)+' – '+payFmt(to),from,to,sort:from,crosses:fromWeek!==n,
+    due:to+1*PAY_MS, payday:PAY_DAY_ANCHOR+n*14*PAY_MS};
+}
+function tsSheetYear(it){return payPeriod(it).year;}
 function tsSheetLabel(it){
-  var ds=it.weekStart?new Date(it.weekStart+'T12:00:00'):null;
-  var de=it.weekEnd?new Date(it.weekEnd+'T12:00:00'):(ds?new Date(ds.getTime()+6*86400000):null);
-  function md(d){ return d?d.toLocaleString('en-US',{month:'short',day:'numeric'}):'—'; }
-  var mon=ds?ds.toLocaleString('en-US',{month:'long'}):'—';
-  var yr=ds?ds.getFullYear():'—';
-  var period = (ds&&de)?(md(ds)+' – '+md(de)):(it.weekStart||'?');
-  var tech = it.employee||'Employee';
-  // Month · Week of <period> · Year · Tech
-  return mon+' · Week of '+period+' · '+yr+' · '+tech;
+  return (it.employee||'Employee')+' · '+(it.weekStart||'?')+' – '+(it.weekEnd||'?');
 }
 async function showInbox(){
   if(!FB_OK)return;
@@ -888,30 +912,81 @@ async function showInbox(){
   }catch(e){console.error(e);cloudMsg('error','Could not load submitted timesheets: '+(e.message||e));}
 }
 function renderInbox(){
-  var counts={}, order=[];
-  INBOX_ITEMS.forEach(function(it){ var y=tsSheetYear(it); if(!(y in counts)){counts[y]=0;order.push(y);} counts[y]++; });
-  var years=order.filter(y=>y!=='Undated').sort((a,b)=>Number(b)-Number(a)); if(order.indexOf('Undated')>=0) years.push('Undated');
-  if(INBOX_YEAR && years.indexOf(INBOX_YEAR)<0) INBOX_YEAR='';
-  var chips=['<button class="ibx-year'+(INBOX_YEAR===''?' active':'')+'" data-y="">All<span class="n">'+INBOX_ITEMS.length+'</span></button>'];
-  years.forEach(y=>chips.push('<button class="ibx-year'+(INBOX_YEAR===y?' active':'')+'" data-y="'+esc(y)+'">'+esc(y)+'<span class="n">'+counts[y]+'</span></button>'));
-  $('inboxYears').innerHTML = INBOX_ITEMS.length?chips.join(''):'';
-  var shown = INBOX_YEAR?[INBOX_YEAR]:years;
-  var html='';
-  if(!INBOX_ITEMS.length){ html='<div class="ibx-empty">No submitted timesheets for you right now.</div>'; }
-  else shown.forEach(function(y){
-    var its=INBOX_ITEMS.filter(it=>tsSheetYear(it)===y);
-    if(!its.length) return;
-    html+='<div class="ibx-group">'+esc(y)+'</div>';
-    its.forEach(function(it){
-      var tot=(it.entries||[]).reduce((s,e)=>s+(+e.st||0)+(+e.ot||0)+(+e.dt||0),0).toFixed(2);
-      html+='<a href="#" class="ibx-item" data-open="'+esc(it.id)+'">'+
-        '<span class="lbl">'+esc(tsSheetLabel(it))+'</span>'+
-        '<span class="meta">'+tot+' hrs &nbsp;<span class="badge '+(it.status==='reviewed'?'reviewed':'submitted')+'">'+(it.status==='reviewed'?'Reviewed':'Submitted')+'</span></span></a>';
-    });
-  });
+  const now=Date.now();
+  const grouped=new Map();
+  INBOX_ITEMS.forEach(it=>{const period=payPeriod(it);const group=grouped.get(period.key)||{period,items:[]};group.items.push(it);grouped.set(period.key,group);});
+  const all=Array.from(grouped.values()).sort((a,b)=>b.period.sort-a.period.sort);
+  const years=[...new Set(all.map(g=>g.period.year))].sort((a,b)=>Number(b)-Number(a));
+  if(INBOX_YEAR&&!years.includes(INBOX_YEAR))INBOX_YEAR='';
+  $('inboxYears').innerHTML=all.length?'<button class="ibx-year'+(!INBOX_YEAR?' active':'')+'" data-y="">All<span class="n">'+INBOX_ITEMS.length+'</span></button>'+years.map(y=>'<button class="ibx-year'+(INBOX_YEAR===y?' active':'')+'" data-y="'+esc(y)+'">'+esc(y)+'<span class="n">'+all.filter(g=>g.period.year===y).length+'</span></button>').join(''):'';
+  const relevant=all.filter(g=>!INBOX_YEAR||g.period.year===INBOX_YEAR);
+  function itemHTML(it){
+    const tot=(it.entries||[]).reduce((sum,e)=>sum+(+e.st||0)+(+e.ot||0)+(+e.dt||0),0).toFixed(2);
+    const p=payPeriod(it);
+    return '<a href="#" class="ibx-item" data-open="'+esc(it.id)+'"><span class="lbl">'+esc(tsSheetLabel(it))+(p.crosses?'<small class="ibx-warning">Week overlaps two pay periods — verify allocation</small>':'')+'</span><span class="meta">'+tot+' hrs &nbsp;<span class="badge '+(it.status==='reviewed'?'reviewed':'submitted')+'">'+(it.status==='reviewed'?'Reviewed':'Submitted')+'</span></span></a>';
+  }
+  function periodHTML(g,archived){
+    const p=g.period, reviewed=g.items.filter(it=>it.status==='reviewed').length;
+    const expanded=INBOX_EXPANDED[g.period.key]===true || (!archived&&INBOX_EXPANDED[g.period.key]!==false);
+    const heading='<button type="button" class="pay-folder" data-period="'+esc(p.key)+'" aria-expanded="'+expanded+'"><span class="pay-folder-icon">'+(archived?'▣':'▤')+'</span><span class="pay-folder-info"><strong>'+esc(p.title)+'</strong><small>'+(p.undated?'Date not supplied':'Due '+esc(payFmt(p.due))+' at 8:00 AM ET · Payday '+esc(payFmt(p.payday)))+'</small></span><span class="pay-folder-meta">'+reviewed+'/'+g.items.length+' reviewed '+(expanded?'▾':'▸')+'</span></button>';
+    const list=expanded?'<div class="pay-folder-items">'+g.items.sort((a,b)=>(a.weekStart||'').localeCompare(b.weekStart||'')||String(a.employee||'').localeCompare(String(b.employee||''))).map(itemHTML).join('')+'</div>':'';
+    const exportButton='<div class="pay-export-bar"><button type="button" class="secondary" data-export-period="'+esc(p.key)+'">↓ Download Pay Period (printable)</button></div>';
+    return '<div class="pay-folder-wrap">'+heading+exportButton+list+'</div>';
+  }
+  const current=payPeriod({weekStart:payISO(now),weekEnd:payISO(now)}).key;
+  // No record-level archive flag: folders become archived when the period is in the past
+  // AND every currently visible submitted record in that period has status "reviewed".
+  const active=relevant.filter(g=>!g.period.undated&&(g.period.key===current));
+  const awaiting=relevant.filter(g=>g.period.undated||g.period.key!==current && !(g.period.to<now && g.items.every(it=>it.status==='reviewed')));
+  const archived=relevant.filter(g=>!g.period.undated&&g.period.key!==current&&g.period.to<now&&g.items.every(it=>it.status==='reviewed'));
+  let html='';
+  if(!all.length) html='<div class="ibx-empty">No submitted timesheets for you right now.</div>';
+  if(active.length)html+='<div class="ibx-group">Current Pay Period</div>'+active.map(g=>periodHTML(g,false)).join('');
+  if(awaiting.length)html+='<div class="ibx-group">Awaiting Review / Previous Pay Periods</div>'+awaiting.map(g=>periodHTML(g,false)).join('');
+  if(archived.length)html+='<div class="ibx-group">Past Pay Periods · Archived after review</div>'+archived.map(g=>periodHTML(g,true)).join('');
   $('inboxList').innerHTML=html;
   $('inboxList').querySelectorAll('[data-open]').forEach(a=>a.onclick=ev=>{ev.preventDefault();openManagerReview(a.getAttribute('data-open'),true);});
-  $('inboxYears').querySelectorAll('[data-y]').forEach(bn=>bn.onclick=()=>{INBOX_YEAR=bn.getAttribute('data-y');renderInbox();});
+  $('inboxList').querySelectorAll('[data-export-period]').forEach(b=>b.onclick=()=>downloadPayPeriod(b.getAttribute('data-export-period')));
+  $('inboxList').querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{const k=b.getAttribute('data-period');INBOX_EXPANDED[k]=b.getAttribute('aria-expanded')!=='true';renderInbox();});
+  $('inboxYears').querySelectorAll('[data-y]').forEach(b=>b.onclick=()=>{INBOX_YEAR=b.getAttribute('data-y');renderInbox();});
+}
+
+// Local, self-contained, print-ready archive of the manager-visible pay period.
+// This does not move/change Firestore records and never exports other managers' unseen sheets.
+function downloadPayPeriod(key){
+  const sheets=INBOX_ITEMS.filter(it=>payPeriod(it).key===key).slice().sort((a,b)=>String(a.employee||'').localeCompare(String(b.employee||''))||String(a.weekStart||'').localeCompare(String(b.weekStart||'')));
+  if(!sheets.length){alert('No submitted timesheets were found for this pay period.');return;}
+  const period=payPeriod(sheets[0]);
+  const safe=esc;
+  const cash=n=>'$'+(Number(n)||0).toFixed(2);
+  const fmt=n=>(Number(n)||0).toFixed(2);
+  const total={st:0,ot:0,dt:0,expenses:0,advances:0};
+  const sections=sheets.map((d,i)=>{
+    let subtotal={st:0,ot:0,dt:0};
+    const entries=Array.isArray(d.entries)?d.entries:[];
+    const entryRows=entries.map(e=>{
+      ['st','ot','dt'].forEach(k=>{subtotal[k]+=Number(e[k])||0;total[k]+=Number(e[k])||0;});
+      const flagged=/[a-z]/i.test(String(e.jobNumber||''));
+      return '<tr'+(flagged?' class="orange"':'')+'><td>'+safe(e.day||'')+'</td><td>'+safe(e.type||'')+'</td><td>'+safe(e.jobName??e.job??'')+'</td><td>'+safe(e.jobNumber||'')+'</td><td class="num">'+fmt(e.st)+'</td><td class="num">'+fmt(e.ot)+'</td><td class="num">'+fmt(e.dt)+'</td><td>'+safe(e.notes||'')+'</td></tr>';
+    }).join('');
+    const reports=Array.isArray(d.expenseReports)?d.expenseReports:(d.expenseReport?[d.expenseReport]:[]);
+    const reportsHtml=reports.map((r,j)=>{
+      const items=Array.isArray(r.items)?r.items:[];
+      const {total:expenses,companyCard,reimbursable,advance:advances,owed}=expenseAmounts(r);
+      total.expenses+=expenses;total.advances+=advances;total.companyCard=(total.companyCard||0)+companyCard;total.reimbursable=(total.reimbursable||0)+reimbursable;
+      return '<section class="expense"><h4>Expense Report '+(j+1)+' — '+safe(r.jobName||'')+' · Job #'+safe(r.jobNumber||'')+'</h4><p>'+safe(r.purpose||'')+' · '+safe(r.from||'')+' to '+safe(r.to||'')+' · Statement '+safe(r.statement||'—')+'</p><table><thead><tr><th>Date</th><th>Account</th><th>Description</th><th>Payment Method</th><th class="num">Amount</th></tr></thead><tbody>'+items.map(e=>'<tr><td>'+safe(e.date||'')+'</td><td>'+safe(e.account||'')+'</td><td>'+safe(e.description||'')+'</td><td>'+safe(expensePayment(e))+'</td><td class="num">'+cash(e.amount)+'</td></tr>').join('')+'</tbody></table><p class="totals">Expenses '+cash(expenses)+' · Company card '+cash(companyCard)+' · Reimbursable '+cash(reimbursable)+' · Advances '+cash(advances)+' · Net reimbursement '+cash(owed)+'</p>'+(r.notes?'<p>Notes: '+safe(r.notes)+'</p>':'')+'</section>';
+    }).join('');
+    const crossed=payPeriod(d).crosses;
+    return '<section class="sheet"><h3>'+(i+1)+'. '+safe(d.employee||'Employee')+' — '+safe(d.weekStart||'?')+' through '+safe(d.weekEnd||'?')+'</h3><p class="meta">Status: '+safe(d.status||'submitted')+' · Submitted to: '+safe(d.managerName||'Manager')+' · Review initials: '+safe(d.reviewedByInitials||'—')+'</p>'+(crossed?'<p class="warning">This Sunday–Saturday weekly sheet crosses a Monday–Sunday pay-period boundary. Its hours have not been split or reallocated in this archive.</p>':'')+'<table><thead><tr><th>Day</th><th>Department</th><th>Job name</th><th>Job #</th><th class="num">Regular</th><th class="num">OT</th><th class="num">DT</th><th>Notes</th></tr></thead><tbody>'+entryRows+'</tbody></table><p class="totals">Regular '+fmt(subtotal.st)+' · Overtime '+fmt(subtotal.ot)+' · Double '+fmt(subtotal.dt)+' · Total '+fmt(subtotal.st+subtotal.ot+subtotal.dt)+' hours</p>'+(d.comments?'<p>Employee comments: '+safe(d.comments)+'</p>':'')+(d.managerNote?'<p>Manager note: '+safe(d.managerNote)+'</p>':'')+reportsHtml+'</section>';
+  }).join('');
+  const heading=period.undated?'Undated submissions':period.title;
+  const title='FDEC Pay Period — '+heading;
+  const html='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+safe(title)+'</title><style>:root{color-scheme:light!important}*{box-sizing:border-box}html{background:#fff!important;color:#172a46!important}body{margin:0;padding:26px;font:14px/1.45 Arial,sans-serif;color:#172a46!important;background:#fff!important}header{background:#fff!important;border-bottom:3px solid #153b67;padding-bottom:13px}h1{font-size:23px;margin:0}h2{font-size:17px}h3{font-size:16px;margin:0 0 8px}.meta{color:#475569}.sheet{break-before:page;page-break-before:always;margin:24px 0;background:#fff!important;color:#172a46!important}.sheet:first-of-type{break-before:auto;page-break-before:auto}table{width:100%;border-collapse:collapse;table-layout:auto;margin:10px 0;font-size:11px}th,td{border:1px solid #cbd5e1;padding:6px;text-align:left;vertical-align:top;overflow-wrap:anywhere;color:#172a46!important;background:#fff}td.orange{background:#F7C58D!important}th{background:#e8eef6}.num{text-align:right;white-space:nowrap}.orange{background:#F7C58D!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.totals{font-weight:bold;text-align:right}.warning{background:#fff0d5;padding:8px;border-left:3px solid #d58229}.expense{margin:20px 0;padding-top:8px;border-top:1px solid #94a3b8;break-inside:avoid}.expense h4{margin:0}.expense p{margin:6px 0}.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:20px}.toolbar button{padding:10px 15px;border:0;border-radius:7px;background:#153b67;color:white;cursor:pointer}.summary{padding:12px;background:#edf3f9;break-inside:avoid}@page{size:landscape;margin:12mm}@media print{html,body{background:#fff!important;color:#172a46!important}body{padding:0}.toolbar{display:none}.sheet{margin:0 0 18px}th{background:#e8eef6!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><div class="toolbar"><button onclick="window.print()">Print / Save as PDF</button><span>Saved offline copy · No internet required</span></div><header><h1>'+safe(title)+'</h1><p>'+(period.undated?'Undated':('Submission deadline: '+safe(payFmt(period.due))+' at 8:00 AM ET · Payday: '+safe(payFmt(period.payday))))+'</p></header><section class="summary"><h2>Pay Period Summary</h2><p>'+sheets.length+' weekly submissions · '+sheets.filter(s=>s.status==='reviewed').length+' reviewed</p><p id="hour-summary"></p></section>'+sections+'<footer><p>Generated from the submitted/reviewed records visible to this manager. This is a snapshot, not a live connection to Firestore. Weeks crossing a pay-period boundary remain intact; no hours are reassigned.</p></footer></body></html>';
+  // Insert totals after entries have been accumulated, without adding script dependencies to exported file.
+  const full=html.replace('<p id="hour-summary"></p>','<p>Regular: '+fmt(total.st)+' · Overtime: '+fmt(total.ot)+' · Double: '+fmt(total.dt)+' · Combined: '+fmt(total.st+total.ot+total.dt)+' hours</p><p>Expenses: '+cash(total.expenses)+' · Company card: '+cash(total.companyCard||0)+' · Reimbursable: '+cash(total.reimbursable||0)+' · Cash advances: '+cash(total.advances)+' · Net reimbursement: '+cash((total.reimbursable||0)-total.advances)+'</p>');
+  const blob=new Blob([full],{type:'text/html;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='FDEC-Pay-Period-'+(period.undated?'undated':payISO(period.from)+'-to-'+payISO(period.to))+'.html';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
 }
 
 async function openManagerReview(id, fromInbox){
@@ -1067,6 +1142,7 @@ async function saveManagerReview(markReviewed){
     $('mgrSavedInfo').textContent=(markReviewed?'Review saved and marked approved. ':'Edits saved. ')+
       newEdits.length+' new change(s) logged under '+init+' at '+new Date().toLocaleString()+'.';
     renderEditLog();
+    if(markReviewed){OPEN_SHEET.status='reviewed';const old=INBOX_ITEMS.find(it=>it.id===OPEN_SHEET_ID);if(old)old.status='reviewed';}
   }catch(e){console.error(e);$('mgrSavedInfo').textContent='Save failed: '+(e.message||e);}
 }
 
@@ -1079,7 +1155,7 @@ $('mgrBack')&&($('mgrBack').onclick=()=>{
   // strip ?sheet= from URL so it does not reopen
   const u=new URL(location.href);u.searchParams.delete('sheet');u.searchParams.delete('id');
   history.replaceState({},'',u.toString());
-  if(window.__fromInbox){ $('inboxView').classList.remove('hide'); window.scrollTo({top:0,behavior:'smooth'}); }
+  if(window.__fromInbox){ $('inboxView').classList.remove('hide'); renderInbox(); window.scrollTo({top:0,behavior:'smooth'}); }
   else { enterTechMode(null); }
 });
 $('inboxBack')&&($('inboxBack').onclick=()=>{ $('inboxView').classList.add('hide'); enterTechMode(null); });
@@ -1097,6 +1173,9 @@ const EXPENSE_KEY='fdecExpenseReportTransferV1';
 const SHEET_KEY='fdecExpenseTimesheetSnapshotV1';
 const CANCEL_KEY='fdecExpenseReturnCancelledV1';
 function moneyExpense(n){return '$'+Number(n||0).toFixed(2);}
+function expensePayment(i){return i.paymentMethod==='company_card'?'Company Card':i.paymentMethod==='per_diem'?'Per Diem':'Out of Pocket';}
+function expenseAmounts(r){const items=Array.isArray(r.items)?r.items:[];let total=0,companyCard=0,reimbursable=0;for(const i of items){const amt=Number(i.amount)||0;total+=amt;if(i.paymentMethod==='company_card')companyCard+=amt;else reimbursable+=amt;}const advance=Number(r.advance)||0;return {total,companyCard,reimbursable,advance,owed:reimbursable-advance};}
+
 function renderManagerExpenses(){
   const d=OPEN_SHEET||{};
   const reports=Array.isArray(d.expenseReports)?d.expenseReports:(d.expenseReport?[d.expenseReport]:[]);
@@ -1104,17 +1183,15 @@ function renderManagerExpenses(){
   if(!reports.length){target.textContent='No expense reports attached to this submission.';return;}
   target.innerHTML=reports.map((r,index)=>{
     const items=Array.isArray(r.items)?r.items:[];
-    const total=items.reduce((sum,item)=>sum+(Number(item.amount)||0),0);
-    const advance=Number(r.advance)||0;
-    const owed=total-advance;
+    const {total,companyCard,reimbursable,advance,owed}=expenseAmounts(r);
     return '<article class="expense-attached">'+
       '<div class="expense-heading"><strong>Expense Report '+(index+1)+' · '+esc(r.jobName||'Job')+' · Job #'+esc(r.jobNumber||'—')+'</strong></div>'+
       '<div class="expense-meta small">Employee: '+esc(r.employee||d.employee||'—')+' · Department: '+esc(r.department||'—')+' · Manager: '+esc(r.manager||d.managerName||'—')+'</div>'+
       '<div class="expense-meta small">Pay period: '+esc(r.from||'—')+' to '+esc(r.to||'—')+' · Statement #: '+esc(r.statement||'—')+' · Purpose: '+esc(r.purpose||'—')+'</div>'+
-      '<div class="expense-scroll"><table class="expense-table"><thead><tr><th>Date</th><th>Account</th><th>Description</th><th>Amount</th></tr></thead><tbody>'+
-      items.map(item=>'<tr><td>'+esc(item.date||'')+'</td><td>'+esc(item.account||'')+'</td><td>'+esc(item.description||'')+'</td><td>'+moneyExpense(item.amount)+'</td></tr>').join('')+
+      '<div class="expense-scroll"><table class="expense-table"><thead><tr><th>Date</th><th>Account</th><th>Description</th><th>Payment Method</th><th>Amount</th></tr></thead><tbody>'+
+      items.map(item=>'<tr><td>'+esc(item.date||'')+'</td><td>'+esc(item.account||'')+'</td><td>'+esc(item.description||'')+'</td><td>'+esc(expensePayment(item))+'</td><td>'+moneyExpense(item.amount)+'</td></tr>').join('')+
       '</tbody></table></div>'+
-      '<div class="expense-totals"><span>Expenses: <b>'+moneyExpense(total)+'</b></span><span>Cash advances: <b>'+moneyExpense(advance)+'</b></span><span>'+(owed<0?'Due from technician':'Reimbursement')+': <b>'+moneyExpense(Math.abs(owed))+'</b></span></div>'+
+      '<div class="expense-totals"><span>Expenses: <b>'+moneyExpense(total)+'</b></span><span>Company Card: <b>'+moneyExpense(companyCard)+'</b></span><span>Reimbursable: <b>'+moneyExpense(reimbursable)+'</b></span><span>Cash advances: <b>'+moneyExpense(advance)+'</b></span><span>'+(owed<0?'Due from technician':'Reimbursement')+': <b>'+moneyExpense(Math.abs(owed))+'</b></span></div>'+
       (r.notes?'<div class="small">Notes: '+esc(r.notes)+'</div>':'')+'</article>';
   }).join('');
 }
@@ -1125,8 +1202,8 @@ function renderExpenseReport(){
     const items=Array.isArray(d.items)?d.items:[];
     return '<article class="expense-attached"><div class="expense-heading"><strong>Report '+(index+1)+' · '+esc(d.jobName||'Job')+' · #'+esc(d.jobNumber||'')+'</strong><button type="button" class="secondary edit-expense no-print" data-expense-index="'+index+'">✎ Edit</button></div>'+ 
       '<div class="expense-meta small">'+esc(d.employee||$('employee').value||'Employee')+' · '+esc(d.from||'')+' to '+esc(d.to||'')+' · '+esc(d.purpose||'')+'</div>'+ 
-      '<div class="expense-scroll"><table class="expense-table"><thead><tr><th>Date</th><th>Account</th><th>Description</th><th>Amount</th></tr></thead><tbody>'+items.map(i=>'<tr><td>'+esc(i.date)+'</td><td>'+esc(i.account)+'</td><td>'+esc(i.description)+'</td><td>'+moneyExpense(i.amount)+'</td></tr>').join('')+'</tbody></table></div>'+ 
-      '<div class="expense-totals"><span>Expenses: <b>'+moneyExpense(d.total)+'</b></span><span>Cash advances: <b>'+moneyExpense(d.advance)+'</b></span><span>Reimbursement: <b>'+moneyExpense(d.owed)+'</b></span></div>'+
+      '<div class="expense-scroll"><table class="expense-table"><thead><tr><th>Date</th><th>Account</th><th>Description</th><th>Payment Method</th><th>Amount</th></tr></thead><tbody>'+items.map(i=>'<tr><td>'+esc(i.date)+'</td><td>'+esc(i.account)+'</td><td>'+esc(i.description)+'</td><td>'+esc(expensePayment(i))+'</td><td>'+moneyExpense(i.amount)+'</td></tr>').join('')+'</tbody></table></div>'+ 
+      '<div class="expense-totals"><span>Expenses: <b>'+moneyExpense(expenseAmounts(d).total)+'</b></span><span>Company Card: <b>'+moneyExpense(expenseAmounts(d).companyCard)+'</b></span><span>Reimbursable: <b>'+moneyExpense(expenseAmounts(d).reimbursable)+'</b></span><span>Cash advances: <b>'+moneyExpense(d.advance)+'</b></span><span>Reimbursement: <b>'+moneyExpense(Math.abs(expenseAmounts(d).owed))+'</b></span></div>'+
       (d.notes?'<div class="small">Notes: '+esc(d.notes)+'</div>':'')+'</article>';
   }).join('');
   target.querySelectorAll('.edit-expense').forEach(btn=>btn.onclick=()=>openExpenseEditor(Number(btn.dataset.expenseIndex)));
