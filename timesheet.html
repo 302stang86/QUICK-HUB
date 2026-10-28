@@ -83,13 +83,31 @@ button:hover{filter:brightness(.97)}
 .status.info{background:#eef4fb;border-color:#bcd3ea;color:#234e74}
 .hide{display:none!important}
 
+/* Manager review: compact 10pt-equivalent typography and tighter boxes. */
+#managerView .panel{padding:12px;margin-bottom:10px;border-radius:7px}
+#managerView h2{font-size:14px;margin-bottom:4px}
+#managerView .sub,#managerView .small{font-size:10pt;margin-bottom:6px}
+#managerView .grid{gap:7px}
+#managerView label{font-size:9pt;margin-bottom:2px}
+#managerView .grid input{font-size:10pt;padding:6px}
+#managerView .btns{margin-top:9px;gap:7px}
+#managerView .btns button{font-size:10pt;padding:8px 10px}
+#managerView .summary{gap:6px}
+#managerView .metric{padding:7px;border-radius:5px}
+#managerView .metric span{font-size:9pt}
+#managerView .metric strong{font-size:14pt;margin-top:1px}
+#managerView .expense-attached{padding:8px;margin:7px 0}
+#managerView .expense-scroll{margin:6px 0}
+#managerView .expense-table{font-size:10pt}
+#managerView .expense-table th,#managerView .expense-table td{padding:4px}
+#managerView .expense-totals{padding:7px;gap:7px;margin:6px 0;font-size:10pt}
 /* Manager review table */
 .table-wrap{overflow-x:auto}
 table.review{width:100%;border-collapse:collapse;min-width:720px}
-table.review th,table.review td{padding:9px 10px;border-bottom:1px solid #e4e9ef;text-align:left;vertical-align:middle;font-size:14px}
-table.review th{background:#f1f5f8;color:#445568;font-size:11px;text-transform:uppercase;letter-spacing:.35px;position:sticky;top:0}
+table.review th,table.review td{padding:4px 5px;border-bottom:1px solid #e4e9ef;text-align:left;vertical-align:middle;font-size:10pt}
+table.review th{background:#f1f5f8;color:#445568;font-size:9pt;text-transform:uppercase;letter-spacing:.35px;position:sticky;top:0}
 table.review td.num,table.review th.num{text-align:right;font-variant-numeric:tabular-nums}
-table.review input,table.review select{padding:7px}
+table.review input,table.review select{padding:4px 3px;font-size:10pt;border-radius:4px}
 table.review input.num{text-align:right}
 /* Keep flagged and standard manager-review rows at identical dimensions. */
 table.review tbody tr.job-number-alpha > td{background:#F7C58D;box-shadow:inset 0 1px #D58229,inset 0 -1px #D58229}
@@ -178,6 +196,18 @@ header,main{position:relative;z-index:1;}
 }
 .expense-attached{border:1px solid #dce4ec;border-radius:10px;padding:12px;margin:10px 0;background:#fafcfe}.expense-attached .expense-heading{align-items:center}.expense-attached button{padding:8px 12px}.expense-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .expense-scroll{overflow:auto;margin:12px 0}.expense-table{width:100%;border-collapse:collapse;font-size:13px;min-width:420px}.expense-table th,.expense-table td{text-align:left;border-bottom:1px solid #dce4ec;padding:7px}.expense-table th{background:#edf3f8;color:#142b46}.expense-table td:last-child{text-align:right;white-space:nowrap}.expense-totals{display:flex;gap:12px;flex-wrap:wrap;background:#edf3f8;border-radius:8px;padding:12px;margin:10px 0}.expense-meta{margin-top:9px}
+@media print{
+  @page{size:landscape;margin:8mm}
+  #managerView .panel{padding:5px;margin:0 0 6px;break-inside:auto}
+  #managerView h2{font-size:10pt}
+  #managerView .sub,#managerView .small,#managerView label{font-size:9pt}
+  #managerView table.review{min-width:0;width:100%;table-layout:fixed}
+  #managerView table.review th,#managerView table.review td{font-size:9pt;padding:2px 3px}
+  #managerView table.review input,#managerView table.review select{font-size:9pt;padding:0;width:100%;min-width:0}
+  #managerView .expense-table th,#managerView .expense-table td{font-size:9pt;padding:2px 3px}
+  #managerView .metric{padding:3px}
+  #managerView .metric strong{font-size:11pt}
+}
 @media print{#mgrExpenseSection .expense-attached{break-inside:avoid}#mgrExpenseSection .expense-scroll{overflow:visible}#mgrExpenseSection .expense-table{min-width:0;width:100%;font-size:11px}}
 @media(max-width:600px){.expense-totals{display:grid;gap:5px}.expense-table{font-size:12px}}
 
@@ -192,6 +222,20 @@ header,main{position:relative;z-index:1;}
 .pay-export-bar{padding:6px 12px 10px;display:flex;justify-content:flex-end}
 .pay-export-bar button{font-size:13px;padding:8px 12px}
 @media(max-width:600px){.pay-export-bar button{width:100%}}
+
+
+/* Read-only manager Time Sheet search: compact 10pt-style results. */
+.ts-search{margin:12px 0;padding:12px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc}
+.ts-search h3{margin:0 0 8px;font-size:13px}.ts-search-fields{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.ts-search label{font-size:10pt;font-weight:600;margin:0 0 3px;display:block}
+.ts-search input,.ts-search select{width:100%;min-width:0;height:33px;box-sizing:border-box;font-size:12px;padding:5px 7px;border:1px solid #bac9d9;border-radius:5px;background:white;color:#17324d}
+.ts-search-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:9px 0 0}.ts-search-actions button{font-size:12px;padding:6px 12px}.ts-search-results{margin-top:10px}
+.ts-search-results .table-wrap{overflow-x:auto}.ts-search-results table{width:100%;border-collapse:collapse;font-size:10pt}
+.ts-search-results th,.ts-search-results td{padding:4px 5px;border:1px solid #d7e0ea;text-align:left;vertical-align:middle}
+.ts-search-results th{background:#e8eef6}.ts-search-results td.num,.ts-search-results th.num{text-align:right;white-space:nowrap}
+.ts-search-results tr.job-number-alpha td{background:#F7C58D!important}.ts-search-results .search-open{background:none;color:#155a93;border:0;text-decoration:underline;padding:0;font-size:inherit;cursor:pointer}
+@media(max-width:800px){.ts-search-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.ts-search-fields>div:first-child{grid-column:1/-1}}
+@media print{.ts-search{display:none!important}}
 </style>
 <!-- FDEC PWA / offline -->
 <link rel="manifest" href="manifest.webmanifest">
@@ -358,6 +402,7 @@ header,main{position:relative;z-index:1;}
       <button class="go" id="mgrApprove" type="button">Save Review &amp; Mark Approved</button>
       <button class="secondary" id="mgrSaveOnly" type="button">Save Edits (keep open)</button>
       <button class="ghost" id="mgrPrint" type="button">Print / Save as PDF</button>
+      <button class="danger" id="mgrDelete" type="button">Delete Submitted Timesheet</button>
       <button class="ghost" id="mgrBack" type="button">Back to My Timesheet</button>
     </div>
     <p class="small" id="mgrSavedInfo"></p>
@@ -371,6 +416,18 @@ header,main{position:relative;z-index:1;}
       <button class="ghost no-print" id="inboxBack" type="button">Back to My Timesheet</button>
     </div>
     <p class="sub">Weekly submissions grouped by FDEC biweekly pay period. Past periods appear in the archive after every submitted sheet in that period has been reviewed. Existing records are never moved or deleted.</p>
+    <div class="ts-search no-print" id="tsSearch">
+      <h3>Search Time Sheets</h3>
+      <div class="ts-search-fields">
+        <div><label for="tsFilterType">Type / Department</label><select id="tsFilterType"><option value="">All Departments</option></select></div>
+        <div><label for="tsFilterJob">Job Number</label><input id="tsFilterJob" type="search" placeholder="Any job number"></div>
+        <div><label for="tsFilterTech">Technician Name</label><input id="tsFilterTech" type="search" placeholder="Any technician"></div>
+        <div><label for="tsFilterFrom">From Date</label><input id="tsFilterFrom" type="date"></div>
+        <div><label for="tsFilterTo">To Date</label><input id="tsFilterTo" type="date"></div>
+      </div>
+      <div class="ts-search-actions"><button type="button" class="go" id="tsSearchGo">Search All Pay Periods</button><button type="button" class="secondary" id="tsSearchClear">Clear Filters</button><span class="small">Combined filters · submitted and reviewed · current and archived</span></div>
+      <div id="tsSearchResults" class="ts-search-results" aria-live="polite"></div>
+    </div>
     <div id="inboxYears" class="ibx-years"></div>
     <div id="inboxList" class="ibx-list"></div>
   </section>
@@ -683,7 +740,7 @@ function defaultSunday(){
   const d=new Date();d.setDate(d.getDate()-d.getDay());
   $('weekStart').value=localISO(d);setWeek();
 }
-$('weekStart').addEventListener('change',()=>{setWeek();if(FB_OK&&CURRENT.uid)loadMyDraftForWeek();});
+$('weekStart').addEventListener('change',()=>{setWeek();LAST_SAVED_ID=null;$('savedInfo').textContent='';if(FB_OK&&CURRENT.uid)loadMyDraftForWeek();});
 
 /* ----- buttons ----- */
 $('addRow').onclick=()=>makeRow();
@@ -744,7 +801,24 @@ function validate(forSubmit){
 }
 
 /* ----- save / submit ----- */
+let SHEET_SAVE_BUSY=false;
+// The workweek, not the two-week payroll folder, identifies an individual weekly sheet.
+// A deterministic ID protects against duplicates across devices when no legacy sheet exists.
+function stableWeekSheetId(uid,weekStart){return 'weekly_'+uid+'_'+weekStart;}
+async function findExistingWeekSheet(weekStart){
+  const q=await db.collection(COL_SHEETS)
+    .where('employeeUid','==',CURRENT.uid)
+    .where('weekStart','==',weekStart).get();
+  if(q.empty)return null;
+  const docs=q.docs.slice().sort((a,b)=>{
+    const priority=d=>d.data().status==='reviewed'?3:d.data().status==='submitted'?2:1;
+    return priority(b)-priority(a);
+  });
+  if(docs.length>1)console.warn('Existing duplicate weekly timesheets found for '+weekStart+'; using the reviewed/submitted record. No records were deleted.');
+  return docs[0];
+}
 async function saveSheet(status){
+  if(SHEET_SAVE_BUSY)return;
   const v=validate(status==='submitted');
   if(!v.ok){
     cloudMsg('error', (status==='submitted'?'Cannot submit yet. ':'Cannot save yet. ')+v.problems.join(' '));
@@ -753,62 +827,75 @@ async function saveSheet(status){
   }
   const data=gather();
   if(!FB_OK){
-    // Fallback: keep a local copy so nothing is lost
     try{localStorage.setItem('fdecTimesheet:'+(data.weekStart||'week'),JSON.stringify({...data,status}));}catch(e){}
     cloudMsg('warn','Cloud is off, so this was saved only on this device. Fill in the Firebase config to enable real cloud save and submit.');
     return;
   }
-  const now=firebase.firestore.FieldValue.serverTimestamp();
-  const payload={
-    ...data,status,
-    updatedAt:now,
-    ...(status==='submitted'?{submittedAt:now}:{})
-  };
+  SHEET_SAVE_BUSY=true;
+  $('submit').disabled=true;$('saveCloud').disabled=true;
   try{
-    cloudMsg('info', status==='submitted'?'Submitting…':'Saving draft…');
-    if(LAST_SAVED_ID){
-      await db.collection(COL_SHEETS).doc(LAST_SAVED_ID).set(payload,{merge:true});
-    }else{
-      payload.createdAt=now;
-      payload.managerEdits=[];      // review audit trail
-      const ref=await db.collection(COL_SHEETS).add(payload);
-      LAST_SAVED_ID=ref.id;
+    cloudMsg('info', status==='submitted'?'Checking existing weekly submission…':'Checking existing weekly draft…');
+    const found=await findExistingWeekSheet(data.weekStart);
+    if(found && found.data().status==='reviewed'){
+      LAST_SAVED_ID=found.id;
+      cloudMsg('error','This week has already been reviewed by a manager. Contact your manager to request a correction; a second timesheet was not created.');
+      return;
     }
-    $('statusBadge').className='badge '+status+' ';
+    // Prefer the existing historical document ID so old manager links and archives stay intact.
+    // When there is none, all devices use the same deterministic weekly document ID.
+    const id=found?found.id:stableWeekSheetId(CURRENT.uid,data.weekStart);
+    const ref=db.collection(COL_SHEETS).doc(id);
+    const now=firebase.firestore.FieldValue.serverTimestamp();
+    const payload={...data,status,updatedAt:now,...(status==='submitted'?{submittedAt:now}:{})};
+    await db.runTransaction(async tx=>{
+      const existing=await tx.get(ref);
+      if(existing.exists){
+        const previous=existing.data();
+        if(previous.employeeUid!==CURRENT.uid || previous.weekStart!==data.weekStart)throw new Error('Weekly record ownership/date mismatch. No changes were saved.');
+        if(previous.status==='reviewed')throw new Error('This timesheet was already reviewed. Ask your manager to make any corrections.');
+        // Do not demote an already-submitted sheet when saving a draft afterward.
+        if(status==='draft' && previous.status==='submitted')payload.status='submitted';
+        tx.set(ref,payload,{merge:true});
+      }else{
+        tx.set(ref,{...payload,createdAt:now,managerEdits:[]});
+      }
+    });
+    LAST_SAVED_ID=id;
+    $('statusBadge').className='badge '+payload.status+' ';
     $('statusBadge').classList.remove('hide');
-    $('statusBadge').textContent=status==='submitted'?'Submitted':'Draft saved';
+    $('statusBadge').textContent=payload.status==='submitted'?'Submitted':'Draft saved';
     const t=new Date().toLocaleString();
-    $('savedInfo').textContent=(status==='submitted'
-      ? 'Submitted to '+(data.managerName||'manager')+' on '+t+'. You can still update and re-submit until it is reviewed.'
+    $('savedInfo').textContent=(payload.status==='submitted'
+      ? 'Updated the existing weekly timesheet for '+data.weekStart+' and submitted to '+(data.managerName||'manager')+' on '+t+'. No duplicate created.'
       : 'Draft saved to cloud '+t+'. Keep adding hours through the week.');
-    cloudMsg('ok', status==='submitted'?'Timesheet submitted.':'Draft saved to cloud.');
+    cloudMsg('ok',payload.status==='submitted'?'Weekly timesheet submitted/updated successfully.':'Weekly timesheet saved successfully.');
   }catch(e){
     console.error(e);
     cloudMsg('error','Save failed: '+(e.message||e)+'. Your entries are still on screen.');
-  }
+  }finally{SHEET_SAVE_BUSY=false;$('submit').disabled=false;$('saveCloud').disabled=false;}
 }
 
 async function loadMyDraftForWeek(){
   if(!FB_OK||!CURRENT.uid||!$('weekStart').value)return;
+  const requestedWeek=$('weekStart').value;
+  LAST_SAVED_ID=null;
   try{
-    const q=await db.collection(COL_SHEETS)
-      .where('employeeUid','==',CURRENT.uid)
-      .where('weekStart','==',$('weekStart').value)
-      .limit(1).get();
-    if(q.empty)return;
-    const doc=q.docs[0];LAST_SAVED_ID=doc.id;
+    const doc=await findExistingWeekSheet(requestedWeek);
+    if($('weekStart').value!==requestedWeek)return; // Ignore stale async results after week change.
+    if(!doc)return;
+    LAST_SAVED_ID=doc.id;
     const d=doc.data();
     fillTechForm(d);
     $('statusBadge').className='badge '+(d.status==='reviewed'?'reviewed':d.status||'draft')+' ';
     $('statusBadge').classList.remove('hide');
     $('statusBadge').textContent=d.status==='reviewed'?'Reviewed by manager':d.status==='submitted'?'Submitted':'Draft saved';
-    let msg='Loaded your existing '+(d.status||'draft')+' for this week.';
+    let msg='Loaded your existing '+(d.status||'draft')+' for this week. Further submissions will update this record.';
     if(d.status==='reviewed'&&(d.managerEdits||[]).length){
       msg+=' Your manager made '+d.managerEdits.length+' edit(s) — see the highlighted note below.';
       showReviewNoticeForTech(d);
     }
     cloudMsg('info',msg);
-  }catch(e){ console.warn('draft load failed',e); }
+  }catch(e){console.warn('weekly sheet load failed',e);cloudMsg('warn','Could not check for an existing weekly timesheet. Saving will retry this check.');}
 }
 
 function fillTechForm(d){
@@ -908,8 +995,58 @@ async function showInbox(){
     $('cloudStatus').classList.add('hide');
     $('inboxView').classList.remove('hide');
     renderInbox();
+    initTsSearch();
     window.scrollTo({top:0,behavior:'smooth'});
   }catch(e){console.error(e);cloudMsg('error','Could not load submitted timesheets: '+(e.message||e));}
+}
+
+// Search operates over already-authorized manager inbox documents; no extra Firestore reads/writes.
+function initTsSearch(){
+  const sel=$('tsFilterType'), prior=sel.value;
+  const categories=[...new Set(INBOX_ITEMS.flatMap(s=>(s.entries||[]).map(e=>String(e.type||'').trim())).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  sel.innerHTML='<option value="">All Departments</option>'+categories.map(t=>'<option value="'+escAttr(t)+'">'+esc(t)+'</option>').join('');
+  if(categories.includes(prior))sel.value=prior;
+  $('tsSearchGo').onclick=renderTsSearch;
+  $('tsSearchClear').onclick=()=>{['tsFilterJob','tsFilterTech','tsFilterFrom','tsFilterTo'].forEach(id=>$(id).value='');sel.value='';$('tsSearchResults').innerHTML='';};
+  ['tsFilterType','tsFilterFrom','tsFilterTo'].forEach(id=>$(id).addEventListener('change',renderTsSearch));
+  ['tsFilterJob','tsFilterTech'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();renderTsSearch();}}));
+  $('tsSearchResults').innerHTML='';
+}
+function tsEntryDate(sheet,day){
+  const ws=payDate(sheet.weekStart), idx=dayNames.indexOf(day);
+  if(!Number.isFinite(ws)||idx<0)return '';
+  // Week starts on Sunday. Derive date from actual entry day rather than submission date.
+  return payISO(ws+idx*PAY_MS);
+}
+function renderTsSearch(){
+  const type=$('tsFilterType').value.toLowerCase(),job=$('tsFilterJob').value.trim().toLowerCase(),tech=$('tsFilterTech').value.trim().toLowerCase();
+  const from=$('tsFilterFrom').value,to=$('tsFilterTo').value, target=$('tsSearchResults');
+  if(from&&to&&from>to){target.textContent='From Date must be on or before To Date.';return;}
+  const matches=[];
+  INBOX_ITEMS.forEach(s=>{
+    if(tech&&!String(s.employee||'').toLowerCase().includes(tech))return;
+    (s.entries||[]).forEach(e=>{
+      if(type&&String(e.type||'').toLowerCase()!==type)return;
+      if(job&&!String(e.jobNumber||'').toLowerCase().includes(job))return;
+      const actual=tsEntryDate(s,e.day);
+      // Missing day dates are excluded from date-scoped searches, not guessed.
+      if((from||to)&&(!actual||(from&&actual<from)||(to&&actual>to)))return;
+      matches.push({s,e,actual,h:(+e.st||0)+(+e.ot||0)+(+e.dt||0)});
+    });
+  });
+  matches.sort((a,b)=>String(b.actual||b.s.weekStart||'').localeCompare(String(a.actual||a.s.weekStart||'')));
+  const totals=matches.reduce((o,m)=>{o.st+=+m.e.st||0;o.ot+=+m.e.ot||0;o.dt+=+m.e.dt||0;return o;},{st:0,ot:0,dt:0});
+  const fmt=n=>n.toFixed(2);
+  const limit=500;
+  let html='<p class="small"><strong>'+matches.length+' matching job entries</strong> across '+new Set(matches.map(m=>m.s.id)).size+' Time Sheets · ST '+fmt(totals.st)+' · OT '+fmt(totals.ot)+' · DT '+fmt(totals.dt)+' · <strong>'+fmt(totals.st+totals.ot+totals.dt)+' total hours</strong></p>';
+  if(matches.length){
+    html+='<div class="table-wrap"><table><thead><tr><th>Work Date</th><th>Technician</th><th>Type / Department</th><th>Job Name</th><th>Job Number</th><th class="num">ST</th><th class="num">OT</th><th class="num">DT</th><th class="num">Total</th><th>Status / Review</th></tr></thead><tbody>';
+    html+=matches.slice(0,limit).map(({s,e,actual,h})=>'<tr'+(/[a-z]/i.test(e.jobNumber||'')?' class="job-number-alpha"':'')+'><td>'+esc(actual||'Undated')+'</td><td>'+esc(s.employee||'')+'</td><td>'+esc(e.type||'')+'</td><td>'+esc(e.jobName??e.job??'')+'</td><td>'+esc(e.jobNumber||'')+'</td><td class="num">'+fmt(+e.st||0)+'</td><td class="num">'+fmt(+e.ot||0)+'</td><td class="num">'+fmt(+e.dt||0)+'</td><td class="num">'+fmt(h)+'</td><td><button type="button" class="search-open" data-search-open="'+escAttr(s.id)+'">'+esc(s.status||'submitted')+' · Open</button></td></tr>').join('');
+    html+='</tbody></table></div>';
+    if(matches.length>limit)html+='<p class="small">Showing first '+limit+' matches. Totals include all '+matches.length+' matches; narrow your filters for additional rows.</p>';
+  }else html+='<p class="small">No matching entries found among Time Sheets available to your account.</p>';
+  target.innerHTML=html;
+  target.querySelectorAll('[data-search-open]').forEach(btn=>btn.onclick=()=>openManagerReview(btn.getAttribute('data-search-open'),true));
 }
 function renderInbox(){
   const now=Date.now();
@@ -981,7 +1118,7 @@ function downloadPayPeriod(key){
   }).join('');
   const heading=period.undated?'Undated submissions':period.title;
   const title='FDEC Pay Period — '+heading;
-  const html='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+safe(title)+'</title><style>:root{color-scheme:light!important}*{box-sizing:border-box}html{background:#fff!important;color:#172a46!important}body{margin:0;padding:26px;font:14px/1.45 Arial,sans-serif;color:#172a46!important;background:#fff!important}header{background:#fff!important;border-bottom:3px solid #153b67;padding-bottom:13px}h1{font-size:23px;margin:0}h2{font-size:17px}h3{font-size:16px;margin:0 0 8px}.meta{color:#475569}.sheet{break-before:page;page-break-before:always;margin:24px 0;background:#fff!important;color:#172a46!important}.sheet:first-of-type{break-before:auto;page-break-before:auto}table{width:100%;border-collapse:collapse;table-layout:auto;margin:10px 0;font-size:11px}th,td{border:1px solid #cbd5e1;padding:6px;text-align:left;vertical-align:top;overflow-wrap:anywhere;color:#172a46!important;background:#fff}td.orange{background:#F7C58D!important}th{background:#e8eef6}.num{text-align:right;white-space:nowrap}.orange{background:#F7C58D!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.totals{font-weight:bold;text-align:right}.warning{background:#fff0d5;padding:8px;border-left:3px solid #d58229}.expense{margin:20px 0;padding-top:8px;border-top:1px solid #94a3b8;break-inside:avoid}.expense h4{margin:0}.expense p{margin:6px 0}.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:20px}.toolbar button{padding:10px 15px;border:0;border-radius:7px;background:#153b67;color:white;cursor:pointer}.summary{padding:12px;background:#edf3f9;break-inside:avoid}@page{size:landscape;margin:12mm}@media print{html,body{background:#fff!important;color:#172a46!important}body{padding:0}.toolbar{display:none}.sheet{margin:0 0 18px}th{background:#e8eef6!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><div class="toolbar"><button onclick="window.print()">Print / Save as PDF</button><span>Saved offline copy · No internet required</span></div><header><h1>'+safe(title)+'</h1><p>'+(period.undated?'Undated':('Submission deadline: '+safe(payFmt(period.due))+' at 8:00 AM ET · Payday: '+safe(payFmt(period.payday))))+'</p></header><section class="summary"><h2>Pay Period Summary</h2><p>'+sheets.length+' weekly submissions · '+sheets.filter(s=>s.status==='reviewed').length+' reviewed</p><p id="hour-summary"></p></section>'+sections+'<footer><p>Generated from the submitted/reviewed records visible to this manager. This is a snapshot, not a live connection to Firestore. Weeks crossing a pay-period boundary remain intact; no hours are reassigned.</p></footer></body></html>';
+  const html='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+safe(title)+'</title><style>:root{color-scheme:light!important}*{box-sizing:border-box}html{background:#fff!important;color:#172a46!important}body{margin:0;padding:18px;font:10pt/1.35 Arial,sans-serif;color:#172a46!important;background:#fff!important}header{background:#fff!important;border-bottom:3px solid #153b67;padding-bottom:13px}h1{font-size:23px;margin:0}h2{font-size:17px}h3{font-size:16px;margin:0 0 8px}.meta{color:#475569}.sheet{break-before:page;page-break-before:always;margin:24px 0;background:#fff!important;color:#172a46!important}.sheet:first-of-type{break-before:auto;page-break-before:auto}table{width:100%;border-collapse:collapse;table-layout:auto;margin:7px 0;font-size:10pt}th,td{border:1px solid #cbd5e1;padding:4px;text-align:left;vertical-align:top;overflow-wrap:anywhere;color:#172a46!important;background:#fff}td.orange{background:#F7C58D!important}th{background:#e8eef6}.num{text-align:right;white-space:nowrap}.orange{background:#F7C58D!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.totals{font-weight:bold;text-align:right}.warning{background:#fff0d5;padding:8px;border-left:3px solid #d58229}.expense{margin:12px 0;padding-top:5px;border-top:1px solid #94a3b8;break-inside:avoid}.expense h4{margin:0}.expense p{margin:6px 0}.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:20px}.toolbar button{padding:10px 15px;border:0;border-radius:7px;background:#153b67;color:white;cursor:pointer}.summary{padding:12px;background:#edf3f9;break-inside:avoid}@page{size:landscape;margin:9mm}@media print{html,body{background:#fff!important;color:#172a46!important}body{padding:0}.toolbar{display:none}.sheet{margin:0 0 18px}th{background:#e8eef6!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><div class="toolbar"><button onclick="window.print()">Print / Save as PDF</button><span>Saved offline copy · No internet required</span></div><header><h1>'+safe(title)+'</h1><p>'+(period.undated?'Undated':('Submission deadline: '+safe(payFmt(period.due))+' at 8:00 AM ET · Payday: '+safe(payFmt(period.payday))))+'</p></header><section class="summary"><h2>Pay Period Summary</h2><p>'+sheets.length+' weekly submissions · '+sheets.filter(s=>s.status==='reviewed').length+' reviewed</p><p id="hour-summary"></p></section>'+sections+'<footer><p>Generated from the submitted/reviewed records visible to this manager. This is a snapshot, not a live connection to Firestore. Weeks crossing a pay-period boundary remain intact; no hours are reassigned.</p></footer></body></html>';
   // Insert totals after entries have been accumulated, without adding script dependencies to exported file.
   const full=html.replace('<p id="hour-summary"></p>','<p>Regular: '+fmt(total.st)+' · Overtime: '+fmt(total.ot)+' · Double: '+fmt(total.dt)+' · Combined: '+fmt(total.st+total.ot+total.dt)+' hours</p><p>Expenses: '+cash(total.expenses)+' · Company card: '+cash(total.companyCard||0)+' · Reimbursable: '+cash(total.reimbursable||0)+' · Cash advances: '+cash(total.advances)+' · Net reimbursement: '+cash((total.reimbursable||0)-total.advances)+'</p>');
   const blob=new Blob([full],{type:'text/html;charset=utf-8'});
@@ -1062,7 +1199,7 @@ function selectHTML(f,opts,val){
 function cell(f,i,inner){return '<span data-cell="'+f+'-'+i+'">'+inner+'</span>';}
 function td(x){return '<td>'+x+'</td>';}
 function tdnum(x){return '<td class="num">'+x+'</td>';}
-function headCell(label,val){return '<div><label>'+esc(label)+'</label><div style="padding:10px 0 2px;font-size:15px;color:var(--navy);font-weight:600">'+esc(val||'—')+'</div></div>';}
+function headCell(label,val){return '<div><label>'+esc(label)+'</label><div style="padding:3px 0 1px;font-size:10pt;color:var(--navy);font-weight:600">'+esc(val||'—')+'</div></div>';}
 
 function currentMgrEntries(){
   return [...$('mgrBody').querySelectorAll('tr')].map(tr=>{
@@ -1149,6 +1286,34 @@ async function saveManagerReview(markReviewed){
 $('mgrApprove')&&($('mgrApprove').onclick=()=>saveManagerReview(true));
 $('mgrSaveOnly')&&($('mgrSaveOnly').onclick=()=>saveManagerReview(false));
 $('mgrPrint')&&($('mgrPrint').onclick=()=>window.print());
+$('mgrDelete')&&($('mgrDelete').onclick=async()=>{
+  if(!FB_OK||!OPEN_SHEET_ID||!MANAGER_ROLES.includes(String(CURRENT.role||'').toLowerCase()))return;
+  const id=OPEN_SHEET_ID, sheet=OPEN_SHEET||{};
+  if(!['submitted','reviewed'].includes(sheet.status)){
+    alert('Only submitted or reviewed Time Sheets can be deleted from this manager view.');return;
+  }
+  const label=(sheet.employee||'Employee')+' — '+(sheet.weekStart||'?')+' to '+(sheet.weekEnd||'?');
+  const ok=confirm('WARNING: Permanently delete this submitted Time Sheet?\n\n'+label+'\n\nThis also removes its attached expense reports from the review and pay-period archive. This cannot be undone.\n\nSelect Cancel to keep the Time Sheet.');
+  if(!ok)return;
+  const btn=$('mgrDelete');btn.disabled=true;
+  try{
+    // Recheck the stored status just before deleting. Other managers may have updated it.
+    await db.runTransaction(async tx=>{
+      const ref=db.collection(COL_SHEETS).doc(id), snap=await tx.get(ref);
+      if(!snap.exists)throw new Error('The Time Sheet has already been deleted.');
+      if(!['submitted','reviewed'].includes(snap.data().status))throw new Error('This record is no longer submitted or reviewed.');
+      tx.delete(ref);
+    });
+    INBOX_ITEMS=INBOX_ITEMS.filter(it=>it.id!==id);
+    OPEN_SHEET=null;OPEN_SHEET_ID=null;
+    $('managerView').classList.add('hide');
+    $('inboxView').classList.remove('hide');
+    const u=new URL(location.href);u.searchParams.delete('sheet');u.searchParams.delete('id');history.replaceState({},'',u.toString());
+    renderInbox();window.scrollTo({top:0,behavior:'smooth'});
+    cloudMsg('ok','Deleted submitted Time Sheet: '+label);
+  }catch(e){console.error(e);alert('Deletion failed: '+(e.message||e));}
+  finally{btn.disabled=false;}
+});
 $('mgrBack')&&($('mgrBack').onclick=()=>{
   $('managerView').classList.add('hide');
   OPEN_SHEET=null;OPEN_SHEET_ID=null;
