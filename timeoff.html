@@ -280,7 +280,6 @@ body>*{position:relative;z-index:1;}
       <span class="sub">Sprinkler Department — Time Off</span>
     </div>
     <div class="bar-right">
-      <a class="navlink" href="oncall.html" title="Back to the on-call rotation">On-call rotation</a>
       <span class="who" id="whoami"></span>
       <button class="btn ghost small hide" id="signOutBtn" style="background:transparent;color:#fff;border-color:#4A545E">Sign out</button>
     </div>
@@ -852,8 +851,7 @@ function wireRequest(){
     const b = balanceFor(profile, requestsForUser(me.uid), yr);
     const after = b.left - total;
     let html = "";
-    if (after < 0) html = `<div class="msg err">This puts you ${fmtDays(Math.abs(after))} past your ${yr} PTO balance. Submit only if your manager already approved going negative.</div>`;
-    else if (after < HOURS_PER_DAY) html = `<div class="msg warn">This leaves ${fmtDays(after)} of PTO for the rest of ${yr}.</div>`;
+    if (after < HOURS_PER_DAY) html = `<div class="msg warn">This leaves ${fmtDays(Math.max(0, after))} of PTO for the rest of ${yr}.</div>`;
     else html = `<div class="msg ok">Leaves ${fmtDays(after)} of PTO after approval.</div>`;
 
     const overlap = myRequests.filter(r =>
