@@ -372,6 +372,7 @@ header,main{position:relative;z-index:1;}
         <tbody id="mgrBody"></tbody>
         <tfoot><tr>
           <th colspan="3" style="text-align:right">Totals</th>
+          <th aria-hidden="true"></th>
           <th class="num" id="mST">0.00</th><th class="num" id="mOT">0.00</th><th class="num" id="mDT">0.00</th>
           <th></th><th class="num" id="mAll">0.00</th>
         </tr></tfoot>
@@ -415,7 +416,7 @@ header,main{position:relative;z-index:1;}
       <h2 style="margin:0">Submitted Timesheets</h2>
       <button class="ghost no-print" id="inboxBack" type="button">Back to My Timesheet</button>
     </div>
-    <p class="sub">Weekly submissions grouped by FDEC biweekly pay period. Past periods appear in the archive after every submitted sheet in that period has been reviewed. Existing records are never moved or deleted.</p>
+    <p class="sub">Daily hours grouped by their actual work dates within each FDEC biweekly pay period. Past periods appear in the archive after every submitted sheet in that period has been reviewed. Existing records are never moved or deleted.</p>
     <div class="ts-search no-print" id="tsSearch">
       <h3>Search Time Sheets</h3>
       <div class="ts-search-fields">
@@ -643,6 +644,7 @@ function makeRow(data={}){
     card.classList.toggle('job-number-alpha',/[a-z]/i.test(card.querySelector('.jobNumber').value));
   };
   card.querySelector('.jobNumber').addEventListener('input',refreshJobNumberHighlight);
+  card.querySelector('.type').addEventListener('change',()=>syncJobRequirements(card));
   refreshJobNumberHighlight();
   card.querySelector('.day').value=data.day||'Monday';
   ['st','ot','dt'].forEach(k=>card.querySelector('.'+k).value=data[k]??0);
@@ -656,6 +658,7 @@ function makeRow(data={}){
   card.querySelector('.remove').addEventListener('click',()=>{card.remove();if(!$('rows').children.length)makeRow();applyOvertimeRules();calculate();});
   $('rows').appendChild(card);
   updateHint(card);
+  syncJobRequirements(card);
   syncCardMode(card);
   applyOvertimeRules();
   calculate();
@@ -674,6 +677,19 @@ function num(card,c){return Math.max(0,Number(card.querySelector('.'+c).value)||
 
 function setNum(card,c,v){ var el=card.querySelector('.'+c); if(el){ el.value = Math.round((+v||0)*100)/100; } }
 function isWeekdayCard(card){ var el=card.querySelector('.day'); return el ? rateForDay(dayNames.indexOf(el.value))==='st' : false; }
+// PTO and Holiday are paid leave, not billable jobs: no job reference required.
+function syncJobRequirements(card){
+  const leave=['PTO','Holiday'].includes(card.querySelector('.type').value);
+  for(const cls of ['job','jobNumber']){
+    const field=card.querySelector('.'+cls);
+    field.required=!leave;
+    field.setAttribute('aria-required',String(!leave));
+    const label=field.closest('div').querySelector('label');
+    const star=label && label.querySelector('.req');
+    if(star)star.hidden=leave;
+    if(leave)clearInvalid(field);
+  }
+}
 function syncCardMode(card){
   var wd=isWeekdayCard(card), ot=card.querySelector('.ot');
   if(ot){ ot.readOnly=wd; ot.classList.toggle('autofield',wd);
@@ -791,8 +807,9 @@ function validate(forSubmit){
   cards.forEach((card,idx)=>{
     const typeEl=card.querySelector('.type'),jobEl=card.querySelector('.job'),jobNumberEl=card.querySelector('.jobNumber');
     if(!typeEl.value){markInvalid(typeEl);ok=false;}
-    if(!jobEl.value.trim()){markInvalid(jobEl);ok=false;problems.push('Card '+(idx+1)+': Job Name is required.');}
-    if(!jobNumberEl.value.trim()){markInvalid(jobNumberEl);ok=false;problems.push('Card '+(idx+1)+': Job Number is required.');}
+    const requiresJob=!['PTO','Holiday'].includes(typeEl.value);
+    if(requiresJob&&!jobEl.value.trim()){markInvalid(jobEl);ok=false;problems.push('Card '+(idx+1)+': Job Name is required.');}
+    if(requiresJob&&!jobNumberEl.value.trim()){markInvalid(jobNumberEl);ok=false;problems.push('Card '+(idx+1)+': Job Number is required.');}
     if(num(card,'st')+num(card,'ot')+num(card,'dt')>0)anyHours=true;
   });
   if(!anyHours){ok=false;problems.push('Enter hours on at least one card.');}
@@ -946,25 +963,36 @@ function downloadCSV(){
    MANAGER INBOX + REVIEW MODE
    ===================================================================== */
 let INBOX_ITEMS=[], INBOX_YEAR='', INBOX_EXPANDED={};
-// Pay period anchor: Monday Oct 12–Sunday Oct 25, 2026; payday Wed Oct 28.
-// Work weeks are currently Sunday–Saturday, so a week can cross a pay-period boundary.
-// Until FDEC adopts an allocation rule, show these exceptions explicitly instead of changing hour records.
+// FDEC biweekly payroll anchor. Weekly Sunday–Saturday documents remain unchanged;
+// only their dated daily entries are apportioned into the appropriate payroll period.
 const PAY_ANCHOR=Date.UTC(2026,9,12), PAY_DAY_ANCHOR=Date.UTC(2026,9,28), PAY_MS=86400000;
 function payDate(s){if(!/^\d{4}-\d{2}-\d{2}$/.test(String(s||'')))return NaN; const d=new Date(s+'T00:00:00Z');return d.getTime();}
 function payISO(t){return new Date(t).toISOString().slice(0,10);}
 function payFmt(t){return new Date(t).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'});}
+function payrollPeriodFromTime(t){
+  if(!Number.isFinite(t))return {key:'undated',undated:true,year:'Undated',title:'Undated submissions',sort:-Infinity};
+  const n=Math.floor((t-PAY_ANCHOR)/(14*PAY_MS));
+  const from=PAY_ANCHOR+n*14*PAY_MS,to=from+13*PAY_MS;
+  return {key:payISO(from),year:String(new Date(to).getUTCFullYear()),title:payFmt(from)+' – '+payFmt(to),from,to,sort:from,due:to+PAY_MS,payday:PAY_DAY_ANCHOR+n*14*PAY_MS};
+}
 function payPeriod(it){
-  // Assign by the ending date of a submitted work week; flag any boundary crossing.
-  // Historical documents keep their original weekStart/weekEnd fields unchanged.
-  let ws=payDate(it.weekStart), we=payDate(it.weekEnd);
-  if(!Number.isFinite(ws)&&Number.isFinite(we))ws=we-6*PAY_MS;
-  if(!Number.isFinite(we)&&Number.isFinite(ws))we=ws+6*PAY_MS;
-  if(!Number.isFinite(we)||!Number.isFinite(ws))return {key:'undated',undated:true,year:'Undated',title:'Undated submissions',sort:-Infinity};
-  const n=Math.floor((we-PAY_ANCHOR)/(14*PAY_MS));
-  const from=PAY_ANCHOR+n*14*PAY_MS, to=from+13*PAY_MS;
-  const fromWeek=Math.floor((ws-PAY_ANCHOR)/(14*PAY_MS));
-  return {key:payISO(from),year:String(new Date(to).getUTCFullYear()),title:payFmt(from)+' – '+payFmt(to),from,to,sort:from,crosses:fromWeek!==n,
-    due:to+1*PAY_MS, payday:PAY_DAY_ANCHOR+n*14*PAY_MS};
+  const we=payDate(it.weekEnd), ws=payDate(it.weekStart);
+  return payrollPeriodFromTime(Number.isFinite(we)?we:Number.isFinite(ws)?ws+6*PAY_MS:NaN);
+}
+function payrollEntryTime(sheet,entry){
+  const date=tsEntryDate(sheet,entry.day);
+  return payDate(date);
+}
+function payrollEntries(sheet,key){
+  return (sheet.entries||[]).filter(e=>payrollPeriodFromTime(payrollEntryTime(sheet,e)).key===key);
+}
+function payrollKeys(sheet){
+  const entries=sheet.entries||[];
+  if(!entries.length)return [payPeriod(sheet).key];
+  return [...new Set(entries.map(e=>payrollPeriodFromTime(payrollEntryTime(sheet,e)).key))];
+}
+function payrollHours(entries){
+  return entries.reduce((v,e)=>{v.st+=Number(e.st)||0;v.ot+=Number(e.ot)||0;v.dt+=Number(e.dt)||0;return v;},{st:0,ot:0,dt:0});
 }
 function tsSheetYear(it){return payPeriod(it).year;}
 function tsSheetLabel(it){
@@ -1051,26 +1079,26 @@ function renderTsSearch(){
 function renderInbox(){
   const now=Date.now();
   const grouped=new Map();
-  INBOX_ITEMS.forEach(it=>{const period=payPeriod(it);const group=grouped.get(period.key)||{period,items:[]};group.items.push(it);grouped.set(period.key,group);});
+  INBOX_ITEMS.forEach(it=>{payrollKeys(it).forEach(key=>{const period=key==='undated'?payrollPeriodFromTime(NaN):payrollPeriodFromTime(payDate(key));const group=grouped.get(key)||{period,items:[]};group.items.push(it);grouped.set(key,group);});});
   const all=Array.from(grouped.values()).sort((a,b)=>b.period.sort-a.period.sort);
   const years=[...new Set(all.map(g=>g.period.year))].sort((a,b)=>Number(b)-Number(a));
   if(INBOX_YEAR&&!years.includes(INBOX_YEAR))INBOX_YEAR='';
   $('inboxYears').innerHTML=all.length?'<button class="ibx-year'+(!INBOX_YEAR?' active':'')+'" data-y="">All<span class="n">'+INBOX_ITEMS.length+'</span></button>'+years.map(y=>'<button class="ibx-year'+(INBOX_YEAR===y?' active':'')+'" data-y="'+esc(y)+'">'+esc(y)+'<span class="n">'+all.filter(g=>g.period.year===y).length+'</span></button>').join(''):'';
   const relevant=all.filter(g=>!INBOX_YEAR||g.period.year===INBOX_YEAR);
-  function itemHTML(it){
-    const tot=(it.entries||[]).reduce((sum,e)=>sum+(+e.st||0)+(+e.ot||0)+(+e.dt||0),0).toFixed(2);
-    const p=payPeriod(it);
-    return '<a href="#" class="ibx-item" data-open="'+esc(it.id)+'"><span class="lbl">'+esc(tsSheetLabel(it))+(p.crosses?'<small class="ibx-warning">Week overlaps two pay periods — verify allocation</small>':'')+'</span><span class="meta">'+tot+' hrs &nbsp;<span class="badge '+(it.status==='reviewed'?'reviewed':'submitted')+'">'+(it.status==='reviewed'?'Reviewed':'Submitted')+'</span></span></a>';
+  function itemHTML(it,key){
+    const hours=payrollHours(payrollEntries(it,key));
+    const tot=(hours.st+hours.ot+hours.dt).toFixed(2);
+    return '<a href="#" class="ibx-item" data-open="'+esc(it.id)+'"><span class="lbl">'+esc(tsSheetLabel(it))+'</span><span class="meta">'+tot+' hrs in period &nbsp;<span class="badge '+(it.status==='reviewed'?'reviewed':'submitted')+'">'+(it.status==='reviewed'?'Reviewed':'Submitted')+'</span></span></a>';
   }
   function periodHTML(g,archived){
     const p=g.period, reviewed=g.items.filter(it=>it.status==='reviewed').length;
     const expanded=INBOX_EXPANDED[g.period.key]===true || (!archived&&INBOX_EXPANDED[g.period.key]!==false);
     const heading='<button type="button" class="pay-folder" data-period="'+esc(p.key)+'" aria-expanded="'+expanded+'"><span class="pay-folder-icon">'+(archived?'▣':'▤')+'</span><span class="pay-folder-info"><strong>'+esc(p.title)+'</strong><small>'+(p.undated?'Date not supplied':'Due '+esc(payFmt(p.due))+' at 8:00 AM ET · Payday '+esc(payFmt(p.payday)))+'</small></span><span class="pay-folder-meta">'+reviewed+'/'+g.items.length+' reviewed '+(expanded?'▾':'▸')+'</span></button>';
-    const list=expanded?'<div class="pay-folder-items">'+g.items.sort((a,b)=>(a.weekStart||'').localeCompare(b.weekStart||'')||String(a.employee||'').localeCompare(String(b.employee||''))).map(itemHTML).join('')+'</div>':'';
+    const list=expanded?'<div class="pay-folder-items">'+g.items.sort((a,b)=>(a.weekStart||'').localeCompare(b.weekStart||'')||String(a.employee||'').localeCompare(String(b.employee||''))).map(it=>itemHTML(it,p.key)).join('')+'</div>':'';
     const exportButton='<div class="pay-export-bar"><button type="button" class="secondary" data-export-period="'+esc(p.key)+'">↓ Download Pay Period (printable)</button></div>';
     return '<div class="pay-folder-wrap">'+heading+exportButton+list+'</div>';
   }
-  const current=payPeriod({weekStart:payISO(now),weekEnd:payISO(now)}).key;
+  const current=payrollPeriodFromTime(now).key;
   // No record-level archive flag: folders become archived when the period is in the past
   // AND every currently visible submitted record in that period has status "reviewed".
   const active=relevant.filter(g=>!g.period.undated&&(g.period.key===current));
@@ -1091,7 +1119,7 @@ function renderInbox(){
 // Local, self-contained, print-ready archive of the manager-visible pay period.
 // This does not move/change Firestore records and never exports other managers' unseen sheets.
 function downloadPayPeriod(key){
-  const sheets=INBOX_ITEMS.filter(it=>payPeriod(it).key===key).slice().sort((a,b)=>String(a.employee||'').localeCompare(String(b.employee||''))||String(a.weekStart||'').localeCompare(String(b.weekStart||'')));
+  const sheets=INBOX_ITEMS.filter(it=>payrollKeys(it).includes(key)).slice().sort((a,b)=>String(a.employee||'').localeCompare(String(b.employee||''))||String(a.weekStart||'').localeCompare(String(b.weekStart||'')));
   if(!sheets.length){alert('No submitted timesheets were found for this pay period.');return;}
   const period=payPeriod(sheets[0]);
   const safe=esc;
@@ -1100,25 +1128,24 @@ function downloadPayPeriod(key){
   const total={st:0,ot:0,dt:0,expenses:0,advances:0};
   const sections=sheets.map((d,i)=>{
     let subtotal={st:0,ot:0,dt:0};
-    const entries=Array.isArray(d.entries)?d.entries:[];
+    const entries=payrollEntries(d,key);
     const entryRows=entries.map(e=>{
       ['st','ot','dt'].forEach(k=>{subtotal[k]+=Number(e[k])||0;total[k]+=Number(e[k])||0;});
       const flagged=/[a-z]/i.test(String(e.jobNumber||''));
       return '<tr'+(flagged?' class="orange"':'')+'><td>'+safe(e.day||'')+'</td><td>'+safe(e.type||'')+'</td><td>'+safe(e.jobName??e.job??'')+'</td><td>'+safe(e.jobNumber||'')+'</td><td class="num">'+fmt(e.st)+'</td><td class="num">'+fmt(e.ot)+'</td><td class="num">'+fmt(e.dt)+'</td><td>'+safe(e.notes||'')+'</td></tr>';
     }).join('');
-    const reports=Array.isArray(d.expenseReports)?d.expenseReports:(d.expenseReport?[d.expenseReport]:[]);
+    const reports=payPeriod(d).key===key?(Array.isArray(d.expenseReports)?d.expenseReports:(d.expenseReport?[d.expenseReport]:[])):[];
     const reportsHtml=reports.map((r,j)=>{
       const items=Array.isArray(r.items)?r.items:[];
       const {total:expenses,companyCard,reimbursable,advance:advances,owed}=expenseAmounts(r);
       total.expenses+=expenses;total.advances+=advances;total.companyCard=(total.companyCard||0)+companyCard;total.reimbursable=(total.reimbursable||0)+reimbursable;
       return '<section class="expense"><h4>Expense Report '+(j+1)+' — '+safe(r.jobName||'')+' · Job #'+safe(r.jobNumber||'')+'</h4><p>'+safe(r.purpose||'')+' · '+safe(r.from||'')+' to '+safe(r.to||'')+' · Statement '+safe(r.statement||'—')+'</p><table><thead><tr><th>Date</th><th>Account</th><th>Description</th><th>Payment Method</th><th class="num">Amount</th></tr></thead><tbody>'+items.map(e=>'<tr><td>'+safe(e.date||'')+'</td><td>'+safe(e.account||'')+'</td><td>'+safe(e.description||'')+'</td><td>'+safe(expensePayment(e))+'</td><td class="num">'+cash(e.amount)+'</td></tr>').join('')+'</tbody></table><p class="totals">Expenses '+cash(expenses)+' · Company card '+cash(companyCard)+' · Reimbursable '+cash(reimbursable)+' · Advances '+cash(advances)+' · Net reimbursement '+cash(owed)+'</p>'+(r.notes?'<p>Notes: '+safe(r.notes)+'</p>':'')+'</section>';
     }).join('');
-    const crossed=payPeriod(d).crosses;
-    return '<section class="sheet"><h3>'+(i+1)+'. '+safe(d.employee||'Employee')+' — '+safe(d.weekStart||'?')+' through '+safe(d.weekEnd||'?')+'</h3><p class="meta">Status: '+safe(d.status||'submitted')+' · Submitted to: '+safe(d.managerName||'Manager')+' · Review initials: '+safe(d.reviewedByInitials||'—')+'</p>'+(crossed?'<p class="warning">This Sunday–Saturday weekly sheet crosses a Monday–Sunday pay-period boundary. Its hours have not been split or reallocated in this archive.</p>':'')+'<table><thead><tr><th>Day</th><th>Department</th><th>Job name</th><th>Job #</th><th class="num">Regular</th><th class="num">OT</th><th class="num">DT</th><th>Notes</th></tr></thead><tbody>'+entryRows+'</tbody></table><p class="totals">Regular '+fmt(subtotal.st)+' · Overtime '+fmt(subtotal.ot)+' · Double '+fmt(subtotal.dt)+' · Total '+fmt(subtotal.st+subtotal.ot+subtotal.dt)+' hours</p>'+(d.comments?'<p>Employee comments: '+safe(d.comments)+'</p>':'')+(d.managerNote?'<p>Manager note: '+safe(d.managerNote)+'</p>':'')+reportsHtml+'</section>';
+    return '<section class="sheet"><h3>'+(i+1)+'. '+safe(d.employee||'Employee')+' — '+safe(d.weekStart||'?')+' through '+safe(d.weekEnd||'?')+'</h3><p class="meta">Status: '+safe(d.status||'submitted')+' · Submitted to: '+safe(d.managerName||'Manager')+' · Review initials: '+safe(d.reviewedByInitials||'—')+'</p>'+'<p class="meta">Only daily hours worked within this pay period are included below; the original weekly submission is unchanged.</p>'+'<table><thead><tr><th>Day</th><th>Department</th><th>Job name</th><th>Job #</th><th class="num">Regular</th><th class="num">OT</th><th class="num">DT</th><th>Notes</th></tr></thead><tbody>'+entryRows+'</tbody></table><p class="totals">Regular '+fmt(subtotal.st)+' · Overtime '+fmt(subtotal.ot)+' · Double '+fmt(subtotal.dt)+' · Total '+fmt(subtotal.st+subtotal.ot+subtotal.dt)+' hours</p>'+(d.comments?'<p>Employee comments: '+safe(d.comments)+'</p>':'')+(d.managerNote?'<p>Manager note: '+safe(d.managerNote)+'</p>':'')+reportsHtml+'</section>';
   }).join('');
   const heading=period.undated?'Undated submissions':period.title;
   const title='FDEC Pay Period — '+heading;
-  const html='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+safe(title)+'</title><style>:root{color-scheme:light!important}*{box-sizing:border-box}html{background:#fff!important;color:#172a46!important}body{margin:0;padding:18px;font:10pt/1.35 Arial,sans-serif;color:#172a46!important;background:#fff!important}header{background:#fff!important;border-bottom:3px solid #153b67;padding-bottom:13px}h1{font-size:23px;margin:0}h2{font-size:17px}h3{font-size:16px;margin:0 0 8px}.meta{color:#475569}.sheet{break-before:page;page-break-before:always;margin:24px 0;background:#fff!important;color:#172a46!important}.sheet:first-of-type{break-before:auto;page-break-before:auto}table{width:100%;border-collapse:collapse;table-layout:auto;margin:7px 0;font-size:10pt}th,td{border:1px solid #cbd5e1;padding:4px;text-align:left;vertical-align:top;overflow-wrap:anywhere;color:#172a46!important;background:#fff}td.orange{background:#F7C58D!important}th{background:#e8eef6}.num{text-align:right;white-space:nowrap}.orange{background:#F7C58D!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.totals{font-weight:bold;text-align:right}.warning{background:#fff0d5;padding:8px;border-left:3px solid #d58229}.expense{margin:12px 0;padding-top:5px;border-top:1px solid #94a3b8;break-inside:avoid}.expense h4{margin:0}.expense p{margin:6px 0}.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:20px}.toolbar button{padding:10px 15px;border:0;border-radius:7px;background:#153b67;color:white;cursor:pointer}.summary{padding:12px;background:#edf3f9;break-inside:avoid}@page{size:landscape;margin:9mm}@media print{html,body{background:#fff!important;color:#172a46!important}body{padding:0}.toolbar{display:none}.sheet{margin:0 0 18px}th{background:#e8eef6!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><div class="toolbar"><button onclick="window.print()">Print / Save as PDF</button><span>Saved offline copy · No internet required</span></div><header><h1>'+safe(title)+'</h1><p>'+(period.undated?'Undated':('Submission deadline: '+safe(payFmt(period.due))+' at 8:00 AM ET · Payday: '+safe(payFmt(period.payday))))+'</p></header><section class="summary"><h2>Pay Period Summary</h2><p>'+sheets.length+' weekly submissions · '+sheets.filter(s=>s.status==='reviewed').length+' reviewed</p><p id="hour-summary"></p></section>'+sections+'<footer><p>Generated from the submitted/reviewed records visible to this manager. This is a snapshot, not a live connection to Firestore. Weeks crossing a pay-period boundary remain intact; no hours are reassigned.</p></footer></body></html>';
+  const html='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+safe(title)+'</title><style>:root{color-scheme:light!important}*{box-sizing:border-box}html{background:#fff!important;color:#172a46!important}body{margin:0;padding:18px;font:10pt/1.35 Arial,sans-serif;color:#172a46!important;background:#fff!important}header{background:#fff!important;border-bottom:3px solid #153b67;padding-bottom:13px}h1{font-size:23px;margin:0}h2{font-size:17px}h3{font-size:16px;margin:0 0 8px}.meta{color:#475569}.sheet{break-before:page;page-break-before:always;margin:24px 0;background:#fff!important;color:#172a46!important}.sheet:first-of-type{break-before:auto;page-break-before:auto}table{width:100%;border-collapse:collapse;table-layout:auto;margin:7px 0;font-size:10pt}th,td{border:1px solid #cbd5e1;padding:4px;text-align:left;vertical-align:top;overflow-wrap:anywhere;color:#172a46!important;background:#fff}td.orange{background:#F7C58D!important}th{background:#e8eef6}.num{text-align:right;white-space:nowrap}.orange{background:#F7C58D!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.totals{font-weight:bold;text-align:right}.warning{background:#fff0d5;padding:8px;border-left:3px solid #d58229}.expense{margin:12px 0;padding-top:5px;border-top:1px solid #94a3b8;break-inside:avoid}.expense h4{margin:0}.expense p{margin:6px 0}.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:20px}.toolbar button{padding:10px 15px;border:0;border-radius:7px;background:#153b67;color:white;cursor:pointer}.summary{padding:12px;background:#edf3f9;break-inside:avoid}@page{size:landscape;margin:9mm}@media print{html,body{background:#fff!important;color:#172a46!important}body{padding:0}.toolbar{display:none}.sheet{margin:0 0 18px}th{background:#e8eef6!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><div class="toolbar"><button onclick="window.print()">Print / Save as PDF</button><span>Saved offline copy · No internet required</span></div><header><h1>'+safe(title)+'</h1><p>'+(period.undated?'Undated':('Submission deadline: '+safe(payFmt(period.due))+' at 8:00 AM ET · Payday: '+safe(payFmt(period.payday))))+'</p></header><section class="summary"><h2>Pay Period Summary</h2><p>'+sheets.length+' weekly submissions · '+sheets.filter(s=>s.status==='reviewed').length+' reviewed</p><p id="hour-summary"></p></section>'+sections+'<footer><p>Generated from the submitted/reviewed records visible to this manager. This is a snapshot, not a live connection to Firestore. Hours are allocated by the recorded work date; original weekly submissions are unchanged. Expense reports remain attached to their source weekly submission and are displayed in the export for the pay period containing that weekly submission’s end date.</p></footer></body></html>';
   // Insert totals after entries have been accumulated, without adding script dependencies to exported file.
   const full=html.replace('<p id="hour-summary"></p>','<p>Regular: '+fmt(total.st)+' · Overtime: '+fmt(total.ot)+' · Double: '+fmt(total.dt)+' · Combined: '+fmt(total.st+total.ot+total.dt)+' hours</p><p>Expenses: '+cash(total.expenses)+' · Company card: '+cash(total.companyCard||0)+' · Reimbursable: '+cash(total.reimbursable||0)+' · Cash advances: '+cash(total.advances)+' · Net reimbursement: '+cash((total.reimbursable||0)-total.advances)+'</p>');
   const blob=new Blob([full],{type:'text/html;charset=utf-8'});
@@ -1343,7 +1370,7 @@ function expenseAmounts(r){const items=Array.isArray(r.items)?r.items:[];let tot
 
 function renderManagerExpenses(){
   const d=OPEN_SHEET||{};
-  const reports=Array.isArray(d.expenseReports)?d.expenseReports:(d.expenseReport?[d.expenseReport]:[]);
+  const reports=payPeriod(d).key===key?(Array.isArray(d.expenseReports)?d.expenseReports:(d.expenseReport?[d.expenseReport]:[])):[];
   const target=$('mgrExpenseSummary');
   if(!reports.length){target.textContent='No expense reports attached to this submission.';return;}
   target.innerHTML=reports.map((r,index)=>{
