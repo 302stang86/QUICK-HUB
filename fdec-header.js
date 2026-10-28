@@ -133,6 +133,8 @@
     } catch (e) {}
   }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", build);
-  else build();
+  // Deferred page scripts run after parsing; build immediately instead of waiting for
+  // DOMContentLoaded (which may be delayed by unrelated page initialization).
+  if (document.body) build();
+  else document.addEventListener("DOMContentLoaded", build, { once: true });
 })();

@@ -589,6 +589,9 @@ body>*{position:relative;z-index:1;}
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <script defer src="fdec-offline.js"></script>
 <meta name="fdec-page-title" content="ITM Reports">
+<!-- Apply the direct-admin route guard before the first render. -->
+<script>(function(){if(location.hash.toLowerCase()==='#admin'||/[?&](admin=1|view=admin)/i.test(location.search)){document.documentElement.classList.add('fdec-direct-admin');}})();</script>
+<style id="fdec-first-paint">.topbar .brand{display:none !important;}html.fdec-direct-admin #appScreen{display:none !important;}@media print{.topbar .brand{display:none !important;}}</style>
 <meta name="fdec-hide" content=".topbar .brand">
 <script defer src="fdec-header.js"></script>
 </head>
@@ -1594,12 +1597,14 @@ async function enterApp(fbUser){
   // Auto-open the Admin Dashboard when arriving from the Administration card (itm-reports.html#admin)
   var __wantAdmin = location.hash.toLowerCase()==='#admin' || /[?&](admin=1|view=admin)/i.test(location.search);
   if(IS_ADMIN && __wantAdmin && !window.__itmAdminOpened){
+    // Create the admin dashboard immediately; never flash the regular ITM form.
     window.__itmAdminOpened = true;
-    setTimeout(function(){ try{ adminDashboard(true); }catch(e){} }, 350);
+    adminDashboard(true);
   }
   ADMIN_UNLOCKED=true;   // fields editable (locking feature unused)
   updateLockPill();
   authScreen.classList.add('hidden');
+  if(IS_ADMIN && __wantAdmin){ return; } // Standalone admin dashboard owns this view.
   appScreen.classList.remove('hidden');
   loadFormValues(ACTIVE_FORM);
   buildTabs();

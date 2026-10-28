@@ -279,6 +279,8 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <script defer src="fdec-offline.js"></script>
 <meta name="fdec-page-title" content="Administration">
+<!-- First-paint guard: original masthead is superseded by fdec-header.js. -->
+<style id="fdec-first-paint">body > .masthead{display:none !important;}@media print{body > .masthead{display:flex !important;}}</style>
 <meta name="fdec-hide" content=".masthead">
 <script defer src="fdec-header.js"></script>
 </head>
