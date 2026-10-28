@@ -34,7 +34,9 @@ input.invalid,select.invalid{border-color:#e0918b;background:#fff6f5}
 /* Hours allocation cards */
 .rows{display:flex;flex-direction:column;gap:14px}
 .rowcard{border:1px solid #e0e7ee;border-radius:10px;padding:14px;background:#fafcfe;position:relative}
-.rowcard .rowgrid{display:grid;grid-template-columns:1.1fr 1.4fr .9fr;gap:12px}
+/* A letter anywhere in the job number highlights the entire job card. */
+.rowcard.job-number-alpha{background:#F7C58D;border-color:#D58229}
+.rowcard .rowgrid{display:grid;grid-template-columns:1.1fr 1.3fr 1fr .9fr;gap:12px}
 .rowcard .hrsgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
 .rowcard .notesrow{margin-top:12px}
 .rowcard .rowfoot{display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:10px;flex-wrap:wrap}
@@ -115,6 +117,50 @@ header,main{position:relative;z-index:1;}
   .summary{grid-template-columns:1fr 1fr}
   .btns button{flex:1 1 auto}
 }
+/* iPhone-focused compact entry layout: visual changes only. */
+@media (max-width:600px){
+  body{font-size:14px;line-height:1.3}
+  main{margin:8px auto;padding:0 8px calc(18px + env(safe-area-inset-bottom))}
+  .panel{padding:11px 10px;margin-bottom:9px;border-radius:10px}
+  h2{font-size:16px;margin-bottom:5px}
+  .panel .sub{font-size:12px;line-height:1.35;margin-bottom:9px}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 8px}
+  .grid>div,.rowcard .rowgrid>div,.rowcard .hrsgrid>div{min-width:0}
+  label{font-size:10px;letter-spacing:.15px;line-height:1.2;margin-bottom:4px}
+  input,select,textarea{font-size:16px;line-height:1.25;padding:8px 9px;min-height:42px;border-radius:7px}
+  input[type=date]{padding-inline:5px;min-width:0}
+  .modebar{padding:9px 11px;margin-bottom:9px;gap:5px;border-radius:9px}
+  .modebar .who{font-size:12px}
+  .rows{gap:9px}
+  .rowcard{padding:10px 9px;border-radius:9px}
+  .rowcard .rowgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 8px}
+  .rowcard .hrsgrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:9px}
+  .rowcard .hrsgrid label{font-size:9px;letter-spacing:0;min-height:22px;display:flex;align-items:end}
+  .rowcard .hrsgrid input{padding:8px 5px;text-align:center}
+  .rowcard .notesrow{margin-top:8px}
+  .rowcard .rowfoot{margin-top:8px;gap:6px}
+  .rowcard .rowtotal{font-size:12px}
+  .rowcard .rowtotal b{font-size:15px}
+  .ratehint{font-size:10px;padding:4px 6px}
+  .remove{font-size:12px;padding:7px 10px;min-height:38px}
+  .btns{gap:7px;margin-top:9px}
+  .btns button{padding:10px 9px;font-size:13px;min-height:42px}
+  .summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .metric{padding:9px;border-radius:7px}
+  .metric span{font-size:10px}
+  .metric strong{font-size:20px;margin-top:2px}
+  .status{padding:9px 10px;margin-top:8px;font-size:12px}
+  .req-note{font-size:11px}
+  .compact-rules{margin:0 0 9px;border:1px solid var(--line);border-radius:7px;background:#f5f8fb;padding:6px 8px}
+  .compact-rules summary{cursor:pointer;font-size:12px;font-weight:700;color:var(--navy)}
+  .compact-rules .sub{margin:7px 0 2px}
+  .ibx-item{padding:8px 9px;margin-bottom:6px}
+}
+@media (max-width:360px){
+ .grid{grid-template-columns:1fr 1fr}
+ .rowcard .rowgrid{gap:7px 6px}
+ .rowcard .hrsgrid{gap:4px}
+}
 @media print{
   body{background:#fff}
   .bg-layer{display:none}
@@ -125,6 +171,9 @@ header,main{position:relative;z-index:1;}
   input,select,textarea{border:0;padding:3px;background:transparent}
   table.review{min-width:0;font-size:11px}
 }
+.expense-attached{border:1px solid #dce4ec;border-radius:10px;padding:12px;margin:10px 0;background:#fafcfe}.expense-attached .expense-heading{align-items:center}.expense-attached button{padding:8px 12px}.expense-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.expense-scroll{overflow:auto;margin:12px 0}.expense-table{width:100%;border-collapse:collapse;font-size:13px;min-width:420px}.expense-table th,.expense-table td{text-align:left;border-bottom:1px solid #dce4ec;padding:7px}.expense-table th{background:#edf3f8;color:#142b46}.expense-table td:last-child{text-align:right;white-space:nowrap}.expense-totals{display:flex;gap:12px;flex-wrap:wrap;background:#edf3f8;border-radius:8px;padding:12px;margin:10px 0}.expense-meta{margin-top:9px}
+@media(max-width:600px){.expense-totals{display:grid;gap:5px}.expense-table{font-size:12px}}
 </style>
 <!-- FDEC PWA / offline -->
 <link rel="manifest" href="manifest.webmanifest">
@@ -188,7 +237,7 @@ header,main{position:relative;z-index:1;}
   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
     <div>
       <h2>Hours Worked</h2>
-      <p class="sub">Add a card for each department, customer/job, or leave type. Type/Department and Customer/Job are required on every card. Rate rule: Monday–Friday is Regular (straight time), Saturday is Time &amp; Half (1.5×), Sunday is Double Time (2×). Monday–Friday Regular hours over eight (8) in a day move to Overtime automatically; when a day has more than one card, the day's later card carries the Overtime. Because each weekday caps at eight (8) Regular hours, the Mon–Friday week never exceeds forty (40) Regular hours.</p>
+      <details class="compact-rules"><summary>Hours rules &amp; instructions</summary><p class="sub">Add a card for each department, customer/job, or leave type. Type/Department and Customer/Job are required on every card. Rate rule: Monday–Friday is Regular (straight time), Saturday is Time &amp; Half (1.5×), Sunday is Double Time (2×). Monday–Friday Regular hours over eight (8) in a day move to Overtime automatically; when a day has more than one card, the day's later card carries the Overtime. Because each weekday caps at eight (8) Regular hours, the Mon–Friday week never exceeds forty (40) Regular hours.</p></details>
     </div>
   </div>
   <div class="rows" id="rows"></div>
@@ -196,7 +245,7 @@ header,main{position:relative;z-index:1;}
     <button class="addrow" id="addRow" type="button">＋ Add Hours Card</button>
   </div>
   <div class="btns no-print">
-    <button class="ghost" id="addLeave" type="button">＋ Add Vacation / Holiday / Personal Day</button>
+    <button class="ghost" id="addLeave" type="button">＋ Add Expense Report</button>
     <button class="ghost" id="clearRows" type="button">Clear All Cards</button>
   </div>
 </section>
@@ -210,6 +259,12 @@ header,main{position:relative;z-index:1;}
     <div class="metric"><span>Total Hours</span><strong id="sumAll">0.00</strong></div>
   </div>
   <div id="checkStatus" class="status info" role="status" aria-live="polite">Add at least one hours card to begin.</div>
+</section>
+
+<section class="panel" id="expenseSection">
+  <div class="expense-heading"><h2>Expense Reports</h2><span class="small">One job number per report</span></div>
+  <div id="expenseSummary" class="small">No expense reports attached.</div>
+  <div id="expenseActions" class="btns no-print"><button class="secondary" type="button" id="newExpense">＋ Add Another Expense Report</button></div>
 </section>
 
 <section class="panel">
@@ -248,7 +303,7 @@ header,main{position:relative;z-index:1;}
     <div class="table-wrap" style="margin-top:12px">
       <table class="review" id="mgrTable">
         <thead><tr>
-          <th>Type / Department</th><th>Customer / Job</th><th>Day</th>
+          <th>Type / Department</th><th>Job Name</th><th>Job Number</th><th>Day</th>
           <th class="num">ST</th><th class="num">1.5×</th><th class="num">2×</th>
           <th>Notes</th><th class="num">Total</th>
         </tr></thead>
@@ -331,7 +386,7 @@ const ADMIN_EMAILS = ["mp1@firedefense.com","302stang86@gmail.com","wh1@firedefe
 <script>
 /* ---------- constants ---------- */
 const dayNames=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-const types=['Sprinkler','Fire Alarm','Special Hazard','Pre-Engineered','Portables','Non-Billable Shop','EP','Vacation','Holiday','Personal Day','Other'];
+const types=['Sprinkler','Fire Alarm','Special Hazard','Pre-Engineered','Portables','EP','PTO','Holiday'];
 // rate category by weekday index: Mon-Fri ST, Sat OT (1.5x), Sun DT (2x)
 function rateForDay(i){return i===0?'dt':i===6?'ot':'st';}
 function rateLabel(cat){return cat==='dt'?'Double Time (2×)':cat==='ot'?'Time & Half (1.5×)':'Regular (ST)';}
@@ -447,6 +502,7 @@ async function enterTechMode(sheetId){
   await loadManagersIntoDropdown();
   // Load this tech's existing draft for the current week if present
   if(FB_OK && CURRENT.uid){ await loadMyDraftForWeek(); }
+  restoreExpenseReturn();
 }
 
 function renderModeActions(){
@@ -480,8 +536,10 @@ function makeRow(data={}){
    '<div class="rowgrid">'+
      '<div><label>Type / Department <span class="req">*</span></label>'+
        '<select class="type" required>'+types.map(t=>'<option>'+t+'</option>').join('')+'</select></div>'+
-     '<div><label>Customer / Job Name &amp; Number <span class="req">*</span></label>'+
-       '<input class="job" placeholder="e.g. Acme Plaza — JOB-10472" required></div>'+
+     '<div><label>Job Name <span class="req">*</span></label>'+
+       '<input class="job" placeholder="e.g. Acme Plaza" required></div>'+
+     '<div><label>Job Number <span class="req">*</span></label>'+
+       '<input class="jobNumber" placeholder="e.g. 10472" required></div>'+
      '<div><label>Day <span class="req">*</span></label>'+
        '<select class="day">'+dayNames.map(d=>'<option>'+d+'</option>').join('')+'</select></div>'+
    '</div>'+
@@ -497,8 +555,14 @@ function makeRow(data={}){
      '<button class="remove no-print" type="button" aria-label="Remove card">Remove</button>'+
    '</div>';
 
-  card.querySelector('.type').value=data.type||'Sprinkler';
-  card.querySelector('.job').value=data.job||'';
+  card.querySelector('.type').value= data.type==='Vacation'||data.type==='Personal Day' ? 'PTO' : (types.includes(data.type)?data.type:'Sprinkler');
+  card.querySelector('.job').value=data.jobName??data.job??'';
+  card.querySelector('.jobNumber').value=data.jobNumber||'';
+  const refreshJobNumberHighlight=()=>{
+    card.classList.toggle('job-number-alpha',/[a-z]/i.test(card.querySelector('.jobNumber').value));
+  };
+  card.querySelector('.jobNumber').addEventListener('input',refreshJobNumberHighlight);
+  refreshJobNumberHighlight();
   card.querySelector('.day').value=data.day||'Monday';
   ['st','ot','dt'].forEach(k=>card.querySelector('.'+k).value=data[k]??0);
   card.querySelector('.notes').value=data.notes||'';
@@ -599,12 +663,12 @@ $('weekStart').addEventListener('change',()=>{setWeek();if(FB_OK&&CURRENT.uid)lo
 
 /* ----- buttons ----- */
 $('addRow').onclick=()=>makeRow();
-$('addLeave').onclick=()=>makeRow({type:'Vacation'});
+$('addLeave').onclick=()=>openExpenseEditor();
 $('clearRows').onclick=()=>{if(confirm('Clear all hours cards?')){$('rows').innerHTML='';makeRow();calculate();}};
 $('print').onclick=()=>window.print();
 $('csv').onclick=downloadCSV;
 $('reset').onclick=()=>{if(confirm('Reset the form? This clears the on-screen entries. Cloud drafts are not deleted.')){
-  $('rows').innerHTML='';makeRow();$('comments').value='';$('manager').value='';
+  $('rows').innerHTML='';makeRow();$('comments').value='';$('manager').value='';EXPENSE_REPORTS=[];renderExpenseReport();
   LAST_SAVED_ID=null;$('savedInfo').textContent='';defaultSunday();calculate();}};
 $('saveCloud').onclick=()=>saveSheet('draft');
 $('submit').onclick=()=>saveSheet('submitted');
@@ -621,9 +685,12 @@ function gather(){
     managerUid:$('manager').value,
     managerName:($('manager').selectedOptions[0]||{}).getAttribute?($('manager').selectedOptions[0].getAttribute('data-name')||''):'',
     comments:$('comments').value.trim(),
+    expenseReports:EXPENSE_REPORTS,
     entries:[...document.querySelectorAll('#rows .rowcard')].map(card=>({
       type:card.querySelector('.type').value,
-      job:card.querySelector('.job').value.trim(),
+      job:card.querySelector('.job').value.trim(), // legacy field for existing integrations
+      jobName:card.querySelector('.job').value.trim(),
+      jobNumber:card.querySelector('.jobNumber').value.trim(),
       day:card.querySelector('.day').value,
       st:num(card,'st'),ot:num(card,'ot'),dt:num(card,'dt'),
       notes:card.querySelector('.notes').value.trim()
@@ -641,9 +708,10 @@ function validate(forSubmit){
   const cards=[...document.querySelectorAll('#rows .rowcard')];
   let anyHours=false;
   cards.forEach((card,idx)=>{
-    const typeEl=card.querySelector('.type'),jobEl=card.querySelector('.job');
+    const typeEl=card.querySelector('.type'),jobEl=card.querySelector('.job'),jobNumberEl=card.querySelector('.jobNumber');
     if(!typeEl.value){markInvalid(typeEl);ok=false;}
-    if(!jobEl.value.trim()){markInvalid(jobEl);ok=false;problems.push('Card '+(idx+1)+': Customer / Job is required.');}
+    if(!jobEl.value.trim()){markInvalid(jobEl);ok=false;problems.push('Card '+(idx+1)+': Job Name is required.');}
+    if(!jobNumberEl.value.trim()){markInvalid(jobNumberEl);ok=false;problems.push('Card '+(idx+1)+': Job Number is required.');}
     if(num(card,'st')+num(card,'ot')+num(card,'dt')>0)anyHours=true;
   });
   if(!anyHours){ok=false;problems.push('Enter hours on at least one card.');}
@@ -723,6 +791,7 @@ function fillTechForm(d){
   setLockedEmployeeName();   // always the admin-managed name, not the saved draft's
   if(d.weekStart){$('weekStart').value=d.weekStart;setWeek();}
   $('comments').value=d.comments||'';
+  EXPENSE_REPORTS=Array.isArray(d.expenseReports)?d.expenseReports:(d.expenseReport?[d.expenseReport]:[]);renderExpenseReport();
   if(d.managerUid){const o=[...$('manager').options].find(o=>o.value===d.managerUid);if(o)$('manager').value=d.managerUid;}
   $('rows').innerHTML='';
   (d.entries&&d.entries.length?d.entries:[{}]).forEach(makeRow);
@@ -748,11 +817,12 @@ function downloadCSV(){
     ['Weekly Employee Time Sheet'],
     ['Employee',d.employee],['Week Start',d.weekStart],['Week End',d.weekEnd],
     ['Submit To',d.managerName],[],
-    ['Type / Department','Customer / Job','Day','Rate','Regular ST','Time&Half 1.5x','Double 2x','Card Total','Notes'],
-    ...d.entries.map(e=>[e.type,e.job,e.day,rateLabel(rateForDay(dayNames.indexOf(e.day))),e.st,e.ot,e.dt,(e.st+e.ot+e.dt).toFixed(2),e.notes]),
+    ['Type / Department','Job Name','Job Number','Day','Rate','Regular ST','Time&Half 1.5x','Double 2x','Card Total','Notes'],
+    ...d.entries.map(e=>[e.type,e.jobName??e.job,e.jobNumber||'',e.day,rateLabel(rateForDay(dayNames.indexOf(e.day))),e.st,e.ot,e.dt,(e.st+e.ot+e.dt).toFixed(2),e.notes]),
     [],
     ['Total Regular',$('sumST').textContent],['Total Time&Half',$('sumOT').textContent],
     ['Total Double',$('sumDT').textContent],['Total Hours',$('sumAll').textContent],
+    [],...(d.expenseReports||[]).flatMap((r,i)=>[['Expense Report '+(i+1),r.jobName,r.jobNumber],['Expense Total',r.total],['Expense Reimbursement',r.owed],...(r.items||[]).map(e=>['Expense',e.date,e.account,e.description,r.jobName,r.jobNumber,e.amount])]),
     [],['Comments',d.comments]
   ];
   const csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
@@ -872,7 +942,8 @@ function renderManagerReview(){
     const cat=rateForDay(dayNames.indexOf(e.day));
     tr.innerHTML=
       td(cell('type',i,selectHTML('type',types,e.type)))+
-      td(cell('job',i,'<input data-f="job" value="'+escAttr(e.job||'')+'">'))+
+      td(cell('jobName',i,'<input data-f="jobName" value="'+escAttr(e.jobName??e.job??'')+'">'))+
+      td(cell('jobNumber',i,'<input data-f="jobNumber" value="'+escAttr(e.jobNumber||'')+'">'))+
       td(cell('day',i,selectHTML('day',dayNames,e.day)))+
       tdnum(cell('st',i,'<input class="num" data-f="st" type="number" min="0" step=".25" value="'+(+e.st||0)+'">'))+
       tdnum(cell('ot',i,'<input class="num" data-f="ot" type="number" min="0" step=".25" value="'+(+e.ot||0)+'">'))+
@@ -906,7 +977,7 @@ function headCell(label,val){return '<div><label>'+esc(label)+'</label><div styl
 function currentMgrEntries(){
   return [...$('mgrBody').querySelectorAll('tr')].map(tr=>{
     const g=f=>tr.querySelector('[data-f="'+f+'"]').value;
-    return {type:g('type'),job:g('job').trim(),day:g('day'),
+    return {type:g('type'),job:g('jobName').trim(),jobName:g('jobName').trim(),jobNumber:g('jobNumber').trim(),day:g('day'),
       st:+g('st')||0,ot:+g('ot')||0,dt:+g('dt')||0,notes:g('notes').trim()};
   });
 }
@@ -916,7 +987,7 @@ function flagIfEdited(inp){
   const orig=OPEN_SHEET._orig[i]||{};
   const span=tr.querySelector('[data-cell="'+f+'-'+i+'"]');
   const nowVal=(f==='st'||f==='ot'||f==='dt')?(+inp.value||0):inp.value.trim();
-  const wasVal=(f==='st'||f==='ot'||f==='dt')?(+orig[f]||0):String(orig[f]||'').trim();
+  const wasVal=(f==='st'||f==='ot'||f==='dt')?(+orig[f]||0):String((f==='jobName'?(orig.jobName??orig.job):orig[f])||'').trim();
   if(String(nowVal)!==String(wasVal)){span.classList.add('edited');}
   else{span.classList.remove('edited');}
 }
@@ -938,9 +1009,9 @@ function computeEdits(){
   const edits=[];
   cur.forEach((e,i)=>{
     const o=orig[i]||{};
-    ['type','job','day','st','ot','dt','notes'].forEach(f=>{
+    ['type','jobName','jobNumber','day','st','ot','dt','notes'].forEach(f=>{
       const nv=(f==='st'||f==='ot'||f==='dt')?(+e[f]||0):String(e[f]||'').trim();
-      const ov=(f==='st'||f==='ot'||f==='dt')?(+o[f]||0):String(o[f]||'').trim();
+      const ov=(f==='st'||f==='ot'||f==='dt')?(+o[f]||0):String((f==='jobName'?(o.jobName??o.job):o[f])||'').trim();
       if(String(nv)!==String(ov))edits.push({row:i,field:f,from:ov,to:nv,by:init,at:new Date().toISOString()});
     });
   });
@@ -1005,6 +1076,59 @@ function cloudMsg(kind,msg){
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function escAttr(s){return esc(s).replace(/'/g,'&#39;');}
 
+/* ---------- multi-report expense attachments: one job number per report ---------- */
+let EXPENSE_REPORTS=[];
+const EXPENSE_KEY='fdecExpenseReportTransferV1';
+const SHEET_KEY='fdecExpenseTimesheetSnapshotV1';
+const CANCEL_KEY='fdecExpenseReturnCancelledV1';
+function moneyExpense(n){return '$'+Number(n||0).toFixed(2);}
+function renderExpenseReport(){
+  const target=$('expenseSummary');
+  if(!EXPENSE_REPORTS.length){target.textContent='No expense reports attached.';return;}
+  target.innerHTML=EXPENSE_REPORTS.map((d,index)=>{
+    const items=Array.isArray(d.items)?d.items:[];
+    return '<article class="expense-attached"><div class="expense-heading"><strong>Report '+(index+1)+' · '+esc(d.jobName||'Job')+' · #'+esc(d.jobNumber||'')+'</strong><button type="button" class="secondary edit-expense no-print" data-expense-index="'+index+'">✎ Edit</button></div>'+ 
+      '<div class="expense-meta small">'+esc(d.employee||$('employee').value||'Employee')+' · '+esc(d.from||'')+' to '+esc(d.to||'')+' · '+esc(d.purpose||'')+'</div>'+ 
+      '<div class="expense-scroll"><table class="expense-table"><thead><tr><th>Date</th><th>Account</th><th>Description</th><th>Amount</th></tr></thead><tbody>'+items.map(i=>'<tr><td>'+esc(i.date)+'</td><td>'+esc(i.account)+'</td><td>'+esc(i.description)+'</td><td>'+moneyExpense(i.amount)+'</td></tr>').join('')+'</tbody></table></div>'+ 
+      '<div class="expense-totals"><span>Expenses: <b>'+moneyExpense(d.total)+'</b></span><span>Cash advances: <b>'+moneyExpense(d.advance)+'</b></span><span>Reimbursement: <b>'+moneyExpense(d.owed)+'</b></span></div>'+
+      (d.notes?'<div class="small">Notes: '+esc(d.notes)+'</div>':'')+'</article>';
+  }).join('');
+  target.querySelectorAll('.edit-expense').forEach(btn=>btn.onclick=()=>openExpenseEditor(Number(btn.dataset.expenseIndex)));
+}
+function openExpenseEditor(index=null){
+  try{
+    sessionStorage.setItem(SHEET_KEY,JSON.stringify({sheet:gather(),savedId:LAST_SAVED_ID,index}));
+    if(index!==null && EXPENSE_REPORTS[index])sessionStorage.setItem(EXPENSE_KEY,JSON.stringify(EXPENSE_REPORTS[index]));
+    else sessionStorage.removeItem(EXPENSE_KEY);
+    sessionStorage.removeItem(CANCEL_KEY);
+  }catch(e){alert('Cannot preserve your unsaved timesheet in this browser. Please save your draft first.');return;}
+  const url=new URL('expense-report.html',location.href);
+  url.searchParams.set('return','timesheet.html');
+  location.href=url.toString();
+}
+$('newExpense').onclick=()=>openExpenseEditor();
+function restoreExpenseReturn(){
+  let pending=null,snapshot=null,cancelled=false;
+  try{
+    pending=JSON.parse(sessionStorage.getItem(EXPENSE_KEY)||'null');
+    snapshot=JSON.parse(sessionStorage.getItem(SHEET_KEY)||'null');
+    cancelled=sessionStorage.getItem(CANCEL_KEY)==='1';
+  }catch(e){}
+  if(!snapshot || !snapshot.sheet || (!pending && !cancelled))return;
+  sessionStorage.removeItem(EXPENSE_KEY);sessionStorage.removeItem(SHEET_KEY);sessionStorage.removeItem(CANCEL_KEY);
+  fillTechForm(snapshot.sheet);
+  if(snapshot.sheet.managerUid)$('manager').value=snapshot.sheet.managerUid;
+  LAST_SAVED_ID=snapshot.savedId||LAST_SAVED_ID;
+  if(pending){
+    if(!pending.id)pending.id='expense-'+Date.now();
+    const idx=snapshot.index;
+    if(Number.isInteger(idx) && idx>=0 && idx<EXPENSE_REPORTS.length)EXPENSE_REPORTS[idx]=pending;
+    else EXPENSE_REPORTS.push(pending);
+    renderExpenseReport();
+    $('expenseSection').scrollIntoView({block:'start'});
+    cloudMsg('info','Expense report attached. Save Draft or Submit to Manager to persist all reports to the cloud.');
+  }
+}
 /* ---------- go ---------- */
 start();
 </script>
