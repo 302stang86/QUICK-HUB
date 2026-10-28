@@ -208,7 +208,7 @@ header,main{position:relative;z-index:1;}
   #managerView .metric{padding:3px}
   #managerView .metric strong{font-size:11pt}
 }
-@media print{#mgrExpenseSection .expense-attached{break-inside:avoid}#mgrExpenseSection .expense-scroll{overflow:visible}#mgrExpenseSection .expense-table{min-width:0;width:100%;font-size:11px}}
+@media print{#mgrExpenseSection{display:block!important;visibility:visible!important}#mgrExpenseSummary{display:block!important;visibility:visible!important}#mgrExpenseSection .expense-attached{break-inside:auto}#mgrExpenseSection .expense-scroll{overflow:visible}#mgrExpenseSection .expense-table{min-width:0;width:100%;font-size:11px}}
 @media(max-width:600px){.expense-totals{display:grid;gap:5px}.expense-table{font-size:12px}}
 
 /* Pay period folders. Presentation only; no Firestore schema or migrations. */
@@ -1302,7 +1302,13 @@ async function saveManagerReview(markReviewed){
   if(markReviewed)payload.status='reviewed';
   try{
     await db.collection(COL_SHEETS).doc(OPEN_SHEET_ID).set(payload,{merge:true});
-    OPEN_SHEET.entries=entries;OPEN_SHEET._orig=JSON.parse(JSON.stringify(entries));OPEN_SHEET.managerEdits=allEdits;
+    // Reconcile from the persisted document after approval. Expense attachments are
+    // not part of the manager-edit payload and must remain visible/printable.
+    const persisted=await db.collection(COL_SHEETS).doc(OPEN_SHEET_ID).get();
+    if(!persisted.exists)throw new Error('Reviewed Time Sheet could not be reloaded.');
+    const saved=persisted.data()||{};
+    OPEN_SHEET={...OPEN_SHEET,...saved,entries,_orig:JSON.parse(JSON.stringify(entries)),managerEdits:allEdits};
+    renderManagerExpenses();
     $('mgrSavedInfo').textContent=(markReviewed?'Review saved and marked approved. ':'Edits saved. ')+
       newEdits.length+' new change(s) logged under '+init+' at '+new Date().toLocaleString()+'.';
     renderEditLog();
@@ -1312,7 +1318,19 @@ async function saveManagerReview(markReviewed){
 
 $('mgrApprove')&&($('mgrApprove').onclick=()=>saveManagerReview(true));
 $('mgrSaveOnly')&&($('mgrSaveOnly').onclick=()=>saveManagerReview(false));
-$('mgrPrint')&&($('mgrPrint').onclick=()=>window.print());
+$('mgrPrint')&&($('mgrPrint').onclick=async()=>{
+  // Re-read the saved record so print reflects the same expense attachments
+  // that a manager sees after approval (including legacy expenseReport data).
+  try{
+    if(FB_OK&&OPEN_SHEET_ID){
+      const snap=await db.collection(COL_SHEETS).doc(OPEN_SHEET_ID).get();
+      if(!snap.exists)throw new Error('Time Sheet no longer exists.');
+      OPEN_SHEET={...OPEN_SHEET,...snap.data()};
+    }
+    renderManagerExpenses();
+    window.print();
+  }catch(e){console.error(e);alert('Could not prepare the saved Time Sheet for printing: '+(e.message||e));}
+});
 $('mgrDelete')&&($('mgrDelete').onclick=async()=>{
   if(!FB_OK||!OPEN_SHEET_ID||!MANAGER_ROLES.includes(String(CURRENT.role||'').toLowerCase()))return;
   const id=OPEN_SHEET_ID, sheet=OPEN_SHEET||{};
@@ -1370,7 +1388,7 @@ function expenseAmounts(r){const items=Array.isArray(r.items)?r.items:[];let tot
 
 function renderManagerExpenses(){
   const d=OPEN_SHEET||{};
-  const reports=payPeriod(d).key===key?(Array.isArray(d.expenseReports)?d.expenseReports:(d.expenseReport?[d.expenseReport]:[])):[];
+  const reports=Array.isArray(d.expenseReports)?d.expenseReports:(d.expenseReport?[d.expenseReport]:[]);
   const target=$('mgrExpenseSummary');
   if(!reports.length){target.textContent='No expense reports attached to this submission.';return;}
   target.innerHTML=reports.map((r,index)=>{
