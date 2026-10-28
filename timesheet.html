@@ -91,6 +91,11 @@ table.review th{background:#f1f5f8;color:#445568;font-size:11px;text-transform:u
 table.review td.num,table.review th.num{text-align:right;font-variant-numeric:tabular-nums}
 table.review input,table.review select{padding:7px}
 table.review input.num{text-align:right}
+/* Keep flagged and standard manager-review rows at identical dimensions. */
+table.review tbody tr.job-number-alpha > td{background:#F7C58D;box-shadow:inset 0 1px #D58229,inset 0 -1px #D58229}
+table.review tbody tr.job-number-alpha > td:first-child{box-shadow:inset 2px 0 #D58229,inset 0 1px #D58229,inset 0 -1px #D58229}
+table.review tbody tr.job-number-alpha > td:last-child{box-shadow:inset -2px 0 #D58229,inset 0 1px #D58229,inset 0 -1px #D58229}
+@media print{table.review tbody tr.job-number-alpha > td{background:#F7C58D!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 td.rowtot{font-weight:700;color:var(--navy)}
 .edited{background:var(--edit-bg)!important;outline:2px solid var(--edit);outline-offset:-2px;border-radius:4px}
 .edit-flag{display:inline-block;font-size:10px;font-weight:700;color:#fff;background:var(--edit);border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle}
@@ -173,6 +178,7 @@ header,main{position:relative;z-index:1;}
 }
 .expense-attached{border:1px solid #dce4ec;border-radius:10px;padding:12px;margin:10px 0;background:#fafcfe}.expense-attached .expense-heading{align-items:center}.expense-attached button{padding:8px 12px}.expense-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .expense-scroll{overflow:auto;margin:12px 0}.expense-table{width:100%;border-collapse:collapse;font-size:13px;min-width:420px}.expense-table th,.expense-table td{text-align:left;border-bottom:1px solid #dce4ec;padding:7px}.expense-table th{background:#edf3f8;color:#142b46}.expense-table td:last-child{text-align:right;white-space:nowrap}.expense-totals{display:flex;gap:12px;flex-wrap:wrap;background:#edf3f8;border-radius:8px;padding:12px;margin:10px 0}.expense-meta{margin-top:9px}
+@media print{#mgrExpenseSection .expense-attached{break-inside:avoid}#mgrExpenseSection .expense-scroll{overflow:visible}#mgrExpenseSection .expense-table{min-width:0;width:100%;font-size:11px}}
 @media(max-width:600px){.expense-totals{display:grid;gap:5px}.expense-table{font-size:12px}}
 </style>
 <!-- FDEC PWA / offline -->
@@ -316,6 +322,12 @@ header,main{position:relative;z-index:1;}
       </table>
     </div>
     <div id="mgrEditLog" class="editlog hide"></div>
+  </section>
+
+  <section class="panel" id="mgrExpenseSection">
+    <h2>Submitted Expense Reports</h2>
+    <p class="sub">Read-only copies of the individual reports attached to this submitted Time Sheet. Each report has one billing job number.</p>
+    <div id="mgrExpenseSummary">No expense reports attached.</div>
   </section>
 
   <section class="panel">
@@ -950,13 +962,15 @@ function renderManagerReview(){
       tdnum(cell('dt',i,'<input class="num" data-f="dt" type="number" min="0" step=".25" value="'+(+e.dt||0)+'">'))+
       td(cell('notes',i,'<input data-f="notes" value="'+escAttr(e.notes||'')+'">'))+
       '<td class="num rowtot" data-tot="'+i+'">'+((+e.st||0)+(+e.ot||0)+(+e.dt||0)).toFixed(2)+'</td>';
+    // Apply the existing job-number highlight on initial render.
+    tr.classList.toggle('job-number-alpha',/[a-z]/i.test(e.jobNumber||''));
     body.appendChild(tr);
   });
 
   // store originals for diffing + wire inputs
   OPEN_SHEET._orig=JSON.parse(JSON.stringify(d.entries||[]));
   body.querySelectorAll('[data-f]').forEach(inp=>{
-    inp.addEventListener('input',()=>{flagIfEdited(inp);recalcMgr();renderEditLog();});
+    inp.addEventListener('input',()=>{flagIfEdited(inp);if(inp.dataset.f==='jobNumber')inp.closest('tr').classList.toggle('job-number-alpha',/[a-z]/i.test(inp.value));recalcMgr();renderEditLog();});
   });
   // show any prior edits as highlighted
   (d.managerEdits||[]).forEach(ed=>{
@@ -964,6 +978,7 @@ function renderManagerReview(){
     if(cellEl)cellEl.classList.add('edited');
   });
   recalcMgr();renderEditLog();
+  renderManagerExpenses();
 }
 
 function selectHTML(f,opts,val){
@@ -1082,6 +1097,27 @@ const EXPENSE_KEY='fdecExpenseReportTransferV1';
 const SHEET_KEY='fdecExpenseTimesheetSnapshotV1';
 const CANCEL_KEY='fdecExpenseReturnCancelledV1';
 function moneyExpense(n){return '$'+Number(n||0).toFixed(2);}
+function renderManagerExpenses(){
+  const d=OPEN_SHEET||{};
+  const reports=Array.isArray(d.expenseReports)?d.expenseReports:(d.expenseReport?[d.expenseReport]:[]);
+  const target=$('mgrExpenseSummary');
+  if(!reports.length){target.textContent='No expense reports attached to this submission.';return;}
+  target.innerHTML=reports.map((r,index)=>{
+    const items=Array.isArray(r.items)?r.items:[];
+    const total=items.reduce((sum,item)=>sum+(Number(item.amount)||0),0);
+    const advance=Number(r.advance)||0;
+    const owed=total-advance;
+    return '<article class="expense-attached">'+
+      '<div class="expense-heading"><strong>Expense Report '+(index+1)+' · '+esc(r.jobName||'Job')+' · Job #'+esc(r.jobNumber||'—')+'</strong></div>'+
+      '<div class="expense-meta small">Employee: '+esc(r.employee||d.employee||'—')+' · Department: '+esc(r.department||'—')+' · Manager: '+esc(r.manager||d.managerName||'—')+'</div>'+
+      '<div class="expense-meta small">Pay period: '+esc(r.from||'—')+' to '+esc(r.to||'—')+' · Statement #: '+esc(r.statement||'—')+' · Purpose: '+esc(r.purpose||'—')+'</div>'+
+      '<div class="expense-scroll"><table class="expense-table"><thead><tr><th>Date</th><th>Account</th><th>Description</th><th>Amount</th></tr></thead><tbody>'+
+      items.map(item=>'<tr><td>'+esc(item.date||'')+'</td><td>'+esc(item.account||'')+'</td><td>'+esc(item.description||'')+'</td><td>'+moneyExpense(item.amount)+'</td></tr>').join('')+
+      '</tbody></table></div>'+
+      '<div class="expense-totals"><span>Expenses: <b>'+moneyExpense(total)+'</b></span><span>Cash advances: <b>'+moneyExpense(advance)+'</b></span><span>'+(owed<0?'Due from technician':'Reimbursement')+': <b>'+moneyExpense(Math.abs(owed))+'</b></span></div>'+
+      (r.notes?'<div class="small">Notes: '+esc(r.notes)+'</div>':'')+'</article>';
+  }).join('');
+}
 function renderExpenseReport(){
   const target=$('expenseSummary');
   if(!EXPENSE_REPORTS.length){target.textContent='No expense reports attached.';return;}
