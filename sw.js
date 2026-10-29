@@ -13,9 +13,20 @@
      - Everything else (Firestore API, etc.): straight to network — Firestore's
        own offline mode handles those when there is no signal.
 */
-const CACHE = 'fdec-quickhub-v89-expanded-library';
+const CACHE = 'fdec-quickhub-v92-advanced-troubleshooting';
 
 const CORE = [
+  "troubleshooting-data.js",
+  "troubleshooting-ui.js",
+  "troubleshooting-assets/gem-a6.pdf",
+  "troubleshooting-assets/gem-f311.pdf",
+  "troubleshooting-assets/reliable-b1.pdf",
+  "troubleshooting-assets/reliable-ddx.pdf",
+  "troubleshooting-assets/tyco-acc1.pdf",
+  "troubleshooting-assets/tyco-dpv1.pdf",
+  "troubleshooting-assets/victaulic-746.pdf",
+  "troubleshooting-assets/victaulic-768n.pdf",
+
   "field-library-resources.js",
   "library-assets/agf-1000-1.jpg",
   "library-assets/agf-1000-2.jpg",
