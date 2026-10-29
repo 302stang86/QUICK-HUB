@@ -266,8 +266,8 @@ button{font-family:inherit}
 .ad-table th{text-align:left;padding:7px 8px;border-bottom:2px solid var(--line);color:var(--navy);font-size:11px;text-transform:uppercase;letter-spacing:.3px}
 .ad-table td{padding:7px 8px;border-bottom:1px solid var(--line2);vertical-align:top}
 .ad-dl,.ad-del{border:1px solid var(--navy);background:#fff;color:var(--navy);border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer}
-.ad-view,.ad-edit{border:1px solid var(--navy);background:var(--navy);color:#fff;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer}
-.ad-view:hover,.ad-edit:hover{background:var(--navy2,#16294a)}
+.ad-view,.ad-edit,.ad-pdf{border:1px solid var(--navy);background:var(--navy);color:#fff;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer}
+.ad-view:hover,.ad-edit:hover,.ad-pdf:hover{background:var(--navy2,#16294a)}
 .edited-by{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:700;color:#7a5c00;background:#fff3d6;border:1px solid #e6cf8a;border-radius:20px;padding:1px 7px}
 .edit-mode-bar{position:sticky;top:0;z-index:1200;display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap;background:#fff3d6;border-bottom:2px solid #e0b64a;color:#5c4300;font:600 13px/1.4 "Segoe UI",Arial,sans-serif;padding:9px 16px}
 .edit-mode-bar b{color:#8a1212}
@@ -2109,7 +2109,7 @@ function validateDeficiencyTypes(onlyIds){
 }
 
 /* Modal that lists deficiency rows missing a type, and lets the user jump to fix. */
-function deficiencyWarningModal(problems){
+function deficiencyWarningModal(problems, onContinue){
   const mh=document.getElementById('modalHost')||document.body;
   const bg=document.createElement('div'); bg.className='modal-bg';
   let rows='';
@@ -2121,11 +2121,13 @@ function deficiencyWarningModal(problems){
   });
   bg.innerHTML=`<div class="modal" style="max-width:540px">
     <h3>Review Needed Before Submitting</h3>
-    <p>${problems.length} item${problems.length===1?'':'s'} need${problems.length===1?'s':''} attention. Resolve the following, then submit again:</p>
+    <p>${problems.length} item${problems.length===1?'':'s'} need${problems.length===1?'s':''} attention. ${onContinue?'As an administrator you can continue anyway to view or save the PDF as it is, or go back and fix them first:':'Resolve the following, then submit again:'}</p>
     <div style="max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:8px">${rows}</div>
-    <div class="mbtns"><button id="dwOk" class="primary">OK</button></div></div>`;
+    <div class="mbtns">${onContinue?'<button id="dwGo">Continue anyway (admin)</button>':''}<button id="dwOk" class="primary">${onContinue?'Go back and fix':'OK'}</button></div></div>`;
   mh.appendChild(bg);
-  bg.querySelector('#dwOk').onclick=()=>{ if(bg.parentNode) mh.removeChild(bg); };
+  const dwClose=()=>{ if(bg.parentNode) bg.parentNode.removeChild(bg); };
+  bg.querySelector('#dwOk').onclick=dwClose;
+  const go=bg.querySelector('#dwGo'); if(go) go.onclick=()=>{ dwClose(); onContinue(); };
 }
 
 function reportPickerModal(){
@@ -2177,18 +2179,22 @@ function reportPickerModal(){
     if(sel.length===0 && !inclSum){ alert('Select at least one report to save.'); return; }
     // Validate ONLY the reports being submitted (not every form).
     const problems=validateDeficiencyTypes(sel);
-    if(problems.length){ close(); deficiencyWarningModal(problems); return; }
+    const proceed=()=>{
+      if(!VIEW_DOC) submitReportToCloud(sel);   // store the full report in Firebase (best-effort); skipped when an admin is only viewing a filed report
+      printSelectedReports(sel, inclSum);
+    };
+    if(problems.length){ close(); deficiencyWarningModal(problems, IS_ADMIN ? proceed : null); return; }
     close();
-    submitReportToCloud(sel);   // store the full report in Firebase (best-effort)
-    printSelectedReports(sel, inclSum);
+    proceed();
   };
 }
 
 /* When an admin opens a technician's report with "Edit", this holds the record
    being edited so a resubmit replaces it in place instead of adding a new one. */
 let EDIT_DOC = null;
+let VIEW_DOC = null;   // id of a submitted report an admin is only viewing (PDF/print must not re-file it)
 function clearEditMode(){
-  EDIT_DOC=null;
+  EDIT_DOC=null; VIEW_DOC=null;
   const b=document.getElementById('editModeBar'); if(b) b.style.display='none';
 }
 
@@ -3853,12 +3859,18 @@ async function adminDashboard(fullPage){
           <td>${esc(r.byName||r.byEmail||'—')}</td>
           <td>${esc(r.jobName||'—')}${r.jobNumber?(' · '+esc(r.jobNumber)):''}${dupBadge}${r.editedBy?(' <span class="edited-by" title="Edited by an administrator">✎ Edited by '+esc(r.editedBy)+(r._editedWhen?(' · '+esc(r._editedWhen)):'')+'</span>'):''}</td>
           <td style="font-size:11px">${esc(r._names)}</td>
-          <td style="white-space:nowrap"><button class="ad-edit" data-id="${esc(r.id)}">Edit</button> <button class="ad-dl" data-id="${esc(r.id)}">Download</button> <button class="ad-del" data-id="${esc(r.id)}" data-label="${esc((r.jobName||'report')+' — '+(r.byName||r.byEmail||''))}">Delete</button></td>
+          <td style="white-space:nowrap"><button class="ad-view" data-id="${esc(r.id)}">View</button> <button class="ad-pdf" data-id="${esc(r.id)}" title="Open this report and choose pages to save as PDF">PDF</button> <button class="ad-edit" data-id="${esc(r.id)}">Edit</button> <button class="ad-dl" data-id="${esc(r.id)}">Download</button> <button class="ad-del" data-id="${esc(r.id)}" data-label="${esc((r.jobName||'report')+' — '+(r.byName||r.byEmail||''))}">Delete</button></td>
         </tr>`;
       });
       html+='</tbody></table>';
       html+='<div class="ad-count">'+filtered.length+' report'+(filtered.length===1?'':'s')+' · '+y+(q?' · matching "'+esc(q)+'"':'')+'</div>';
       listEl.innerHTML=html;
+      listEl.querySelectorAll('.ad-view').forEach(btn=>{
+        btn.onclick=()=>{ const rec=rows.find(x=>x.id===btn.getAttribute('data-id')); viewCloudReport(rec, close); };
+      });
+      listEl.querySelectorAll('.ad-pdf').forEach(btn=>{
+        btn.onclick=()=>{ const rec=rows.find(x=>x.id===btn.getAttribute('data-id')); viewCloudReport(rec, close); reportPickerModal(); };
+      });
       listEl.querySelectorAll('.ad-edit').forEach(btn=>{
         btn.onclick=()=>{ const rec=rows.find(x=>x.id===btn.getAttribute('data-id')); editCloudReport(rec, close); };
       });
@@ -4041,6 +4053,9 @@ function downloadCloudReport(rec){
 function viewCloudReport(rec, closeDash){
   try{
     clearEditMode();                 // plain view — not an edit
+    VIEW_DOC = rec && rec.id || null;
+    // The direct-admin route hides the report form with a first-paint rule; lift it so the report can be viewed and saved as PDF.
+    document.documentElement.classList.remove('fdec-direct-admin','fdec-direct-admin-boot');
     ALLVALUES = JSON.parse(JSON.stringify(rec.allValues||{}));
     ADDED = Array.isArray(rec.added)? rec.added.slice() : [];
     let form = (rec.reports && rec.reports[0]) || 'fd17';
@@ -4061,6 +4076,7 @@ function viewCloudReport(rec, closeDash){
    a resubmit updates (replaces) the original record instead of filing a new one. */
 function editCloudReport(rec, closeDash){
   viewCloudReport(rec, closeDash);
+  VIEW_DOC = null;
   EDIT_DOC = { id:rec.id, byName:rec.byName, byEmail:rec.byEmail, uid:rec.uid };
   let b=document.getElementById('editModeBar');
   if(!b){ b=document.createElement('div'); b.id='editModeBar'; b.className='edit-mode-bar no-print'; document.body.appendChild(b); }
