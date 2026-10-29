@@ -107,6 +107,8 @@
   kbd{background:var(--panel-2);border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:11px;}
   @media (max-width:520px){main{padding:12px 12px 60px;}header{padding:12px 12px 8px;}}
   #hubLink{position:fixed;left:-9999px;top:-9999px;}
+
+.library-filters{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.library-filters label{font-size:12px;color:var(--muted);flex:1;min-width:145px}.library-filters select{display:block;margin-top:4px;width:100%;min-height:40px;padding:8px;border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--text);font-size:14px}.library-summary{font-size:12px;color:var(--muted);margin-top:10px}.resource-media{display:block;background:#fff;border-radius:7px;margin:12px 0;overflow:hidden}.resource-media img{display:block;width:100%;height:210px;object-fit:contain}.resource-media span{display:block;text-align:center;color:#25405c;background:#edf3f8;padding:5px;font-size:12px}.resource-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.resource-links a{padding:7px 10px;border:1px solid var(--line);border-radius:6px;color:#a8d2f8;text-decoration:none;font-size:12px}.resource-links a:hover{border-color:var(--accent)}.resource-meta{font-size:11px;color:var(--muted);margin-top:10px}.resource-table{margin-top:12px}.resource-table caption{text-align:left;padding:9px;color:var(--text)}.cat{font-family:inherit}.resource-card{overflow:hidden}.library-intro{max-width:860px;margin:0 auto;padding:14px 16px 0;font-size:13px;color:var(--muted)}.library-intro strong{color:var(--text)}@media(max-width:520px){.resource-media img{height:180px}.library-filters{gap:8px}.library-filters label{min-width:130px}}
 </style>
 <script defer src="fdec-offline.js"></script>
 <meta name="fdec-page-title" content="NFPA Field Library">
@@ -125,16 +127,18 @@
   </div>
   <div class="search-wrap">
     <span class="search-ico">&#128269;</span>
-    <input id="search" type="search" placeholder="Search: Omega, Ames 4000SS, DV-5A, Gem A-2, flange, ESFR..." autocomplete="off" autocapitalize="off" spellcheck="false">
+    <input id="search" type="search" placeholder="Search model, SIN, manufacturer, trim, compressor, nitrogen, drawing…" aria-label="Search field library" autocomplete="off" autocapitalize="off" spellcheck="false">
     <button id="clear">Clear</button>
   </div>
-  <div class="cats" id="cats"></div>
+  <div class="library-filters"><label>Manufacturer / supplier<select id="brandFilter"><option value="">All sources</option></select></label><label>Resource type<select id="formatFilter"><option value="">All types</option><option>Photo</option><option>Diagram</option><option>Chart</option><option>Manual</option><option>Catalog</option><option>PDF</option><option>Product</option><option>Supplier</option></select></label></div>
+  <div class="cats" id="cats" aria-label="Library categories"></div><div class="library-summary" id="resultCount" aria-live="polite"></div>
 </header>
 
-<main id="main">
+<div class="library-intro"><strong>Product &amp; technical reference library</strong><br>Manufacturer photos, drawings, charts, and manuals alongside existing recall and legacy references. Tap a preview to enlarge it. Bundled previews and PDFs work offline after the app caches them; official source links require internet.</div><main id="main">
   <div class="noresult" id="noresult">No matches. Try a manufacturer, model, doc number, or keyword.</div>
 </main>
 
+<script src="field-library-resources.js?v=89-library"></script>
 <script>
 /* ============================================================
    DATA
@@ -146,6 +150,7 @@
 
 const CATS = [
   ["all","All"],
+  ["sprinklers","Sprinklers"],["air","Air Compressors"],["nitrogen","Nitrogen & Corrosion"],["testdrain","Test & Drain"],["venting","Vents & Auxiliary Drains"],["risers","Risers & Controls"],["supports","Hangers & Supports"],["alarms","Switches & Alarms"],["pumps","Fire Pumps"],["suppliers","Suppliers"],
   ["recall","Recalls"],
   ["xref","Cross-Reference"],
   ["dry","Dry Valves"],
@@ -560,7 +565,9 @@ const ITEMS = [
 ];
 
 /* ============================================================ RENDER ============================================================ */
+ITEMS.push(...(window.FDEC_LIBRARY_RESOURCES || []));
 const SECTIONS = {
+  sprinklers:"Sprinklers & Identification",air:"Air Compressors & Air Maintenance",nitrogen:"Nitrogen & Corrosion Control",testdrain:"Test & Drain / Flow Testing",venting:"Air Vents & Auxiliary Drains",risers:"Risers & Control Assemblies",supports:"Hangers & Supports",alarms:"Switches & Alarms",pumps:"Fire Pumps",suppliers:"Supplier Product Directories",
   recall:"Recalls & Recalled Head ID",
   xref:"Obsolete Head Cross-Reference",
   dry:"Dry Pipe Valves",
@@ -570,21 +577,30 @@ const SECTIONS = {
   fittings:"Fittings, Flanges & Pipe Data",
   mfr:"Manufacturer Libraries"
 };
-const ORDER = ["recall","xref","dry","deluge","preaction","backflow","fittings","mfr"];
+const ORDER = ["sprinklers","air","nitrogen","testdrain","venting","risers","dry","deluge","preaction","backflow","fittings","supports","alarms","pumps","suppliers","mfr","recall","xref"];
 
 const main = document.getElementById('main');
 const noresult = document.getElementById('noresult');
 const searchEl = document.getElementById('search');
 const clearBtn = document.getElementById('clear');
+const brandFilter = document.getElementById('brandFilter');
+const formatFilter = document.getElementById('formatFilter');
+function sourceBrand(it){return it.brand || ['Reliable','Victaulic','Tyco','Viking','AGF','ARGCO','Ames','CPSC'].find(b=>it.title.toLowerCase().includes(b.toLowerCase())) || 'Other references';}
+function resourceFormats(it){return it.formats || (it.type==='pdf'?['PDF']:it.type==='ref'?['Chart']:['Product']);}
+const sourceNames = [...new Set(ITEMS.map(sourceBrand))].sort();
+sourceNames.forEach(name=>{const opt=document.createElement('option');opt.value=name;opt.textContent=name;brandFilter.appendChild(opt);});
+brandFilter.addEventListener('change',render);formatFilter.addEventListener('change',render);
+function escapeHTML(value){return String(value||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
 let activeCat = "all";
 
 document.getElementById('count').textContent =
-  ITEMS.filter(i=>i.type==='pdf').length + ' datasheets + reference tables';
+  ITEMS.length + ' resources • 43 new manufacturer & supplier references';
 
 function catsBar(){
   const bar = document.getElementById('cats');
   bar.innerHTML = CATS.map(([id,label])=>
-    `<div class="cat${id==='all'?' active':''}" data-cat="${id}">${label}</div>`).join('');
+    `<button type="button" class="cat${id==='all'?' active':''}" data-cat="${id}">${label}</button>`).join('');
   bar.querySelectorAll('.cat').forEach(c=>{
     c.addEventListener('click',()=>{
       bar.querySelectorAll('.cat').forEach(x=>x.classList.remove('active'));
@@ -604,6 +620,11 @@ function badgeInfo(b){
 
 function cardHTML(it){
   const [bc,bt]=badgeInfo(it.badge);
+  if(it.type==='resource'){
+    const link=(label,url)=>`<a href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(label)} ↗</a>`;
+    const media=it.image?`<a class="resource-media" href="${escapeHTML(it.image)}" target="_blank" rel="noopener"><img src="${escapeHTML(it.image)}" loading="lazy" alt="${escapeHTML(it.title)} — manufacturer reference"><span>Enlarge manufacturer preview ↗</span></a>`:'';
+    return `<article class="card resource-card"><div class="card-top"><a class="card-title ext" href="${escapeHTML(it.url)}" target="_blank" rel="noopener">${escapeHTML(it.title)}</a><span class="badge mfr">Source</span></div><div class="card-desc">${escapeHTML(it.desc)}</div><div class="chips"><span class="pill brand">${escapeHTML(it.brand)}</span>${it.formats.map(f=>`<span class="pill">${escapeHTML(f)}</span>`).join('')}</div>${media}${it.content?`<details class="resource-table"><summary>View manufacturer table</summary>${it.content}</details>`:''}<div class="resource-links">${link('Official source',it.url)}${it.local?link('Bundled PDF',it.local):''}${(it.links||[]).map(l=>link(l.label,l.url)).join('')}</div><div class="resource-meta">Publisher: ${escapeHTML(it.brand)} · Source checked ${it.checked}${it.local?' · Bundled document: revision shown in PDF':''}</div></article>`;
+  }
   if(it.type==='pdf'){
     const chips=[];
     if(it.brand)chips.push(`<span class="pill brand">${it.brand}</span>`);
@@ -635,8 +656,10 @@ function cardHTML(it){
 }
 
 function matches(it,q){
+  if(brandFilter.value && sourceBrand(it)!==brandFilter.value)return false;
+  if(formatFilter.value && !resourceFormats(it).includes(formatFilter.value))return false;
   if(!q)return true;
-  const hay=(it.title+' '+(it.desc||'')+' '+(it.content||'')+' '+(it.brand||'')+' '+(it.doc||'')+' '+it.cat).toLowerCase();
+  const hay=(it.title+' '+(it.desc||'')+' '+(it.content||'')+' '+(it.brand||'')+' '+(it.doc||'')+' '+it.cat+' '+(it.tags||'')+' '+resourceFormats(it).join(' ')+' '+sourceBrand(it)).toLowerCase();
   return q.split(/\s+/).every(t=>hay.includes(t));
 }
 
@@ -655,6 +678,7 @@ function render(){
   main.querySelectorAll('.section-title,.card,.ref-block').forEach(n=>n.remove());
   noresult.insertAdjacentHTML('beforebegin',html);
   noresult.style.display=any?'none':'block';
+  document.getElementById('resultCount').textContent=ITEMS.filter(it=>(activeCat==='all'||it.cat===activeCat)&&matches(it,q)).length+' of '+ITEMS.length+' resources shown';
 }
 
 catsBar();
@@ -666,10 +690,10 @@ document.addEventListener('keydown',e=>{if(e.key==='/'&&document.activeElement!=
 
 <main style="max-width:860px;margin:0 auto;padding:0 16px 40px;">
   <div class="disclaimer">
-    <strong>Field use notice.</strong> Datasheet and notice links point to documents published by the manufacturer or CPSC; a few are hosted by distributors where the manufacturer posts no public copy. Always confirm the current revision on the manufacturer's own page before using a document for design or inspection. Cross-reference and dimensional tables are starting points — confirm K-factor, temperature, response, and laying/flange dimensions against the current product data sheet before ordering or installing. ESFR replacements are design-sensitive; treat a K-factor change as a design change. Requires an internet connection for the linked documents.
+    <strong>Field use notice.</strong> Datasheet and notice links point to documents published by the manufacturer or CPSC; a few are hosted by distributors where the manufacturer posts no public copy. Always confirm the current revision on the manufacturer's own page before using a document for design or inspection. Cross-reference and dimensional tables are starting points — confirm K-factor, temperature, response, and laying/flange dimensions against the current product data sheet before ordering or installing. ESFR replacements are design-sensitive; treat a K-factor change as a design change. Manufacturer images and previews retain their original publisher attribution. Bundled copies show the revision in the document and are not automatically updated. Internet is required for official external resources; use the current manufacturer revision for field work.
   </div>
   <footer>
-    FDEC Sprinkler Dept. &bull; NFPA Field Library &bull; Updated Oct 2026 &bull; Tap <kbd>/</kbd> to search
+    FDEC Sprinkler Dept. &bull; NFPA Field Library &bull; Expanded October 29, 2026 &bull; Tap <kbd>/</kbd> to search
   </footer>
 </main>
 
