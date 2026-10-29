@@ -329,6 +329,52 @@ body{display:flex !important; flex-direction:column; min-height:0; overflow:hidd
   input.wide{width:100%; padding:9px 8px; border:1px solid var(--line); border-radius:5px; font-size:16px}
   input.money{width:120px}
   .hint{font-size:12px; color:var(--steel); margin:6px 0 0}
+  /* ---- FDEC Equipment Fees: quick search, badges, master-list windows ---- */
+  .eq-tools{display:flex; flex-wrap:wrap; gap:8px; align-items:flex-start; margin-bottom:8px}
+  .eq-search{position:relative; flex:1 1 300px; min-width:220px}
+  .eq-search input{width:100%; padding:10px; border:1px solid var(--line); border-radius:6px; font-size:16px}
+  .eq-search input:focus{outline:2px solid var(--red); outline-offset:1px; border-color:var(--red)}
+  .eq-results{position:absolute; left:0; right:0; top:calc(100% + 3px); background:#fff; border:1px solid var(--steel); border-radius:6px; box-shadow:0 8px 24px rgba(0,0,0,.18); max-height:280px; overflow-y:auto; z-index:30}
+  .eq-results[hidden]{display:none}
+  .eqr{display:flex; justify-content:space-between; gap:10px; padding:9px 12px; cursor:pointer; font-size:15px; border-bottom:1px solid #edeff2}
+  .eqr:last-child{border-bottom:none}
+  .eqr:hover, .eqr.on{background:var(--soft)}
+  .eqr.on{outline:2px solid var(--red); outline-offset:-2px}
+  .eqr .eqr-fee{color:var(--steel); white-space:nowrap; font-variant-numeric:tabular-nums}
+  .eqr .eqr-fee em{color:var(--red); font-style:normal; font-weight:700; margin-left:8px}
+  .eqr.eqr-new{color:var(--red); font-weight:600}
+  .eq-live{font-size:12px; color:var(--good); min-height:16px; margin:0 0 6px}
+  .eq-qty{display:inline-flex; align-items:center; gap:4px}
+  .eq-qty button{min-width:32px; padding:6px 0; font-weight:700}
+  .eq-qty input.qty{width:64px}
+  .eq-badges{display:flex; flex-wrap:wrap; gap:4px; margin-top:3px}
+  .eq-badges:empty{display:none}
+  .eq-badge{font-size:11px; font-weight:700; padding:1px 8px; border-radius:10px; background:#fff3cd; color:#7a5b00}
+  .eq-badge.new{background:#d6f0f3; color:#00606b}
+  .eq-badge.ren{background:#fde0e0; color:#9d0e16}
+  tr.eq-flash td{background:#d6f0f3}
+  #eqFees td{transition:background .8s}
+  .eqm{position:fixed; inset:0; z-index:2000; display:flex; align-items:center; justify-content:center; padding:16px}
+  .eqm-bd{position:absolute; inset:0; background:rgba(15,22,30,.55)}
+  .eqm-card{position:relative; width:100%; max-width:580px; max-height:calc(100dvh - 32px); display:flex; flex-direction:column; background:#fff; border-radius:12px; box-shadow:0 18px 50px rgba(0,0,0,.4); overflow:hidden}
+  .eqm-head{background:var(--navy); color:#fff; padding:16px 20px 12px; border-bottom:4px solid var(--red)}
+  .eqm-head b{display:block; font-size:15px; letter-spacing:.03em}
+  .eqm-head span{display:block; font-size:12px; color:#8fa8c9; margin-top:3px}
+  .eqm-body{padding:14px 20px; overflow-y:auto; flex:1; -webkit-overflow-scrolling:touch}
+  .eqm-sec h4{margin:12px 0 4px; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--steel)}
+  .eqm-sec:first-child h4{margin-top:0}
+  .eqm-sec ul{margin:0; padding-left:18px; font-size:14px; line-height:1.6}
+  .eqm-warn{background:#fde0e0; border:1px solid #e9a3a3; color:#6b0a10; border-radius:6px; padding:10px 12px; font-size:13px; line-height:1.45; margin:14px 0 6px}
+  .eqm-ack{display:flex; gap:10px; align-items:flex-start; padding:8px 0; font-size:14px; cursor:pointer}
+  .eqm-ack input{width:22px; height:22px; accent-color:var(--red); flex:none; cursor:pointer}
+  .eqm-foot{display:flex; justify-content:flex-end; gap:10px; padding:12px 20px 16px; border-top:1px solid var(--line)}
+  .eqm-foot button{font-weight:700; padding:11px 18px; min-height:44px}
+  .eqm-foot button:disabled{opacity:.45; cursor:default}
+  .eqm-list{margin-top:10px}
+  .eqm-list td{padding:4px 6px}
+  .eqm-list input.rate{width:96px}
+  tr.eqm-del input{text-decoration:line-through; opacity:.45}
+  .eqm-err{color:#9d0e16; font-size:13px; min-height:18px; margin:8px 0 0}
   .copyright-notice{
     font-size:11px; color:var(--steel); text-align:center; font-style:italic;
     margin:26px auto 8px; padding-top:12px; border-top:1px solid var(--line); max-width:1100px;
@@ -779,10 +825,20 @@ body{display:flex !important; flex-direction:column; min-height:0; overflow:hidd
   <details class="card" id="sec-eqfees">
     <summary>FDEC Equipment Fees <span class="sect-total" data-sect="eqfees"></span></summary>
     <div class="body">
-      <table><thead><tr><th>Equipment</th><th class="num">Fee</th><th class="num">Qty</th><th class="num">Total</th><th class="noprint"></th></tr></thead>
+      <div class="eq-tools noprint">
+        <div class="eq-search">
+          <input id="eqSearch" type="search" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="eqResults" aria-label="Search equipment" placeholder="Search equipment. Press Enter to add +1">
+          <div id="eqResults" class="eq-results" role="listbox" hidden></div>
+        </div>
+        <button id="eqSaveMaster" class="small" type="button" hidden title="Save new equipment and price updates from this quote to the master list">Save changes to master<span id="eqPend"></span></button>
+        <button id="eqManage" class="small" type="button" hidden title="Edit, add, or remove equipment in the master list">Manage master list</button>
+      </div>
+      <div id="eqLive" class="eq-live noprint" aria-live="polite"></div>
+      <table id="eqTable" hidden><thead><tr><th>Equipment</th><th class="num">Fee</th><th class="num">Qty</th><th class="num">Total</th><th class="noprint"></th></tr></thead>
         <tbody id="eqFees"></tbody></table>
-      <button class="small noprint" style="margin-top:8px" type="button" onclick="addEqFee()">+ Add equipment</button>
-      <p class="hint">Customer price = cost plus the equipment fee markup. Add, edit, or remove equipment as needed.</p>
+      <p id="eqEmpty" class="hint">No equipment added to this quote yet. Search above and press Enter to add one.</p>
+      <p id="eqHint" class="hint noprint"></p>
+      <p class="hint">Customer price = cost plus the equipment fee markup.</p>
     </div>
   </details>
 
@@ -975,34 +1031,426 @@ function buildQtyTable(tbodyId, group, items, rateEditable){
   });
 }
 
-/* FDEC Equipment Fees rows are fully editable: name, fee, qty, and can be
-   added or removed. Uses data-g="eqFees" so summing/collecting still works. */
+/* ================= FDEC EQUIPMENT FEES =================
+   Quick-search catalog backed by a shared master list (Firestore
+   config/equipmentFees, reached through the hub shell). The quote table lists
+   only the equipment added to THIS quote. Names and fees stay editable per
+   quote. Managers and admins can save new items and price updates to the
+   master; renaming or removing an item needs an explicit permanent-change
+   approval first. Quantities are never stored in the master. */
+const EQ_MASTER_DEFAULT = EQ_FEES.map((a, i) => ({ id:'b' + i, name:a[0], fee:a[1] }));
+let EQ_MASTER = EQ_MASTER_DEFAULT.map(m => Object.assign({}, m));
+let EQ_CAN_SAVE = false;
 let _eqSeq = 0;
-function eqFeeRow(name, rate, qty){
+const _eqPending = {};
+
+const eqEsc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const eqKey = s => String(s || '').toLowerCase().replace(/\s+/g,' ').trim();
+const eqNorm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+const eqNum = v => { const n = parseFloat(v); return isFinite(n) ? n : null; };
+const eqNewId = () => 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const eqById = id => (id && EQ_MASTER.find(m => m.id === id)) || null;
+const eqByName = name => { const k = eqKey(name); return k ? (EQ_MASTER.find(m => eqKey(m.name) === k) || null) : null; };
+
+function eqNormalizeList(arr){
+  if (!Array.isArray(arr)) return null;
+  const out = [], seen = new Set();
+  arr.forEach(x => {
+    if (!x || typeof x.name !== 'string') return;
+    const name = x.name.trim(), fee = parseFloat(x.fee);
+    if (!name || !isFinite(fee) || fee < 0) return;
+    const id = (typeof x.id === 'string' && x.id) ? x.id : eqNewId();
+    if (seen.has(id)) return;
+    seen.add(id);
+    out.push({ id, name, fee });
+  });
+  return out.length ? out : null;
+}
+
+/* ---- Quote table rows ---- */
+function eqFeeRow(name, rate, qty, id){
   const tb = $('eqFees');
   const i = _eqSeq++;
   const tr = document.createElement('tr');
+  tr.dataset.id = (id && eqById(id)) ? id : ((eqByName(name) || {}).id || '');
   tr.innerHTML =
-    `<td><input class="wide eq-name" data-g="eqFees" data-i="${i}" data-f="name" value="${(name||'').replace(/"/g,'&quot;')}" placeholder="Equipment"></td>` +
-    `<td class="num"><input class="rate" type="number" min="0" step="0.01" data-g="eqFees" data-i="${i}" data-f="rate" value="${rate!=null&&rate!==''?rate:''}" placeholder="fee"></td>` +
-    `<td class="num"><input class="qty" type="number" min="0" step="1" data-g="eqFees" data-i="${i}" data-f="qty" value="${qty!=null&&qty!==''?qty:''}"></td>` +
+    `<td><input class="wide eq-name" data-g="eqFees" data-i="${i}" data-f="name" value="${eqEsc(name)}" placeholder="Equipment"><div class="eq-badges noprint"></div></td>` +
+    `<td class="num"><input class="rate" type="number" min="0" step="0.01" data-g="eqFees" data-i="${i}" data-f="rate" value="${rate != null && rate !== '' ? rate : ''}" placeholder="fee"></td>` +
+    `<td class="num"><div class="eq-qty"><button class="small noprint eq-dec" type="button" tabindex="-1" aria-label="One less" title="One less">&minus;</button>` +
+    `<input class="qty" type="number" min="0" step="1" data-g="eqFees" data-i="${i}" data-f="qty" value="${qty != null && qty !== '' ? qty : ''}">` +
+    `<button class="small noprint eq-inc" type="button" tabindex="-1" aria-label="One more" title="One more">+</button></div></td>` +
     `<td class="num rowtot">$0.00</td>` +
-    `<td class="num noprint"><button class="small" type="button" title="Remove" onclick="this.closest('tr').remove(); recalc()">&times;</button></td>`;
+    `<td class="num noprint"><button class="small" type="button" title="Remove from this quote" onclick="this.closest('tr').remove(); eqUpdateUI(); recalc()">&times;</button></td>`;
   tb.appendChild(tr);
+  eqRefreshRow(tr);
+  return tr;
 }
 function buildEqFees(items){
   const tb = $('eqFees'); tb.innerHTML = ''; _eqSeq = 0;
-  (items || EQ_FEES).forEach(it => {
+  (items || []).forEach(it => {
     const [name, rate] = Array.isArray(it) ? it : [it, ''];
     eqFeeRow(name, rate, (it && it.qty) || '');
   });
+  eqUpdateUI();
 }
+/* Blank custom row (kept for compatibility with older callers). */
 function addEqFee(){
-  eqFeeRow('', '', '');
+  const tr = eqFeeRow('', '', 1, '');
+  const ni = tr.querySelector('.eq-name'); if (ni) ni.focus();
+  eqUpdateUI(); recalc();
+}
+
+/* ---- Row state versus the master list ---- */
+function eqRowState(tr){
+  const name = ((tr.querySelector('.eq-name') || {}).value || '').trim();
+  const feeRaw = ((tr.querySelector('input[data-f="rate"]') || {}).value || '');
+  const fee = eqNum(feeRaw);
+  const m = eqById(tr.dataset.id) || eqByName(name);
+  return { name, fee, feeRaw, m };
+}
+function eqRefreshRow(tr){
+  const s = eqRowState(tr), box = tr.querySelector('.eq-badges');
+  if (!box) return;
+  const b = [];
+  if (s.name || s.feeRaw !== ''){
+    if (!s.m){
+      b.push(s.fee == null ? ['', 'Needs a fee'] : ['new', 'New — not in master']);
+    } else {
+      if (s.name && s.name !== s.m.name) b.push(['ren', 'Renamed (master: ' + s.m.name + ')']);
+      if (s.fee != null && Math.abs(s.fee - s.m.fee) >= 0.005) b.push(['', 'Price differs from master (' + money(s.m.fee) + ')']);
+    }
+  }
+  box.innerHTML = b.map(x => `<span class="eq-badge ${x[0]}">${eqEsc(x[1])}</span>`).join('');
+}
+function eqRowChanges(){
+  const adds = [], prices = [], renames = [], incomplete = [], conflicts = [];
+  const seenNew = new Set();
+  document.querySelectorAll('#eqFees tr').forEach(tr => {
+    const s = eqRowState(tr);
+    if (!s.name) return;
+    if (!s.m){
+      if (s.fee == null || s.fee < 0){ incomplete.push(s.name); return; }
+      const k = eqKey(s.name);
+      if (seenNew.has(k)) return;
+      seenNew.add(k);
+      adds.push({ tr, name:s.name, fee:s.fee });
+      return;
+    }
+    if (s.name !== s.m.name){
+      const clash = EQ_MASTER.find(x => x.id !== s.m.id && eqKey(x.name) === eqKey(s.name));
+      if (clash){ conflicts.push(s.name); return; }
+      renames.push({ tr, id:s.m.id, from:s.m.name, to:s.name });
+    }
+    if (s.fee != null && Math.abs(s.fee - s.m.fee) >= 0.005)
+      prices.push({ tr, id:s.m.id, name:s.name, from:s.m.fee, to:s.fee });
+  });
+  return { adds, prices, renames, incomplete, conflicts };
+}
+function eqUpdateUI(){
+  const tb = $('eqFees'); if (!tb) return;
+  const rows = tb.querySelectorAll('tr');
+  rows.forEach(eqRefreshRow);
+  const tbl = $('eqTable'); if (tbl) tbl.hidden = !rows.length;
+  const em = $('eqEmpty'); if (em) em.hidden = rows.length > 0;
+  const sv = $('eqSaveMaster'), mg = $('eqManage'), hint = $('eqHint');
+  if (sv) sv.hidden = !EQ_CAN_SAVE;
+  if (mg) mg.hidden = !EQ_CAN_SAVE;
+  if (hint) hint.textContent = EQ_CAN_SAVE
+    ? 'Edits on this quote stay on this quote. Use Save changes to master to keep new equipment or price updates for every new quote.'
+    : 'Edits on this quote stay on this quote. Managers and administrators can save changes to the master list.';
+  if (sv){
+    const c = eqRowChanges(), n = c.adds.length + c.prices.length + c.renames.length;
+    const p = $('eqPend'); if (p) p.textContent = n ? ' (' + n + ')' : '';
+  }
+}
+function eqAfterMasterChange(){
+  document.querySelectorAll('#eqFees tr').forEach(tr => {
+    if (!eqById(tr.dataset.id)) tr.dataset.id = (eqByName((tr.querySelector('.eq-name') || {}).value) || {}).id || '';
+  });
+  eqUpdateUI();
+}
+
+/* ---- Add / +1 ---- */
+function eqBump(inp, d){
+  const v = Math.max(0, (parseFloat(inp.value) || 0) + d);
+  inp.value = v;
+  inp.dispatchEvent(new Event('input', { bubbles:true }));
+}
+function eqFlash(tr){
+  tr.classList.add('eq-flash');
+  try { tr.scrollIntoView({ block:'nearest' }); } catch(_){}
+  setTimeout(() => tr.classList.remove('eq-flash'), 900);
+}
+function eqLive(msg){
+  const el = $('eqLive'); if (!el) return;
+  el.textContent = msg;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.textContent = ''; }, 3500);
+}
+function eqAddFromMaster(m){
+  let tr = [...document.querySelectorAll('#eqFees tr')].find(r => r.dataset.id === m.id);
+  let q;
+  if (tr){
+    const inp = tr.querySelector('input[data-f="qty"]');
+    eqBump(inp, 1);
+    q = inp.value;
+  } else {
+    tr = eqFeeRow(m.name, m.fee, 1, m.id);
+    q = 1;
+    eqUpdateUI(); recalc();
+  }
+  eqFlash(tr);
+  eqLive('Added ' + m.name + ' — qty ' + q);
+}
+function eqAddCustom(name){
+  const tr = eqFeeRow(name, '', 1, '');
+  eqUpdateUI(); recalc(); eqFlash(tr);
+  const f = tr.querySelector('input[data-f="rate"]'); if (f) f.focus();
+  eqLive('Added ' + name + ' as new equipment — enter its fee');
+}
+
+/* ---- Search box ---- */
+function eqSearchHits(q){
+  const tokens = eqNorm(q).split(' ').filter(Boolean);
+  if (!tokens.length) return EQ_MASTER.map((m, i) => ({ m, s:0, i }));
+  const out = [];
+  EQ_MASTER.forEach((m, i) => {
+    const n = ' ' + eqNorm(m.name);
+    let s = 0, ok = true;
+    for (const t of tokens){
+      if (n.includes(' ' + t)) s += (n.indexOf(' ' + t) === 0 ? 0 : 1);
+      else if (n.includes(t)) s += 3;
+      else { ok = false; break; }
+    }
+    if (ok) out.push({ m, s, i });
+  });
+  return out.sort((a, b) => a.s - b.s || a.i - b.i);
+}
+function eqSearchInit(){
+  const inp = $('eqSearch'), box = $('eqResults');
+  if (!inp || !box) return;
+  let items = [], hi = -1;
+  const inQuote = id => {
+    const tr = [...document.querySelectorAll('#eqFees tr')].find(r => r.dataset.id === id);
+    return tr ? (parseFloat(tr.querySelector('input[data-f="qty"]').value) || 0) : 0;
+  };
+  const close = () => { box.hidden = true; inp.setAttribute('aria-expanded', 'false'); hi = -1; };
+  function render(){
+    const q = inp.value.trim();
+    items = eqSearchHits(q).slice(0, q ? 8 : 60).map(h => ({ kind:'m', m:h.m }));
+    if (q && !eqByName(q)) items.push({ kind:'new', name:q });
+    hi = q && items.length ? 0 : -1;
+    paint();
+    box.hidden = false;
+    inp.setAttribute('aria-expanded', 'true');
+  }
+  function paint(){
+    box.innerHTML = items.map((it, k) => {
+      if (it.kind === 'new') return `<div class="eqr eqr-new${k === hi ? ' on' : ''}" role="option" data-k="${k}"><span>+ Add &ldquo;${eqEsc(it.name)}&rdquo; as new equipment</span></div>`;
+      const n = inQuote(it.m.id);
+      return `<div class="eqr${k === hi ? ' on' : ''}" role="option" data-k="${k}"><span>${eqEsc(it.m.name)}</span><span class="eqr-fee">${money(it.m.fee)}${n ? '<em>×' + n + ' on quote</em>' : ''}</span></div>`;
+    }).join('') || '<div class="eqr"><span>No equipment in the master list.</span></div>';
+    const on = box.querySelector('.eqr.on'); if (on) on.scrollIntoView({ block:'nearest' });
+  }
+  function choose(k){
+    const it = items[k]; if (!it) return;
+    if (it.kind === 'new') eqAddCustom(it.name); else eqAddFromMaster(it.m);
+    inp.value = '';
+    close();
+    if (it.kind === 'm') inp.focus();
+  }
+  inp.addEventListener('input', render);
+  inp.addEventListener('focus', () => { if (!inp.value.trim()) render(); });
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown'){ e.preventDefault(); if (box.hidden) render(); else { hi = Math.min(items.length - 1, hi + 1); paint(); } }
+    else if (e.key === 'ArrowUp'){ e.preventDefault(); if (!box.hidden){ hi = Math.max(0, hi - 1); paint(); } }
+    else if (e.key === 'Enter'){ e.preventDefault(); if (!box.hidden && hi >= 0) choose(hi); }
+    else if (e.key === 'Escape'){ if (inp.value){ inp.value = ''; } close(); }
+  });
+  box.addEventListener('mousedown', e => e.preventDefault());
+  box.addEventListener('click', e => { const r = e.target.closest('.eqr[data-k]'); if (r) choose(+r.dataset.k); });
+  document.addEventListener('pointerdown', e => { if (!e.target.closest || !e.target.closest('.eq-search')) close(); });
+}
+
+/* ---- Master list: review window, commit, manage ---- */
+function eqReview(ch){
+  return new Promise(resolve => {
+    const perm = ch.renames.length > 0 || ch.removes.length > 0;
+    const sec = (title, rows) => rows.length ? `<div class="eqm-sec"><h4>${title} (${rows.length})</h4><ul>${rows.join('')}</ul></div>` : '';
+    const wrap = document.createElement('div');
+    wrap.className = 'eqm noprint';
+    wrap.style.zIndex = '2100';
+    wrap.innerHTML =
+      `<div class="eqm-bd"></div><div class="eqm-card" role="dialog" aria-modal="true" aria-label="Review master list changes">` +
+      `<div class="eqm-head"><b>Review master list changes</b><span>${perm ? 'These changes are permanent for all new quotes.' : 'Every new quote will start from the updated list.'}</span></div>` +
+      `<div class="eqm-body">` +
+        sec('New equipment', ch.adds.map(x => `<li>${eqEsc(x.name)} <b>${money(x.fee)}</b></li>`)) +
+        sec('Price updates', ch.prices.map(x => `<li>${eqEsc(x.name)}: ${money(x.from)} &rarr; <b>${money(x.to)}</b></li>`)) +
+        sec('Name changes', ch.renames.map(x => `<li><s>${eqEsc(x.from)}</s> &rarr; <b>${eqEsc(x.to)}</b></li>`)) +
+        sec('Removed from master', ch.removes.map(x => `<li>${eqEsc(x.name)} (${money(x.fee)})</li>`)) +
+        (perm ? `<div class="eqm-warn">Permanent change. Renaming or removing equipment updates the master list for every new quote, for everyone. Quotes already saved keep the names they have now.</div>` +
+                `<label class="eqm-ack"><input type="checkbox" id="eqmAck"><span>I approve these changes and understand they are permanent.</span></label>` : '') +
+      `</div><div class="eqm-foot"><button type="button" class="eqm-cancel">Cancel</button>` +
+      `<button type="button" class="primary eqm-go"${perm ? ' disabled' : ''}>${perm ? 'Approve and save' : 'Save to master'}</button></div></div>`;
+    document.body.appendChild(wrap);
+    const go = wrap.querySelector('.eqm-go'), ack = wrap.querySelector('#eqmAck');
+    const done = v => { document.removeEventListener('keydown', onKey, true); wrap.remove(); resolve(v); };
+    const onKey = e => { if (e.key === 'Escape'){ e.stopPropagation(); done(false); } };
+    document.addEventListener('keydown', onKey, true);
+    if (ack) ack.addEventListener('change', () => { go.disabled = !ack.checked; });
+    wrap.querySelector('.eqm-bd').addEventListener('click', () => done(false));
+    wrap.querySelector('.eqm-cancel').addEventListener('click', () => done(false));
+    go.addEventListener('click', () => { if (!go.disabled) done(true); });
+    (ack || go).focus();
+  });
+}
+function eqCommit(upserts, deletes){
+  return new Promise(res => {
+    if (!(window.parent && window.parent !== window)){ res({ ok:false, error:'The master list needs the hub shell. Open this from Quick Hub.' }); return; }
+    const reqId = 'eq' + Date.now() + Math.random().toString(36).slice(2, 6);
+    const t = setTimeout(() => { delete _eqPending[reqId]; res({ ok:false, error:'Timed out saving the master list.' }); }, 20000);
+    _eqPending[reqId] = r => { clearTimeout(t); res(r); };
+    window.parent.postMessage({ fdec:true, type:'save-master-equip', reqId, base:EQ_MASTER, upserts, deletes }, '*');
+  });
+}
+function eqApplySaved(items){
+  const list = eqNormalizeList(items);
+  if (list) EQ_MASTER = list;
+  eqAfterMasterChange();
+}
+/* Save new items, price updates, and renames found on the quote rows. */
+async function eqSaveFromQuote(){
+  if (!EQ_CAN_SAVE) return;
+  const c = eqRowChanges();
+  if (c.conflicts.length){ matMasterToast('"' + c.conflicts[0] + '" already exists in the master list. Use a different name.', true); return; }
+  if (!c.adds.length && !c.prices.length && !c.renames.length){
+    matMasterToast(c.incomplete.length ? 'Enter a fee for "' + c.incomplete[0] + '" before saving it.' : 'Nothing to save. This quote matches the master list.', !!c.incomplete.length);
+    return;
+  }
+  const ok = await eqReview({ adds:c.adds, prices:c.prices, renames:c.renames, removes:[] });
+  if (!ok) return;
+  const next = new Map(EQ_MASTER.map(m => [m.id, Object.assign({}, m)]));
+  const touched = new Set();
+  c.renames.forEach(r => { next.get(r.id).name = r.to; touched.add(r.id); });
+  c.prices.forEach(p => { next.get(p.id).fee = p.to; touched.add(p.id); });
+  c.adds.forEach(a => { const id = eqNewId(); next.set(id, { id, name:a.name, fee:a.fee }); touched.add(id); });
+  const upserts = [...touched].map(id => next.get(id));
+  matMasterToast('Saving the master equipment list…');
+  const r = await eqCommit(upserts, []);
+  if (r.ok){ eqApplySaved(r.items); matMasterToast('Saved to the master equipment list. New quotes will start from it.'); }
+  else matMasterToast(r.error || 'Could not save the master equipment list.', true);
+}
+/* Edit the whole master list: names, fees, additions, removals. */
+function eqManage(){
+  if (!EQ_CAN_SAVE) return;
+  const work = EQ_MASTER.map(m => ({ id:m.id, name:m.name, fee:String(m.fee), orig:m, del:false, isNew:false }));
+  const wrap = document.createElement('div');
+  wrap.className = 'eqm noprint';
+  wrap.innerHTML =
+    `<div class="eqm-bd"></div><div class="eqm-card" role="dialog" aria-modal="true" aria-label="Manage master equipment list">` +
+    `<div class="eqm-head"><b>Manage master equipment list</b><span>Edit names and fees, add equipment, or remove it. Nothing changes until you review and save.</span></div>` +
+    `<div class="eqm-body"><input type="search" class="wide" id="eqmFilter" placeholder="Filter list" autocomplete="off">` +
+    `<table class="eqm-list"><thead><tr><th>Equipment</th><th class="num">Fee</th><th></th></tr></thead><tbody id="eqmRows"></tbody></table>` +
+    `<button type="button" class="small" id="eqmAdd" style="margin-top:8px">+ Add equipment</button><p class="eqm-err" id="eqmErr" role="alert"></p></div>` +
+    `<div class="eqm-foot"><button type="button" class="eqm-cancel">Cancel</button><button type="button" class="primary eqm-go">Review and save</button></div></div>`;
+  document.body.appendChild(wrap);
+  const tb = wrap.querySelector('#eqmRows'), flt = wrap.querySelector('#eqmFilter'), err = wrap.querySelector('#eqmErr');
+  function applyFilter(){
+    const t = eqNorm(flt.value).split(' ').filter(Boolean);
+    tb.querySelectorAll('tr').forEach(tr => {
+      const w = work[+tr.dataset.k], n = eqNorm(w.name);
+      tr.style.display = (!t.length || w.isNew || t.every(x => n.includes(x))) ? '' : 'none';
+    });
+  }
+  function render(){
+    tb.innerHTML = work.map((w, k) =>
+      `<tr data-k="${k}" class="${w.del ? 'eqm-del' : ''}"><td><input class="wide" data-f="name" value="${eqEsc(w.name)}" placeholder="Equipment name"></td>` +
+      `<td class="num"><input class="rate" type="number" min="0" step="0.01" data-f="fee" value="${eqEsc(w.fee)}" placeholder="fee"></td>` +
+      `<td class="num"><button type="button" class="small" data-act="del">${w.del ? 'Undo' : 'Remove'}</button></td></tr>`).join('');
+    applyFilter();
+  }
+  render();
+  const done = () => { document.removeEventListener('keydown', onKey, true); wrap.remove(); };
+  const onKey = e => { if (e.key === 'Escape' && !document.querySelector('.eqm[style*="2100"]')){ e.stopPropagation(); done(); } };
+  document.addEventListener('keydown', onKey, true);
+  flt.addEventListener('input', applyFilter);
+  tb.addEventListener('input', e => {
+    const tr = e.target.closest('tr'); if (!tr) return;
+    work[+tr.dataset.k][e.target.dataset.f] = e.target.value;
+  });
+  tb.addEventListener('click', e => {
+    const b = e.target.closest('[data-act="del"]'); if (!b) return;
+    const k = +b.closest('tr').dataset.k, w = work[k];
+    if (w.isNew) work.splice(k, 1); else w.del = !w.del;
+    render();
+  });
+  wrap.querySelector('#eqmAdd').addEventListener('click', () => {
+    flt.value = '';
+    work.push({ id:eqNewId(), name:'', fee:'', orig:null, del:false, isNew:true });
+    render();
+    const last = tb.lastElementChild; if (last){ last.scrollIntoView({ block:'nearest' }); last.querySelector('input').focus(); }
+  });
+  wrap.querySelector('.eqm-bd').addEventListener('click', done);
+  wrap.querySelector('.eqm-cancel').addEventListener('click', done);
+  wrap.querySelector('.eqm-go').addEventListener('click', async () => {
+    err.textContent = '';
+    const names = new Set();
+    let live = 0;
+    for (const w of work){
+      if (w.del) continue;
+      const nm = w.name.trim();
+      if (!nm && w.isNew) continue;
+      if (!nm){ err.textContent = 'Every item needs a name.'; return; }
+      const fee = eqNum(w.fee);
+      if (fee == null || fee < 0){ err.textContent = '"' + nm + '" needs a valid fee.'; return; }
+      const k = eqKey(nm);
+      if (names.has(k)){ err.textContent = '"' + nm + '" appears more than once.'; return; }
+      names.add(k); live++;
+    }
+    if (!live){ err.textContent = 'Keep at least one item in the master list.'; return; }
+    const adds = [], prices = [], renames = [], removes = [], upserts = [], deletes = [];
+    work.forEach(w => {
+      const nm = w.name.trim(), fee = eqNum(w.fee);
+      if (w.isNew){ if (!nm) return; adds.push({ name:nm, fee }); upserts.push({ id:w.id, name:nm, fee }); return; }
+      if (w.del){ removes.push({ name:w.orig.name, fee:w.orig.fee }); deletes.push(w.id); return; }
+      let changed = false;
+      if (nm !== w.orig.name){ renames.push({ from:w.orig.name, to:nm }); changed = true; }
+      if (Math.abs(fee - w.orig.fee) >= 0.005){ prices.push({ name:nm, from:w.orig.fee, to:fee }); changed = true; }
+      if (changed) upserts.push({ id:w.id, name:nm, fee });
+    });
+    if (!upserts.length && !deletes.length){ err.textContent = 'No changes to save.'; return; }
+    const ok = await eqReview({ adds, prices, renames, removes });
+    if (!ok) return;
+    const goBtn = wrap.querySelector('.eqm-go'); goBtn.disabled = true;
+    const r = await eqCommit(upserts, deletes);
+    goBtn.disabled = false;
+    if (r.ok){ eqApplySaved(r.items); done(); matMasterToast('Saved to the master equipment list. New quotes will start from it.'); }
+    else err.textContent = r.error || 'Could not save the master equipment list.';
+  });
+  flt.focus();
+}
+
+function eqInit(){
   const tb = $('eqFees');
-  const last = tb.lastElementChild;
-  const ni = last && last.querySelector('.eq-name'); if (ni) ni.focus();
-  recalc();
+  tb.addEventListener('click', e => {
+    const b = e.target.closest('.eq-dec, .eq-inc'); if (!b) return;
+    const inp = b.closest('tr').querySelector('input[data-f="qty"]');
+    eqBump(inp, b.classList.contains('eq-inc') ? 1 : -1);
+  });
+  tb.addEventListener('input', e => {
+    const tr = e.target.closest('tr'); if (tr) eqRefreshRow(tr);
+    if (e.target.matches && e.target.matches('input[data-f="qty"]')) return;
+    eqUpdateUI();
+  });
+  eqSearchInit();
+  const sv = $('eqSaveMaster'), mg = $('eqManage');
+  if (sv) sv.addEventListener('click', eqSaveFromQuote);
+  if (mg) mg.addEventListener('click', eqManage);
+  eqUpdateUI();
+  /* Ask the hub shell for the shared master list. */
+  const req = () => { if (window.parent && window.parent !== window) window.parent.postMessage({ fdec:true, type:'request-master-equip' }, '*'); };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(req, 120));
+  else setTimeout(req, 120);
 }
 
 function addMoneyRow(containerId, placeholder, name, val){
@@ -1816,6 +2264,7 @@ buildQtyTable('trucks','trucks',TRUCKS,true);
 buildQtyTable('perdiem','perdiem',PERDIEM,true);
 buildQtyTable('fdecRental','fdecRental',FDEC_RENTAL,true);
 buildEqFees();
+eqInit();
 buildQtyTable('itmSP','itmSP',ITM_LEFT,true);
 buildQtyTable('itmAL','itmAL',ITM_RIGHT,true);
 buildQtyTable('backflow','backflow',BACKFLOW,true);
@@ -2539,6 +2988,7 @@ function collectDraft(){
   d.dynamic.subQuotes   = grabMoney('subQuotes');
   /* FDEC equipment fees (editable rows) */
   d.dynamic.eqFees = [...document.querySelectorAll('#eqFees tr')].map(tr => ({
+    id: tr.dataset.id || '',
     name: (tr.querySelector('.eq-name')||{}).value || '',
     rate: (tr.querySelector('input[data-f="rate"]')||{}).value || '',
     qty:  (tr.querySelector('input[data-f="qty"]')||{}).value || ''
@@ -2574,9 +3024,10 @@ function applyDraft(d){
   /* FDEC equipment fees: rebuild from saved rows, or defaults if absent. */
   if (d.dynamic.eqFees && d.dynamic.eqFees.length){
     const tb = $('eqFees'); tb.innerHTML = ''; _eqSeq = 0;
-    d.dynamic.eqFees.forEach(r => eqFeeRow(r.name, r.rate, r.qty));
+    d.dynamic.eqFees.forEach(r => eqFeeRow(r.name, r.rate, r.qty, r.id));
+    eqUpdateUI();
   } else {
-    buildEqFees();
+    buildEqFees(EQ_FEES);
     /* Backward compatibility: older drafts (saved before equipment became
        editable) stored quantities/fees by position as g:eqFees:N:qty and
        g:eqFees:N:rate in d.fields. Map those onto the default rows by index.
@@ -2594,6 +3045,9 @@ function applyDraft(d){
         if (rEl) rEl.value = d.fields[rKey];
       }
     });
+    /* Only keep rows that carried a quantity; the catalog now lives in the search box. */
+    rows.forEach(tr => { const q = tr.querySelector('input[data-f="qty"]'); if (!q || !num(q)) tr.remove(); });
+    eqUpdateUI();
     if (recovered) setTimeout(() => setStatus(
       'Draft loaded. Recovered ' + recovered + ' equipment quantit' + (recovered===1?'y':'ies') +
       ' from an older draft — please verify the FDEC Equipment Fees section.'), 60);
@@ -2725,6 +3179,18 @@ window.addEventListener('message', function(e){
     // Shared master price list. Use it as the STARTING catalog for a new quote
     // only — never overwrite a loaded quote or edits already in progress.
     if (!window.__quoteCatalogLocked && Array.isArray(d.data) && d.data.length){ try { applyMaterialCatalog(d.data); } catch(ex){ console.error(ex); } }
+    return;
+  }
+  if (d.type === 'master-equip'){
+    EQ_CAN_SAVE = !!d.canSave;
+    const list = eqNormalizeList(d.data);
+    if (list) EQ_MASTER = list;
+    eqAfterMasterChange();
+    return;
+  }
+  if (d.type === 'master-equip-saved'){
+    const cb = _eqPending[d.reqId];
+    if (cb){ delete _eqPending[d.reqId]; cb(d); }
     return;
   }
   if (d.type === 'master-catalog-saved'){ matMasterToast(d.ok ? 'Saved to the master price list \u2014 new quotes will start from it.' : 'Could not save the master price list.', !d.ok); return; }
@@ -7613,6 +8079,18 @@ window.addEventListener('message', function(e){
     else sendMaster(null);
     return;
   }
+  if (d.type === 'request-master-equip'){
+    var sendEq = function(items, can){ var f=document.getElementById('view-quote'); if (f && f.contentWindow) f.contentWindow.postMessage({ fdec:true, type:'master-equip', data: items||null, canSave: !!can }, '*'); };
+    if (window.fdecLoadEquipMaster){ window.fdecLoadEquipMaster().then(function(r){ sendEq(r.items, r.canSave); }); }
+    else sendEq(null, false);
+    return;
+  }
+  if (d.type === 'save-master-equip'){
+    var replyEq = function(p){ p.fdec = true; p.type = 'master-equip-saved'; p.reqId = d.reqId; var f=document.getElementById('view-quote'); if (f && f.contentWindow) f.contentWindow.postMessage(p, '*'); };
+    if (window.fdecSaveEquipMaster){ window.fdecSaveEquipMaster(d.base, d.upserts, d.deletes).then(replyEq); }
+    else replyEq({ ok:false, error:'The master list is not available right now.' });
+    return;
+  }
   if (d.type === 'save-master-catalog'){
     if (window.fdecSaveMasterCatalog){ window.fdecSaveMasterCatalog(d.data).then(function(ok){ if(ok){ window.__fdecMasterCatalog = d.data; window.__fdecMasterLoaded = true; } var f=document.getElementById('view-quote'); if (f && f.contentWindow) f.contentWindow.postMessage({ fdec:true, type:'master-catalog-saved', ok:!!ok }, '*'); }); }
     return;
@@ -8057,6 +8535,55 @@ window.fdecResetMasterCatalog = async function(){
     await deleteDoc(doc(getFirestore(getApp("fdec")), "config", "materialCatalog"));
     return true;
   }catch(err){ console.warn("master catalog reset failed", err); return false; }
+};
+/* ---- Shared master equipment list (config/equipmentFees) ----
+   Items are { id, name, fee }. Everyone can read it; only managers and admins
+   can write it. Saves are merged into the latest stored list by item id, so two
+   people saving at once do not overwrite each other's items. */
+function fdecCanManageEquip(){
+  var a = window.FDECAuth; if (!a) return false;
+  if (a.isAdmin) return true;
+  var r = a.profile && a.profile.role;
+  return r === "manager" || r === "admin";
+}
+window.fdecLoadEquipMaster = async function(){
+  var out = { items:null, canSave:false };
+  try{
+    if (window.FDECAuth && window.FDECAuth.ready){ try{ await window.FDECAuth.ready; }catch(_){} }
+    out.canSave = fdecCanManageEquip();
+    var snap = await getDoc(doc(getFirestore(getApp("fdec")), "config", "equipmentFees"));
+    if (snap.exists()){ var dd = snap.data(); if (Array.isArray(dd.items)) out.items = dd.items; }
+  }catch(err){ console.warn("equipment master load failed", err); }
+  return out;
+};
+window.fdecSaveEquipMaster = async function(base, upserts, deletes){
+  try{
+    if (window.FDECAuth && window.FDECAuth.ready){ try{ await window.FDECAuth.ready; }catch(_){} }
+    if (!fdecCanManageEquip()) return { ok:false, error:"Only managers and administrators can change the master equipment list." };
+    var ref = doc(getFirestore(getApp("fdec")), "config", "equipmentFees");
+    var snap = await getDoc(ref);
+    var clean = function(x){
+      if (!x || typeof x.name !== "string") return null;
+      var name = x.name.trim().slice(0, 120), fee = Math.round(parseFloat(x.fee) * 100) / 100;
+      if (!name || !isFinite(fee) || fee < 0) return null;
+      return { id: (typeof x.id === "string" && x.id) ? x.id.slice(0, 40) : ("n" + Date.now().toString(36)), name: name, fee: fee };
+    };
+    var src = (snap.exists() && Array.isArray(snap.data().items)) ? snap.data().items : (Array.isArray(base) ? base : []);
+    var items = src.map(clean).filter(Boolean);
+    var dels = {}; (deletes || []).forEach(function(id){ dels[id] = true; });
+    items = items.filter(function(x){ return !dels[x.id]; });
+    (upserts || []).forEach(function(u){
+      var c = clean(u); if (!c) return;
+      var i = items.findIndex(function(x){ return x.id === c.id; });
+      if (i < 0) i = items.findIndex(function(x){ return x.name.toLowerCase() === c.name.toLowerCase(); });
+      if (i >= 0) items[i] = { id: items[i].id, name: c.name, fee: c.fee }; else items.push(c);
+    });
+    if (!items.length) return { ok:false, error:"The master list cannot be empty." };
+    var user = (window.FDECAuth && window.FDECAuth.user) || null, profile = (window.FDECAuth && window.FDECAuth.profile) || null;
+    var who = (profile && profile.name) || (user && user.email) || "";
+    await setDoc(ref, { items: items, updatedAt: serverTimestamp(), updatedBy: who });
+    return { ok:true, items: items };
+  }catch(err){ console.warn("equipment master save failed", err); return { ok:false, error:"Could not save the master equipment list (" + ((err && err.code) || "error") + ")." }; }
 };
 window.__fdecMasterLoaded = false; window.__fdecMasterCatalog = null;
 (async function(){ try{ window.__fdecMasterCatalog = await window.fdecLoadMasterCatalog(); }catch(_){} window.__fdecMasterLoaded = true; })();
