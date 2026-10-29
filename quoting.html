@@ -336,6 +336,10 @@ body{display:flex !important; flex-direction:column; min-height:0; overflow:hidd
   .eq-search input:focus{outline:2px solid var(--red); outline-offset:1px; border-color:var(--red)}
   .eq-results{position:absolute; left:0; right:0; top:calc(100% + 3px); background:#fff; border:1px solid var(--steel); border-radius:6px; box-shadow:0 8px 24px rgba(0,0,0,.18); max-height:280px; overflow-y:auto; z-index:30}
   .eq-results[hidden]{display:none}
+  /* Let equipment suggestions extend beyond the card above following sections. */
+  #sec-eqfees[open]{overflow:visible;position:relative;}
+  #sec-eqfees[open]:focus-within{z-index:40;}
+
   .eqr{display:flex; justify-content:space-between; gap:10px; padding:9px 12px; cursor:pointer; font-size:15px; border-bottom:1px solid #edeff2}
   .eqr:last-child{border-bottom:none}
   .eqr:hover, .eqr.on{background:var(--soft)}
