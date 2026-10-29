@@ -39,7 +39,6 @@
   }
   h1{font-size:17px;margin:0;font-weight:700;}
   .sub{color:var(--muted);font-size:12px;margin-top:1px;}
-  .search-wrap{margin-top:12px;position:relative;}
   #search{
     width:100%;padding:12px 14px 12px 40px;font-size:16px;background:var(--panel);
     border:1px solid var(--line);border-radius:var(--radius);color:var(--text);outline:none;
@@ -116,6 +115,12 @@ main,.library-intro{position:relative;z-index:1}.bg-layer{pointer-events:none}bo
 /* Mobile field use: avoid text clipping, tiny targets and iOS form zoom. */
 .card-title,.guide-title{min-width:0;overflow-wrap:anywhere}.card-top{min-width:0}.card-desc,.ref-note,.ref-body,.resource-meta{overflow-wrap:anywhere}.tbl-scroll{max-width:100%}#search{padding-right:76px}.library-filters select{font-size:16px;min-height:44px}.cat,#clear{min-height:44px}.ref-block>summary{min-height:48px}.resource-links a{min-height:44px;display:inline-flex;align-items:center}.section-title{flex-wrap:wrap}.resource-table summary{padding:10px 0;min-height:44px;cursor:pointer}
 @media(max-width:600px){body>header:not(.fdec-ubar){position:relative;top:auto}.library-filters label{min-width:0;flex:1 1 135px}.library-filters select{max-width:100%}.card{padding:12px}.card-top{gap:7px}.badge{font-size:9px}.cats{padding-bottom:5px}.resource-links{gap:7px}.resource-links a{max-width:100%;overflow-wrap:anywhere}.ref-body{padding:0 10px 12px}.library-intro{padding-left:12px;padding-right:12px}.ref-body .tbl-scroll{width:100%}}
+
+/* Topic-led library; no search or manufacturer/type filters. */
+.library-shell{position:relative;z-index:1;max-width:1260px;margin:auto;padding:26px 24px 40px}.library-heading{color:#fff;margin-bottom:24px}.library-heading h1{font-size:clamp(26px,3vw,36px);line-height:1.15;margin:7px 0 10px;letter-spacing:-.5px}.library-heading p{color:#e1e9f1;font-size:14px;margin:0}.library-eyebrow{font-size:10px;letter-spacing:1.6px;font-weight:800;color:#67829b}.library-heading .library-eyebrow{color:#d3e1ed}.library-layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:18px;align-items:start}.library-sidebar{min-width:0;background:#fff;border:1px solid var(--line);border-radius:13px;padding:12px;position:sticky;top:16px}.topic-drawer>summary{padding:7px 8px 12px;font-size:11px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;color:#536b82;list-style:none}.topic-drawer>summary::-webkit-details-marker{display:none}#cats{display:grid;gap:3px;max-height:66vh;overflow-y:auto;padding-right:3px}#cats button{display:flex;gap:6px;align-items:center;justify-content:space-between;border:0;background:transparent;text-align:left;border-radius:7px;color:var(--text);font-family:inherit;font-size:12px;line-height:1.35;font-weight:500;padding:10px 9px;min-height:42px;cursor:pointer}#cats button:hover{background:#f0f5fa}#cats button[aria-current=page]{background:#173b60;color:white}#cats button span{font-size:10px;color:#5a728a;background:#edf2f7;border-radius:4px;padding:1px 5px}#cats button[aria-current=page] span{background:#ffffff22;color:white}.troubleshooting-link{display:block;padding:13px 8px 3px;border-top:1px solid var(--line);margin-top:12px;color:#245d8c;text-decoration:none;font-size:11px;min-height:44px}.library-content{min-width:0;width:100%;max-width:none;padding:24px;margin:0;background:#fff;border:1px solid var(--line);border-radius:13px}.content-heading{display:flex;justify-content:space-between;gap:12px;align-items:center}.content-heading h2{font-size:23px;line-height:1.25;margin:5px 0 8px;color:#183650;letter-spacing:-.3px}.resource-count{white-space:nowrap;color:#526b82;background:#edf3f8;border-radius:6px;font-size:10px;padding:5px 8px;flex:none}.topic-intro{font-size:13px;color:#5e7082;margin:0 0 20px}.topic-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.topic-tile{min-width:0;border:1px solid #d8e2ec;border-radius:10px;background:linear-gradient(145deg,#fff,#f7f9fc);padding:17px;text-align:left;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;gap:9px}.topic-tile:hover{border-color:#416e96;background:#f1f6fb}.topic-tile-top{display:flex;gap:8px;justify-content:space-between;align-items:start}.topic-tile-top b{font-size:14px;color:#1c4163;line-height:1.35}.topic-tile-top>span{font-size:10px;color:#59758e;background:#e9f0f6;border-radius:4px;padding:2px 6px}.topic-description{font-size:12px;line-height:1.5;color:#617386}.topic-open{margin-top:auto;padding-top:7px;font-size:10px;color:#2d5e88;font-weight:700}.overview-back{border:0;background:transparent;color:#446d92;font:inherit;font-size:11px;padding:0 0 8px;cursor:pointer;min-height:36px}.collection-title{font-size:12px;text-transform:uppercase;letter-spacing:.6px;margin:26px 0 12px;color:#49667f}.library-notice{background:#ffffffed;border-radius:9px;padding:12px 15px;margin-top:18px;color:#5e7182;font-size:11px}.library-notice summary{cursor:pointer;min-height:24px}.library-notice p{max-width:950px}.resource-list .card:last-child{margin-bottom:0}.library-content .ref-block{margin-bottom:10px}.library-shell button:focus-visible,.library-shell a:focus-visible,.library-shell summary:focus-visible{outline:3px solid #cf8335;outline-offset:3px}
+@media(max-width:800px){.library-shell{padding:20px 12px 35px}.library-layout{grid-template-columns:minmax(0,1fr);gap:12px}.library-sidebar{position:static;padding:8px 12px}.topic-drawer>summary{padding:11px 0;min-height:44px;cursor:pointer;list-style:disclosure-closed inside}.topic-drawer[open]>summary{list-style:disclosure-open}#cats{grid-template-columns:repeat(2,minmax(0,1fr));max-height:55vh;padding-top:8px}#cats button{min-width:0;min-height:44px;font-size:12px}.troubleshooting-link{padding:9px 0;margin-top:3px;min-height:36px}.library-content{padding:19px 16px}.content-heading h2{font-size:21px}.library-heading{margin-bottom:18px}}
+@media(max-width:460px){.topic-grid{grid-template-columns:minmax(0,1fr)}.topic-tile{padding:15px}.content-heading{align-items:start}.content-heading h2{font-size:20px}.resource-count{font-size:9px;padding:4px 6px}.topic-intro{font-size:12px}.library-heading p{font-size:12px}.topic-tile-top b{font-size:14px}}
+@media print{.library-sidebar,.library-heading,.overview-back{display:none}.library-shell{padding:0}.library-layout{display:block}.library-content{border:0}.library-notice{background:white}.topic-tile{break-inside:avoid}}
 </style>
 <script defer src="fdec-offline.js"></script>
 <meta name="fdec-page-title" content="NFPA Field Library">
@@ -125,26 +130,11 @@ main,.library-intro{position:relative;z-index:1}.bg-layer{pointer-events:none}bo
 <body>
 <div class="bg-layer" aria-hidden="true"></div>
 <a id="hubLink" href="index.html">&larr; Hub</a>
-<header>
-  <div class="brandrow">
-    <div class="logo">FD</div>
-    <div>
-      <h1>NFPA Field Library</h1>
-      <div class="sub">Fire Defense Equipment Co. &bull; Sprinkler Dept. &bull; <span id="count"></span></div>
-    </div>
-  </div>
-  <div class="search-wrap">
-    <span class="search-ico">&#128269;</span>
-    <input id="search" type="search" placeholder="Search model, SIN, manufacturer, trim, compressor, nitrogen, drawing…" aria-label="Search field library" autocomplete="off" autocapitalize="off" spellcheck="false">
-    <button id="clear">Clear</button>
-  </div>
-  <div class="library-filters"><label>Manufacturer / supplier<select id="brandFilter"><option value="">All sources</option></select></label><label>Resource type<select id="formatFilter"><option value="">All types</option><option>Photo</option><option>Diagram</option><option>Chart</option><option>Manual</option><option>Catalog</option><option>PDF</option><option>Product</option><option>Supplier</option></select></label></div>
-  <div class="cats" id="cats" aria-label="Library categories"></div><div class="library-summary" id="resultCount" aria-live="polite"></div>
-</header>
-
-<div class="library-intro"><strong>Product &amp; technical reference library</strong><br>Manufacturer photos, drawings, charts, and manuals alongside existing recall and legacy references. Tap a preview to enlarge it. Bundled previews and PDFs work offline after the app caches them; official source links require internet.</div><main id="main">
-  <div class="noresult" id="noresult">No matches. Try a manufacturer, model, doc number, or keyword.</div>
-</main>
+<div class="library-shell">
+  <div class="library-heading"><div class="library-eyebrow">FIRE DEFENSE · FIELD REFERENCE</div><h1>Product &amp; technical library</h1><p>Browse equipment, drawings, manuals, and field references by topic.</p></div>
+  <div class="library-layout"><aside class="library-sidebar"><details class="topic-drawer" open><summary>Browse library topics</summary><nav id="cats" aria-label="Library topics"></nav></details><a class="troubleshooting-link" href="troubleshooting-guide.html">Advanced troubleshooting ↗</a></aside><main id="main" class="library-content" aria-live="polite"></main></div>
+  <details class="library-notice"><summary>About these references &amp; offline documents</summary><p>Manufacturer images and documents retain their publisher attribution. Bundled previews and PDFs work offline after caching; external sources require internet. Use the current manufacturer revision and the exact model, listing, and trim before field work. Legacy and cross-reference information is an identification aid, not a substitute for verified replacement criteria.</p></details>
+</div>
 
 <script src="field-library-resources.js?v=89-library"></script>
 <script>
@@ -584,37 +574,13 @@ const SECTIONS = {
 const ORDER = ["sprinklers","air","nitrogen","testdrain","venting","risers","dry","deluge","preaction","backflow","fittings","supports","alarms","pumps","suppliers","mfr","recall","xref"];
 
 const main = document.getElementById('main');
-const noresult = document.getElementById('noresult');
-const searchEl = document.getElementById('search');
-const clearBtn = document.getElementById('clear');
-const brandFilter = document.getElementById('brandFilter');
-const formatFilter = document.getElementById('formatFilter');
-function sourceBrand(it){return it.brand || ['Reliable','Victaulic','Tyco','Viking','AGF','ARGCO','Ames','CPSC'].find(b=>it.title.toLowerCase().includes(b.toLowerCase())) || 'Other references';}
-function resourceFormats(it){return it.formats || (it.type==='pdf'?['PDF']:it.type==='ref'?['Chart']:['Product']);}
-const sourceNames = [...new Set(ITEMS.map(sourceBrand))].sort();
-sourceNames.forEach(name=>{const opt=document.createElement('option');opt.value=name;opt.textContent=name;brandFilter.appendChild(opt);});
-brandFilter.addEventListener('change',render);formatFilter.addEventListener('change',render);
+let activeCat = 'home';
 function escapeHTML(value){return String(value||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-
-let activeCat = "all";
-
-document.getElementById('count').textContent =
-  ITEMS.length + ' resources • 43 new manufacturer & supplier references';
-
 function catsBar(){
-  const bar = document.getElementById('cats');
-  bar.innerHTML = CATS.map(([id,label])=>
-    `<button type="button" class="cat${id==='all'?' active':''}" data-cat="${id}">${label}</button>`).join('');
-  bar.querySelectorAll('.cat').forEach(c=>{
-    c.addEventListener('click',()=>{
-      bar.querySelectorAll('.cat').forEach(x=>x.classList.remove('active'));
-      c.classList.add('active');
-      activeCat = c.dataset.cat;
-      render();
-    });
-  });
+ document.getElementById('cats').innerHTML = '<button type="button" data-cat="all">All resources <span>'+ITEMS.length+'</span></button>'+ORDER.map(id=>'<button type="button" data-cat="'+id+'">'+escapeHTML(SECTIONS[id])+'<span>'+ITEMS.filter(it=>it.cat===id).length+'</span></button>').join('');
+ document.getElementById('cats').addEventListener('click',e=>{const button=e.target.closest('[data-cat]');if(button)selectTopic(button.dataset.cat);});
 }
-
+function selectTopic(id){activeCat=id==='all'||id==='home'||ORDER.includes(id)?id:'home';render();history.replaceState(null,'','#'+activeCat);if(window.matchMedia('(max-width:800px)').matches)document.querySelector('.topic-drawer').open=false;}
 function badgeInfo(b){
   if(b==='recall')return['recall','Recall'];
   if(b==='mfr')return['mfr','Library'];
@@ -659,47 +625,23 @@ function cardHTML(it){
   </details>`;
 }
 
-function matches(it,q){
-  if(brandFilter.value && sourceBrand(it)!==brandFilter.value)return false;
-  if(formatFilter.value && !resourceFormats(it).includes(formatFilter.value))return false;
-  if(!q)return true;
-  const hay=(it.title+' '+(it.desc||'')+' '+(it.content||'')+' '+(it.brand||'')+' '+(it.doc||'')+' '+it.cat+' '+(it.tags||'')+' '+resourceFormats(it).join(' ')+' '+sourceBrand(it)).toLowerCase();
-  return q.split(/\s+/).every(t=>hay.includes(t));
-}
-
+const TOPIC_NOTES = {
+ sprinklers:'Product identification, selection charts and spray pattern documents.',air:'Air supplies, compressor capacity, maintenance and installation.',nitrogen:'Generators, inerting, venting and corrosion management.',testdrain:'Inspector’s tests, drain assemblies and flow-test equipment.',venting:'Air release devices, condensate and auxiliary drainage.',risers:'Floor control assemblies, valve data and technical drawings.',dry:'Dry pipe valves, trim and manufacturer manuals.',deluge:'Deluge valves, release trim and dimensional drawings.',preaction:'Preaction systems and model-specific technical resources.',backflow:'Backflow assembly identification and technical literature.',fittings:'Connections, couplings, flanges and pipe references.',supports:'Hangers, clamps, support accessories and catalogs.',alarms:'Waterflow, supervisory and pressure-switch resources.',pumps:'Fire pump equipment and supplier product references.',suppliers:'Product sourcing and fabrication support.',mfr:'Manufacturer document centers and technical libraries.',recall:'Recall notices and recalled sprinkler identification.',xref:'Legacy sprinkler identification and cross-reference tables.'
+};
 function render(){
-  const q=searchEl.value.trim().toLowerCase();
-  clearBtn.style.display=q?'block':'none';
-  let html='',any=false;
-  ORDER.forEach(sec=>{
-    if(activeCat!=='all'&&activeCat!==sec)return;
-    const items=ITEMS.filter(it=>it.cat===sec&&matches(it,q));
-    if(!items.length)return;
-    any=true;
-    html+=`<div class="section-title">${SECTIONS[sec]}</div>`;
-    html+=items.map(cardHTML).join('');
-  });
-  main.querySelectorAll('.section-title,.card,.ref-block').forEach(n=>n.remove());
-  noresult.insertAdjacentHTML('beforebegin',html);
-  noresult.style.display=any?'none':'block';
-  document.getElementById('resultCount').textContent=ITEMS.filter(it=>(activeCat==='all'||it.cat===activeCat)&&matches(it,q)).length+' of '+ITEMS.length+' resources shown';
+ document.querySelectorAll('#cats [data-cat]').forEach(button=>button.setAttribute('aria-current',button.dataset.cat===activeCat?'page':'false'));
+ if(activeCat==='home'){
+   main.innerHTML='<div class="content-heading"><div><div class="library-eyebrow">BROWSE BY TOPIC</div><h2>Find the reference you need</h2></div><span class="resource-count">'+ITEMS.length+' resources</span></div><p class="topic-intro">Choose an equipment family or reference collection. Manufacturer details, previews and original documents stay together.</p><div class="topic-grid">'+ORDER.map(id=>'<button class="topic-tile" data-open-topic="'+id+'"><span class="topic-tile-top"><b>'+escapeHTML(SECTIONS[id])+'</b><span>'+ITEMS.filter(it=>it.cat===id).length+'</span></span><span class="topic-description">'+escapeHTML(TOPIC_NOTES[id])+'</span><span class="topic-open">Browse collection →</span></button>').join('')+'</div>';
+ }else{
+   const chosen=ITEMS.filter(it=>activeCat==='all'||it.cat===activeCat);
+   main.innerHTML='<div class="content-heading"><div><button class="overview-back" data-open-topic="home">← Library overview</button><h2>'+escapeHTML(activeCat==='all'?'All resources':SECTIONS[activeCat])+'</h2></div><span class="resource-count">'+chosen.length+' resources</span></div><p class="topic-intro">'+escapeHTML(activeCat==='all'?'All manufacturer documents and field references, organized by topic.':TOPIC_NOTES[activeCat])+'</p>'+ORDER.filter(id=>activeCat==='all'||activeCat===id).map(id=>{const items=chosen.filter(it=>it.cat===id);return items.length?(activeCat==='all'?'<h3 class="collection-title">'+escapeHTML(SECTIONS[id])+'</h3>':'')+'<div class="resource-list">'+items.map(cardHTML).join('')+'</div>':'';}).join('');
+ }
 }
-
-catsBar();
+main.addEventListener('click',e=>{const button=e.target.closest('[data-open-topic]');if(button)selectTopic(button.dataset.openTopic);});
+catsBar();const initial=location.hash.slice(1);if(initial==='all'||ORDER.includes(initial))activeCat=initial;
+if(window.matchMedia('(max-width:800px)').matches)document.querySelector('.topic-drawer').open=false;
 render();
-searchEl.addEventListener('input',render);
-clearBtn.addEventListener('click',()=>{searchEl.value='';render();searchEl.focus();});
-document.addEventListener('keydown',e=>{if(e.key==='/'&&document.activeElement!==searchEl){e.preventDefault();searchEl.focus();}});
 </script>
-
-<main style="max-width:860px;margin:0 auto;padding:0 16px 40px;">
-  <div class="disclaimer">
-    <strong>Field use notice.</strong> Datasheet and notice links point to documents published by the manufacturer or CPSC; a few are hosted by distributors where the manufacturer posts no public copy. Always confirm the current revision on the manufacturer's own page before using a document for design or inspection. Cross-reference and dimensional tables are starting points — confirm K-factor, temperature, response, and laying/flange dimensions against the current product data sheet before ordering or installing. ESFR replacements are design-sensitive; treat a K-factor change as a design change. Manufacturer images and previews retain their original publisher attribution. Bundled copies show the revision in the document and are not automatically updated. Internet is required for official external resources; use the current manufacturer revision for field work.
-  </div>
-  <footer>
-    FDEC Sprinkler Dept. &bull; NFPA Field Library &bull; Expanded October 29, 2026 &bull; Tap <kbd>/</kbd> to search
-  </footer>
-</main>
 
 <script type="module" src="fdec-auth.js" data-page="library"></script>
 </body>
