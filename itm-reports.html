@@ -2196,6 +2196,7 @@ let VIEW_DOC = null;   // id of a submitted report an admin is only viewing (PDF
 function clearEditMode(){
   EDIT_DOC=null; VIEW_DOC=null;
   const b=document.getElementById('editModeBar'); if(b) b.style.display='none';
+  const vb=document.getElementById('viewModeBar'); if(vb) vb.style.display='none';
 }
 
 /* Save the full report data to Firestore so the admin can view/download it. */
@@ -4068,6 +4069,15 @@ function viewCloudReport(rec, closeDash){
     if(typeof closeDash==='function') closeDash();
     // let the admin know what they're looking at
     flashCloud('Viewing '+(rec.byName||rec.byEmail||'report')+(rec.jobName?(' · '+rec.jobName):''));
+    // View bar: Save as PDF without touching the filed report.
+    let vb=document.getElementById('viewModeBar');
+    if(!vb){ vb=document.createElement('div'); vb.id='viewModeBar'; vb.className='edit-mode-bar no-print';
+      const as=document.getElementById('appScreen'); if(as && as.parentNode) as.parentNode.insertBefore(vb, as); else document.body.appendChild(vb); }
+    vb.innerHTML='<span>Viewing '+esc(rec.byName||rec.byEmail||'a technician')+'’s report'+(rec.jobName?(' · '+esc(rec.jobName)):'')+' — saving a PDF does not change the filed report.</span>'+
+      '<span style="display:flex;gap:8px"><button type="button" id="viewPdfBtn" class="primary">Save as PDF</button><button type="button" id="viewDoneBtn">Done viewing</button></span>';
+    vb.style.display='flex';
+    document.getElementById('viewPdfBtn').onclick=()=>reportPickerModal();
+    document.getElementById('viewDoneBtn').onclick=clearEditMode;
     window.scrollTo({top:0, behavior:'smooth'});
   }catch(e){ alert('Could not open report: '+(e.message||e)); }
 }
@@ -4077,6 +4087,7 @@ function viewCloudReport(rec, closeDash){
 function editCloudReport(rec, closeDash){
   viewCloudReport(rec, closeDash);
   VIEW_DOC = null;
+  { const vb=document.getElementById('viewModeBar'); if(vb) vb.style.display='none'; }
   EDIT_DOC = { id:rec.id, byName:rec.byName, byEmail:rec.byEmail, uid:rec.uid };
   let b=document.getElementById('editModeBar');
   if(!b){ b=document.createElement('div'); b.id='editModeBar'; b.className='edit-mode-bar no-print'; document.body.appendChild(b); }
