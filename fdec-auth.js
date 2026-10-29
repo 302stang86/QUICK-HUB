@@ -57,6 +57,7 @@ const DEFAULT_PAGES = {
   fleet:           ["new","tech","manager","admin","temp"],
   timesheet:       ["admin"],   // LOCKED to admin until released to technicians
   quoting:         ["manager","admin"],
+  faquoting:       ["manager","admin"],
   administration:  ["manager","admin"]   // managers reach the quote files here; roster/resets/permissions stay admin-only inside the page
 };
 

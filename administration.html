@@ -470,6 +470,7 @@ window.PERM = (function () {
       ["fleet","Fleet Service","Submit vehicle service requests to managers and administrators"],
       ["timesheet","Weekly Time Sheet","Open and submit the weekly time sheet"],
       ["quoting","Quoting & Proposal Suite","Open the quoting and proposal builder"],
+      ["faquoting","Fire Alarm Proposals","Open the fire alarm quoting and proposal builder"],
       ["administration","Administration","Open this Administration page — manage users, quote files, and permissions"]
     ]}
   ];
@@ -488,7 +489,7 @@ window.PERM = (function () {
     new:    ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","timeoff","fleet"],
     tech:   ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","timeoff","itm","servicetrade","oncall","inventory","fleet"],
     temp:   ["home","troubleshooting","frequencies","help","library","fleet"],
-    manager:["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","timeoff","itm","servicetrade","oncall","inventory","quoting","administration","fleet"],
+    manager:["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","timeoff","itm","servicetrade","oncall","inventory","quoting","faquoting","administration","fleet"],
     admin:null
   };
   var ALL = [];
@@ -795,7 +796,7 @@ function renderQF(filter){
     var app = o.app ? '<span class="qf-chip">'+qfEsc(o.app)+'</span>' : "";
     var op = (o.ready === false) ? ""
       : '<button class="qf-btn open" data-op="'+qfEsc(o.id)+'">Open</button>';
-    var reopenable = (o.mime==="application/fdec-suite") || /\.(fdecsuite|json)$/i.test(o.filename||"");
+    var reopenable = (o.mime==="application/fdec-suite") || (o.mime==="application/fdec-fa-quote") || /\.(fdecsuite|json|fdecfa)$/i.test(o.filename||"");
     var ed = (canDel && o.ready!==false && reopenable)
       ? '<button class="qf-btn edit" data-ed="'+qfEsc(o.id)+'">Edit</button>' : "";
     var dl = (o.ready === false)
@@ -873,6 +874,15 @@ async function qfEdit(o){
     var b64=parts.join("");
     var text; try{ text=decodeURIComponent(escape(atob(b64))); }catch(_){ text=atob(b64); }
     var bundle=JSON.parse(text);
+    if(o.mime==="application/fdec-fa-quote" || /\.fdecfa$/i.test(o.filename||"")){
+      if(!bundle || !bundle.job) throw new Error("not a reopenable fire alarm quote");
+      var fh={ id:o.id, state:bundle, byName:o.userName||"", byEmail:o.userEmail||"", uid:o.uid||"", chunkCount:o.chunkCount||0 };
+      try{ localStorage.setItem("fdec_edit_faquote", JSON.stringify(fh)); }
+      catch(e){ P.toast("Could not start edit — this quote is too large to hand off."); return; }
+      window.location.href="fire-alarm-quoting.html";
+      P.toast("Opening the quote in Fire Alarm Proposals to edit…");
+      return;
+    }
     if(!bundle || !bundle.pages) throw new Error("not a reopenable quote");
     var handoff={ id:o.id, bundle:bundle, byName:o.userName||"", byEmail:o.userEmail||"", uid:o.uid||"", chunkCount:o.chunkCount||0 };
     try{ localStorage.setItem("fdec_edit_quotefile", JSON.stringify(handoff)); }
