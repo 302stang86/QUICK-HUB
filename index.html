@@ -113,13 +113,25 @@
     border-radius:14px;box-shadow:var(--shadow);padding:15px 18px;transition:.15s;overflow:hidden;
   }
   a.hublink:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(16,24,40,.16)}
+  /* Realistic enamel button: chrome bezel, glossy domed face, embossed icon */
   a.hublink .hubicon{
-    flex:0 0 auto;width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-    background-color:var(--cc,#5b6570);
-    background-image:linear-gradient(150deg,rgba(255,255,255,.32),rgba(255,255,255,0) 58%);
-    box-shadow:0 4px 10px rgba(16,24,40,.22),inset 0 2px 3px rgba(255,255,255,.3),inset 0 -3px 6px rgba(0,0,0,.14);
+    --l:#6aa0e0;--d:#22304a;
+    --l:color-mix(in srgb,var(--cc,#5b6570) 62%,#fff);--d:color-mix(in srgb,var(--cc,#5b6570) 52%,#000);
+    position:relative;flex:0 0 auto;width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(145deg,#f5f7f9 0%,#9aa4ae 38%,#e9edf0 55%,#5f6a75 100%);
+    box-shadow:0 8px 14px rgba(16,24,40,.35),0 2px 3px rgba(0,0,0,.45);
   }
-  a.hublink .hubicon svg{width:28px;height:28px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  a.hublink .hubicon::before{
+    content:"";position:absolute;inset:4px;border-radius:50%;
+    background:var(--cc,#5b6570);
+    background:radial-gradient(circle at 32% 24%,var(--l) 0%,var(--cc,#5b6570) 45%,var(--d) 100%);
+    box-shadow:inset 0 -5px 8px rgba(0,0,0,.35),inset 0 2px 4px rgba(255,255,255,.35),inset 0 0 0 2px rgba(0,0,0,.25);
+  }
+  a.hublink .hubicon::after{
+    content:"";position:absolute;left:17%;top:8%;width:66%;height:40%;border-radius:50%;
+    background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,0));
+  }
+  a.hublink .hubicon svg{position:relative;z-index:1;width:30px;height:30px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 2px 1px rgba(0,0,0,.55))}
   a.hublink .hbody{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:6px}
   a.hublink .htop{display:flex;align-items:flex-start;gap:9px}
   a.hublink .hname{font-weight:800;font-size:16px;color:var(--ink);line-height:1.2}
@@ -260,7 +272,7 @@
   .userchip button:hover{background:rgba(255,255,255,.1)}
   a.hublink{position:relative}
   a.hublink .hubicon{position:relative;overflow:visible}
-  .hubnote{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#C1121C;color:#fff;font:800 11px/1 Arial,Helvetica,sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.5);border:2px solid #fff;z-index:4;box-sizing:border-box;animation:fdecflash 1.15s ease-in-out infinite;}
+  .hubnote{z-index:3;position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#C1121C;color:#fff;font:800 11px/1 Arial,Helvetica,sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.5);border:2px solid #fff;z-index:4;box-sizing:border-box;animation:fdecflash 1.15s ease-in-out infinite;}
   .hubnote.dot{min-width:0;width:15px;height:15px;padding:0;}
   @keyframes fdecflash{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.82)}}
   @media (prefers-reduced-motion:reduce){.hubnote{animation:none}}

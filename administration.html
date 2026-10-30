@@ -260,7 +260,10 @@
   .adm-menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:4px 0 8px}
   .adm-card{display:flex;align-items:center;gap:14px;text-align:left;text-decoration:none;cursor:pointer;background:#fff;border:1px solid #dfe3e8;border-left:5px solid var(--cc,#1B2A4A);border-radius:10px;padding:15px 16px;box-shadow:0 1px 3px rgba(16,24,40,.08);font:inherit;width:100%;transition:transform .1s,box-shadow .1s}
   .adm-card:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(16,24,40,.14)}
-  .adm-card .adm-ic{font-size:22px;line-height:1;flex:0 0 auto}
+  .adm-card .adm-ic{--l:color-mix(in srgb,var(--cc,#1B2A4A) 62%,#fff);--d:color-mix(in srgb,var(--cc,#1B2A4A) 52%,#000);position:relative;flex:0 0 auto;width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#f5f7f9 0%,#9aa4ae 38%,#e9edf0 55%,#5f6a75 100%);box-shadow:0 6px 12px rgba(16,24,40,.32),0 2px 3px rgba(0,0,0,.4);font-size:0;line-height:1}
+  .adm-card .adm-ic::before{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--cc,#1B2A4A);background:radial-gradient(circle at 32% 24%,var(--l) 0%,var(--cc,#1B2A4A) 45%,var(--d) 100%);box-shadow:inset 0 -4px 7px rgba(0,0,0,.35),inset 0 2px 3px rgba(255,255,255,.35),inset 0 0 0 2px rgba(0,0,0,.25)}
+  .adm-card .adm-ic::after{content:"";position:absolute;left:17%;top:8%;width:66%;height:40%;border-radius:50%;background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,0))}
+  .adm-card .adm-ic svg{position:relative;z-index:1;width:25px;height:25px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 2px 1px rgba(0,0,0,.55))}
   .adm-card .adm-body{flex:1 1 auto;min-width:0}
   .adm-card .adm-body b{display:block;font-size:15px;color:#1B2A4A}
   .adm-card .adm-body small{color:#5c6470;font-size:12.5px}
@@ -323,32 +326,32 @@ html.fdec-admin-boot body::after{content:"Loading Administration…";position:fi
 
     <div class="adm-menu" id="adminMenu" style="display:none">
       <a class="adm-card" data-admin="1" href="itm-reports.html#admin" target="_blank" rel="noopener" style="--cc:#C1121C">
-        <span class="adm-ic" aria-hidden="true">&#128203;</span>
+        <span class="adm-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></span>
         <span class="adm-body"><b>ITM Reports &mdash; Admin Dashboard</b><small>All submitted inspection reports, technician roster, and approvals</small></span>
         <span class="adm-go" aria-hidden="true">&rarr;</span>
       </a>
       <button type="button" class="adm-card" data-view="qfWrap" style="--cc:#1565c0">
-        <span class="adm-ic" aria-hidden="true">&#128196;</span>
+        <span class="adm-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="M13.6 13.2c0-.7-.8-1.2-1.6-1.2s-1.6.5-1.6 1.2.8 1.2 1.6 1.2 1.6.5 1.6 1.2-.8 1.2-1.6 1.2-1.6-.5-1.6-1.2"/></svg></span>
         <span class="adm-body"><b>Quote files</b><small>Drafts, Word docs, and export packages from the Quoting Suite</small></span>
         <span class="adm-go" aria-hidden="true">&rarr;</span>
       </button>
       <button type="button" class="adm-card" data-admin="1" data-view="mqWrap" style="--cc:#9d0e16">
-        <span class="adm-ic" aria-hidden="true">&#128226;</span>
+        <span class="adm-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3 11 15-5v12L3 15v-4z"/><path d="M18 8a3 3 0 0 1 0 6"/><path d="M7 15.5V19a1 1 0 0 0 1 1h1.5a1 1 0 0 0 1-1v-2.5"/></svg></span>
         <span class="adm-body"><b>Announcement marquee</b><small>Scrolling alert bar on the hub home page &mdash; on/off and text</small></span>
         <span class="adm-go" aria-hidden="true">&rarr;</span>
       </button>
       <button type="button" class="adm-card" data-admin="1" data-view="erWrap" style="--cc:#1f7a3d">
-        <span class="adm-ic" aria-hidden="true">&#128101;</span>
+        <span class="adm-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.2a5 5 0 0 1 5 5.8"/></svg></span>
         <span class="adm-body"><b>Employee roster</b><small>Names, phones, roles, approvals, and account status</small></span>
         <span class="adm-go" aria-hidden="true">&rarr;</span>
       </button>
       <button type="button" class="adm-card" data-admin="1" data-view="prWrap" style="--cc:#b4690e">
-        <span class="adm-ic" aria-hidden="true">&#128273;</span>
+        <span class="adm-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/></svg></span>
         <span class="adm-body"><b>Password resets</b><small>Approve or deny reset requests from the sign-in screen</small></span>
         <span class="adm-go" aria-hidden="true">&rarr;</span>
       </button>
       <button type="button" class="adm-card" data-admin="1" data-view="permWrap" style="--cc:#6d3bb5">
-        <span class="adm-ic" aria-hidden="true">&#128275;</span>
+        <span class="adm-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/><path d="M9 12l2 2 4-4"/></svg></span>
         <span class="adm-body"><b>Role &amp; page permissions</b><small>Which Quick Hub tools each role can open</small></span>
         <span class="adm-go" aria-hidden="true">&rarr;</span>
       </button>
