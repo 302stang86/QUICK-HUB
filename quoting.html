@@ -2692,8 +2692,11 @@ function hasCopyableExtras(){
    any app regardless of font. Also includes any labor, transportation, per
    diem, and hotel entered in the Labor & Transportation sections. */
 function buildManpowerText(){
-  const out = [];
-  let any = false;
+  /* Each block is built into its own list of lines, then the blocks are joined
+     in the fixed ServiceTrade order below, one blank line between blocks:
+     MANPOWER / TASKS, MATERIALS, EQUIPMENT, VENDOR ORDERS, HOURLY RATES, ADMIN,
+     TRUCKS, PER DIEM, HOTEL, COST TOTALS. */
+  const blocks = {};
 
   /* ---- Manpower / Tasks ---- */
   const taskLines = [];
@@ -2707,13 +2710,31 @@ function buildManpowerText(){
     const dept = MP_DEPT_NAMES[tr.querySelector('.mp-dept').value] || tr.querySelector('.mp-dept').value;
     totHours += hours;
     const techWord = tech === 1 ? 'tech' : 'techs';
-    taskLines.push(`\u2022 ${task || '(untitled task)'} \u2014 ${dept}, ${tech} ${techWord} \u00d7 ${hrsEach} hrs each`);
+    taskLines.push(`• ${task || '(untitled task)'} — ${dept}, ${tech} ${techWord} × ${hrsEach} hrs each`);
   });
   if (taskLines.length){
-    any = true;
-    out.push('MANPOWER / TASKS', '');
-    out.push(...taskLines);
-    out.push('', `Total: ${totHours} hours`);
+    blocks.manpower = ['MANPOWER / TASKS', ...taskLines, '', `Total: ${totHours} hours`];
+  }
+
+  /* ---- Selected Materials & Equipment ---- */
+  const sel = collectSelected();
+  if (sel.mats.length){
+    blocks.materials = ['MATERIALS', ...sel.mats.map(m => `• (${m[1]}) ${m[0]}`)];
+  }
+  if (sel.equip.length){
+    blocks.equipment = ['EQUIPMENT', ...sel.equip.map(m => `• (${m[1]}) ${m[0]}`)];
+  }
+
+  /* ---- Vendor Orders (any vendor quote with a price entered) ---- */
+  const vendorLines = [];
+  document.querySelectorAll('#vendorQuotes .listrow').forEach(row => {
+    const val = num(row.querySelector('.moneyval'));
+    if (!val) return;
+    const name = (row.querySelector('.moneyname').value || '').trim();
+    vendorLines.push(`• ${name || 'Vendor'} Order PO`);
+  });
+  if (vendorLines.length){
+    blocks.vendor = ['VENDOR ORDERS', ...vendorLines];
   }
 
   /* ---- Hourly Rates (billed rate per class, only where hours are entered) ---- */
@@ -2728,14 +2749,11 @@ function buildManpowerText(){
       if (!el || !(num(el) > 0)) return;
       const lvl = $(id + 'Lvl') ? $(id + 'Lvl').value : '2';
       const rate = rateFor(lvl, key, dept);
-      rateLines.push(`\u2022 ${label} ${clsName}: ${money(rate)}/hr`);
+      rateLines.push(`• ${label} ${clsName}: ${money(rate)}/hr`);
     });
   });
   if (rateLines.length){
-    if (any) out.push('');
-    any = true;
-    out.push('HOURLY RATES', '');
-    out.push(...rateLines);
+    blocks.rates = ['HOURLY RATES', ...rateLines];
   }
 
   /* ---- Admin (hours and cost) ---- */
@@ -2746,10 +2764,7 @@ function buildManpowerText(){
     const adRate = rateFor(adLvl, 'AD', 'sp');
     const adCost = adHrs * adRate;
     const hrWord = adHrs === 1 ? 'hour' : 'hours';
-    if (any) out.push('');
-    any = true;
-    out.push('ADMIN', '');
-    out.push(`\u2022 ${adHrs} ${hrWord} \u00d7 ${money(adRate)}/hr = ${money(adCost)}`);
+    blocks.admin = ['ADMIN', `• ${adHrs} ${hrWord} × ${money(adRate)}/hr = ${money(adCost)}`];
   }
 
   /* ---- Trucks ---- */
@@ -2758,13 +2773,10 @@ function buildManpowerText(){
     const qtyEl = document.querySelector(`input[data-g="trucks"][data-i="${i}"][data-f="qty"]`);
     const q = qtyEl ? num(qtyEl) : 0;
     if (!q) return;
-    truckLines.push(`\u2022 ${t[0]}: ${q}`);
+    truckLines.push(`• ${t[0]}: ${q}`);
   });
   if (truckLines.length){
-    if (any) out.push('');
-    any = true;
-    out.push('TRUCKS', '');
-    out.push(...truckLines);
+    blocks.trucks = ['TRUCKS', ...truckLines];
   }
 
   /* ---- Per Diem ---- */
@@ -2774,52 +2786,16 @@ function buildManpowerText(){
     const q = qtyEl ? num(qtyEl) : 0;
     if (!q) return;
     const dayWord = q === 1 ? 'day' : 'days';
-    pdLines.push(`\u2022 ${p[0]}: ${q} ${dayWord}`);
+    pdLines.push(`• ${p[0]}: ${q} ${dayWord}`);
   });
   if (pdLines.length){
-    if (any) out.push('');
-    any = true;
-    out.push('PER DIEM', '');
-    out.push(...pdLines);
+    blocks.perdiem = ['PER DIEM', ...pdLines];
   }
 
   /* ---- Hotel ---- */
   const hotel = num($('hotelCost'));
   if (hotel){
-    if (any) out.push('');
-    any = true;
-    out.push('HOTEL', '');
-    out.push(`\u2022 Hotel: ${money(hotel)}`);
-  }
-
-  /* ---- Selected Materials & Equipment ---- */
-  const sel = collectSelected();
-  if (sel.mats.length){
-    if (any) out.push('');
-    any = true;
-    out.push('MATERIALS', '');
-    sel.mats.forEach(m => out.push(`\u2022 (${m[1]}) ${m[0]}`));
-  }
-  if (sel.equip.length){
-    if (any) out.push('');
-    any = true;
-    out.push('EQUIPMENT', '');
-    sel.equip.forEach(m => out.push(`\u2022 (${m[1]}) ${m[0]}`));
-  }
-
-  /* ---- Vendor Orders (any vendor quote with a price entered) ---- */
-  const vendorLines = [];
-  document.querySelectorAll('#vendorQuotes .listrow').forEach(row => {
-    const val = num(row.querySelector('.moneyval'));
-    if (!val) return;
-    const name = (row.querySelector('.moneyname').value || '').trim();
-    vendorLines.push(`\u2022 ${name || 'Vendor'} Order PO`);
-  });
-  if (vendorLines.length){
-    if (any) out.push('');
-    any = true;
-    out.push('VENDOR ORDERS', '');
-    out.push(...vendorLines);
+    blocks.hotel = ['HOTEL', `• Hotel: ${money(hotel)}`];
   }
 
   /* ---- Cost Totals (customer-billed material and equipment) ---- */
@@ -2830,16 +2806,20 @@ function buildManpowerText(){
   const custMaterial = matItemCost*(1+P.miscmat) + vendorCost*(1+P.material);
   const eqFeesCost = sumGroup('eqFees', EQ_FEES);
   const custEquip = eqFeesCost*(1+P.eqfees);
-  if (custMaterial > 0) costLines.push(`\u2022 Material total: ${money(custMaterial)}`);
-  if (custEquip > 0) costLines.push(`\u2022 Equipment total: ${money(custEquip)}`);
+  if (custMaterial > 0) costLines.push(`• Material total: ${money(custMaterial)}`);
+  if (custEquip > 0) costLines.push(`• Equipment total: ${money(custEquip)}`);
   if (costLines.length){
-    if (any) out.push('');
-    any = true;
-    out.push('COST TOTALS', '');
-    out.push(...costLines);
+    blocks.costs = ['COST TOTALS', ...costLines];
   }
 
-  return any ? out.join('\n') : '';
+  const ORDER = ['manpower','materials','equipment','vendor','rates','admin','trucks','perdiem','hotel','costs'];
+  const out = [];
+  ORDER.forEach(k => {
+    if (!blocks[k]) return;
+    if (out.length) out.push('');
+    out.push(...blocks[k]);
+  });
+  return out.join('\n');
 }
 
 function copyManpower(){
@@ -4512,7 +4492,9 @@ async function generateWordProposal(silent){
       mimeType:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     });
     const h = jobHeader();
-    const name = (h.quote || h.customer || "FDEC_Proposal").replace(/[^\w\- ]+/g,"").trim().replace(/\s+/g,"_") || "FDEC_Proposal";
+    const _fp = function(x){ return String(x||"").replace(/[^\w\- ]+/g,"").trim().replace(/\s+/g,"_"); };
+    const _dt = (document.getElementById("jobDate").value || "").slice(0,10);
+    const name = [_fp(h.customer), _fp(h.quote), _dt].filter(Boolean).join("_") || "FDEC_Proposal";
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = name + "_Proposal.docx";
@@ -6000,7 +5982,9 @@ async function generateWordProposal(silent){
       mimeType:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     });
     const h = jobHeader();
-    const name = (h.quote || h.customer || "FDEC_Proposal").replace(/[^\w\- ]+/g,"").trim().replace(/\s+/g,"_") || "FDEC_Proposal";
+    const _fp = function(x){ return String(x||"").replace(/[^\w\- ]+/g,"").trim().replace(/\s+/g,"_"); };
+    const _dt = (document.getElementById("jobDate").value || "").slice(0,10);
+    const name = [_fp(h.customer), _fp(h.quote), _dt].filter(Boolean).join("_") || "FDEC_Proposal";
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = name + "_Proposal.docx";
@@ -7458,7 +7442,9 @@ async function generateWordProposal(silent){
       mimeType:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     });
     const h = jobHeader();
-    const name = (h.quote || h.customer || "FDEC_Proposal").replace(/[^\w\- ]+/g,"").trim().replace(/\s+/g,"_") || "FDEC_Proposal";
+    const _fp = function(x){ return String(x||"").replace(/[^\w\- ]+/g,"").trim().replace(/\s+/g,"_"); };
+    const _dt = (document.getElementById("jobDate").value || "").slice(0,10);
+    const name = [_fp(h.customer), _fp(h.quote), _dt].filter(Boolean).join("_") || "FDEC_Proposal";
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = name + "_Proposal.docx";
@@ -8175,6 +8161,7 @@ function runExport(){
   // Package saves to quote files; saved drafts and one-off downloads never do.
   try{
     buildSuiteBundle().then(function(res){
+      window.__fdecPkgBase = fdecFileBase(res.jobName, res.quoteNo, res.quoteDate);
       if (window.fdecSaveQuoteBundle) window.fdecSaveQuoteBundle(res.bundle, res.jobName, res.quoteNo);
     }).catch(function(){});
   }catch(e){}
@@ -8248,8 +8235,17 @@ function runExport(){
     pdoc.open(); pdoc.write(docHtml); pdoc.close();
 
     var done = function(){
+      /* The browser proposes the PDF file name from the page title, so set it
+         to JobName_QuoteNumber_Date_Full_Package while the print dialog is open. */
+      var _oldTitle = document.title;
+      var _pkg = window.__fdecPkgBase;
+      if (_pkg){
+        document.title = _pkg + '_Full_Package';
+        try { printFrame.contentWindow.document.title = document.title; } catch(_){}
+      }
       try { printFrame.contentWindow.focus(); printFrame.contentWindow.print(); }
       catch(err){ console.error(err); alert('Could not open the print dialog: '+err); }
+      document.title = _oldTitle;
       setTimeout(function(){ if (printFrame && printFrame.parentNode) printFrame.parentNode.removeChild(printFrame); }, 1500);
     };
     if (printFrame.contentWindow.document.readyState === 'complete') setTimeout(done, 400);
@@ -8296,8 +8292,19 @@ function buildSuiteBundle(){
     var bundle = { meta:{ app:'FDEC Quoting & Proposal Suite', kind:'suite-draft', version:1, savedAt:new Date().toISOString() }, pages:{} };
     results.forEach(function(r){ if (r.res && r.res.data) bundle.pages[r.id] = r.res.data; });
     var q = bundle.pages.quote && bundle.pages.quote.fields ? bundle.pages.quote.fields : {};
-    return { bundle:bundle, jobName:(q.jobName||''), quoteNo:(q.quoteNo||'') };
+    return { bundle:bundle, jobName:(q.jobName||''), quoteNo:(q.quoteNo||''), quoteDate:(q.quoteDate||'') };
   });
+}
+
+/* File name base for every export: JobName_QuoteNumber_YYYY-MM-DD.
+   Empty parts are skipped; the date falls back to today (local). */
+function fdecFileBase(job, quote, date){
+  var clean = function(x){ return String(x||'').replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'_'); };
+  var d = /^\d{4}-\d{2}-\d{2}$/.test(String(date||'')) ? String(date) : (function(){
+    var t = new Date();
+    return t.getFullYear() + '-' + String(t.getMonth()+1).padStart(2,'0') + '-' + String(t.getDate()).padStart(2,'0');
+  })();
+  return [clean(job), clean(quote), d].filter(Boolean).join('_');
 }
 
 function saveSuiteDraft(){
@@ -8317,9 +8324,7 @@ function saveSuiteDraft(){
 
     // Name the file from the quote's job info when available.
     var q = bundle.pages.quote && bundle.pages.quote.fields ? bundle.pages.quote.fields : {};
-    var namePart = (q.quoteNo || q.jobName || '').toString().replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'_');
-    var stamp = new Date().toISOString().slice(0,10);
-    var fname = 'FDEC_Suite_Draft' + (namePart ? '_' + namePart : '') + '_' + stamp + '.json';
+    var fname = fdecFileBase(q.jobName, q.quoteNo, q.quoteDate) + '_Draft.json';
 
     var blob = new Blob([JSON.stringify(bundle)], { type:'application/json' });
     var a = document.createElement('a');
