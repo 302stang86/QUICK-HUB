@@ -137,3 +137,34 @@
   if (document.body) build();
   else document.addEventListener("DOMContentLoaded", build, { once: true });
 })();
+
+/* ---------- Back-to-top button on every page (same look as the ITM Reports one) ----------
+   ITM Reports has its own #backToTop (raised to clear its action bar); this skips it. */
+(function () {
+  function init() {
+    try {
+      if (document.getElementById("backToTop") || document.getElementById("fdec-btt")) return;
+      var st = document.createElement("style");
+      st.textContent =
+        "#fdec-btt{position:fixed;right:20px;bottom:20px;width:46px;height:46px;border-radius:50%;" +
+        "background:#1F3864;color:#fff;border:none;font-size:22px;line-height:1;cursor:pointer;" +
+        "box-shadow:0 3px 10px rgba(0,0,0,.28);z-index:60;display:flex;align-items:center;justify-content:center;" +
+        "opacity:0;visibility:hidden;transform:translateY(8px);transition:opacity .2s,transform .2s,visibility .2s}" +
+        "#fdec-btt.show{opacity:1;visibility:visible;transform:translateY(0)}" +
+        "#fdec-btt:hover{background:#2b4a80}#fdec-btt:active{transform:translateY(1px)}" +
+        "@media print{#fdec-btt{display:none!important}}";
+      document.head.appendChild(st);
+      var b = document.createElement("button");
+      b.id = "fdec-btt"; b.type = "button";
+      b.setAttribute("aria-label", "Back to top"); b.title = "Back to top";
+      b.textContent = "↑";
+      document.body.appendChild(b);
+      var top = function () { return window.pageYOffset || document.documentElement.scrollTop || 0; };
+      var onScroll = function () { b.classList.toggle("show", top() > 300); };
+      window.addEventListener("scroll", onScroll, { passive: true });
+      b.addEventListener("click", function () { window.scrollTo({ top: 0, behavior: "smooth" }); });
+      onScroll();
+    } catch (e) {}
+  }
+  if (document.body) init(); else document.addEventListener("DOMContentLoaded", init, { once: true });
+})();
