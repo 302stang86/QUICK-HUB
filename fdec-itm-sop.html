@@ -842,6 +842,73 @@ const FORMS = [
         item(33,"System returned to full service & parties notified","returnService")
       ]}
     ]
+  },
+
+  /* ---------------- FD-24 5-Year Internal System Inspection ---------------- */
+  {
+    id:"fd24", code:"FD-24", freq:"5-Year Internal",
+    head:"FD-24 — 5-Year Internal System Inspection",
+    title:"5 Year Internal System Inspection",
+    note:"Submitted as its own report, even when it shares a job number with the annual inspection. It is never combined with the Summary.",
+    sections:[
+      {name:"Before the Investigation", items:[
+        item(1,"Pertinent parties notified before investigation","partiesBefore"),
+        item(2,"System in service prior to investigation","inServicePrior"),
+        item(3,"System Impairment Program implemented before conducting internal inspection","implImpair")
+      ]},
+      {name:"Internal Investigation", items:[
+        item(4,"Flushing connection of one main and sprinkler of one branch line removed","removeFlush"),
+        item(5,"Interior of main, branch line and sprinkler outlet checked for foreign organic or inorganic material that will clog the pipe or sprinkler head","foreignMaterial"),
+        item(6,"No significant foreign material observed","foreignMaterial"),
+        item(7,"Complete flushing program implemented where observed material is sufficient to obstruct sprinklers","flushProgram"),
+        item(8,"Dry system flushing contained less than 1/4 cup of significant foreign material or pipe scale","dryFlush")
+      ]},
+      {name:"Valves, Check Valves & Gauges", items:[
+        item(9,"Alarm valve, dry valve, associated strainers and restricted orifices passed internal inspection","alarmValveInternal"),
+        item(10,"Check valves, including the FDC check valve, internally inspected and verified in good condition (excludes check valves used as backflow prevention in lieu of approved assemblies)","checkValveInternal"),
+        item(11,"Water & air pressure gauge(s) replaced","gaugesReplaced")
+      ]},
+      {name:"Restoration & Close-Out", items:[
+        item(12,"Valve status test performed and readings are acceptable","valveStatusReadings"),
+        item(13,"Control valves in normal open or closed position","valvesNormalPos"),
+        item(14,"Control valves properly sealed, locked or supervised","valvesSealed"),
+        item(15,"Fire alarm panel reset and cleared","panelReset"),
+        item(16,"System(s) fully restored to normal operation","fullyRestored"),
+        item(17,"All impairment tags removed","impairTagsRemoved"),
+        item(18,"Pertinent parties notified after conclusion of investigation",{
+          how:"Notify the owner, occupants, monitoring company and any other party told at the start that the investigation is finished and the system is back in service. Record who you spoke with and the time.",
+          ref:["NFPA 25 4.1 / Ch.15 (restoration and notification)"],
+          def:[["comment","Coordination step. A system left with parties not informed is a work-practice issue, not a code deficiency."]]
+        })
+      ]}
+    ]
+  },
+
+  /* ---------------- FD-25 5-Year FDC Hydrostatic Test ---------------- */
+  {
+    id:"fd25", code:"FD-25", freq:"5-Year Hydro",
+    head:"FD-25 — 5-Year FDC & Piping Hydrostatic Test",
+    title:"5 Year Fire Department Connection(s) & Piping Hydrostatic Testing",
+    note:"Submitted as its own report, even when it shares a job number with the annual inspection. It is never combined with the Summary. 2026 edition: FDC piping runs of 10 ft or less are exempt from the hydrostatic test (visual inspection is acceptable). The old exemption was 4 ft.",
+    sections:[
+      {name:"Connection Information", items:[
+        item(1,"Fire Department Connection type / check valve type / piping size","fdcType")
+      ]},
+      {name:"Hydrostatic Test", items:[
+        item(2,"FDC piping hydrostatically tested at 150 psi minimum for 2 hours","fdcHydroTest"),
+        item(3,"Contractor certifies that additives and corrosive chemicals, sodium silicate or its derivatives, brine or other corrosive chemicals were not used for testing or stopping leaks","noAdditives")
+      ]},
+      {name:"Results & Restoration", items:[
+        item(4,"Valve status test performed after FDC hydrostatic testing was completed","valveStatusTest"),
+        item(5,"Sprinkler system restored to full service and all pertinent parties notified after testing","returnService"),
+        item(6,"FDC piping and fittings showed no signs of leaks or loss of pressure during the hydrostatic test",{
+          how:"Watch the test gauge and walk every visible joint, fitting, swivel and the above-ground and underground piping runs for the full two (2) hours. Pressure must hold with no drop that cannot be explained by temperature, and there must be no visible leakage or fitting failure. Record the start and finish pressures and times.",
+          ref:["NFPA 25 13.7.3 (FDC 5-yr hydrostatic: 150 psi / 2 hr)"],
+          def:[["critical","Pressure loss, visible detrimental leakage, or pipe or fitting failure: Critical. Repair and retest."]]
+        }),
+        item(7,"After testing, all blank discs, blind gaskets and testing equipment removed and piping properly reconnected","blankDiscs")
+      ]}
+    ]
   }
 ];
 
@@ -895,9 +962,10 @@ function render(){
   const f=FORMS.find(x=>x.id===ACTIVE);
   const host=document.getElementById('host');
   let html=`<div class="formhead">
-    <div class="code">${esc(f.code)} — ${esc(f.freq)} Inspection</div>
+    <div class="code">${esc(f.head||(f.code+' — '+f.freq+' Inspection'))}</div>
     <div class="ttl">${esc(f.title)}</div>
     <div class="freq">Tap any statement below for how to complete it per NFPA 25 (2026), the code reference, and the proper deficiency classification.</div>
+    ${f.note?`<div class="freq" style="margin-top:6px">Note: ${esc(f.note)}</div>`:''}
   </div>`;
   html+=legend();
 
@@ -945,9 +1013,14 @@ function render(){
 }
 
 function defLine(d){
-  const cls=d[0], txt=d[1];
-  // text may contain multiple class/text pairs flattened; render first tag + text
-  return `<div class="def-line"><span class="def-tag ${cls}">${esc(DEFLABEL[cls]||cls)}</span>${esc(txt)}</div>`;
+  // an entry may hold several class/text pairs flattened into one array
+  let out='';
+  for(let i=0;i<d.length;i+=2){
+    const cls=d[i], txt=d[i+1];
+    if(txt==null) continue;
+    out+=`<div class="def-line"><span class="def-tag ${cls}">${esc(DEFLABEL[cls]||cls)}</span>${esc(txt)}</div>`;
+  }
+  return out;
 }
 
 document.getElementById('search').addEventListener('input',e=>{ QUERY=e.target.value.trim(); render(); });
