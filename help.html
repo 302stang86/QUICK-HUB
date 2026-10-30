@@ -21,7 +21,11 @@
   .masthead .company{font-size:1.05rem;font-weight:700;letter-spacing:.04em;margin:0}
   .masthead .doctype{font-size:.85rem;color:#aeb6bf;margin:3px 0 0}
   .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 1px 3px rgba(16,24,40,.08);padding:18px 18px 20px;margin-bottom:16px}
-  .panel h2{margin:0 0 4px;font-size:17px;color:var(--navy)}
+  .panel h2{font-size:17px}
+  .panel h2{background:linear-gradient(90deg,#1565c0 0%,#1565c0 80%,#000 100%);color:#fff;font-weight:700;margin:-18px -18px 14px;padding:11px 18px;border-radius:11px 11px 0 0}
+  .itmnote{border-left:4px solid #1565c0;background:#eef4fb;border-radius:6px;padding:8px 12px;margin:12px 0}
+  .itmnote p{margin:4px 0;font-weight:600}
+  .itmnote ul{margin:4px 0 4px 18px;padding:0}
   .panel .lead{margin:0 0 14px;font-size:13px;color:var(--muted)}
   label{display:block;font-size:12.5px;font-weight:700;color:var(--navy);margin:12px 0 5px}
   label .req{color:var(--red)}
@@ -72,34 +76,6 @@
     <p class="doctype">Quick Hub Help</p>
   </div>
 
-  <!-- ===== Bug Fix ===== -->
-  <div class="panel">
-    <h2>Report a bug</h2>
-    <p class="lead">Something not working right? Tell us what happened and attach a photo if it helps. Submitting emails the report to the Quick Hub administrator (mp1@firedefense.com).</p>
-    <form id="bugForm" novalidate>
-      <label for="bfName">Your name</label>
-      <input type="text" id="bfName" autocomplete="name" placeholder="First and last name">
-
-      <label for="bfWhere">Where did it happen?</label>
-      <input type="text" id="bfWhere" placeholder="e.g. ITM Reports, Quoting, On-Call, the home page…">
-
-      <label for="bfDesc">What happened? <span class="req">*</span></label>
-      <textarea id="bfDesc" placeholder="Describe the problem, what you were doing, and what you expected to see."></textarea>
-
-      <label for="bfPhoto">Photo (optional)</label>
-      <div class="photo-row">
-        <input type="file" id="bfPhoto" accept="image/*" capture="environment">
-        <img id="bfPrev" class="photo-prev" alt="Selected photo preview">
-      </div>
-
-      <div class="btns">
-        <button type="submit" class="send">Submit bug report</button>
-      </div>
-      <div id="bfStatus" class="status"></div>
-      <p class="note">If your device supports it, a photo is attached to the email automatically. Otherwise your email app opens with the details filled in and you can attach the photo yourself.</p>
-    </form>
-  </div>
-
   <!-- ===== Quick Help Topics ===== -->
   <div class="panel">
     <h2>Quick help topics</h2>
@@ -145,6 +121,14 @@
           <li>Tap Submit. You see a confirmation, and the report is saved centrally for the office.</li>
         </ol>
         <p>If you are offline, the report is held on your device and sent when your signal returns.</p>
+        <div class="itmnote">
+          <p>NOTE: Reports are not sent to ServiceTrade automatically. Upload every report to ServiceTrade by hand.</p>
+          <ul>
+            <li>On a PC: save the PDF, then upload it to the job in ServiceTrade with "Add Attachments".</li>
+            <li>On a mobile device: when prompted to save the PDF, tap "Share", choose "ServiceTrade" and send it.</li>
+          </ul>
+          <p>Always verify that each report uploaded and that it uploaded correctly.</p>
+        </div>
         <p>Deficiency Correction Reports: enter the job number and the report pulls the deficiencies from that job's normal inspection report. It does not read the 5-Year reports.</p>
       </div>
     </details>
@@ -463,6 +447,34 @@
       </div>
     </details>
 
+  </div>
+
+  <!-- ===== Bug Fix ===== -->
+  <div class="panel">
+    <h2>Report a bug</h2>
+    <p class="lead">Something not working right? Tell us what happened and attach a photo if it helps. Submitting emails the report to the Quick Hub administrator (mp1@firedefense.com).</p>
+    <form id="bugForm" novalidate>
+      <label for="bfName">Your name</label>
+      <input type="text" id="bfName" autocomplete="name" placeholder="First and last name">
+
+      <label for="bfWhere">Where did it happen?</label>
+      <input type="text" id="bfWhere" placeholder="e.g. ITM Reports, Quoting, On-Call, the home page…">
+
+      <label for="bfDesc">What happened? <span class="req">*</span></label>
+      <textarea id="bfDesc" placeholder="Describe the problem, what you were doing, and what you expected to see."></textarea>
+
+      <label for="bfPhoto">Photo (optional)</label>
+      <div class="photo-row">
+        <input type="file" id="bfPhoto" accept="image/*" capture="environment">
+        <img id="bfPrev" class="photo-prev" alt="Selected photo preview">
+      </div>
+
+      <div class="btns">
+        <button type="submit" class="send">Submit bug report</button>
+      </div>
+      <div id="bfStatus" class="status"></div>
+      <p class="note">If your device supports it, a photo is attached to the email automatically. Otherwise your email app opens with the details filled in and you can attach the photo yourself.</p>
+    </form>
   </div>
 </main>
 
