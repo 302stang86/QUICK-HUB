@@ -44,7 +44,7 @@ button{font-family:inherit}
 /* search */
 .searchbar{background:var(--card);border-bottom:1px solid var(--line);
   padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
-  position:sticky;top:calc(46px + env(safe-area-inset-top,0px));z-index:45}
+  position:relative;z-index:1}
 .searchbar input{width:100%;max-width:500px;border:1.5px solid var(--line);border-radius:8px;padding:9px 12px;font-size:16px;
   background:var(--bg);color:var(--ink)}
 .searchbar input:focus{outline:none;border-color:var(--navy2);box-shadow:0 0 0 3px rgba(43,74,128,.2)}
@@ -52,7 +52,7 @@ button{font-family:inherit}
 /* tabs */
 .tabs{background:var(--card);border-bottom:1px solid var(--line);display:flex;gap:8px;
   padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
-  position:sticky;top:calc(94px + env(safe-area-inset-top,0px));z-index:40;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  position:relative;z-index:1;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .tabs button{flex:0 0 auto;background:var(--card);border:1.5px solid var(--tab-border);border-radius:8px;padding:9px 15px;cursor:pointer;
   font-size:13px;font-weight:600;color:var(--muted);white-space:nowrap;transition:all .12s}
 .tabs button:hover{border-color:var(--navy2);color:var(--ink);background:var(--stmt-hover)}
@@ -186,7 +186,7 @@ const G = {
   panelNormal:{
     how:"Before touching anything, read the fire alarm panel: it must show normal (no trouble/supervisory/alarm). Confirm the suppression system is in service (control valves open, pressures normal). Document any pre-existing trouble/alarm so it isn't attributed to your work.",
     ref:["NFPA 25 4.1 (responsibilities)","NFPA 72 (panel status)"],
-    def:[["critical","System or panel NOT in service / in alarm or trouble on arrival that impairs protection — Impairment; tag and notify owner/AHJ before proceeding."],["noncritical","Minor trouble not affecting water-based protection — document and report."]]
+    def:[["impairment","System or panel NOT in service / in alarm or trouble on arrival that impairs protection — Impairment; tag and notify owner/AHJ before proceeding."],["noncritical","Minor trouble not affecting water-based protection — document and report."]]
   },
   dispatchNotify:{
     how:"Call local dispatch and/or the monitoring company to place the account on TEST before activating any alarm-initiating device. Record who you spoke with and the time. Restore from test at the end.",
@@ -256,7 +256,7 @@ const G = {
   exerciseValves:{
     how:"Fully operate (close and reopen) each accessible control and sectional valve through its full travel; lubricate OS&Y stems where needed. Return to normal-open and confirm no binding. Re-verify supervisory signal after exercising.",
     ref:["NFPA 25 13.3.4 (control valve maintenance / annual operation)"],
-    def:[["critical","Valve seized, will not fully open, or left partially closed — Critical (impairs water supply)."],["noncritical","Valve stiff/needs lubrication but operable — Non-Critical."]]
+    def:[["impairment","Valve left closed or partially closed — Impairment; restore to fully open and notify per the impairment program."],["critical","Valve seized or will not fully open — Critical (impairs water supply)."],["noncritical","Valve stiff/needs lubrication but operable — Non-Critical."]]
   },
   tamperVerify:{
     how:"Operate each supervisory (tamper) switch: the signal must register at the panel within the first two revolutions of the handwheel (or two threads of a stem). Restore and confirm clearing. Where not monitored, confirm the valve is locked or sealed in the open position.",
@@ -341,7 +341,7 @@ const G = {
   residualCalc:{
     how:"Compare current residual to the previous recorded residual. A reduction greater than 10% from the original or previous test requires investigation to find the cause (closed/throttled valve, obstruction, supply change).",
     ref:["NFPA 25 13.2.5 (investigate >10% reduction)"],
-    def:[["critical","≥10% reduction with cause being a closed/obstructed supply valve — Critical (supply impaired)."],["noncritical","≥10% reduction, cause under investigation / supply-side change — Non-Critical pending findings."]]
+    def:[["impairment","≥10% reduction with cause being a closed/obstructed supply valve — Impairment (supply out of service); open or clear the valve and retest."],["noncritical","≥10% reduction, cause under investigation / supply-side change — Non-Critical pending findings."]]
   },
   pipeVisual:{
     how:"Walk the visible piping: look for leaks, corrosion, mechanical damage, external loading, misaligned hangers, and foreign material. Piping must be in good condition and properly supported.",
@@ -421,7 +421,7 @@ const G = {
   returnService:{
     how:"Return the sprinkler system to full service — all control valves full-open and supervised/locked, pressures normal, drains closed — and notify dispatch/monitoring and the owner that testing is complete and the system is restored.",
     ref:["NFPA 25 Ch.15 (restoration from impairment)","NFPA 25 13.3 (valves normal/open)"],
-    def:[["critical","System left impaired / valve not fully restored — Critical; correct before leaving."]]
+    def:[["impairment","System left impaired / valve not fully restored — Impairment; correct before leaving, or tag and notify the owner and monitoring company per the impairment program."]]
   },
   /* FD-25 FDC hydro */
   fdcType:{
@@ -442,18 +442,18 @@ const G = {
   valveStatusTest:{
     how:"After FDC hydrostatic testing, perform a valve status (main drain) test to confirm the water supply control valve is fully open and the supply is unobstructed.",
     ref:["NFPA 25 13.2.5 (valve status / main drain)"],
-    def:[["critical","Reduced flow indicating closed/obstructed valve after test — Critical."]]
+    def:[["impairment","Reduced flow indicating closed/obstructed valve after test — Impairment; open or clear the valve and retest."]]
   },
   blankDiscs:{
     how:"After testing, confirm all blank discs, blind gaskets, and test equipment are removed and piping is properly reconnected and restored to service. A left-in blind disc blocks the FDC.",
     ref:["NFPA 25 13.7 (restore FDC after test)"],
-    def:[["critical","Blind disc/blank left in place or piping not reconnected — Critical (FDC blocked)."]]
+    def:[["impairment","Blind disc/blank left in place or piping not reconnected — Impairment (FDC blocked); remove and reconnect before leaving."]]
   },
   /* FD-24 internal */
   implImpair:{
     how:"Implement the formal impairment program before opening the system for internal inspection: notify owner/AHJ/monitoring, tag the impaired system, and manage the impairment per Chapter 15.",
     ref:["NFPA 25 Ch.15 (impairment program & tags)"],
-    def:[["critical","Internal inspection performed without impairment handling — procedural Critical; follow program."]]
+    def:[["comment","Internal inspection performed without impairment handling — work-practice issue, not a system deficiency; follow the impairment program."]]
   },
   removeFlush:{
     how:"Open a flushing connection on one main and remove a sprinkler at the end of one branch line to inspect the interior for obstructing material. This is the 5-year internal/obstruction check.",
@@ -493,12 +493,12 @@ const G = {
   valveStatusReadings:{
     how:"Perform the valve-status (main drain) test after reassembly and confirm the readings are acceptable (no abnormal reduction).",
     ref:["NFPA 25 13.2.5"],
-    def:[["critical","Abnormal reduction indicating closed/obstructed valve — Critical."]]
+    def:[["impairment","Abnormal reduction indicating closed/obstructed valve — Impairment; open or clear the valve and retest."]]
   },
   valvesNormalPos:{
     how:"Confirm all control valves are returned to their normal open (or closed, as designed) position after the work.",
     ref:["NFPA 25 13.3.3 (control valve position)"],
-    def:[["critical","Valve left in wrong position — Critical (impairment)."]]
+    def:[["impairment","Valve left in wrong position — Impairment; restore to the normal position and verify."]]
   },
   valvesSealed:{
     how:"Confirm control valves are properly sealed, locked, or electrically supervised in the correct position per their supervision method.",
@@ -508,12 +508,12 @@ const G = {
   impairTagsRemoved:{
     how:"Remove all impairment tags once the system is fully restored and verified, and close out the impairment per the program.",
     ref:["NFPA 25 Ch.15 (restoration/close-out)"],
-    def:[["critical","Impairment left open/tags not removed while system is in service — Critical recordkeeping/impairment issue."]]
+    def:[["noncritical","Impairment left open or tags not removed while the system is in service — Non-Critical recordkeeping issue; close out the impairment per the program."]]
   },
   fullyRestored:{
     how:"Confirm the system(s) are fully restored to normal operation: valves open, pressures normal, alarms functional, drains closed.",
     ref:["NFPA 25 Ch.15 (restoration)"],
-    def:[["critical","System not fully restored — Critical."]]
+    def:[["impairment","System not fully restored — Impairment; restore fully or tag and notify per the impairment program."]]
   },
   /* FD-24 grid pre-items */
   partiesBefore:{
@@ -798,12 +798,12 @@ const FORMS = [
         item(15,"Detection system (heat/smoke/linear) in service & within test date", {
           how:"Confirm the releasing detection (heat detectors, smoke detectors, linear heat, etc.) is in service and currently tested. Detection actuation is verified under the trip test below; here confirm it is enabled, not bypassed, and the releasing panel shows normal.",
           ref:["NFPA 72 Ch.14 (detection ITM)","NFPA 25 13.4.3 (release coordination)"],
-          def:[["critical","Detection bypassed/disabled or overdue so release is impaired — Critical.","noncritical","Minor detection trouble not affecting release — Non-Critical."]]
+          def:[["impairment","Detection bypassed or disabled so release is out of service — Impairment; restore detection or tag and notify.","noncritical","Minor detection trouble not affecting release — Non-Critical."]]
         }),
         item(16,"Release solenoid / actuator & manual release station operable", {
           how:"Verify the release solenoid or pneumatic actuator and any manual release (pull) station are in place, unobstructed, and operable. The function is confirmed in the trip test; here confirm access and condition.",
           ref:["NFPA 25 13.4.3 / 13.4.5 (release device)"],
-          def:[["critical","Manual release blocked or release device inoperable — Critical.","noncritical","Signage/access minor issue — Non-Critical."]]
+          def:[["impairment","Manual release blocked or release device inoperable — Impairment; restore or tag and notify.","noncritical","Signage/access minor issue — Non-Critical."]]
         }),
         item(17,"Deluge nozzles/open sprinklers unobstructed & correctly oriented (deluge)", {
           how:"On deluge systems, visually confirm open nozzles/sprinklers are unobstructed, correctly aimed for the hazard, and free of paint, debris, or corrosion that would alter the discharge pattern.",
@@ -940,7 +940,7 @@ function buildTabs(){
 
 function legend(){
   const items=[
-    ["critical","Critical — immediate action; impairs performance"],
+    ["critical","Critical — system in service, but the defect materially affects performance"],
     ["impairment","Impairment — system/part out of service"],
     ["noncritical","Non-Critical — document & correct"],
     ["comment","Comment — informational / recommendation"]
