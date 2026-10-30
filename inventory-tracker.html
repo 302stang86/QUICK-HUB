@@ -16,6 +16,7 @@
 <!-- Firebase (same project/auth as the ITM reports app) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="fdec-identity.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>/* docx 8.5.0 (embedded, no CDN dependency) */
 (function(global2, factory) {
@@ -20626,7 +20627,8 @@ function initAuthWatcher(){
 
     // Load shared catalog, then this user's own sheet.
     await loadCatalog();
-    const myLabel = myName || CURRENT_EMAIL.split('@')[0];
+    try{ if(window.FDEC_ID && myName) FDEC_ID.rememberMe(CURRENT_UID, myName, CURRENT_EMAIL); }catch(e){}
+    const myLabel = myName || (window.FDEC_ID && FDEC_ID.myName(CURRENT_UID)) || CURRENT_EMAIL.split('@')[0];
     await loadSheet(CURRENT_UID, myLabel + ' (you)');
 
     // Admins get a technician picker to view/edit any sheet.

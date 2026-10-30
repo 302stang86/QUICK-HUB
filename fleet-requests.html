@@ -44,6 +44,7 @@
   a{color:#234e8a}
   @media print{header,.toolbar,.no-print,.tabs,#list,#archivedPanel,button{display:none!important}main{margin:0;padding:0}.panel{box-shadow:none}#detail{display:block!important}}
 </style>
+<script src="fdec-identity.js"></script>
 <script type="module" src="fdec-auth.js" data-page="fleet"></script>
 <script src="fdec-header.js?v=88-industrial" defer></script>
 <script src="fleet-vehicles.js"></script>
@@ -126,6 +127,7 @@ const allowed=auth.user&&(auth.isAdmin||(auth.profile?.status==='approved'&&['ad
 if(!allowed){$('notice').textContent='Access restricted to approved managers and administrators.'; $('reload').disabled=true; throw new Error('Manager/admin only');}
 const db=getFirestore(getApp('fdec'));
 const DAY=86400000, KEEP_DAYS=30;
+const techOf=r=>window.FDEC_ID?FDEC_ID.nameFor(r.uid,r.technicianName,r.technicianEmail):(r.technicianName||'');
 let requests=[], chosen=null;
 
 const field=(name,val)=>'<div class="field"><span>'+esc(name)+'</span><b>'+esc(val||'—')+'</b></div>';
@@ -145,7 +147,7 @@ function itemRow(r,archived){
   const left=document.createElement('div');
   left.innerHTML='<strong>'+esc(r.vehicleNumber||r.vehicleName||'Vehicle')+'</strong> <span class="status">'+esc(r.status||'new')+'</span>'+
     (archived?(' <span class="pill">Deletes in '+daysLeft(r)+' day'+(daysLeft(r)===1?'':'s')+'</span>'):'')+
-    '<div class="muted">'+esc(r.technicianName)+' &middot; '+esc(r.submittedAt?.toDate?.()?.toLocaleString?.()||'Recent')+'</div>';
+    '<div class="muted">'+esc(techOf(r))+' &middot; '+esc(r.submittedAt?.toDate?.()?.toLocaleString?.()||'Recent')+'</div>';
   const acts=document.createElement('div'); acts.className='acts';
   const review=document.createElement('button'); review.textContent='Review'; review.onclick=()=>openRecord(r); acts.appendChild(review);
   if(archived){ const res=document.createElement('button'); res.className='primary'; res.textContent='Restore'; res.onclick=()=>restoreRecord(r); acts.appendChild(res); }
@@ -178,6 +180,7 @@ async function load(){
   $('notice').textContent='Loading…';
   try{
     const res=await getDocs(collection(db,'fleetServiceReports'));
+    await FDEC_ID.ensureRoster(async()=>{ const us=await getDocs(collection(db,'users')); return us.docs.map(d=>({uid:d.id,...d.data()})); });
     requests=res.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.submittedAt?.seconds||0)-(a.submittedAt?.seconds||0));
     await purgeExpired();
     $('notice').textContent='';
@@ -193,7 +196,7 @@ function openRecord(r){
   $('archiveBtn').hidden=!!r.archived;
   $('restoreBtn').hidden=!r.archived;
   let d=r.details||{};
-  $('meta').innerHTML=field('Submitted by',r.technicianName)+field('Assigned to',r.recipientName)+field('Vehicle',r.vehicleName)+field('Vehicle Number',r.vehicleNumber)+field('License Plate',d.plate)+field('Service Date',d.date)+field('Status',r.status);
+  $('meta').innerHTML=field('Submitted by',techOf(r))+field('Assigned to',r.recipientName)+field('Vehicle',r.vehicleName)+field('Vehicle Number',r.vehicleNumber)+field('License Plate',d.plate)+field('Service Date',d.date)+field('Status',r.status);
   const isOther=d.vehicleType==='other';
   const info=(isOther?field('Vehicle Make',d.otherMake)+field('Vehicle Model',d.otherModel)+field('Model Year',d.otherYear):'')+field('Drop-off',d.dropOff)+(d.dropOff==='yes'?field('Drop-off days',d.dropOffDays):'')+field('Spare needed',d.spareVehicle)+field('Transport needed',d.transportNeeded);
   $('body').innerHTML='<div class="fields">'+info+'</div>'+

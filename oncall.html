@@ -433,6 +433,9 @@ body>*{position:relative;z-index:1;}
   var END = new Date(2027,11,31);
   var KEY = "fdec_oncall_v3";
 
+  /* Names stay as short keys inside the schedule; links maps a key to the roster
+     (account) name so every page shows the same name. Display only. */
+  function dn(t){ var l=state&&state.links; return (l&&l[t])||t; }
   function isMgr(name){ return MANAGERS.indexOf(name)!==-1; }
   // Everyone eligible for First Up / Second Up. Managers are excluded.
   function techsOnly(list){ return list.filter(function(t){ return !isMgr(t); }); }
@@ -666,13 +669,33 @@ body>*{position:relative;z-index:1;}
   window.__oncallApplyRemote = function(d){
     if(!d || !Array.isArray(d.roster) || !Array.isArray(d.assign) || d.assign.length!==WEEKS.length) return;
     applyingRemote = true;
-    state = { roster:d.roster.slice(), assign:d.assign, holBal:d.holBal||1 };
+    state = { roster:d.roster.slice(), assign:d.assign, holBal:d.holBal||1, links:(d.links&&typeof d.links==='object')?d.links:{} };
     try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){}
     applyingRemote = false;
     try{ render(); }catch(e){}
   };
   /* Lets the sync module read the current schedule (to seed the shared copy). */
   window.__oncallCurrentState = function(){ return state; };
+  /* Editors hand in the roster (account names); matches each on-call key such as
+     "Jacob K." to one account (same first name, same last initial) and re-renders. */
+  window.__oncallSetLinks = function(users){
+    var links={}, changed=false;
+    function parts(n){ var a=String(n||"").toLowerCase().replace(/\./g,"").trim().split(/\s+/); return {f:a[0]||"", l:(a.length>1?a[a.length-1]:"")}; }
+    state.roster.forEach(function(key){
+      var k=parts(key), hit=[];
+      (users||[]).forEach(function(u){
+        if(!u||!u.name) return;
+        var p=parts(u.name);
+        if(String(u.name).toLowerCase()===String(key).toLowerCase() || (p.f===k.f && k.l && p.l.charAt(0)===k.l.charAt(0))) hit.push(u.name);
+      });
+      if(hit.length===1 && hit[0]!==key) links[key]=hit[0];
+    });
+    var old=state.links||{};
+    var ks=Object.keys(links).concat(Object.keys(old));
+    ks.forEach(function(x){ if(links[x]!==old[x]) changed=true; });
+    if(changed){ state.links=links; try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} try{ render(); }catch(e){} }
+    return changed;
+  };
 
   var state = load();
 
@@ -742,7 +765,7 @@ body>*{position:relative;z-index:1;}
     if(sel && list.indexOf(sel)===-1) list.push(sel+" (removed)");
     return list.map(function(t){
       var val = t.replace(/ \(removed\)$/,"");
-      return '<option value="'+escapeHtml(val)+'"'+(val===sel?" selected":"")+'>'+escapeHtml(t)+'</option>';
+      return '<option value="'+escapeHtml(val)+'"'+(val===sel?" selected":"")+'>'+escapeHtml(dn(val))+(val!==t?' (removed)':'')+'</option>';
     }).join("");
   }
 
@@ -750,7 +773,7 @@ body>*{position:relative;z-index:1;}
     var chip=document.getElementById("nowChip");
     if(NOW_I>=0){
       var w=WEEKS[NOW_I];
-      chip.innerHTML='Current week: <b>'+fmt(w.start)+' – '+fmt(w.end)+'</b> &nbsp;(1st: '+escapeHtml(state.assign[NOW_I].first)+', 2nd: '+escapeHtml(state.assign[NOW_I].second)+')';
+      chip.innerHTML='Current week: <b>'+fmt(w.start)+' – '+fmt(w.end)+'</b> &nbsp;(1st: '+escapeHtml(dn(state.assign[NOW_I].first))+', 2nd: '+escapeHtml(dn(state.assign[NOW_I].second))+')';
     }else{
       chip.textContent="Today is outside the rotation range.";
     }
@@ -808,7 +831,7 @@ body>*{position:relative;z-index:1;}
     state.roster.forEach(function(t){
       var li=document.createElement("li");
       var badge = isMgr(t) ? ' <span class="mgrbadge">MANAGER</span>' : '';
-      li.innerHTML='<span class="rname">'+escapeHtml(t)+badge+'</span>'+
+      li.innerHTML='<span class="rname">'+escapeHtml(dn(t))+badge+'</span>'+
         '<button class="rm" type="button" data-name="'+escapeHtml(t)+'" aria-label="Remove '+escapeHtml(t)+'">Remove</button>';
       ul.appendChild(li);
     });
@@ -830,7 +853,7 @@ body>*{position:relative;z-index:1;}
     state.roster.forEach(function(t){
       var tot=first[t]+second[t]; totals.push(tot);
       var tr=document.createElement("tr");
-      tr.innerHTML='<td class="name">'+escapeHtml(t)+'</td><td>'+first[t]+'</td><td>'+second[t]+'</td><td><strong>'+tot+'</strong></td>';
+      tr.innerHTML='<td class="name">'+escapeHtml(dn(t))+'</td><td>'+first[t]+'</td><td>'+second[t]+'</td><td><strong>'+tot+'</strong></td>';
       body.appendChild(tr);
     });
     var note=document.getElementById("balNote");
@@ -1091,9 +1114,9 @@ body>*{position:relative;z-index:1;}
     var curName=nameSel.value, curWith=withSel.value;
     var techs = techsOnly(state.roster);
     nameSel.innerHTML='<option value="">Select…</option>'+
-      techs.map(function(t){return '<option value="'+escapeHtml(t)+'">'+escapeHtml(t)+'</option>';}).join("");
+      techs.map(function(t){return '<option value="'+escapeHtml(t)+'">'+escapeHtml(dn(t))+'</option>';}).join("");
     withSel.innerHTML='<option value="">— n/a —</option>'+
-      techs.map(function(t){return '<option value="'+escapeHtml(t)+'">'+escapeHtml(t)+'</option>';}).join("");
+      techs.map(function(t){return '<option value="'+escapeHtml(t)+'">'+escapeHtml(dn(t))+'</option>';}).join("");
     // restore prior selections if still valid
     if(techs.indexOf(curName)!==-1) nameSel.value=curName;
     if(techs.indexOf(curWith)!==-1) withSel.value=curWith;
@@ -1146,7 +1169,7 @@ body>*{position:relative;z-index:1;}
      device (field techs included) reads the same schedule live. -->
 <script type="module">
   import { getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, doc, onSnapshot, setDoc, serverTimestamp }
+  import { getFirestore, doc, onSnapshot, setDoc, serverTimestamp, collection, getDocs }
     from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   (function run(){
     if(!(window.FDECAuth && window.FDECAuth.ready)){ setTimeout(run,50); return; }
@@ -1159,11 +1182,20 @@ body>*{position:relative;z-index:1;}
         if(!isEditor || !state) return;
         try{
           setDoc(ref, {
-            roster: state.roster, assign: state.assign, holBal: state.holBal || 1,
+            roster: state.roster, assign: state.assign, holBal: state.holBal || 1, links: state.links || {},
             updatedAt: serverTimestamp(), updatedBy: (auth.profile && auth.profile.email) || ""
           });
         }catch(e){}
       };
+      // Editors can read the account roster: keep the display names linked to it.
+      if(isEditor){
+        try{
+          getDocs(collection(db,"users")).then(function(q){
+            var arr=[]; q.forEach(function(d){ var x=d.data()||{}; if((x.status||"approved")==="approved") arr.push({uid:d.id,name:x.name||""}); });
+            if(window.__oncallSetLinks && window.__oncallSetLinks(arr)) window.__oncallPush(window.__oncallCurrentState());
+          }).catch(function(){});
+        }catch(e){}
+      }
       // Live read: apply the shared schedule to this device whenever it changes.
       try{
         onSnapshot(ref, function(snap){

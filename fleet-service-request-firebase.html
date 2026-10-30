@@ -7,6 +7,7 @@
 <title>Fleet Service Request</title>
 <meta name="fdec-page-title" content="Fleet Service Request">
 <meta name="fdec-actions" content="#fleetWhoami, #fleetSignOut">
+<script src="fdec-identity.js"></script>
 <script defer src="fdec-header.js?v=88-industrial"></script>
 <style>
   /* Layout: single-column field form; tap-to-mark diagram stage with a service summary view. */
@@ -891,10 +892,18 @@
   });
   if (window.FDECAuth?.ready) {
     window.FDECAuth.ready.then(auth => {
-      const name = auth?.profile?.name || auth?.user?.displayName || auth?.user?.email || 'Employee';
+      const rosterName = auth?.profile?.name || (window.FDEC_ID && FDEC_ID.myName(auth?.user?.uid)) || '';
+      const name = rosterName || auth?.user?.displayName || auth?.user?.email || 'Employee';
       if (displayUser) displayUser.textContent = name;
       const techInput = document.getElementById('name');
-      if (techInput && !techInput.value && auth?.profile?.name) techInput.value = auth.profile.name;
+      const isMgr = !!(auth?.isAdmin || ['manager','admin'].includes(auth?.profile?.role));
+      if (techInput && rosterName) {
+        if (!isMgr) {
+          // Technicians are filed under their roster name; it cannot be retyped.
+          techInput.value = rosterName; techInput.readOnly = true; techInput.style.background = '#f1f4f9';
+          techInput.title = 'Your name comes from your Employee Hub profile. Ask an administrator to change it.';
+        } else if (!techInput.value) techInput.value = rosterName;
+      }
     });
   }
 </script>

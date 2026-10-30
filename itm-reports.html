@@ -8,6 +8,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="fdec-identity.js"></script>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="FDEC ITM">
 <meta name="theme-color" content="#1F3864">
@@ -1589,13 +1590,13 @@ async function enterApp(fbUser){
   IS_ADMIN = isAdminUser();
   ADMIN_UNLOCKED = false;
   // display name + approval status from the Firestore profile
-  let disp = fbUser.displayName || (fbUser.email||'').split('@')[0];
+  let disp = FDEC_ID.myName(fbUser.uid) || fbUser.displayName || (fbUser.email||'').split('@')[0];   // remembered roster name beats the email prefix
   let status = 'approved';   // default: users with no status field (existing accounts) are approved
   try{
     const doc=await FB_DB.collection('users').doc(fbUser.uid).get();
     if(doc.exists){
       const d=doc.data();
-      if(d.name) disp=d.name;
+      if(d.name){ disp=d.name; FDEC_ID.rememberMe(fbUser.uid, d.name, fbUser.email); }
       if(d.status) status=d.status;
     }
   }catch(e){}
@@ -2185,10 +2186,16 @@ function recDate(r){
 function tsMs(t){ return t && t.toMillis ? t.toMillis() : 0; }
 function fmtTs(t){ return t && t.toDate ? t.toDate().toLocaleString() : ''; }
 function reporterName(u){
+  // The roster name for this account; never the email prefix when a real name is known.
+  const mine=FDEC_ID.myName(u && u.uid);
+  if(mine) return mine;
   const w=document.getElementById('whoami');
   const t=w ? w.textContent.replace('ADMIN','').trim() : '';
   return t || (u && u.email) || '';
 }
+/* Current roster name for the tech who filed a record (falls back to the saved text). */
+function recTechName(r){ return FDEC_ID.nameFor(r && r.uid, r && r.byName, r && r.byEmail); }
+function recEditorName(r){ return FDEC_ID.nameForEmail(r && r.editedByEmail, r && r.editedBy); }
 /* Clean the shared Job Number (trim, one space between words, UPPERCASE). */
 function normalizeSharedJobNo(){
   const s=sharedStore(); const n=normalizeJobNo(s.shared_jobno);
@@ -2424,7 +2431,7 @@ async function chooseSubmitTarget(group, payload, u){
     return { mode:'update', id:mine.id, rev:mine.rev||0, editCount:mine.editCount||0, reason:r.reason, mine:true };
   }
   if(others.length){
-    const names=[...new Set(others.map(r=>r.byName||r.byEmail||'another technician'))].join(', ');
+    const names=[...new Set(others.map(r=>recTechName(r)||'another technician'))].join(', ');
     const r=await choiceModal({
       title:'A matching report already exists',
       html:'<p>'+others.length+' '+esc(label)+(others.length===1?' report':' reports')+' for job '+jobTxt+(payload.inspectionDate?(' dated '+esc(payload.inspectionDate)):'')+' '+(others.length===1?'was':'were')+' already submitted by '+esc(names)+'.</p>'+
@@ -2639,7 +2646,7 @@ async function mySubmissionsModal(){
       if(r.archived) status+='<div>Archived by the office</div>';
       if(r.sentToCustomer) status+='<div>Sent to customer</div>';
       if(r.withdrawn) status+='<div>Withdrawn'+(r.withdrawnAt?(' '+esc(fmtTs(r.withdrawnAt))):'')+'</div>';
-      if(r.editedBy) status+='<div>✎ Edited by '+esc(r.editedBy)+(r.editedAt?(' · '+esc(fmtTs(r.editedAt))):'')+(r.editReason?('<br><span style="color:#555">“'+esc(r.editReason)+'”</span>'):'')+'</div>';
+      if(r.editedBy) status+='<div>✎ Edited by '+esc(recEditorName(r))+(r.editedAt?(' · '+esc(fmtTs(r.editedAt))):'')+(r.editReason?('<br><span style="color:#555">“'+esc(r.editReason)+'”</span>'):'')+'</div>';
       if(!status) status='Submitted';
       let acts='';
       if(r.withdrawn){
@@ -4194,9 +4201,14 @@ async function adminDashboard(fullPage){
   const body=bg.querySelector('#adBody');
   const tabs=[...bg.querySelectorAll('.ad-tab')];
   tabs.forEach(t=>t.onclick=()=>{ tabs.forEach(x=>x.classList.remove('active')); t.classList.add('active'); render(t.getAttribute('data-tab')); });
+  /* Roster names (admins can read every profile); cached on the device, so it also works with no signal. */
+  async function loadNames(){
+    await FDEC_ID.ensureRoster(async()=>{ const us=await FB_DB.collection('users').get(); const a=[]; us.forEach(d=>a.push(Object.assign({uid:d.id}, d.data()))); return a; });
+  }
   async function render(which){
     body.innerHTML='Loading…';
     try{
+      await loadNames();
       if(which==='users'){ await renderUsers(); }
       else if(which==='archived'){ await renderArchived(); }
       else { await renderReports(); }
@@ -4217,7 +4229,7 @@ async function adminDashboard(fullPage){
     r._names=(r.reports||[]).map(id=>{const f=FORMS.find(x=>x.id===id); return f?shortName(f):id;}).join(', ');
     const edt=r.editedAt&&r.editedAt.toDate?r.editedAt.toDate():null;
     r._editedWhen=edt?edt.toLocaleDateString():'';
-    r._search=[r.byName,r.byEmail,r.jobName,r.jobNumber,r._names,r.editedBy,TYPE_SHORT[groupOfRecord(r)]].filter(Boolean).join(' ').toLowerCase();
+    r._search=[recTechName(r),r.byName,r.byEmail,r.jobName,r.jobNumber,r._names,r.editedBy,TYPE_SHORT[groupOfRecord(r)]].filter(Boolean).join(' ').toLowerCase();
   }
   /* A possible duplicate = same job number AND same report type AND same inspection
      date. 5-Year Internal, 5-Year FDC Hydro and Corrections never match each other or
@@ -4361,7 +4373,7 @@ async function adminDashboard(fullPage){
       let badge='';
       if(r._dupRole==='true') badge=' <span class="dup-true" title="Newest report with the same job number, type and inspection date">✓ Current</span>';
       else if(dup) badge=' <span class="dup-dup" title="A newer report has the same job number, type and inspection date">⚠ Possible duplicate</span>';
-      const edited = r.editedBy ? (' <span class="edited-by" title="'+esc(r.editReason?('Reason: '+r.editReason):'Edited after submission')+'">✎ Edited by '+esc(r.editedBy)+(r._editedWhen?(' · '+esc(r._editedWhen)):'')+(r.editReason?(' · “'+esc(r.editReason)+'”'):'')+'</span>') : '';
+      const edited = r.editedBy ? (' <span class="edited-by" title="'+esc(r.editReason?('Reason: '+r.editReason):'Edited after submission')+'">✎ Edited by '+esc(recEditorName(r))+(r._editedWhen?(' · '+esc(r._editedWhen)):'')+(r.editReason?(' · “'+esc(r.editReason)+'”'):'')+'</span>') : '';
       const sent = r.sentToCustomer ? ' <span class="ad-chip ad-sent" title="Marked sent to customer">Sent</span>' : '';
       const more='<select class="ad-more" data-id="'+esc(r.id)+'"><option value="">More…</option><option value="fixjob">Correct job number</option>'+
         (dup?'<option value="notdup">Not a duplicate</option>':'')+
@@ -4369,7 +4381,7 @@ async function adminDashboard(fullPage){
         '<option value="delete">Delete…</option></select>';
       return '<tr class="'+(dup?'dup-row':'')+'">'+
         '<td><input type="checkbox" class="ad-sel" data-id="'+esc(r.id)+'"'+(sel.has(r.id)?' checked':'')+'></td>'+
-        '<td>'+esc(r._when)+'</td><td>'+esc(r.byName||r.byEmail||'—')+'</td>'+
+        '<td>'+esc(r._when)+'</td><td>'+esc(recTechName(r)||'—')+'</td>'+
         '<td>'+esc(r.jobName||'—')+(r.jobNumber?(' · '+esc(r.jobNumber)):'')+' '+typeChip(r)+badge+sent+edited+'</td>'+
         '<td style="font-size:11px">'+esc(r._names)+'</td>'+
         '<td style="white-space:nowrap"><button class="ad-view" data-id="'+esc(r.id)+'">View</button> <button class="ad-pdf" data-id="'+esc(r.id)+'" title="Open this report and choose pages to save as PDF">PDF</button> <button class="ad-edit" data-id="'+esc(r.id)+'">Edit</button> <button class="ad-dl" data-id="'+esc(r.id)+'">Download</button> <button class="ad-arch" data-id="'+esc(r.id)+'">Archive</button> '+more+'</td></tr>';
@@ -4430,7 +4442,7 @@ async function adminDashboard(fullPage){
           else if(act==='sent'){ await FB_DB.collection('reports').doc(r.id).update({ sentToCustomer:true, sentAt:TSNOW(), sentBy:adminName() }); r.sentToCustomer=true; draw(); }
           else if(act==='unsent'){ const D=firebase.firestore.FieldValue.delete(); await FB_DB.collection('reports').doc(r.id).update({ sentToCustomer:false, sentAt:D, sentBy:D }); r.sentToCustomer=false; draw(); }
           else if(act==='delete'){
-            if(!confirm('Delete this submitted report?\n\n'+(r.jobName||'Report')+(r.jobNumber?(' · '+r.jobNumber):'')+' — '+(r.byName||r.byEmail||'')+'\n\nThis permanently removes it from the office records and cannot be undone. Archive it instead to keep a copy.')) return;
+            if(!confirm('Delete this submitted report?\n\n'+(r.jobName||'Report')+(r.jobNumber?(' · '+r.jobNumber):'')+' — '+(recTechName(r)||'')+'\n\nThis permanently removes it from the office records and cannot be undone. Archive it instead to keep a copy.')) return;
             await deleteRecords([r]); rows.splice(rows.indexOf(r),1); sel.delete(r.id); computeDupes(rows); draw();
           }
         }catch(e){ alert('That did not save: '+(e.message||e)); }
@@ -4479,7 +4491,7 @@ async function adminDashboard(fullPage){
       arows.forEach(r=>{
         const why = r.archivedReason ? esc(r.archivedReason) : '<span style="color:#9a2b20">Archived by the old automatic rule</span>';
         html+='<tr><td><input type="checkbox" class="ar-sel" data-id="'+esc(r.id)+'"'+(sel.has(r.id)?' checked':'')+'></td>'+
-          '<td>'+esc(r._whenD)+'</td><td>'+esc(r.byName||r.byEmail||'—')+'</td>'+
+          '<td>'+esc(r._whenD)+'</td><td>'+esc(recTechName(r)||'—')+'</td>'+
           '<td>'+esc(r.jobName||'—')+(r.jobNumber?(' · '+esc(r.jobNumber)):'')+' '+typeChip(r)+'</td>'+
           '<td style="font-size:11px">'+esc(r._names)+'</td>'+
           '<td style="font-size:12px">'+esc(r._archD)+(r.archivedBy?('<br>by '+esc(r.archivedBy)):'')+'<br><span style="color:#777">Manual delete only</span></td>'+
@@ -4521,8 +4533,8 @@ async function adminDashboard(fullPage){
       const sdt=r.submittedAt&&r.submittedAt.toDate?r.submittedAt.toDate().toLocaleDateString():'—';
       const wdt=r.withdrawnAt&&r.withdrawnAt.toDate?r.withdrawnAt.toDate().toLocaleDateString():'—';
       const names=(r.reports||[]).map(id=>{const f=FORMS.find(x=>x.id===id); return f?shortName(f):id;}).join(', ');
-      h+='<tr><td>'+esc(sdt)+'</td><td>'+esc(r.byName||r.byEmail||'—')+'</td><td>'+esc(r.jobName||'—')+(r.jobNumber?(' · '+esc(r.jobNumber)):'')+'</td><td style="font-size:11px">'+esc(names)+'</td><td>'+esc(wdt)+'</td>'+
-        '<td style="white-space:nowrap"><button class="wd-view" data-id="'+esc(r.id)+'">View</button> <button class="wd-dl" data-id="'+esc(r.id)+'">Download</button> <button class="wd-restore" data-id="'+esc(r.id)+'">Restore</button> <button class="wd-del" data-id="'+esc(r.id)+'" data-label="'+esc((r.jobName||'report')+' — '+(r.byName||r.byEmail||''))+'">Delete</button></td></tr>';
+      h+='<tr><td>'+esc(sdt)+'</td><td>'+esc(recTechName(r)||'—')+'</td><td>'+esc(r.jobName||'—')+(r.jobNumber?(' · '+esc(r.jobNumber)):'')+'</td><td style="font-size:11px">'+esc(names)+'</td><td>'+esc(wdt)+'</td>'+
+        '<td style="white-space:nowrap"><button class="wd-view" data-id="'+esc(r.id)+'">View</button> <button class="wd-dl" data-id="'+esc(r.id)+'">Download</button> <button class="wd-restore" data-id="'+esc(r.id)+'">Restore</button> <button class="wd-del" data-id="'+esc(r.id)+'" data-label="'+esc((r.jobName||'report')+' — '+(recTechName(r)||''))+'">Delete</button></td></tr>';
     });
     h+='</tbody></table>';
     holder.innerHTML=h;
@@ -4545,6 +4557,7 @@ async function adminDashboard(fullPage){
     const snap=await FB_DB.collection('users').orderBy('email').get();
     if(snap.empty){ body.innerHTML='<div style="padding:16px;color:#777">No users registered yet.</div>'; return; }
     const rows=[]; snap.forEach(d=>rows.push({id:d.id, ...d.data()}));
+    FDEC_ID.setRoster(rows);   // keep the shared name list current
     const statusOf=(u)=> (u.status||'approved');
     // split active vs archived (restricted)
     const active=rows.filter(u=>statusOf(u)!=='restricted');
@@ -4632,7 +4645,7 @@ async function adminDashboard(fullPage){
 
 function downloadCloudReport(rec){
   // Reconstruct a portable draft file the app can also re-import.
-  const payload={ type:'fdec_itm_draft', name:(rec.jobName||'report')+' — '+(rec.byName||''),
+  const payload={ type:'fdec_itm_draft', name:(rec.jobName||'report')+' — '+(recTechName(rec)||''),
     form:(rec.reports&&rec.reports[0])||'fd17', allValues:rec.allValues||{}, added:rec.added||[],
     savedAt:(rec.submittedAt&&rec.submittedAt.toDate?rec.submittedAt.toDate().toISOString():new Date().toISOString()),
     by:rec.byEmail };
@@ -4662,12 +4675,12 @@ function viewCloudReport(rec, closeDash){
     renderForm(form);
     if(typeof closeDash==='function') closeDash();
     // let the admin know what they're looking at
-    flashCloud('Viewing '+(rec.byName||rec.byEmail||'report')+(rec.jobName?(' · '+rec.jobName):''));
+    flashCloud('Viewing '+(recTechName(rec)||'report')+(rec.jobName?(' · '+rec.jobName):''));
     // View bar: Save as PDF without touching the filed report.
     let vb=document.getElementById('viewModeBar');
     if(!vb){ vb=document.createElement('div'); vb.id='viewModeBar'; vb.className='edit-mode-bar no-print';
       const as=document.getElementById('appScreen'); if(as && as.parentNode) as.parentNode.insertBefore(vb, as); else document.body.appendChild(vb); }
-    vb.innerHTML='<span>Viewing '+esc(rec.byName||rec.byEmail||'a technician')+'’s report'+(rec.jobName?(' · '+esc(rec.jobName)):'')+' — saving a PDF does not change the filed report.</span>'+
+    vb.innerHTML='<span>Viewing '+esc(recTechName(rec)||'a technician')+'’s report'+(rec.jobName?(' · '+esc(rec.jobName)):'')+' — saving a PDF does not change the filed report.</span>'+
       '<span style="display:flex;gap:8px"><button type="button" id="viewPdfBtn" class="primary">Save as PDF</button><button type="button" id="viewDoneBtn">Done viewing</button></span>';
     vb.style.display='flex';
     document.getElementById('viewPdfBtn').onclick=()=>reportPickerModal();
@@ -4688,11 +4701,11 @@ function editCloudReport(rec, closeDash){
                group:groupOfRecord(rec), rev:rec.rev||0, editCount:rec.editCount||0, jobKey:recJobKey(rec), sent:!!rec.sentToCustomer };
   let b=document.getElementById('editModeBar');
   if(!b){ b=document.createElement('div'); b.id='editModeBar'; b.className='edit-mode-bar no-print'; document.body.appendChild(b); }
-  const who = mine ? 'your submitted report' : (esc(rec.byName||rec.byEmail||'a technician')+'’s report');
+  const who = mine ? 'your submitted report' : (esc(recTechName(rec)||'a technician')+'’s report');
   b.innerHTML='<span>✏️ Editing '+who+(rec.jobName?(' · '+esc(rec.jobName)):'')+' — tap Submit Report to <b>update the original</b>. You will be asked for a reason.</span><button type="button" id="editCancelBtn">Cancel edit</button>';
   b.style.display='flex';
   const c=document.getElementById('editCancelBtn'); if(c) c.onclick=()=>clearEditMode();
-  flashCloud(mine ? 'Editing your report — Submit Report will update it' : ('Editing '+(rec.byName||rec.byEmail||'report')+' — Submit Report will update it'));
+  flashCloud(mine ? 'Editing your report — Submit Report will update it' : ('Editing '+(recTechName(rec)||'report')+' — Submit Report will update it'));
 }
 
 function manageUsersModal(){

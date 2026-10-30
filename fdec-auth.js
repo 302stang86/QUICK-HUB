@@ -233,6 +233,7 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
   state.profile = await loadProfile(user);
+  if (window.FDEC_ID && state.profile && state.profile.name) FDEC_ID.rememberMe(user.uid, state.profile.name, user.email);
   state.permissions = await loadPermissions();
   state.isAdmin = isAdminEmail(user.email) || (state.profile && state.profile.role === "admin");
 

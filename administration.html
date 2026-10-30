@@ -290,6 +290,7 @@ html.fdec-admin-boot body::after{content:"Loading Administration…";position:fi
 <!-- First-paint guard: original masthead is superseded by fdec-header.js. -->
 <style id="fdec-first-paint">body > .masthead{display:none !important;}@media print{body > .masthead{display:flex !important;}}</style>
 <meta name="fdec-hide" content=".masthead">
+<script src="fdec-identity.js"></script>
 <script defer src="fdec-header.js?v=88-industrial"></script>
 </head>
 <body>
@@ -969,6 +970,7 @@ async function loadRoster(){
       if(pa!==pb) return pa-pb;
       return String(a.name||a.email||"").localeCompare(String(b.name||b.email||""));
     });
+    if(window.FDEC_ID) FDEC_ID.setRoster(ROSTER);
     renderRoster($("erSearch").value||"");
   }catch(e){
     $("erList").innerHTML = '<div class="er-empty">Could not load the roster'+(e&&e.code?(" ("+e.code+")"):"")+'.</div>';
@@ -1021,6 +1023,7 @@ async function erUpdate(uid, fields, okMsg){
     await updateDoc(doc(db,"users",uid), fields);
     var o = ROSTER.filter(function(x){ return x.uid===uid; })[0];
     if(o) Object.keys(fields).forEach(function(k){ o[k]=fields[k]; });
+    if(window.FDEC_ID) FDEC_ID.setRoster(ROSTER);   // every page now shows the new name
     renderRoster($("erSearch").value||"");
     P.toast(okMsg||"Saved.");
   }catch(err){ P.toast("Update failed: "+(err&&err.code?err.code:"check permissions")); loadRoster(); }

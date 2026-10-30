@@ -343,6 +343,7 @@ body>*{position:relative;z-index:1;}
   <div class="wrap" id="views"></div>
 </div>
 
+<script src="fdec-identity.js"></script>
 <script type="module">
 /* =========================================================================
    1. FIREBASE CONFIG
@@ -524,6 +525,7 @@ function authError(e){
   return "Sign-in failed: " + (e?.message || c);
 }
 
+function nameOf(r){ try{ return window.FDEC_ID ? FDEC_ID.nameFor(r.uid||r.id, r.name, r.email) : (r.name||""); }catch(e){ return r.name||""; } }
 async function onAuth(user){
   unsub.forEach(fn => fn()); unsub = [];
   me = user; profile = null; myRequests = []; roster = [];
@@ -542,7 +544,6 @@ async function onAuth(user){
         email: user.email,
         role: "tech",
         active: true,
-        balances: { pto: { allotted:0, carryover:0 } },
         createdAt: serverTimestamp()
       });
       snap = await getDoc(ref);
@@ -550,6 +551,7 @@ async function onAuth(user){
   }
 
   profile = { id:user.uid, ...snap.data() };
+  try{ if(window.FDEC_ID) FDEC_ID.rememberMe(user.uid, profile.name, profile.email||user.email); }catch(e){}
   $("#whoami").textContent = `${profile.name} · ${profile.role === "manager" ? "Manager" : "Technician"}`;
   show("appView");
   startFeeds();
@@ -576,7 +578,7 @@ function startFeeds(){
 
   if (isMgr){
     unsub.push(onSnapshot(collection(db, "users"),
-      s => { roster = s.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b)=> (a.name||"").localeCompare(b.name||"")); render(); },
+      s => { roster = s.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b)=> (a.name||"").localeCompare(b.name||"")); try{ if(window.FDEC_ID) FDEC_ID.setRoster(roster); }catch(e){} render(); },
       e => toast("Could not load the roster: " + e.message, 5000)
     ));
   }
@@ -595,29 +597,7 @@ function startFeeds(){
    ========================================================================= */
 const drawsOnPto = r => r.type !== "unpaid";
 
-function balanceFor(user, requests, year){
-  year = year || activeYear;
-  const b = (user.balances && user.balances[PTO]) || { allotted:0, carryover:0 };
-  const carry = (Number(b.carryoverYear || 0) === year) ? Number(b.carryover || 0) : 0;
-  const total = Number(b.allotted || 0) + carry;
-  let used = 0, pending = 0;
-  for (const r of requests){
-    if (r.uid !== user.id || !drawsOnPto(r)) continue;
-    if (yearOf(r.startDate) !== year) continue;
-    if (r.status === "approved") used += Number(r.hours || 0);
-    else if (r.status === "pending") pending += Number(r.hours || 0);
-  }
-  return { total, used, pending, carry, left: total - used - pending };
-}
 function requestsForUser(uid){ return myRequests.filter(r => r.uid === uid); }
-function yearOptions(){
-  const now = new Date().getFullYear();
-  let out = "";
-  for (let y = now - 2; y <= now + 1; y++)
-    out += `<option value="${y}" ${y===activeYear?"selected":""}>${y}</option>`;
-  return out;
-}
-
 /* =========================================================================
    Tabs
    ========================================================================= */
@@ -666,7 +646,7 @@ function reqRow(r, mgrView){
   <div class="req ${esc(r.status)}">
     <span class="stripe"></span>
     <div class="body">
-      <div class="ttl">${mgrView ? esc(r.name) + " — " : ""}${kind} · ${fmtDays(r.hours)} (${fmtHours(r.hours)} hrs)</div>
+      <div class="ttl">${mgrView ? esc(nameOf(r)) + " — " : ""}${kind} · ${fmtDays(r.hours)} (${fmtHours(r.hours)} hrs)</div>
       <div class="meta">${span}</div>
       ${r.note ? `<div class="said">${esc(r.note)}</div>` : ""}
       ${r.managerNote ? `<div class="said">Manager: ${esc(r.managerNote)}</div>` : ""}
@@ -686,9 +666,6 @@ function reqRow(r, mgrView){
 }
 
 function wireCommon(){
-  $$("#yearPickRoster").forEach(el => el.addEventListener("change", () => {
-    activeYear = Number(el.value); render();
-  }));
   $$("#archBtn").forEach(el => el.addEventListener("click", () => { showArchive = !showArchive; render(); }));
 
   $$("[data-cancel]").forEach(b => b.addEventListener("click", async () => {
@@ -714,7 +691,7 @@ function wireCommon(){
   $$("[data-hours]").forEach(b => b.addEventListener("click", async () => {
     const r = myRequests.find(x => x.id === b.dataset.hours);
     if (!r) return;
-    const raw = prompt(`Days to charge for ${r.name}?\n\nCurrently ${fmtDays(r.hours)}. Half days are 0.5. The dates on the coverage calendar do not change.`, String(h2d(r.hours)));
+    const raw = prompt(`Days to charge for ${nameOf(r)}?\n\nCurrently ${fmtDays(r.hours)}. Half days are 0.5. The dates on the coverage calendar do not change.`, String(h2d(r.hours)));
     if (raw === null) return;
     const days = Number(raw);
     if (!isFinite(days) || days <= 0) return toast("Enter a number greater than zero (0).", 4000);
@@ -728,7 +705,7 @@ function wireCommon(){
   $$("[data-del]").forEach(b => b.addEventListener("click", async () => {
     const r = myRequests.find(x => x.id === b.dataset.del);
     if (!r) return;
-    if (!confirm(`Delete ${r.name}'s request for ${fmtShort(r.startDate)}? This cannot be undone and the days return to their balance.`)) return;
+    if (!confirm(`Delete ${nameOf(r)}'s request for ${fmtShort(r.startDate)}? This cannot be undone.`)) return;
     try { await deleteDoc(doc(db,"requests",r.id)); toast("Request deleted."); }
     catch(e){ toast("Could not delete: " + e.message, 5000); }
   }));
@@ -847,12 +824,7 @@ function wireRequest(){
   const paintTotals = () => {
     const total = Object.values(formDays).reduce((a,b) => a + Number(b||0), 0);
     $("#fTotal").value = `${fmtDays(total)} (${fmtHours(total)} hrs)`;
-    const yr = yearOf(formStart);
-    const b = balanceFor(profile, requestsForUser(me.uid), yr);
-    const after = b.left - total;
     let html = "";
-    if (after < HOURS_PER_DAY) html = `<div class="msg warn">This leaves ${fmtDays(Math.max(0, after))} of PTO for the rest of ${yr}.</div>`;
-    else html = `<div class="msg ok">Leaves ${fmtDays(after)} of PTO after approval.</div>`;
 
     const overlap = myRequests.filter(r =>
       r.uid === me.uid && r.status !== "canceled" && r.status !== "denied" &&
@@ -930,7 +902,7 @@ function viewApprovals(){
   <section class="panel">
     <div class="panel-head">
       <h2>Archive</h2>
-      <p class="note">${archived.length} request${archived.length===1?"":"s"} whose dates have passed. Still counted in the balances.</p>
+      <p class="note">${archived.length} request${archived.length===1?"":"s"} whose dates have passed.</p>
       <button class="btn ghost small" id="archBtn" style="margin-left:auto">${showArchive ? "Hide" : "Show"} archive</button>
     </div>
     ${showArchive
@@ -952,7 +924,7 @@ function wireApprovals(){
   $("#exportBtn")?.addEventListener("click", () => {
     const rows = [["Name","Start","End","Days","Hours","Status","Decided by","Note"]];
     myRequests.filter(r => r.status === "approved").forEach(r => rows.push([
-      r.name, r.startDate, r.endDate, h2d(r.hours), r.hours, r.status, r.decidedBy || "", r.note || ""
+      nameOf(r), r.startDate, r.endDate, h2d(r.hours), r.hours, r.status, r.decidedBy || "", r.note || ""
     ]));
     const csv = rows.map(r => r.map(c => `"${String(c ?? "").replace(/"/g,'""')}"`).join(",")).join("\n");
     const url = URL.createObjectURL(new Blob([csv], { type:"text/csv" }));
@@ -966,22 +938,14 @@ function wireApprovals(){
 /* ---------- Roster ---------- */
 function viewRoster(){
   const rows = roster.map(u => {
-    const b = balanceFor(u, myRequests);
     return `<tr>
-      <td><strong>${esc(u.name)}</strong><div class="hint">${esc(u.email || "")}</div></td>
+      <td><strong>${esc(nameOf(u))}</strong><div class="hint">${esc(u.email || "")}</div></td>
       <td>
         <select data-uid="${u.id}" data-field="role">
           <option value="tech" ${u.role==="tech"?"selected":""}>Technician</option>
           <option value="manager" ${u.role==="manager"?"selected":""}>Manager</option>
         </select>
       </td>
-      <td>
-        <input type="number" step="0.5" min="0" value="${h2d(u.balances?.[PTO]?.allotted)}" data-uid="${u.id}" data-field="allotted" style="max-width:74px">
-      </td>
-      <td>
-        <input type="number" step="0.5" min="0" value="${h2d(u.balances?.[PTO]?.carryover)}" data-uid="${u.id}" data-field="carryover" style="max-width:74px">
-      </td>
-      <td class="hint">${fmtDays(b.used)} used<br>${fmtDays(b.left)} left</td>
       <td>
         <select data-uid="${u.id}" data-field="active">
           <option value="true" ${u.active!==false?"selected":""}>Active</option>
@@ -994,78 +958,27 @@ function viewRoster(){
   return `
   <section class="panel">
     <div class="panel-head">
-      <h2>Roster and PTO allotments</h2>
-      <p class="note">Enter days. One (1) day equals ${HOURS_PER_DAY} hours, a half day equals ${HOURS_PER_DAY/2}. Used and left shown for ${activeYear}.</p>
-      <select id="yearPickRoster" style="width:auto;margin-left:auto" aria-label="Year">${yearOptions()}</select>
+      <h2>Roster</h2>
+      <p class="note">Set each person's role and whether they are active. Names, phone and access are managed in Administration. PTO balances are kept in a separate program.</p>
     </div>
     ${roster.length ? `<div class="tblwrap"><table class="grid">
       <thead><tr>
         <th>Tech</th><th>Role</th>
-        <th>PTO granted (days)</th>
-        <th>Carryover into ${activeYear} (days)</th>
-        <th>${activeYear}</th><th>Status</th>
+        <th>Status</th>
       </tr></thead>
       <tbody>${rows}</tbody></table></div>`
       : `<p class="empty">No accounts yet. Techs appear here after they register and sign in once.</p>`}
-  </section>
-
-  <section class="panel">
-    <div class="panel-head">
-      <h2>Year-end rollover</h2>
-      <p class="note">Run once in January. The reset itself needs nothing from you.</p>
-    </div>
-    <p class="hint" style="margin-bottom:12px">
-      Carries each tech's unused ${activeYear - 1} PTO into ${activeYear}, up to the cap you set.
-      Leave the cap at zero (0) for use-it-or-lose-it. This overwrites the carryover column above.
-    </p>
-    <div class="field" style="max-width:220px">
-      <label for="cap_pto">Carryover cap (days)</label>
-      <input id="cap_pto" type="number" min="0" step="0.5" value="0">
-    </div>
-    <div id="rollMsg"></div>
-    <button class="btn" id="rolloverBtn">Roll unused PTO into ${activeYear}</button>
   </section>`;
 }
 
-async function runRollover(){
-  const from = activeYear - 1, to = activeYear;
-  const cap = d2h($("#cap_pto")?.value || 0);
-  const techs = roster.filter(u => u.active !== false);
-  if (!techs.length) return msgTo("#rollMsg", "No active techs on the roster.", "err");
-  if (!confirm(`Roll unused ${from} PTO into ${to} for ${techs.length} tech(s)? This overwrites the carryover column.`)) return;
-
-  const btn = $("#rolloverBtn"); btn.disabled = true; btn.innerHTML = 'Working <span class="spin"></span>';
-  const lines = []; let failed = 0;
-  for (const u of techs){
-    const b = balanceFor(u, myRequests, from);
-    const carried = Math.max(0, Math.min(b.left, cap));
-    try {
-      await updateDoc(doc(db,"users",u.id), {
-        [`balances.${PTO}.carryover`]: carried,
-        [`balances.${PTO}.carryoverYear`]: to
-      });
-      if (carried > 0) lines.push(`${u.name}: ${fmtDays(carried)}`);
-    } catch(e){ failed++; }
-  }
-  btn.disabled = false; btn.textContent = `Roll unused PTO into ${to}`;
-  msgTo("#rollMsg", failed
-    ? `Finished with ${failed} error(s). Check your connection and run it again.`
-    : (lines.length ? `Carried into ${to} — ${lines.join("; ")}.` : `Nothing to carry. Every balance starts ${to} at the granted days.`),
-    failed ? "err" : "ok");
-}
-
 function wireRoster(){
-  $("#rolloverBtn")?.addEventListener("click", runRollover);
   $$('#views input[data-field], #views select[data-field]').forEach(el => {
     el.addEventListener("change", async () => {
       const uid = el.dataset.uid, field = el.dataset.field;
       let patch;
       if (field === "role") patch = { role: el.value };
       else if (field === "active") patch = { active: el.value === "true" };
-      else {
-        patch = { [`balances.${PTO}.${field}`]: d2h(el.value) };
-        if (field === "carryover") patch[`balances.${PTO}.carryoverYear`] = activeYear;
-      }
+      else return;
       try { await updateDoc(doc(db,"users",uid), patch); toast("Saved."); }
       catch(e){ toast("Could not save: " + e.message, 5000); }
     });

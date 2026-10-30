@@ -25,7 +25,8 @@ async function submitReport(data){
   if(JSON.stringify(data).length > 100000) throw new Error('Request is too large. Shorten the notes and retry.');
   const payload = {
     uid: auth.user.uid,
-    technicianName: String(data.technician || '').slice(0,150),
+    // Technicians are always filed under their roster name; managers/admins may file for someone else.
+    technicianName: String((!isManagerOrAdmin(auth) && ((window.FDEC_ID && FDEC_ID.myName(auth.user.uid)) || auth.profile?.name)) || data.technician || '').slice(0,150),
     technicianEmail: auth.user.email || '',
     recipientName: 'Fleet Managers',
     recipients: FLEET_RECIPIENTS.slice(),
