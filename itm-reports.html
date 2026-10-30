@@ -259,6 +259,13 @@ button{font-family:inherit}
 .dup-dup{display:inline-block;font-size:10px;font-weight:700;background:#fdecea;color:var(--red);padding:1px 7px;border-radius:9px;margin-left:4px}
 .dup-row{background:#fdf5f4}
 .dup-row td{opacity:.85}
+.ad-chip{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:9px;margin-left:4px;background:#e8edf5;color:#27406b;white-space:nowrap}
+.ad-chip-fd24{background:#efe6f7;color:#5a2b82}.ad-chip-fd25{background:#e3f3f3;color:#145a5a}.ad-chip-correction{background:#fff3d6;color:#7a5c00}
+.ad-sent{background:#e9f6ec;color:#1a7f37}
+.ad-grp td{background:#f1f4f9;font-size:12.5px;padding:7px 8px;border-bottom:1px solid var(--line)}
+.ad-arch,.ad-restore,.ad-del{border:1px solid var(--navy);background:#fff;color:var(--navy);border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer}
+.ad-del{border-color:#a02020;color:#a02020}
+.ad-more{border:1px solid var(--line);border-radius:6px;padding:4px 4px;font-size:12px;background:#fff;color:var(--ink);max-width:96px}
 .ad-dup-note{background:#fdecea;color:#9a2b20;font-size:12.5px;font-weight:600;padding:9px 12px;border-radius:8px;margin-bottom:10px;border:1px solid #f3c6c0}
 .ad-tab{background:none;border:none;padding:8px 14px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent}
 .ad-tab.active{color:var(--navy);border-bottom-color:var(--navy)}
@@ -680,6 +687,7 @@ html.fdec-direct-admin-boot body::after{content:"Loading ITM Administration…";
     <span class="saveflag" id="saveFlag">✓ Saved</span>
     <button id="saveDraftBtn">Save Draft</button>
     <button id="loadDraftBtn">Load Draft</button>
+    <button id="mySubBtn">My Submissions</button>
     <button id="pdfAllBtn" class="primary">Submit Report</button>
     <div class="ab-menu">
       <button id="abMenuBtn" aria-label="More options" title="More">⋮</button>
@@ -1479,6 +1487,7 @@ function hasAnyData(){
 }
 function writeAutosave(){
   try{
+    if(typeof VIEW_DOC!=='undefined' && (VIEW_DOC||EDIT_DOC)) return;   // never snapshot a filed report as if it were new work
     if(!hasAnyData()){ return; }   // nothing worth saving yet
     const snap={ allValues:ALLVALUES, added:(ADDED||[]).slice(), form:ACTIVE_FORM, savedAt:new Date().toISOString() };
     localStorage.setItem(LS.autosave, JSON.stringify(snap));
@@ -1651,7 +1660,10 @@ function showPendingScreen(name, status){
 
 /* On startup, if a crash-recovery snapshot exists with real content, offer to restore it. */
 function maybeOfferRecovery(){
-  const snap=getAutosave();
+  let snap=getAutosave();
+  const stash=getStash();
+  const fromStash=!!(stash && stash.allValues);
+  if(fromStash) snap=stash;   // work set aside while a submitted report was open
   if(!snap || !snap.allValues) return;
   // Only offer if the snapshot actually holds data.
   let has=false;
@@ -1664,7 +1676,7 @@ function maybeOfferRecovery(){
   const bg=document.createElement('div'); bg.className='modal-bg';
   bg.innerHTML=`<div class="modal" style="max-width:460px">
     <h3>Recover Unsaved Work?</h3>
-    <p>It looks like the app closed with unsaved changes from ${esc(whenStr)}. Would you like to restore that work?</p>
+    <p>${fromStash?('The app closed while a submitted report was open. Your in-progress report from '+esc(whenStr)+' was set aside. Would you like to restore it?'):('It looks like the app closed with unsaved changes from '+esc(whenStr)+'. Would you like to restore that work?')}</p>
     <div class="mbtns">
       <button id="recDiscard">Discard</button>
       <button id="recRestore" class="primary">Restore</button>
@@ -1682,9 +1694,10 @@ function maybeOfferRecovery(){
       buildTabs();
       if(ACTIVE_FORM==='__summary') renderSummary(); else renderForm(ACTIVE_FORM);
     }catch(e){}
+    if(fromStash){ try{ localStorage.removeItem(STASH_KEY); }catch(e){} clearAutosave(); }
     close();
   };
-  bg.querySelector('#recDiscard').onclick=()=>{ clearAutosave(); close(); };
+  bg.querySelector('#recDiscard').onclick=()=>{ clearAutosave(); if(fromStash){ try{ localStorage.removeItem(STASH_KEY); }catch(e){} } close(); };
 }
 
 function upX(){}  // placeholder removed marker
@@ -1831,6 +1844,11 @@ function inputEl(id, opts={}){
   if(opts.placeholder) i.placeholder=opts.placeholder;
   i.value=val(id);
   i.oninput=()=>{ setVal(id,i.value); if(opts.onchange) opts.onchange(); flash(); };
+  if(/_jobno$/.test(id)){
+    // Job numbers are cleaned on leaving the field: trimmed, single spaces, UPPERCASE.
+    i.setAttribute('autocapitalize','characters');
+    i.addEventListener('change',()=>{ const n=normalizeJobNo(i.value); i.value=n; setVal(id,n); flash(); });
+  }
   if(/_firedispatch$/.test(id)) attachDispatchLookup(i, id);
   if(/_job_csz$/.test(id)) attachCityAutostamp(i, id);
   return i;
@@ -2130,58 +2148,444 @@ function deficiencyWarningModal(problems, onContinue){
   const go=bg.querySelector('#dwGo'); if(go) go.onclick=()=>{ dwClose(); onContinue(); };
 }
 
+/* ============================================================================
+   REPORT GROUPS, SUBMISSION TRACKING AND TECHNICIAN EDITS
+   A submission is exactly one group:
+     inspection  - main inspection forms (+ add-on system forms), summary allowed
+     fd24        - 5-Year Internal Pipe Inspection (stand-alone)
+     fd25        - 5-Year FDC Hydrostatic Test (stand-alone)
+     correction  - Deficiency Correction Report (stand-alone)
+   The summary is only ever part of the inspection group.
+============================================================================ */
+const SEPARATE_FORMS = ['fd24','fd25','correction'];
+const GROUP_LABELS = {
+  inspection:'Inspection Reports',
+  fd24:'5-Year Internal Pipe Inspection',
+  fd25:'5-Year FDC Hydrostatic Test',
+  correction:'Deficiency Correction Report'
+};
+function groupOfForm(fid){ return SEPARATE_FORMS.indexOf(fid)>=0 ? fid : 'inspection'; }
+function groupOfIds(ids){
+  const g=[...new Set((ids||[]).map(groupOfForm))];
+  return g.length===1 ? g[0] : (g.length===0 ? 'inspection' : null);   // null = mixed groups
+}
+/* Older records have no reportGroup; derive it from the forms they hold. A legacy
+   record that mixed groups counts as an inspection report. */
+function groupOfRecord(rec){
+  if(rec && rec.reportGroup) return rec.reportGroup;
+  return groupOfIds(rec && rec.reports) || 'inspection';
+}
+function normalizeJobNo(s){ return String(s==null?'':s).replace(/\s+/g,' ').trim().toUpperCase(); }
+function recJobKey(r){ return normalizeJobNo((r && (r.jobKey||r.jobNumber))||''); }
+function recDate(r){
+  if(r && r.inspectionDate!=null) return String(r.inspectionDate).trim();
+  const sh=r && r.allValues && r.allValues.__shared;
+  return String((sh && sh.shared_hdate)||'').trim();
+}
+function tsMs(t){ return t && t.toMillis ? t.toMillis() : 0; }
+function fmtTs(t){ return t && t.toDate ? t.toDate().toLocaleString() : ''; }
+function reporterName(u){
+  const w=document.getElementById('whoami');
+  const t=w ? w.textContent.replace('ADMIN','').trim() : '';
+  return t || (u && u.email) || '';
+}
+/* Clean the shared Job Number (trim, one space between words, UPPERCASE). */
+function normalizeSharedJobNo(){
+  const s=sharedStore(); const n=normalizeJobNo(s.shared_jobno);
+  if(n!==(s.shared_jobno||'')){ s.shared_jobno=n; DIRTY=true; }
+  return n;
+}
+
+/* ---- Which submitted record (if any) this device's current form belongs to ---- */
+function submittedKey(){ const u=FB_AUTH&&FB_AUTH.currentUser; return 'fdec_itm_submitted_'+(u?u.uid:'anon'); }
+function getSubmittedMap(){ try{ return JSON.parse(localStorage.getItem(submittedKey()))||{}; }catch(e){ return {}; } }
+function setSubmittedMap(m){ try{ localStorage.setItem(submittedKey(), JSON.stringify(m)); }catch(e){} }
+function getLinkedRecord(group){
+  const m=getSubmittedMap()[group]; if(!m) return null;
+  return (m.jobKey && m.jobKey===normalizeJobNo(sharedStore().shared_jobno)) ? m : null;
+}
+function linkRecord(group,id,jobKey,rev,editCount){
+  const m=getSubmittedMap(); m[group]={ id, jobKey, rev:rev||0, editCount:editCount||0, at:Date.now() }; setSubmittedMap(m);
+}
+function unlinkGroup(group){ const m=getSubmittedMap(); if(m[group]){ delete m[group]; setSubmittedMap(m); } }
+
+/* ---- In-progress work is stashed while a submitted report is opened ---- */
+const STASH_KEY='fdec_itm_stash';
+function getStash(){ try{ return JSON.parse(localStorage.getItem(STASH_KEY)); }catch(e){ return null; } }
+function stashWork(){
+  try{
+    if(!hasAnyData()){ localStorage.removeItem(STASH_KEY); return; }
+    localStorage.setItem(STASH_KEY, JSON.stringify({ allValues:ALLVALUES, added:(ADDED||[]).slice(), form:ACTIVE_FORM, savedAt:new Date().toISOString() }));
+  }catch(e){}
+}
+function restoreStashedWork(){
+  const st=getStash();
+  try{ localStorage.removeItem(STASH_KEY); }catch(e){}
+  if(st && st.allValues){
+    ALLVALUES=st.allValues; ADDED=Array.isArray(st.added)?st.added.slice():[];
+    ACTIVE_FORM=(st.form==='__summary' || FORMS.some(f=>f.id===st.form)) ? st.form : 'fd17';
+    flashCloud('Your in-progress report was restored');
+  }else{
+    ALLVALUES={}; ADDED=[]; ACTIVE_FORM='fd17';
+  }
+  loadFormValues(ACTIVE_FORM==='__summary' ? 'fd17' : ACTIVE_FORM);
+  DIRTY=false;
+  buildTabs();
+  if(ACTIVE_FORM==='__summary') renderSummary(); else renderForm(ACTIVE_FORM);
+}
+
+/* ---- Small promise-based dialog: buttons plus an optional required reason ---- */
+function choiceModal(opts){
+  return new Promise(resolve=>{
+    const mh=document.getElementById('modalHost')||document.body;
+    const bg=document.createElement('div'); bg.className='modal-bg'; bg.style.zIndex=1500;
+    const btns=opts.buttons.map((b,i)=>'<button type="button" data-i="'+i+'"'+(b.primary?' class="primary"':'')+'>'+esc(b.label)+'</button>').join('');
+    bg.innerHTML='<div class="modal" style="max-width:540px"><h3>'+esc(opts.title)+'</h3>'+
+      '<div style="font-size:13.5px;line-height:1.5">'+(opts.html||'')+'</div>'+
+      (opts.reason?('<label style="display:block;margin-top:12px;font-size:12px;font-weight:700;color:var(--navy)">'+esc(opts.reasonLabel||'Reason for the change (required to update)')+'</label>'+
+        '<textarea id="cmReason" rows="3" maxlength="500" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px;border:1px solid var(--line);border-radius:6px;font:inherit" placeholder="'+esc(opts.placeholder||'Example: corrected the riser pressure reading')+'"></textarea>'+
+        '<div id="cmErr" style="color:#c00;font-size:12px;min-height:16px"></div>'):'')+
+      '<div class="mbtns" style="flex-wrap:wrap">'+btns+'</div></div>';
+    mh.appendChild(bg);
+    const close=()=>{ if(bg.parentNode) bg.parentNode.removeChild(bg); };
+    bg.querySelectorAll('.mbtns button').forEach(btn=>{
+      btn.onclick=()=>{
+        const b=opts.buttons[parseInt(btn.getAttribute('data-i'),10)];
+        let reason='';
+        if(opts.reason){
+          const ta=bg.querySelector('#cmReason'); reason=(ta.value||'').trim();
+          if(b.needsReason && reason.length<3){ bg.querySelector('#cmErr').textContent='Enter a short reason for the change.'; ta.focus(); return; }
+        }
+        close(); resolve({ value:b.value, reason });
+      };
+    });
+    const ta=bg.querySelector('#cmReason'); if(ta) setTimeout(()=>ta.focus(),50);
+  });
+}
+
+/* Existing, non-archived, non-withdrawn reports for the same job number and group. */
+async function findExistingReports(jobKey, group){
+  const out=new Map();
+  const run=async()=>{
+    try{
+      const snap=await FB_DB.collection('reports').where('jobNumber','==',jobKey).limit(50).get();
+      snap.forEach(d=>out.set(d.id,Object.assign({id:d.id}, d.data())));
+    }catch(e){ console.warn('existing-report lookup failed', e); }
+  };
+  await Promise.race([ run(), new Promise(r=>setTimeout(r,6000)) ]);
+  return [...out.values()].filter(r=>!r.archived && !r.withdrawn && groupOfRecord(r)===group && recJobKey(r)===jobKey);
+}
+
+/* Only the selected forms plus the shared job fields are stored. */
+function buildReportPayload(sel, group){
+  const s=sharedStore();
+  const jobKey=normalizeJobNo(s.shared_jobno);
+  const av={};
+  sel.forEach(id=>{ if(ALLVALUES[id]) av[id]=JSON.parse(JSON.stringify(ALLVALUES[id])); });
+  av.__shared=JSON.parse(JSON.stringify(ALLVALUES.__shared||{}));
+  return {
+    jobName: s.shared_job||'',
+    jobNumber: jobKey,
+    jobKey: jobKey,
+    reportGroup: group,
+    inspectionDate: String(s.shared_hdate||'').trim(),
+    reports: sel.slice(),
+    allValues: av,
+    added: (ADDED||[]).filter(id=>sel.indexOf(id)>=0)
+  };
+}
+
+function createReport(payload, u){
+  const ref=FB_DB.collection('reports').doc();
+  const ts=firebase.firestore.FieldValue.serverTimestamp();
+  const rec=Object.assign({
+    uid:u.uid, byEmail:(u.email||'').toLowerCase(), byName:reporterName(u),
+    submittedAt:ts, updatedAt:ts, rev:0, editCount:0
+  }, payload);
+  linkRecord(payload.reportGroup, ref.id, payload.jobKey, 0, 0);   // known immediately, even offline
+  ref.set(rec)
+    .then(()=>flashCloud('✓ Report submitted to office'))
+    .catch(e=>{ unlinkGroup(payload.reportGroup); flashCloud('⚠ Saved locally — cloud sync failed'); console.warn('cloud submit failed', e); });
+}
+
+/* Update an existing record in place. Uses a transaction so a change made by someone
+   else since this report was opened is noticed instead of silently overwritten. */
+async function updateReport(target, payload, force){
+  const u=FB_AUTH.currentUser;
+  const ref=FB_DB.collection('reports').doc(target.id);
+  const ts=firebase.firestore.FieldValue.serverTimestamp();
+  const upd=Object.assign({}, payload, {
+    editedBy:reporterName(u), editedByEmail:(u.email||'').toLowerCase(),
+    editedAt:ts, updatedAt:ts, editReason:target.reason
+  });
+  try{
+    return await FB_DB.runTransaction(async tx=>{
+      const snap=await tx.get(ref);
+      if(!snap.exists){ const e=new Error('gone'); e.code='gone'; throw e; }
+      const cur=snap.data(); const curRev=cur.rev||0;
+      if(!force && curRev!==(target.rev||0)){ const e=new Error('conflict'); e.code='conflict'; e.cur=cur; throw e; }
+      const u2=Object.assign({}, upd, { rev:curRev+1, editCount:(cur.editCount||0)+1 });
+      tx.update(ref,u2);
+      return { rev:u2.rev, editCount:u2.editCount };
+    });
+  }catch(e){
+    if(e && (e.code==='unavailable' || /offline/i.test(e.message||''))){
+      // No signal: queue the update on the device; it syncs when the phone reconnects.
+      const u2=Object.assign({}, upd, { rev:(target.rev||0)+1, editCount:(target.editCount||0)+1 });
+      ref.update(u2).catch(err=>{ flashCloud('⚠ Update failed — try again'); console.warn('queued update failed', err); });
+      return { rev:u2.rev, editCount:u2.editCount, queued:true };
+    }
+    throw e;
+  }
+}
+
+async function runUpdate(target, payload){
+  let force=false;
+  for(;;){
+    try{
+      const res=await Promise.race([ updateReport(target, payload, force), new Promise((_,rej)=>setTimeout(()=>{ const e=new Error('slow'); e.code='slow'; rej(e); }, 15000)) ]);
+      if(target.mine) linkRecord(payload.reportGroup, target.id, payload.jobKey, res.rev, res.editCount);
+      flashCloud(res.queued ? '✓ Update saved on this device — it will sync when you have signal' : '✓ Report updated');
+      if(EDIT_DOC) FINISH_EDIT_AFTER_PRINT=true;
+      return true;
+    }catch(e){
+      if(e && e.code==='conflict'){
+        const cur=e.cur||{};
+        const who=cur.editedBy||cur.byName||'Another user';
+        const when=fmtTs(cur.editedAt||cur.updatedAt);
+        const r=await choiceModal({
+          title:'This report was changed by someone else',
+          html:'<p>'+esc(who)+' changed this report'+(when?(' on '+esc(when)):'')+(cur.editReason?(' (reason: '+esc(cur.editReason)+')'):'')+' after you opened it.</p>'+
+               '<p>Choose how to continue:</p>',
+          buttons:[
+            {label:'Load the latest version', value:'reload', primary:true},
+            {label:'Save mine anyway', value:'force'},
+            {label:'Cancel', value:'cancel'}
+          ]
+        });
+        if(r.value==='force'){ force=true; continue; }
+        if(r.value==='reload'){ editCloudReport(Object.assign({id:target.id}, cur), null); }
+        return false;
+      }
+      if(e && e.code==='slow'){
+        flashCloud('⚠ Update is slow — it will finish when your connection improves');
+        return true;
+      }
+      if(e && e.code==='gone'){ alert('That report no longer exists, so it could not be updated.'); return false; }
+      console.warn('update failed', e);
+      alert('Could not update the report: '+((e&&e.message)||e)+'\n\nYour changes are still on this screen. Try again.');
+      return false;
+    }
+  }
+}
+
+/* Decide whether this submission creates a new record or updates one. Resolves to
+   {mode:'create'} or {mode:'update', id, rev, editCount, reason, mine} or null (cancel). */
+async function chooseSubmitTarget(group, payload, u){
+  const label=GROUP_LABELS[group]||group;
+  const jobTxt=esc(payload.jobKey);
+  let mine=null, others=[];
+  const linked=getLinkedRecord(group);
+  if(linked){
+    try{
+      const s=await FB_DB.collection('reports').doc(linked.id).get();
+      if(s.exists){
+        const d=s.data();
+        if(d.uid===u.uid && !d.archived && !d.withdrawn) mine=Object.assign({id:s.id}, d);
+      }
+    }catch(e){
+      mine={ id:linked.id, rev:linked.rev||0, editCount:linked.editCount||0, inspectionDate:payload.inspectionDate, submittedAt:null, offline:true };
+    }
+  }
+  if(!mine){
+    const found=await findExistingReports(payload.jobKey, group);
+    const same=found.filter(r=>recDate(r)===payload.inspectionDate);
+    mine=same.find(r=>r.uid===u.uid) || null;
+    others=same.filter(r=>r.uid!==u.uid);
+  }
+  if(mine){
+    const dOn=mine.inspectionDate!=null||mine.allValues ? recDate(mine) : payload.inspectionDate;
+    const diff=(dOn||'')!==(payload.inspectionDate||'');
+    const r=await choiceModal({
+      title:'You already submitted this report',
+      html:'<p>A '+esc(label)+' for job '+jobTxt+' was submitted'+(mine.submittedAt&&mine.submittedAt.toDate?(' on '+esc(fmtTs(mine.submittedAt))):'')+'. Update that report instead of filing a second copy?</p>'+
+           (mine.sentToCustomer?'<p style="color:#8a1212"><b>The office marked this report as sent to the customer.</b> Your change will not reach the customer unless the office sends it again.</p>':'')+
+           (diff?('<p style="color:#8a1212"><b>The inspection date changed</b> from '+esc(dOn||'(blank)')+' to '+esc(payload.inspectionDate||'(blank)')+'. If this is a different visit, choose “Submit as a new report”.</p>'):'')+
+           '<p style="color:#555;font-size:12.5px">The office will see “Edited by”, the date and your reason. The earlier version is not kept.</p>',
+      reason:true,
+      buttons:[
+        {label:'Update submitted report', value:'update', primary:true, needsReason:true},
+        {label:'Submit as a new report', value:'create'},
+        {label:'Cancel', value:'cancel'}
+      ]
+    });
+    if(r.value==='cancel') return null;
+    if(r.value==='create') return {mode:'create'};
+    return { mode:'update', id:mine.id, rev:mine.rev||0, editCount:mine.editCount||0, reason:r.reason, mine:true };
+  }
+  if(others.length){
+    const names=[...new Set(others.map(r=>r.byName||r.byEmail||'another technician'))].join(', ');
+    const r=await choiceModal({
+      title:'A matching report already exists',
+      html:'<p>'+others.length+' '+esc(label)+(others.length===1?' report':' reports')+' for job '+jobTxt+(payload.inspectionDate?(' dated '+esc(payload.inspectionDate)):'')+' '+(others.length===1?'was':'were')+' already submitted by '+esc(names)+'.</p>'+
+           '<p>Submit yours as a separate report?</p>',
+      buttons:[
+        {label:'Submit as a separate report', value:'create', primary:true},
+        {label:'Cancel', value:'cancel'}
+      ]
+    });
+    return r.value==='create' ? {mode:'create'} : null;
+  }
+  return {mode:'create'};
+}
+
+/* Returns true when the caller should go on to print/PDF, false if the tech cancelled. */
+async function submitReportFlow(sel){
+  try{
+    if(!FB_READY || !FB_AUTH || !FB_AUTH.currentUser) return true;     // no cloud: PDF only, as before
+    const u=FB_AUTH.currentUser;
+    const group=groupOfIds(sel);
+    if(!group){ alert('Submit one type of report at a time.'); return false; }
+    normalizeSharedJobNo();
+    const payload=buildReportPayload(sel, group);
+    if(EDIT_DOC){
+      if(EDIT_DOC.group && EDIT_DOC.group!==group){ alert('This record is a '+(GROUP_LABELS[EDIT_DOC.group]||EDIT_DOC.group)+'. Select only forms of that type.'); return false; }
+      const who=EDIT_DOC.mine ? 'your submitted report' : ((EDIT_DOC.byName||EDIT_DOC.byEmail||'the technician')+'’s report');
+      const r=await choiceModal({
+        title:'Update the submitted report',
+        html:'<p>This replaces '+esc(who)+' for job '+esc(payload.jobKey)+'.'+(EDIT_DOC.mine?'':' The technician stays listed as the author, with an “Edited by” note.')+'</p>'+
+             (EDIT_DOC.sent?'<p style="color:#8a1212"><b>The office marked this report as sent to the customer.</b> Your change will not reach the customer unless the office sends it again.</p>':'')+
+             '<p style="color:#555;font-size:12.5px">The office will see “Edited by”, the date and your reason. The earlier version is not kept.</p>',
+        reason:true,
+        buttons:[ {label:'Update report', value:'update', primary:true, needsReason:true}, {label:'Cancel', value:'cancel'} ]
+      });
+      if(r.value!=='update'){ flashCloud('Update canceled — original report unchanged'); return false; }
+      return await runUpdate({ mode:'update', id:EDIT_DOC.id, rev:EDIT_DOC.rev, editCount:EDIT_DOC.editCount, reason:r.reason, mine:EDIT_DOC.mine }, payload);
+    }
+    const target=await chooseSubmitTarget(group, payload, u);
+    if(!target) return false;
+    if(target.mode==='create'){ createReport(payload, u); return true; }
+    return await runUpdate(target, payload);
+  }catch(e){
+    console.warn('submitReportFlow error', e);
+    flashCloud('⚠ Could not reach the office — PDF only');
+    return true;
+  }
+}
+
 function reportPickerModal(){
   const ids=CORE_FORMS.map(f=>f.id).concat(ADDED.slice());
+  const free=!!VIEW_DOC;                                   // viewing a filed report: PDF only, any mix
+  const lockGroup=EDIT_DOC ? (EDIT_DOC.group||null) : null;
   const mh=document.getElementById('modalHost')||document.body;
   const bg=document.createElement('div'); bg.className='modal-bg';
+  const withData=ids.filter(formHasData);
+  let startGroup=lockGroup;
+  if(!startGroup && !free){
+    const act=(ACTIVE_FORM!=='__summary' && FORMS.some(f=>f.id===ACTIVE_FORM)) ? groupOfForm(ACTIVE_FORM) : null;
+    if(act && withData.some(id=>groupOfForm(id)===act)) startGroup=act;
+    else startGroup=['inspection','fd24','fd25','correction'].find(g=>withData.some(id=>groupOfForm(id)===g)) || null;
+  }
   let rows='';
   ids.forEach(id=>{
     const f=FORMS.find(x=>x.id===id);
-    const checked=formHasData(id)?'checked':'';
+    const pre = free ? formHasData(id) : (startGroup && groupOfForm(id)===startGroup && formHasData(id));
     rows+=`<label class="rp-row">
-      <input type="checkbox" class="rp-cb" data-id="${id}" ${checked}>
+      <input type="checkbox" class="rp-cb" data-id="${id}" ${pre?'checked':''}>
       <span class="rp-name">${esc(shortName(f))}</span>
       ${formHasData(id)?'<span class="rp-tag">has entries</span>':''}
     </label>`;
   });
   const hasSummary=collectSummary().length>0;
+  const summaryOk = hasSummary && (free || !startGroup || startGroup==='inspection');
   const curForm=(ACTIVE_FORM!=='__summary' && FORMS.find(f=>f.id===ACTIVE_FORM))?FORMS.find(f=>f.id===ACTIVE_FORM):null;
   const curLine = curForm ? `<button id="rpCurrent" class="rp-link">Just the current form (${esc(shortName(curForm))})</button>` : '';
+  let linkedInfo='';
+  if(!free && !EDIT_DOC){
+    Object.keys(GROUP_LABELS).forEach(g=>{
+      if(getLinkedRecord(g)) linkedInfo+='<div style="margin-top:6px">✓ '+esc(GROUP_LABELS[g])+' already submitted for this job. Submit will offer to update it.</div>';
+    });
+  }
   bg.innerHTML=`<div class="modal" style="max-width:520px">
     <h3>Submit Report</h3>
-    <p>Choose which reports to include. Reports with entries are pre-selected.</p>
+    <p>${free?'Choose which pages to include in the PDF.':'Choose the report to submit. Reports with entries are pre-selected.'}</p>
+    ${free?'':'<p style="font-size:12px;color:#555;margin-top:-6px">The 5-Year Internal, 5-Year FDC Hydro and Deficiency Correction reports are each submitted by themselves, and never with the summary.</p>'}
     <div style="max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:6px 4px">${rows}</div>
-    <label class="rp-row rp-summary" style="margin-top:8px;${hasSummary?'':'opacity:.5'}">
-      <input type="checkbox" id="rpSummary" ${hasSummary?'checked':'disabled'}>
+    <label class="rp-row rp-summary" id="rpSummaryRow" style="margin-top:8px;${summaryOk?'':'opacity:.5'}">
+      <input type="checkbox" id="rpSummary" ${summaryOk?'checked':'disabled'}>
       <span class="rp-name">Include Critical and Impaired Deficiencies Summary${hasSummary?'':' (no deficiencies entered)'}</span>
     </label>
     <div class="rp-actions">
-      <button id="rpAll" class="rp-link">Select all</button>
+      <button id="rpAll" class="rp-link">${free?'Select all':'Select all inspection reports'}</button>
       <button id="rpNone" class="rp-link">Clear all</button>
       ${curLine}
     </div>
+    ${linkedInfo?('<div style="font-size:12px;color:#1a7f37;margin-top:8px">'+linkedInfo+'</div>'):''}
     <div class="mbtns">
       <button id="rpCancel">Cancel</button>
       <button id="rpCreate" class="primary">Submit</button>
     </div></div>`;
   mh.appendChild(bg);
-  const close=()=>mh.removeChild(bg);
+  const close=()=>{ if(bg.parentNode) bg.parentNode.removeChild(bg); };
+  const cbs=()=>[...bg.querySelectorAll('.rp-cb')];
+  const su=bg.querySelector('#rpSummary');
+  function syncGroup(changed){
+    if(free) return;
+    if(changed && changed.checked){
+      const g=groupOfForm(changed.getAttribute('data-id'));
+      cbs().forEach(c=>{ if(c!==changed && groupOfForm(c.getAttribute('data-id'))!==g) c.checked=false; });
+    }
+    const sel=cbs().filter(c=>c.checked).map(c=>c.getAttribute('data-id'));
+    const g=sel.length ? groupOfIds(sel) : null;
+    if(su){
+      const allow=hasSummary && (!g || g==='inspection') && (!lockGroup || lockGroup==='inspection');
+      su.disabled=!allow; if(!allow) su.checked=false;
+      bg.querySelector('#rpSummaryRow').style.opacity=allow?'':'.5';
+    }
+  }
+  cbs().forEach(c=>{
+    if(lockGroup && groupOfForm(c.getAttribute('data-id'))!==lockGroup){ c.disabled=true; c.closest('label').style.opacity='.4'; }
+    c.addEventListener('change',()=>syncGroup(c));
+  });
   bg.querySelector('#rpCancel').onclick=close;
-  bg.querySelector('#rpAll').onclick=()=>bg.querySelectorAll('.rp-cb').forEach(c=>c.checked=true);
-  if(bg.querySelector('#rpCurrent')) bg.querySelector('#rpCurrent').onclick=()=>{
-    bg.querySelectorAll('.rp-cb').forEach(c=>c.checked=(c.getAttribute('data-id')===ACTIVE_FORM));
-    const su=bg.querySelector('#rpSummary'); if(su && !su.disabled) su.checked=false;
+  bg.querySelector('#rpAll').onclick=()=>{
+    const g=lockGroup||'inspection';
+    cbs().forEach(c=>{ c.checked = free ? true : (groupOfForm(c.getAttribute('data-id'))===g && !c.disabled); });
+    syncGroup();
   };
-  bg.querySelector('#rpNone').onclick=()=>bg.querySelectorAll('.rp-cb').forEach(c=>c.checked=false);
+  if(bg.querySelector('#rpCurrent')) bg.querySelector('#rpCurrent').onclick=()=>{
+    cbs().forEach(c=>c.checked=(c.getAttribute('data-id')===ACTIVE_FORM));
+    if(su && !su.disabled) su.checked=false;
+    syncGroup();
+  };
+  bg.querySelector('#rpNone').onclick=()=>{ cbs().forEach(c=>c.checked=false); syncGroup(); };
+  syncGroup();
   bg.querySelector('#rpCreate').onclick=()=>{
-    const sel=[...bg.querySelectorAll('.rp-cb')].filter(c=>c.checked).map(c=>c.getAttribute('data-id'));
-    const inclSum=bg.querySelector('#rpSummary') && bg.querySelector('#rpSummary').checked;
+    const sel=cbs().filter(c=>c.checked).map(c=>c.getAttribute('data-id'));
+    const inclSum=!!(su && su.checked && !su.disabled);
     if(sel.length===0 && !inclSum){ alert('Select at least one report to save.'); return; }
+    if(!free && sel.length && !groupOfIds(sel)){ alert('Submit one type of report at a time.'); return; }
+    if(!free && sel.length && !normalizeSharedJobNo()){
+      alert('Enter the Job Number on the report first.\n\nEvery submitted report needs a Job Number so the office can match it to the job.');
+      return;
+    }
     // Validate ONLY the reports being submitted (not every form).
     const problems=validateDeficiencyTypes(sel);
-    const proceed=()=>{
-      if(!VIEW_DOC) submitReportToCloud(sel);   // store the full report in Firebase (best-effort); skipped when an admin is only viewing a filed report
+    const proceed=async()=>{
+      if(!VIEW_DOC && sel.length){
+        const ok=await submitReportFlow(sel);   // file with the office (new, or update an existing one)
+        if(!ok) return;
+      } else if(!VIEW_DOC && !sel.length){
+        flashCloud('Summary printed only — it is not filed with the office');
+      }
       printSelectedReports(sel, inclSum);
+      if(FINISH_EDIT_AFTER_PRINT){
+        FINISH_EDIT_AFTER_PRINT=false;
+        let done=false;
+        const fin=()=>{ if(done) return; done=true; window.removeEventListener('afterprint', fin); setTimeout(()=>clearEditMode(), 400); };
+        window.addEventListener('afterprint', fin);
+        setTimeout(fin, 6000);
+      }
     };
     if(problems.length){ close(); deficiencyWarningModal(problems, IS_ADMIN ? proceed : null); return; }
     close();
@@ -2189,65 +2593,96 @@ function reportPickerModal(){
   };
 }
 
-/* When an admin opens a technician's report with "Edit", this holds the record
-   being edited so a resubmit replaces it in place instead of adding a new one. */
+/* When someone opens a submitted report with "Edit", this holds the record being
+   edited so a resubmit updates it in place instead of adding a new one. */
 let EDIT_DOC = null;
-let VIEW_DOC = null;   // id of a submitted report an admin is only viewing (PDF/print must not re-file it)
-function clearEditMode(){
-  EDIT_DOC=null; VIEW_DOC=null;
+let VIEW_DOC = null;   // id of a submitted report only being viewed (PDF/print must not re-file it)
+let FINISH_EDIT_AFTER_PRINT = false;
+function clearEditMode(restore){
+  EDIT_DOC=null; VIEW_DOC=null; FINISH_EDIT_AFTER_PRINT=false;
   const b=document.getElementById('editModeBar'); if(b) b.style.display='none';
   const vb=document.getElementById('viewModeBar'); if(vb) vb.style.display='none';
+  if(restore!==false) restoreStashedWork();
 }
 
-/* Save the full report data to Firestore so the admin can view/download it. */
-function submitReportToCloud(selectedIds){
+/* ---------- My Submissions: a technician's own filed reports ---------- */
+async function mySubmissionsModal(){
+  const u=FB_AUTH && FB_AUTH.currentUser;
+  if(!FB_READY || !u){ alert('Sign in with an internet connection to see your submitted reports.'); return; }
+  const mh=document.getElementById('modalHost')||document.body;
+  const bg=document.createElement('div'); bg.className='modal-bg';
+  bg.innerHTML='<div class="modal" style="max-width:820px;width:100%"><h3>My Submissions</h3>'+
+    '<p style="font-size:12.5px;color:#555">Reports you submitted. Use Edit to fix a mistake; the office will see “Edited by”, the date and your reason.</p>'+
+    '<div id="msBody" style="max-height:60vh;overflow:auto">Loading…</div>'+
+    '<div class="mbtns"><button id="msClose">Close</button></div></div>';
+  mh.appendChild(bg);
+  const close=()=>{ if(bg.parentNode) bg.parentNode.removeChild(bg); };
+  bg.querySelector('#msClose').onclick=close;
+  const body=bg.querySelector('#msBody');
+  let snap;
   try{
-    if(!FB_READY || !FB_AUTH || !FB_AUTH.currentUser) return;
-    const u=FB_AUTH.currentUser;
-    const job = (sharedStore()['shared_job']||'') ;
-    const jobno = (sharedStore()['shared_jobno']||'');
-    const myName = (document.getElementById('whoami')?document.getElementById('whoami').textContent.replace('ADMIN','').trim():'') || (u.email||'');
-    // Admin edit: update the SAME record (replace the original), keep the
-    // technician as author, and stamp who edited it.
-    if(EDIT_DOC && EDIT_DOC.id){
-      // Safety net: only when replacing an existing report, confirm first.
-      const who = EDIT_DOC.byName || EDIT_DOC.byEmail || 'the technician';
-      if(!confirm('This will replace '+who+'’s original report with your edits.\n\nThe technician stays listed as the author, with an "Edited by" note added. This cannot be undone.\n\nContinue?')){
-        flashCloud('Edit canceled — original report unchanged');
-        return;
+    snap=await FB_DB.collection('reports').where('uid','==',u.uid).orderBy('submittedAt','desc').limit(100).get();
+  }catch(e){
+    try{ snap=await FB_DB.collection('reports').where('uid','==',u.uid).limit(200).get(); }
+    catch(e2){ body.innerHTML='<div style="padding:12px;color:#c00">Could not load your reports: '+esc(e2.message||String(e2))+'</div>'; return; }
+  }
+  const rows=[]; snap.forEach(d=>rows.push(Object.assign({id:d.id}, d.data())));
+  rows.sort((a,b)=>tsMs(b.submittedAt)-tsMs(a.submittedAt));
+  const DAY=24*3600*1000;
+  function draw(){
+    if(!rows.length){ body.innerHTML='<div style="padding:12px;color:#777">You have not submitted any reports yet.</div>'; return; }
+    let html='<table class="ad-table"><thead><tr><th>Submitted</th><th>Job</th><th>Report</th><th>Status</th><th></th></tr></thead><tbody>';
+    rows.forEach(r=>{
+      const g=groupOfRecord(r);
+      const names=(r.reports||[]).map(id=>{ const f=FORMS.find(x=>x.id===id); return f?shortName(f):id; }).join(', ');
+      let status='';
+      if(r.archived) status+='<div>Archived by the office</div>';
+      if(r.sentToCustomer) status+='<div>Sent to customer</div>';
+      if(r.withdrawn) status+='<div>Withdrawn'+(r.withdrawnAt?(' '+esc(fmtTs(r.withdrawnAt))):'')+'</div>';
+      if(r.editedBy) status+='<div>✎ Edited by '+esc(r.editedBy)+(r.editedAt?(' · '+esc(fmtTs(r.editedAt))):'')+(r.editReason?('<br><span style="color:#555">“'+esc(r.editReason)+'”</span>'):'')+'</div>';
+      if(!status) status='Submitted';
+      let acts='';
+      if(r.withdrawn){
+        const age = r.withdrawnAt&&r.withdrawnAt.toMillis ? Date.now()-r.withdrawnAt.toMillis() : 0;
+        acts = age<=30*DAY ? '<button class="ms-restore" data-id="'+esc(r.id)+'">Restore</button>' : '<span style="font-size:11px;color:#777">Ask an administrator to restore</span>';
+      } else if(r.archived){
+        acts='<button class="ms-view" data-id="'+esc(r.id)+'">View</button> <button class="ms-pdf" data-id="'+esc(r.id)+'">PDF</button>';
+      } else {
+        acts='<button class="ms-view" data-id="'+esc(r.id)+'">View</button> <button class="ms-pdf" data-id="'+esc(r.id)+'">PDF</button> <button class="ms-edit" data-id="'+esc(r.id)+'">Edit</button> <button class="ms-wd" data-id="'+esc(r.id)+'">Withdraw</button>';
       }
-      const id=EDIT_DOC.id;
-      const upd={
-        jobName: job||'',
-        jobNumber: jobno||'',
-        reports: selectedIds.slice(),
-        allValues: JSON.parse(JSON.stringify(ALLVALUES)),
-        added: (ADDED||[]).slice(),
-        editedBy: myName,
-        editedByEmail: (u.email||'').toLowerCase(),
-        editedAt: firebase.firestore.FieldValue.serverTimestamp()
-      };
-      FB_DB.collection('reports').doc(id).update(upd)
-        .then(()=>{ flashCloud('✓ Report updated — replaced the original'); clearEditMode(); })
-        .catch((e)=>{ flashCloud('⚠ Update failed — try again'); console.warn('cloud edit failed', e); });
-      return;
-    }
-    const rec={
-      uid:u.uid,
-      byEmail:(u.email||'').toLowerCase(),
-      byName: myName,
-      jobName: job||'',
-      jobNumber: jobno||'',
-      reports: selectedIds.slice(),
-      allValues: JSON.parse(JSON.stringify(ALLVALUES)),
-      added: (ADDED||[]).slice(),
-      submittedAt: firebase.firestore.FieldValue.serverTimestamp()
-    };
-    FB_DB.collection('reports').add(rec)
-      .then(()=>{ flashCloud('✓ Report submitted to office'); })
-      .catch((e)=>{ flashCloud('⚠ Saved locally — cloud sync failed'); console.warn('cloud submit failed', e); });
-  }catch(e){ console.warn('submitReportToCloud error', e); }
+      html+='<tr style="'+(r.withdrawn?'opacity:.6':'')+'"><td>'+esc(r.submittedAt&&r.submittedAt.toDate?r.submittedAt.toDate().toLocaleDateString():'—')+'</td>'+
+        '<td>'+esc(r.jobName||'—')+(r.jobNumber?(' · '+esc(r.jobNumber)):'')+'</td>'+
+        '<td>'+esc(GROUP_LABELS[g]||g)+'<div style="font-size:11px;color:#555">'+esc(names)+'</div></td>'+
+        '<td style="font-size:12px">'+status+'</td><td style="white-space:nowrap">'+acts+'</td></tr>';
+    });
+    html+='</tbody></table>';
+    body.innerHTML=html;
+    const rec=(btn)=>rows.find(x=>x.id===btn.getAttribute('data-id'));
+    body.querySelectorAll('.ms-view').forEach(b=>b.onclick=()=>viewCloudReport(rec(b), close));
+    body.querySelectorAll('.ms-pdf').forEach(b=>b.onclick=()=>{ viewCloudReport(rec(b), close); reportPickerModal(); });
+    body.querySelectorAll('.ms-edit').forEach(b=>b.onclick=()=>editCloudReport(rec(b), close));
+    body.querySelectorAll('.ms-wd').forEach(b=>b.onclick=async()=>{
+      const r=rec(b);
+      if(!confirm('Withdraw this report?\n\n'+(r.jobName||'Report')+(r.jobNumber?(' · '+r.jobNumber):'')+'\n\nThe office will no longer see it. You can restore it from this list for 30 days.')) return;
+      b.disabled=true;
+      try{
+        await FB_DB.collection('reports').doc(r.id).update({ withdrawn:true, withdrawnAt:firebase.firestore.FieldValue.serverTimestamp() });
+        r.withdrawn=true; r.withdrawnAt={ toMillis:()=>Date.now(), toDate:()=>new Date() };
+        const m=getSubmittedMap(); const g=groupOfRecord(r); if(m[g] && m[g].id===r.id) unlinkGroup(g);
+        draw();
+      }catch(e){ alert('Could not withdraw: '+(e.message||e)); b.disabled=false; }
+    });
+    body.querySelectorAll('.ms-restore').forEach(b=>b.onclick=async()=>{
+      const r=rec(b); b.disabled=true;
+      try{
+        await FB_DB.collection('reports').doc(r.id).update({ withdrawn:false, withdrawnAt:firebase.firestore.FieldValue.delete() });
+        r.withdrawn=false; r.withdrawnAt=null; draw();
+      }catch(e){ alert('Could not restore: '+(e.message||e)); b.disabled=false; }
+    });
+  }
+  draw();
 }
+
 function flashCloud(msg){
   let el=document.getElementById('cloudFlash');
   if(!el){ el=document.createElement('div'); el.id='cloudFlash'; el.className='cloud-flash'; document.body.appendChild(el); }
@@ -2561,8 +2996,11 @@ function extractDeficienciesFromRecord(rec){
   const out=[];
   const allValues=(rec && rec.allValues) || {};
   const added=Array.isArray(rec && rec.added)? rec.added : [];
-  // forms present in that report, in the usual tab order
-  const order=CORE_FORMS.map(f=>f.id).concat(added.slice());
+  // forms present in that report, in the usual tab order. Only MAIN INSPECTION forms
+  // that were part of the submission carry deficiencies over to a correction.
+  const subm=Array.isArray(rec && rec.reports) && rec.reports.length ? rec.reports : null;
+  const order=CORE_FORMS.map(f=>f.id).concat(added.slice())
+    .filter(fid=>groupOfForm(fid)==='inspection' && (!subm || subm.indexOf(fid)>=0));
   order.forEach(fid=>{
     const f=FORMS.find(x=>x.id===fid); if(!f) return;
     const store=allValues[fid]||{};
@@ -2629,36 +3067,32 @@ function extractDeficienciesFromRecord(rec){
   return out;
 }
 
-/* Look up the most recent submitted report for a job number, in the cloud. */
+/* Look up the most recent submitted MAIN INSPECTION report for a job number.
+   5-Year Internal, 5-Year FDC Hydro and other Correction reports share job numbers
+   but never feed the correction checklist; archived and withdrawn copies are skipped. */
+let LOOKUP_NOTE='';
 async function fetchReportByJobNumber(jobno){
   if(!FB_READY || !FB_DB) throw new Error('nocloud');
-  const jn=String(jobno||'').trim();
+  const raw=String(jobno||'').trim();
+  const jn=normalizeJobNo(jobno);
   if(!jn) throw new Error('nojob');
-  // Query by jobNumber. Order by submittedAt desc so we can take the newest.
-  // (A composite index on jobNumber+submittedAt may be required by Firestore;
-  //  if it isn't present we fall back to client-side sorting below.)
-  let snap;
-  try{
-    snap = await FB_DB.collection('reports')
-      .where('jobNumber','==',jn)
-      .orderBy('submittedAt','desc')
-      .limit(5).get();
-  }catch(e){
-    // Missing-index or rule issues on the ordered query: retry without orderBy.
-    snap = await FB_DB.collection('reports')
-      .where('jobNumber','==',jn)
-      .limit(25).get();
+  const keys=[...new Set([jn, raw])].filter(Boolean);
+  const recs=new Map();
+  for(const key of keys){
+    let snap;
+    try{
+      snap = await FB_DB.collection('reports').where('jobNumber','==',key).orderBy('submittedAt','desc').limit(25).get();
+    }catch(e){
+      // Missing index or rule issue on the ordered query: retry without orderBy.
+      snap = await FB_DB.collection('reports').where('jobNumber','==',key).limit(50).get();
+    }
+    snap.forEach(d=>recs.set(d.id, Object.assign({id:d.id}, d.data())));
   }
-  if(snap.empty) return null;
-  let recs=[];
-  snap.forEach(d=>recs.push({id:d.id, ...d.data()}));
-  // newest first (defensive sort in case orderBy was dropped)
-  recs.sort((a,b)=>{
-    const ta=a.submittedAt&&a.submittedAt.toMillis?a.submittedAt.toMillis():0;
-    const tb=b.submittedAt&&b.submittedAt.toMillis?b.submittedAt.toMillis():0;
-    return tb-ta;
-  });
-  return recs[0];
+  const usable=[...recs.values()].filter(r=>!r.archived && !r.withdrawn);
+  const inspection=usable.filter(r=>groupOfRecord(r)==='inspection');
+  LOOKUP_NOTE = (!inspection.length && usable.length) ? 'other' : '';
+  inspection.sort((a,b)=>tsMs(b.submittedAt)-tsMs(a.submittedAt));
+  return inspection[0] || null;
 }
 
 /* Read the carried-over deficiency list for the correction form. */
@@ -2688,7 +3122,9 @@ async function pullPriorDeficiencies(statusEl, redraw){
     statusEl.className='cpull-status err'; return;
   }
   if(!rec){
-    statusEl.textContent='No submitted report found for job #'+jobno+'. Check the number, or add deficiencies by hand below.';
+    statusEl.textContent = LOOKUP_NOTE==='other'
+      ? 'Job #'+jobno+' has reports on file, but none are main inspection reports. 5-Year Internal, 5-Year FDC Hydro and Correction reports do not carry over. Check the number, or add deficiencies by hand below.'
+      : 'No submitted report found for job #'+jobno+'. Check the number, or add deficiencies by hand below.';
     statusEl.className='cpull-status err'; return;
   }
   const defs = extractDeficienciesFromRecord(rec);
@@ -3170,7 +3606,8 @@ function complianceSections(fid){
 
 /* Collect filled entries for every form (in tab order: core + added). */
 function collectSummary(){
-  const order=CORE_FORMS.map(f=>f.id).concat(ADDED.slice());
+  // The summary covers inspection reports only (never 5-Year Internal, FDC Hydro or Corrections).
+  const order=CORE_FORMS.map(f=>f.id).concat(ADDED.slice()).filter(fid=>groupOfForm(fid)==='inspection');
   const result=[];
   order.forEach(fid=>{
     const f=FORMS.find(x=>x.id===fid);
@@ -3656,6 +4093,7 @@ document.getElementById('loadDraftBtn').onclick=()=>{
 document.getElementById('newDraftBtn').onclick=()=>{
   const pop=document.getElementById('abMenuPop'); if(pop) pop.classList.remove('open');
   if(confirm('Clear all entries on this form?\n\nThis cannot be undone. Anything not saved to a draft will be lost. (Saved drafts are not affected.)')){
+    if(ACTIVE_FORM!=='__summary') unlinkGroup(groupOfForm(ACTIVE_FORM));   // a cleared form starts a new report
     ALLVALUES[ACTIVE_FORM]={}; loadFormValues(ACTIVE_FORM); DIRTY=false; renderForm(ACTIVE_FORM);
     if(hasAnyData()) writeAutosave(); else clearAutosave();
   }
@@ -3703,6 +4141,7 @@ window.addEventListener('beforeunload', (e)=>{
 document.getElementById('pdfAllBtn').onclick=()=>{
   reportPickerModal();
 };
+document.getElementById('mySubBtn').onclick=()=>{ mySubmissionsModal(); };
 
 /* ============================================================================
    MODALS
@@ -3727,7 +4166,7 @@ async function adminDashboard(fullPage){
       <div class="ad-fulltop"><h3>ITM Reports — Admin Dashboard</h3><a class="ad-hub" href="index.html">← Back to Hub</a></div>
       <div class="ad-tabs">
         <button class="ad-tab active" data-tab="reports">Submitted Reports</button>
-        <button class="ad-tab" data-tab="archived">Archived Duplicates</button>
+        <button class="ad-tab" data-tab="archived">Archived / Withdrawn</button>
         <button class="ad-tab" data-tab="users">Users</button>
       </div>
       <div id="adBody" style="margin-top:10px">Loading…</div>
@@ -3742,7 +4181,7 @@ async function adminDashboard(fullPage){
     <h3>Admin Dashboard</h3>
     <div class="ad-tabs">
       <button class="ad-tab active" data-tab="reports">Submitted Reports</button>
-      <button class="ad-tab" data-tab="archived">Archived Duplicates</button>
+      <button class="ad-tab" data-tab="archived">Archived / Withdrawn</button>
       <button class="ad-tab" data-tab="users">Users</button>
     </div>
     <div id="adBody" style="max-height:60vh;overflow:auto;margin-top:10px">Loading…</div>
@@ -3763,189 +4202,343 @@ async function adminDashboard(fullPage){
       else { await renderReports(); }
     }catch(e){ body.innerHTML='<div style="padding:16px;color:#c00">Could not load: '+esc(e.message||String(e))+'</div>'; }
   }
-  // Housekeeping on open: delete archived duplicates older than 365 days.
-  async function sweepExpiredArchive(){
-    try{
-      const snap=await FB_DB.collection('reports').where('archived','==',true).get();
-      const YEAR=365*24*3600*1000, now=Date.now(); const batch=FB_DB.batch(); let n=0;
-      snap.forEach(d=>{ const r=d.data(); const dt=r.archivedAt&&r.archivedAt.toDate?r.archivedAt.toDate():null; if(dt && (now-dt.getTime())>YEAR){ batch.delete(d.ref); n++; } });
-      if(n) await batch.commit();
-    }catch(e){}
+  // Automatic archiving and automatic deleting are turned off. Admins archive and delete by hand.
+  /* ======================================================================
+     PHASE TWO — type-aware duplicate flags, manual archive/restore,
+     grouped list, year paging, bulk actions, quick job number fix
+  ====================================================================== */
+  const adminName=()=>reporterName(FB_AUTH.currentUser);
+  const TSNOW=()=>firebase.firestore.FieldValue.serverTimestamp();
+  const TYPE_SHORT={ inspection:'Inspection', fd24:'5-Year Internal', fd25:'5-Year FDC Hydro', correction:'Correction' };
+  const typeChip=(rec)=>{ const g=groupOfRecord(rec); return '<span class="ad-chip ad-chip-'+g+'">'+esc(TYPE_SHORT[g]||g)+'</span>'; };
+  function deriveRow(r){
+    const dt=r.submittedAt&&r.submittedAt.toDate?r.submittedAt.toDate():null;
+    r._when = dt?dt.toLocaleString():'—';
+    r._names=(r.reports||[]).map(id=>{const f=FORMS.find(x=>x.id===id); return f?shortName(f):id;}).join(', ');
+    const edt=r.editedAt&&r.editedAt.toDate?r.editedAt.toDate():null;
+    r._editedWhen=edt?edt.toLocaleDateString():'';
+    r._search=[r.byName,r.byEmail,r.jobName,r.jobNumber,r._names,r.editedBy,TYPE_SHORT[groupOfRecord(r)]].filter(Boolean).join(' ').toLowerCase();
   }
-  sweepExpiredArchive();
+  /* A possible duplicate = same job number AND same report type AND same inspection
+     date. 5-Year Internal, 5-Year FDC Hydro and Corrections never match each other or
+     an inspection. The newest of a matching set is "Current". */
+  function computeDupes(rows){
+    const sets={};
+    rows.forEach(r=>{
+      r._dupRole=''; r._dupHead='';
+      if(r.archived || r.withdrawn || r.dupIgnore) return;
+      const jk=recJobKey(r); if(!jk) return;
+      const key=jk+'|'+groupOfRecord(r)+'|'+recDate(r);
+      (sets[key]=sets[key]||[]).push(r);
+    });
+    Object.keys(sets).forEach(k=>{
+      const g=sets[k]; if(g.length<2) return;
+      g.sort((a,b)=>tsMs(b.submittedAt)-tsMs(a.submittedAt));
+      g.forEach((r,i)=>{ r._dupRole = i===0 ? 'true' : 'dup'; r._dupHead=g[0].id; });
+    });
+  }
+  function inputModal(o){
+    return new Promise(resolve=>{
+      const mh=document.getElementById('modalHost')||document.body;
+      const m=document.createElement('div'); m.className='modal-bg'; m.style.zIndex=1500;
+      m.innerHTML='<div class="modal" style="max-width:440px"><h3>'+esc(o.title)+'</h3>'+
+        '<div style="font-size:13px;line-height:1.5">'+(o.html||'')+'</div>'+
+        '<label style="display:block;margin-top:10px;font-size:12px;font-weight:700;color:var(--navy)">'+esc(o.label)+'</label>'+
+        '<input id="imVal" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px;border:1px solid var(--line);border-radius:6px;font:inherit" value="'+esc(o.value||'')+'">'+
+        '<div class="mbtns"><button type="button" id="imCancel">Cancel</button><button type="button" id="imOk" class="primary">Save</button></div></div>';
+      mh.appendChild(m);
+      const done=(v)=>{ if(m.parentNode) m.parentNode.removeChild(m); resolve(v); };
+      m.querySelector('#imCancel').onclick=()=>done(null);
+      m.querySelector('#imOk').onclick=()=>done(m.querySelector('#imVal').value);
+      setTimeout(()=>{ const i=m.querySelector('#imVal'); if(i){ i.focus(); i.select(); } },50);
+    });
+  }
+  async function archiveRecords(recs, reason){
+    const batch=FB_DB.batch();
+    recs.forEach(r=>{
+      const upd={ archived:true, archivedAt:TSNOW(), archivedBy:adminName(), archivedReason:reason };
+      if(r._dupRole==='dup' && r._dupHead) upd.supersededBy=r._dupHead;
+      batch.update(FB_DB.collection('reports').doc(r.id), upd);
+    });
+    await batch.commit();
+  }
+  async function restoreRecords(recs){
+    const batch=FB_DB.batch(); const D=firebase.firestore.FieldValue.delete();
+    recs.forEach(r=>{
+      // Restoring is an admin decision that this is a real report, so it is also marked "not a duplicate".
+      batch.update(FB_DB.collection('reports').doc(r.id), { archived:false, archivedAt:D, archivedBy:D, archivedReason:D, supersededBy:D, dupIgnore:true, restoredBy:adminName(), restoredAt:TSNOW() });
+    });
+    await batch.commit();
+  }
+  async function deleteRecords(recs){
+    const batch=FB_DB.batch();
+    recs.forEach(r=>batch.delete(FB_DB.collection('reports').doc(r.id)));
+    await batch.commit();
+  }
+  async function askArchiveReason(count, defaultNote){
+    const r=await choiceModal({
+      title:'Archive '+(count===1?'this report':(count+' reports')),
+      html:'<p>Archived reports are hidden from the main list and from technician edits. They are kept until an administrator deletes them, and you can restore them any time.</p>'+(defaultNote?('<p style="color:#555">'+esc(defaultNote)+'</p>'):''),
+      reason:true, reasonLabel:'Reason for archiving (required)', placeholder:'Example: duplicate of the later submission',
+      buttons:[ {label:'Archive', value:'ok', primary:true, needsReason:true}, {label:'Cancel', value:'cancel'} ]
+    });
+    return r.value==='ok' ? r.reason : null;
+  }
+  async function fixJobNumber(rec){
+    const v=await inputModal({ title:'Correct the job number', html:'<p>Current job number: <b>'+esc(rec.jobNumber||'(blank)')+'</b>. The report itself is not otherwise changed. “Edited by” records this correction.</p>', label:'New job number', value:rec.jobNumber||'' });
+    if(v==null) return false;
+    const nj=normalizeJobNo(v);
+    if(!nj){ alert('Enter a job number.'); return false; }
+    if(nj===recJobKey(rec)) return false;
+    const old=rec.jobNumber||'(blank)';
+    const u=FB_AUTH.currentUser; const ref=FB_DB.collection('reports').doc(rec.id);
+    const reason='Job number corrected from '+old+' to '+nj+' by an administrator';
+    await FB_DB.runTransaction(async tx=>{
+      const snap=await tx.get(ref); const cur=snap.data()||{};
+      tx.update(ref,{ jobNumber:nj, jobKey:nj, 'allValues.__shared.shared_jobno':nj,
+        editedBy:adminName(), editedByEmail:(u.email||'').toLowerCase(), editedAt:TSNOW(), updatedAt:TSNOW(),
+        editReason:reason, rev:(cur.rev||0)+1, editCount:(cur.editCount||0)+1 });
+    });
+    rec.jobNumber=nj; rec.jobKey=nj; rec.editedBy=adminName(); rec.editReason=reason; rec.editedAt={ toDate:()=>new Date(), toMillis:()=>Date.now() };
+    return true;
+  }
+
   async function renderReports(){
-    const snap=await FB_DB.collection('reports').orderBy('submittedAt','desc').limit(500).get();
-    if(snap.empty){ body.innerHTML='<div style="padding:16px;color:#777">No reports have been submitted yet.</div>'; return; }
-    const rows=[];
-    snap.forEach(d=>{ rows.push({id:d.id, ...d.data()}); });
-    // derive each report's year + a searchable text blob
+    const PAGE=200;
     const nowYear=new Date().getFullYear();
-    rows.forEach(r=>{
-      const dt=r.submittedAt&&r.submittedAt.toDate?r.submittedAt.toDate():null;
-      r._year = dt?dt.getFullYear():nowYear;
-      r._when = dt?dt.toLocaleString():'—';
-      r._names=(r.reports||[]).map(id=>{const f=FORMS.find(x=>x.id===id); return f?shortName(f):id;}).join(', ');
-      const edt=r.editedAt&&r.editedAt.toDate?r.editedAt.toDate():null;
-      r._editedWhen=edt?edt.toLocaleDateString():'';
-      r._search=[r.byName,r.byEmail,r.jobName,r.jobNumber,r._names,r.editedBy].filter(Boolean).join(' ').toLowerCase();
-    });
-    // Duplicate detection by job number. Reports are already newest-first, so the
-    // FIRST time we see a job number is the most recent = the "true" report; any
-    // later (older) ones with the same job number are flagged as possible duplicates.
-    const jobCounts={};
-    rows.forEach(r=>{ const jn=String(r.jobNumber||'').trim(); if(jn) jobCounts[jn]=(jobCounts[jn]||0)+1; });
-    const seenJob={};
-    rows.forEach(r=>{
-      const jn=String(r.jobNumber||'').trim();
-      r._dupSet = jn && jobCounts[jn]>1;   // part of a duplicate group
-      if(r._dupSet){
-        if(!seenJob[jn]){ r._dupRole='true'; seenJob[jn]=true; }   // newest = true
-        else { r._dupRole='dup'; }                                  // older = duplicate
-      } else { r._dupRole=''; }
-    });
-    // Auto-archive: move possible duplicates into the Archived Duplicates folder
-    // once they are more than 30 days old. The newest ("Current") report is never
-    // archived — only the older copies that share its job number.
-    const THIRTY=30*24*3600*1000, nowMs=Date.now();
-    const toArchive=rows.filter(r=>{
-      if(r._dupRole!=='dup' || r.archived) return false;
-      const dt=r.submittedAt&&r.submittedAt.toDate?r.submittedAt.toDate():null;
-      return dt && (nowMs-dt.getTime())>THIRTY;
-    });
-    if(toArchive.length){
-      try{
-        const batch=FB_DB.batch();
-        toArchive.forEach(r=>{ batch.update(FB_DB.collection('reports').doc(r.id), { archived:true, archivedAt: firebase.firestore.FieldValue.serverTimestamp() }); r.archived=true; });
-        await batch.commit();
-      }catch(e){}
-    }
-    // available years, newest first; default to current year (or newest with data)
-    const years=[...new Set(rows.map(r=>r._year))].sort((a,b)=>b-a);
-    let selYear = years.includes(nowYear)?nowYear:years[0];
-    let query='';
-    // controls
-    let yrOpts=years.map(y=>`<option value="${y}">${y}</option>`).join('');
-    body.innerHTML=`
-      <div class="ad-controls">
-        <label class="ad-yearlab">Year:
-          <select id="adYear">${yrOpts}</select>
-        </label>
-        <input id="adSearch" class="ad-search" placeholder="Search tech, job, or report type…">
-      </div>
-      <div id="adReportList"></div>`;
-    const yearSel=body.querySelector('#adYear');
-    const searchBox=body.querySelector('#adSearch');
+    let newestY=nowYear, oldestY=nowYear, any=false;
+    try{
+      const a=await FB_DB.collection('reports').orderBy('submittedAt','desc').limit(1).get();
+      const b=await FB_DB.collection('reports').orderBy('submittedAt','asc').limit(1).get();
+      a.forEach(d=>{ any=true; const t=d.data().submittedAt; if(t&&t.toDate) newestY=t.toDate().getFullYear(); });
+      b.forEach(d=>{ const t=d.data().submittedAt; if(t&&t.toDate) oldestY=t.toDate().getFullYear(); });
+    }catch(e){ any=true; }
+    if(!any){ body.innerHTML='<div style="padding:16px;color:#777">No reports have been submitted yet.</div>'; return; }
+    const years=[]; for(let y=Math.max(newestY,nowYear); y>=Math.min(oldestY,nowYear); y--) years.push(y);
+    let selYear = years.indexOf(nowYear)>=0 ? nowYear : years[0];
+    let rows=[], lastDoc=null, done=false;
+    const sel=new Set();
+    body.innerHTML=
+      '<div class="ad-controls">'+
+        '<label class="ad-yearlab">Year: <select id="adYear">'+years.map(y=>'<option value="'+y+'">'+y+'</option>').join('')+'</select></label>'+
+        '<label class="ad-yearlab">Type: <select id="adType"><option value="">All types</option>'+Object.keys(TYPE_SHORT).map(g=>'<option value="'+g+'">'+esc(TYPE_SHORT[g])+'</option>').join('')+'</select></label>'+
+        '<input id="adSearch" class="ad-search" placeholder="Search tech, job, or report type…">'+
+      '</div>'+
+      '<div class="ad-controls" style="margin-top:-2px">'+
+        '<label class="ad-yearlab"><input type="checkbox" id="adDupOnly"> Possible duplicates only</label>'+
+        '<label class="ad-yearlab"><input type="checkbox" id="adGroupBy"> Group by job number</label>'+
+        '<span id="adBulk" style="margin-left:auto;display:flex;gap:6px"></span>'+
+      '</div>'+
+      '<div id="adReportList"></div><div id="adMore" style="text-align:center;margin:10px 0"></div>';
+    const yearSel=body.querySelector('#adYear'), typeSel=body.querySelector('#adType'), searchBox=body.querySelector('#adSearch');
+    const dupOnly=body.querySelector('#adDupOnly'), groupBy=body.querySelector('#adGroupBy');
+    const listEl=body.querySelector('#adReportList'), moreEl=body.querySelector('#adMore'), bulkEl=body.querySelector('#adBulk');
     yearSel.value=String(selYear);
-    const listEl=body.querySelector('#adReportList');
-    function draw(){
-      const y=parseInt(yearSel.value,10);
-      const q=(searchBox.value||'').trim().toLowerCase();
-      const filtered=rows.filter(r=> r._year===y && !r.archived && (!q || r._search.includes(q)));
-      if(filtered.length===0){
-        listEl.innerHTML='<div style="padding:16px;color:#777">No reports'+(q?' match your search':'')+' for '+y+'.</div>';
-        return;
-      }
-      let html='';
-      const dupCount=filtered.filter(r=>r._dupRole==='dup').length;
-      if(dupCount>0){
-        html+='<div class="ad-dup-note">⚠ '+dupCount+' possible duplicate'+(dupCount===1?'':'s')+' — reports sharing a job number with a newer submission. The most recent (marked ✓ Current) is the true report.</div>';
-      }
-      html+='<table class="ad-table"><thead><tr><th>Submitted</th><th>Tech</th><th>Job</th><th>Reports</th><th></th></tr></thead><tbody>';
-      filtered.forEach(r=>{
-        let dupBadge='';
-        if(r._dupRole==='true') dupBadge=' <span class="dup-true" title="Most recent report for this job number">✓ Current</span>';
-        else if(r._dupRole==='dup') dupBadge=' <span class="dup-dup" title="A newer report exists with this same job number">⚠ Possible duplicate</span>';
-        html+=`<tr class="${r._dupRole==='dup'?'dup-row':''}">
-          <td>${esc(r._when)}</td>
-          <td>${esc(r.byName||r.byEmail||'—')}</td>
-          <td>${esc(r.jobName||'—')}${r.jobNumber?(' · '+esc(r.jobNumber)):''}${dupBadge}${r.editedBy?(' <span class="edited-by" title="Edited by an administrator">✎ Edited by '+esc(r.editedBy)+(r._editedWhen?(' · '+esc(r._editedWhen)):'')+'</span>'):''}</td>
-          <td style="font-size:11px">${esc(r._names)}</td>
-          <td style="white-space:nowrap"><button class="ad-view" data-id="${esc(r.id)}">View</button> <button class="ad-pdf" data-id="${esc(r.id)}" title="Open this report and choose pages to save as PDF">PDF</button> <button class="ad-edit" data-id="${esc(r.id)}">Edit</button> <button class="ad-dl" data-id="${esc(r.id)}">Download</button> <button class="ad-del" data-id="${esc(r.id)}" data-label="${esc((r.jobName||'report')+' — '+(r.byName||r.byEmail||''))}">Delete</button></td>
-        </tr>`;
-      });
-      html+='</tbody></table>';
-      html+='<div class="ad-count">'+filtered.length+' report'+(filtered.length===1?'':'s')+' · '+y+(q?' · matching "'+esc(q)+'"':'')+'</div>';
-      listEl.innerHTML=html;
-      listEl.querySelectorAll('.ad-view').forEach(btn=>{
-        btn.onclick=()=>{ const rec=rows.find(x=>x.id===btn.getAttribute('data-id')); viewCloudReport(rec, close); };
-      });
-      listEl.querySelectorAll('.ad-pdf').forEach(btn=>{
-        btn.onclick=()=>{ const rec=rows.find(x=>x.id===btn.getAttribute('data-id')); viewCloudReport(rec, close); reportPickerModal(); };
-      });
-      listEl.querySelectorAll('.ad-edit').forEach(btn=>{
-        btn.onclick=()=>{ const rec=rows.find(x=>x.id===btn.getAttribute('data-id')); editCloudReport(rec, close); };
-      });
-      listEl.querySelectorAll('.ad-dl').forEach(btn=>{
-        btn.onclick=()=>{ const rec=rows.find(x=>x.id===btn.getAttribute('data-id')); downloadCloudReport(rec); };
-      });
-      listEl.querySelectorAll('.ad-del').forEach(btn=>{
-        btn.onclick=async ()=>{
-          const id=btn.getAttribute('data-id');
-          const label=btn.getAttribute('data-label')||'this report';
-          if(!confirm('Delete this submitted report?\n\n'+label+'\n\nThis permanently removes it from the office records and cannot be undone.')) return;
-          btn.disabled=true; btn.textContent='Deleting…';
-          try{
-            await FB_DB.collection('reports').doc(id).delete();
-            // remove from local list and redraw
-            const idx=rows.findIndex(x=>x.id===id);
-            if(idx>=0) rows.splice(idx,1);
-            draw();
-          }catch(e){ alert('Delete failed: '+(e.message||e)); btn.disabled=false; btn.textContent='Delete'; }
-        };
-      });
+
+    async function loadPage(reset){
+      if(reset){ rows=[]; lastDoc=null; done=false; sel.clear(); }
+      let q=FB_DB.collection('reports')
+        .where('submittedAt','>=',new Date(selYear,0,1))
+        .where('submittedAt','<',new Date(selYear+1,0,1))
+        .orderBy('submittedAt','desc');
+      if(lastDoc) q=q.startAfter(lastDoc);
+      const snap=await q.limit(PAGE).get();
+      let n=0;
+      snap.forEach(d=>{ n++; lastDoc=d; const x=d.data(); if(x.withdrawn) return; const r=Object.assign({id:d.id}, x); deriveRow(r); rows.push(r); });
+      if(n<PAGE) done=true;
+      computeDupes(rows);
     }
-    yearSel.onchange=draw;
-    searchBox.oninput=draw;
+    function visibleRows(){
+      const q=(searchBox.value||'').trim().toLowerCase(), tf=typeSel.value;
+      let v=rows.filter(r=>!r.archived && !r.withdrawn && (!tf || groupOfRecord(r)===tf) && (!q || r._search.includes(q)) && (!dupOnly.checked || r._dupRole));
+      if(groupBy.checked){
+        v=v.slice().sort((a,b)=>{ const ja=recJobKey(a), jb=recJobKey(b); if(ja!==jb) return ja<jb?-1:1; return tsMs(b.submittedAt)-tsMs(a.submittedAt); });
+      }
+      return v;
+    }
+    function rowHtml(r){
+      const dup = r._dupRole==='dup';
+      let badge='';
+      if(r._dupRole==='true') badge=' <span class="dup-true" title="Newest report with the same job number, type and inspection date">✓ Current</span>';
+      else if(dup) badge=' <span class="dup-dup" title="A newer report has the same job number, type and inspection date">⚠ Possible duplicate</span>';
+      const edited = r.editedBy ? (' <span class="edited-by" title="'+esc(r.editReason?('Reason: '+r.editReason):'Edited after submission')+'">✎ Edited by '+esc(r.editedBy)+(r._editedWhen?(' · '+esc(r._editedWhen)):'')+(r.editReason?(' · “'+esc(r.editReason)+'”'):'')+'</span>') : '';
+      const sent = r.sentToCustomer ? ' <span class="ad-chip ad-sent" title="Marked sent to customer">Sent</span>' : '';
+      const more='<select class="ad-more" data-id="'+esc(r.id)+'"><option value="">More…</option><option value="fixjob">Correct job number</option>'+
+        (dup?'<option value="notdup">Not a duplicate</option>':'')+
+        (r.sentToCustomer?'<option value="unsent">Unmark sent to customer</option>':'<option value="sent">Mark sent to customer</option>')+
+        '<option value="delete">Delete…</option></select>';
+      return '<tr class="'+(dup?'dup-row':'')+'">'+
+        '<td><input type="checkbox" class="ad-sel" data-id="'+esc(r.id)+'"'+(sel.has(r.id)?' checked':'')+'></td>'+
+        '<td>'+esc(r._when)+'</td><td>'+esc(r.byName||r.byEmail||'—')+'</td>'+
+        '<td>'+esc(r.jobName||'—')+(r.jobNumber?(' · '+esc(r.jobNumber)):'')+' '+typeChip(r)+badge+sent+edited+'</td>'+
+        '<td style="font-size:11px">'+esc(r._names)+'</td>'+
+        '<td style="white-space:nowrap"><button class="ad-view" data-id="'+esc(r.id)+'">View</button> <button class="ad-pdf" data-id="'+esc(r.id)+'" title="Open this report and choose pages to save as PDF">PDF</button> <button class="ad-edit" data-id="'+esc(r.id)+'">Edit</button> <button class="ad-dl" data-id="'+esc(r.id)+'">Download</button> <button class="ad-arch" data-id="'+esc(r.id)+'">Archive</button> '+more+'</td></tr>';
+    }
+    function draw(){
+      const v=visibleRows();
+      const dupCount=v.filter(r=>r._dupRole==='dup').length;
+      let html='';
+      if(dupCount>0) html+='<div class="ad-dup-note">⚠ '+dupCount+' possible duplicate'+(dupCount===1?'':'s')+' — reports with the same job number, report type and inspection date. The newest (✓ Current) is the one to keep. Nothing is archived automatically; use Archive or “Not a duplicate”.</div>';
+      if(!v.length){
+        listEl.innerHTML=html+'<div style="padding:16px;color:#777">No reports'+((searchBox.value||typeSel.value||dupOnly.checked)?' match these filters':'')+' for '+selYear+'.</div>';
+      }else{
+        html+='<table class="ad-table"><thead><tr><th style="width:24px"><input type="checkbox" id="adSelAll"></th><th>Submitted</th><th>Tech</th><th>Job</th><th>Reports</th><th></th></tr></thead><tbody>';
+        let lastJob=null;
+        v.forEach(r=>{
+          if(groupBy.checked){
+            const jk=recJobKey(r)||'(no job number)';
+            if(jk!==lastJob){
+              lastJob=jk;
+              const members=v.filter(x=>(recJobKey(x)||'(no job number)')===jk);
+              const types=[...new Set(members.map(x=>groupOfRecord(x)))].map(g=>'<span class="ad-chip ad-chip-'+g+'">'+esc(TYPE_SHORT[g]||g)+'</span>').join(' ');
+              html+='<tr class="ad-grp"><td colspan="6"><b>'+esc(jk)+'</b> · '+esc(members[0].jobName||'')+' — '+members.length+' report'+(members.length===1?'':'s')+' '+types+'</td></tr>';
+            }
+          }
+          html+=rowHtml(r);
+        });
+        html+='</tbody></table>';
+        html+='<div class="ad-count">'+v.length+' report'+(v.length===1?'':'s')+' shown · '+selYear+(done?'':' · more available')+'</div>';
+        listEl.innerHTML=html;
+      }
+      bulkEl.innerHTML = sel.size ? ('<button class="ad-arch" id="adBulkArch">Archive selected ('+sel.size+')</button><button class="ad-del" id="adBulkDel">Delete selected ('+sel.size+')</button>') : '';
+      moreEl.innerHTML = done ? '' : '<button class="ad-view" id="adLoadMore">Load more reports</button>';
+      wire(v);
+    }
+    const byId=(id)=>rows.find(x=>x.id===id);
+    function wire(v){
+      const idOf=(b)=>b.getAttribute('data-id');
+      listEl.querySelectorAll('.ad-view').forEach(b=>b.onclick=()=>viewCloudReport(byId(idOf(b)), close));
+      listEl.querySelectorAll('.ad-pdf').forEach(b=>b.onclick=()=>{ viewCloudReport(byId(idOf(b)), close); reportPickerModal(); });
+      listEl.querySelectorAll('.ad-edit').forEach(b=>b.onclick=()=>editCloudReport(byId(idOf(b)), close));
+      listEl.querySelectorAll('.ad-dl').forEach(b=>b.onclick=()=>downloadCloudReport(byId(idOf(b))));
+      listEl.querySelectorAll('.ad-sel').forEach(b=>b.onchange=()=>{ if(b.checked) sel.add(idOf(b)); else sel.delete(idOf(b)); draw(); });
+      const all=listEl.querySelector('#adSelAll');
+      if(all){ all.checked = v.length>0 && v.every(r=>sel.has(r.id)); all.onchange=()=>{ v.forEach(r=>{ if(all.checked) sel.add(r.id); else sel.delete(r.id); }); draw(); }; }
+      listEl.querySelectorAll('.ad-arch').forEach(b=>b.onclick=async()=>{
+        const r=byId(idOf(b));
+        const note = r._dupRole==='dup' ? 'This looks like an older copy of a newer report, which will be recorded as the one that replaced it.' : '';
+        const reason=await askArchiveReason(1, note); if(reason==null) return;
+        try{ await archiveRecords([r], reason); r.archived=true; sel.delete(r.id); computeDupes(rows); draw(); }
+        catch(e){ alert('Archive failed: '+(e.message||e)); }
+      });
+      listEl.querySelectorAll('.ad-more').forEach(s=>s.onchange=async()=>{
+        const act=s.value; s.value=''; if(!act) return;
+        const r=byId(idOf(s));
+        try{
+          if(act==='fixjob'){ if(await fixJobNumber(r)){ deriveRow(r); computeDupes(rows); draw(); } }
+          else if(act==='notdup'){ await FB_DB.collection('reports').doc(r.id).update({ dupIgnore:true }); r.dupIgnore=true; computeDupes(rows); draw(); }
+          else if(act==='sent'){ await FB_DB.collection('reports').doc(r.id).update({ sentToCustomer:true, sentAt:TSNOW(), sentBy:adminName() }); r.sentToCustomer=true; draw(); }
+          else if(act==='unsent'){ const D=firebase.firestore.FieldValue.delete(); await FB_DB.collection('reports').doc(r.id).update({ sentToCustomer:false, sentAt:D, sentBy:D }); r.sentToCustomer=false; draw(); }
+          else if(act==='delete'){
+            if(!confirm('Delete this submitted report?\n\n'+(r.jobName||'Report')+(r.jobNumber?(' · '+r.jobNumber):'')+' — '+(r.byName||r.byEmail||'')+'\n\nThis permanently removes it from the office records and cannot be undone. Archive it instead to keep a copy.')) return;
+            await deleteRecords([r]); rows.splice(rows.indexOf(r),1); sel.delete(r.id); computeDupes(rows); draw();
+          }
+        }catch(e){ alert('That did not save: '+(e.message||e)); }
+      });
+      const ba=bulkEl.querySelector('#adBulkArch');
+      if(ba) ba.onclick=async()=>{
+        const recs=[...sel].map(byId).filter(Boolean);
+        const reason=await askArchiveReason(recs.length); if(reason==null) return;
+        try{ await archiveRecords(recs, reason); recs.forEach(r=>{ r.archived=true; sel.delete(r.id); }); computeDupes(rows); draw(); }
+        catch(e){ alert('Archive failed: '+(e.message||e)); }
+      };
+      const bd=bulkEl.querySelector('#adBulkDel');
+      if(bd) bd.onclick=async()=>{
+        const recs=[...sel].map(byId).filter(Boolean);
+        if(!confirm('Delete '+recs.length+' selected report'+(recs.length===1?'':'s')+'?\n\nThis permanently removes them and cannot be undone. Archive them instead to keep a copy.')) return;
+        try{ await deleteRecords(recs); recs.forEach(r=>{ rows.splice(rows.indexOf(r),1); sel.delete(r.id); }); computeDupes(rows); draw(); }
+        catch(e){ alert('Delete failed: '+(e.message||e)); }
+      };
+      const lm=moreEl.querySelector('#adLoadMore');
+      if(lm) lm.onclick=async()=>{ lm.disabled=true; lm.textContent='Loading…'; try{ await loadPage(false); }catch(e){ alert('Could not load more: '+(e.message||e)); } draw(); };
+    }
+    yearSel.onchange=async()=>{ selYear=parseInt(yearSel.value,10); listEl.innerHTML='Loading…'; try{ await loadPage(true); }catch(e){ listEl.innerHTML='<div style="padding:16px;color:#c00">Could not load: '+esc(e.message||String(e))+'</div>'; return; } draw(); };
+    typeSel.onchange=draw; searchBox.oninput=draw; dupOnly.onchange=draw; groupBy.onchange=draw;
+    await loadPage(true);
     draw();
   }
+
   async function renderArchived(){
     let snap;
     try{ snap=await FB_DB.collection('reports').where('archived','==',true).get(); }
     catch(e){ body.innerHTML='<div style="padding:16px;color:#c00">Could not load archived reports: '+esc(e.message||String(e))+'</div>'; return; }
-    let arows=[]; snap.forEach(d=>arows.push({id:d.id, ...d.data()}));
-    // Auto-delete archived duplicates that have been archived for more than 365 days.
-    const YEAR=365*24*3600*1000, now=Date.now();
-    const expired=arows.filter(r=>{ const dt=r.archivedAt&&r.archivedAt.toDate?r.archivedAt.toDate():null; return dt && (now-dt.getTime())>YEAR; });
-    if(expired.length){
-      try{ const batch=FB_DB.batch(); expired.forEach(r=>batch.delete(FB_DB.collection('reports').doc(r.id))); await batch.commit(); }catch(e){}
-      const ids=new Set(expired.map(r=>r.id)); arows=arows.filter(r=>!ids.has(r.id));
-    }
-    if(!arows.length){ body.innerHTML='<div style="padding:16px;color:#777">No archived duplicate reports. Possible duplicates move here automatically 30 days after submission, and are deleted automatically one (1) year after archiving.</div>'; return; }
-    arows.forEach(r=>{
+    const arows=[]; snap.forEach(d=>{ const r=Object.assign({id:d.id}, d.data()); deriveRow(r);
       const sdt=r.submittedAt&&r.submittedAt.toDate?r.submittedAt.toDate():null;
       const adt=r.archivedAt&&r.archivedAt.toDate?r.archivedAt.toDate():null;
-      r._when=sdt?sdt.toLocaleDateString():'—';
-      r._archWhen=adt?adt.toLocaleDateString():'—';
-      r._delWhen=adt?new Date(adt.getTime()+YEAR).toLocaleDateString():'—';
-      r._names=(r.reports||[]).map(id=>{const f=FORMS.find(x=>x.id===id); return f?shortName(f):id;}).join(', ');
-      r._archMs=adt?adt.getTime():0;
-    });
+      r._whenD=sdt?sdt.toLocaleDateString():'—'; r._archD=adt?adt.toLocaleDateString():'—'; r._archMs=adt?adt.getTime():0;
+      arows.push(r); });
     arows.sort((a,b)=>b._archMs-a._archMs);
-    let html='<div class="ad-dup-note">Possible duplicate reports move here automatically 30 days after submission, and are deleted automatically one (1) year after archiving. Admins may delete any archived report now.</div>';
-    html+='<table class="ad-table"><thead><tr><th>Submitted</th><th>Tech</th><th>Job</th><th>Reports</th><th>Archived</th><th>Auto-deletes</th><th></th></tr></thead><tbody>';
-    arows.forEach(r=>{
-      html+=`<tr>
-        <td>${esc(r._when)}</td>
-        <td>${esc(r.byName||r.byEmail||'—')}</td>
-        <td>${esc(r.jobName||'—')}${r.jobNumber?(' · '+esc(r.jobNumber)):''}</td>
-        <td style="font-size:11px">${esc(r._names)}</td>
-        <td>${esc(r._archWhen)}</td>
-        <td>${esc(r._delWhen)}</td>
-        <td style="white-space:nowrap"><button class="ad-view" data-id="${esc(r.id)}">View</button> <button class="ad-dl" data-id="${esc(r.id)}">Download</button> <button class="ad-del" data-id="${esc(r.id)}" data-label="${esc((r.jobName||'report')+' — '+(r.byName||r.byEmail||''))}">Delete</button></td>
-      </tr>`;
+    const sel=new Set();
+    const oldAuto=arows.filter(r=>!r.archivedBy).length;
+    if(!arows.length){ body.innerHTML='<div style="padding:16px;color:#777">No archived reports.</div><div id="adWithdrawn"></div>'; await appendWithdrawn(); return; }
+    function draw(){
+      let html='<div class="ad-dup-note">Archived reports are kept until an administrator deletes them. Nothing is archived or deleted automatically.'+
+        (oldAuto?(' '+oldAuto+' of these '+(oldAuto===1?'was':'were')+' archived by the old automatic duplicate rule, which only compared job numbers. Review '+(oldAuto===1?'it':'them')+' and restore any that are separate reports.'):'')+'</div>';
+      html+='<div style="display:flex;gap:6px;justify-content:flex-end;margin-bottom:6px;min-height:28px">'+(sel.size?('<button class="ad-view" id="arBulkRestore">Restore selected ('+sel.size+')</button><button class="ad-del" id="arBulkDel">Delete selected ('+sel.size+')</button>'):'')+'</div>';
+      html+='<table class="ad-table"><thead><tr><th style="width:24px"><input type="checkbox" id="arSelAll"></th><th>Submitted</th><th>Tech</th><th>Job</th><th>Reports</th><th>Archived</th><th>Reason</th><th></th></tr></thead><tbody>';
+      arows.forEach(r=>{
+        const why = r.archivedReason ? esc(r.archivedReason) : '<span style="color:#9a2b20">Archived by the old automatic rule</span>';
+        html+='<tr><td><input type="checkbox" class="ar-sel" data-id="'+esc(r.id)+'"'+(sel.has(r.id)?' checked':'')+'></td>'+
+          '<td>'+esc(r._whenD)+'</td><td>'+esc(r.byName||r.byEmail||'—')+'</td>'+
+          '<td>'+esc(r.jobName||'—')+(r.jobNumber?(' · '+esc(r.jobNumber)):'')+' '+typeChip(r)+'</td>'+
+          '<td style="font-size:11px">'+esc(r._names)+'</td>'+
+          '<td style="font-size:12px">'+esc(r._archD)+(r.archivedBy?('<br>by '+esc(r.archivedBy)):'')+'<br><span style="color:#777">Manual delete only</span></td>'+
+          '<td style="font-size:12px">'+why+'</td>'+
+          '<td style="white-space:nowrap"><button class="ad-view" data-id="'+esc(r.id)+'">View</button> <button class="ad-dl" data-id="'+esc(r.id)+'">Download</button> <button class="ad-restore" data-id="'+esc(r.id)+'">Restore</button> <button class="ad-del" data-id="'+esc(r.id)+'">Delete</button></td></tr>';
+      });
+      html+='</tbody></table><div class="ad-count">'+arows.length+' archived report'+(arows.length===1?'':'s')+'</div><div id="adWithdrawn"></div>';
+      body.innerHTML=html;
+      const byId=(b)=>arows.find(x=>x.id===b.getAttribute('data-id'));
+      body.querySelectorAll('.ad-view[data-id]').forEach(b=>b.onclick=()=>viewCloudReport(byId(b), close));
+      body.querySelectorAll('.ad-dl[data-id]').forEach(b=>b.onclick=()=>downloadCloudReport(byId(b)));
+      body.querySelectorAll('.ar-sel').forEach(b=>b.onchange=()=>{ if(b.checked) sel.add(b.getAttribute('data-id')); else sel.delete(b.getAttribute('data-id')); draw(); });
+      const all=body.querySelector('#arSelAll'); if(all){ all.checked=arows.length>0 && arows.every(r=>sel.has(r.id)); all.onchange=()=>{ arows.forEach(r=>{ if(all.checked) sel.add(r.id); else sel.delete(r.id); }); draw(); }; }
+      async function doRestore(recs){ try{ await restoreRecords(recs); await renderArchived(); }catch(e){ alert('Restore failed: '+(e.message||e)); } }
+      async function doDelete(recs){
+        if(!confirm('Delete '+recs.length+' archived report'+(recs.length===1?'':'s')+' now?\n\nThis permanently removes '+(recs.length===1?'it':'them')+' and cannot be undone.')) return;
+        try{ await deleteRecords(recs); await renderArchived(); }catch(e){ alert('Delete failed: '+(e.message||e)); }
+      }
+      body.querySelectorAll('.ad-restore').forEach(b=>b.onclick=()=>doRestore([byId(b)]));
+      body.querySelectorAll('.ad-del[data-id]').forEach(b=>b.onclick=()=>doDelete([byId(b)]));
+      const br=body.querySelector('#arBulkRestore'); if(br) br.onclick=()=>doRestore([...sel].map(id=>arows.find(r=>r.id===id)).filter(Boolean));
+      const bd=body.querySelector('#arBulkDel'); if(bd) bd.onclick=()=>doDelete([...sel].map(id=>arows.find(r=>r.id===id)).filter(Boolean));
+      appendWithdrawn();
+    }
+    draw();
+  }
+
+  /* Reports a technician withdrew: hidden from the main list, kept until an admin deletes them. */
+  async function appendWithdrawn(){
+    const holder=body.querySelector('#adWithdrawn'); if(!holder) return;
+    let wsnap; try{ wsnap=await FB_DB.collection('reports').where('withdrawn','==',true).get(); }catch(e){ return; }
+    const wrows=[]; wsnap.forEach(d=>wrows.push({id:d.id, ...d.data()}));
+    if(!wrows.length){ holder.innerHTML=''; return; }
+    wrows.sort((a,b)=>((b.withdrawnAt&&b.withdrawnAt.toMillis?b.withdrawnAt.toMillis():0)-(a.withdrawnAt&&a.withdrawnAt.toMillis?a.withdrawnAt.toMillis():0)));
+    let h='<div class="ad-subhead" style="margin-top:18px">Withdrawn by technician ('+wrows.length+')</div>'+
+      '<div class="ad-dup-note">These are hidden from Submitted Reports. The technician can restore a report for 30 days; an administrator can restore or delete one at any time.</div>'+
+      '<table class="ad-table"><thead><tr><th>Submitted</th><th>Tech</th><th>Job</th><th>Reports</th><th>Withdrawn</th><th></th></tr></thead><tbody>';
+    wrows.forEach(r=>{
+      const sdt=r.submittedAt&&r.submittedAt.toDate?r.submittedAt.toDate().toLocaleDateString():'—';
+      const wdt=r.withdrawnAt&&r.withdrawnAt.toDate?r.withdrawnAt.toDate().toLocaleDateString():'—';
+      const names=(r.reports||[]).map(id=>{const f=FORMS.find(x=>x.id===id); return f?shortName(f):id;}).join(', ');
+      h+='<tr><td>'+esc(sdt)+'</td><td>'+esc(r.byName||r.byEmail||'—')+'</td><td>'+esc(r.jobName||'—')+(r.jobNumber?(' · '+esc(r.jobNumber)):'')+'</td><td style="font-size:11px">'+esc(names)+'</td><td>'+esc(wdt)+'</td>'+
+        '<td style="white-space:nowrap"><button class="wd-view" data-id="'+esc(r.id)+'">View</button> <button class="wd-dl" data-id="'+esc(r.id)+'">Download</button> <button class="wd-restore" data-id="'+esc(r.id)+'">Restore</button> <button class="wd-del" data-id="'+esc(r.id)+'" data-label="'+esc((r.jobName||'report')+' — '+(r.byName||r.byEmail||''))+'">Delete</button></td></tr>';
     });
-    html+='</tbody></table><div class="ad-count">'+arows.length+' archived duplicate'+(arows.length===1?'':'s')+'</div>';
-    body.innerHTML=html;
-    body.querySelectorAll('.ad-view').forEach(btn=>{ btn.onclick=()=>{ const rec=arows.find(x=>x.id===btn.getAttribute('data-id')); viewCloudReport(rec, close); }; });
-    body.querySelectorAll('.ad-dl').forEach(btn=>{ btn.onclick=()=>{ const rec=arows.find(x=>x.id===btn.getAttribute('data-id')); downloadCloudReport(rec); }; });
-    body.querySelectorAll('.ad-del').forEach(btn=>{
-      btn.onclick=async()=>{
-        const id=btn.getAttribute('data-id'); const label=btn.getAttribute('data-label')||'this report';
-        if(!confirm('Delete this archived report now?\n\n'+label+'\n\nThis permanently removes it and cannot be undone.')) return;
-        btn.disabled=true; btn.textContent='Deleting…';
-        try{ await FB_DB.collection('reports').doc(id).delete(); const i=arows.findIndex(x=>x.id===id); if(i>=0) arows.splice(i,1); renderArchived(); }
-        catch(e){ alert('Delete failed: '+(e.message||e)); btn.disabled=false; btn.textContent='Delete'; }
-      };
+    h+='</tbody></table>';
+    holder.innerHTML=h;
+    const find=(b)=>wrows.find(x=>x.id===b.getAttribute('data-id'));
+    holder.querySelectorAll('.wd-view').forEach(b=>b.onclick=()=>viewCloudReport(find(b), close));
+    holder.querySelectorAll('.wd-dl').forEach(b=>b.onclick=()=>downloadCloudReport(find(b)));
+    holder.querySelectorAll('.wd-restore').forEach(b=>b.onclick=async()=>{
+      b.disabled=true;
+      try{ await FB_DB.collection('reports').doc(b.getAttribute('data-id')).update({ withdrawn:false, withdrawnAt:firebase.firestore.FieldValue.delete() }); await renderArchived(); }
+      catch(e){ alert('Restore failed: '+(e.message||e)); b.disabled=false; }
+    });
+    holder.querySelectorAll('.wd-del').forEach(b=>b.onclick=async()=>{
+      if(!confirm('Delete this withdrawn report now?\n\n'+(b.getAttribute('data-label')||'')+'\n\nThis permanently removes it and cannot be undone.')) return;
+      b.disabled=true;
+      try{ await FB_DB.collection('reports').doc(b.getAttribute('data-id')).delete(); await renderArchived(); }
+      catch(e){ alert('Delete failed: '+(e.message||e)); b.disabled=false; }
     });
   }
   async function renderUsers(){
@@ -4053,7 +4646,8 @@ function downloadCloudReport(rec){
 /* Load a submitted report straight into the app to view / print / edit. */
 function viewCloudReport(rec, closeDash){
   try{
-    clearEditMode();                 // plain view — not an edit
+    if(!(EDIT_DOC||VIEW_DOC)) stashWork();   // keep the user's in-progress report safe while this one is open
+    clearEditMode(false);                    // plain view — not an edit
     VIEW_DOC = rec && rec.id || null;
     // The direct-admin route hides the report form with a first-paint rule; lift it so the report can be viewed and saved as PDF.
     document.documentElement.classList.remove('fdec-direct-admin','fdec-direct-admin-boot');
@@ -4077,7 +4671,7 @@ function viewCloudReport(rec, closeDash){
       '<span style="display:flex;gap:8px"><button type="button" id="viewPdfBtn" class="primary">Save as PDF</button><button type="button" id="viewDoneBtn">Done viewing</button></span>';
     vb.style.display='flex';
     document.getElementById('viewPdfBtn').onclick=()=>reportPickerModal();
-    document.getElementById('viewDoneBtn').onclick=clearEditMode;
+    document.getElementById('viewDoneBtn').onclick=()=>clearEditMode();
     window.scrollTo({top:0, behavior:'smooth'});
   }catch(e){ alert('Could not open report: '+(e.message||e)); }
 }
@@ -4088,13 +4682,17 @@ function editCloudReport(rec, closeDash){
   viewCloudReport(rec, closeDash);
   VIEW_DOC = null;
   { const vb=document.getElementById('viewModeBar'); if(vb) vb.style.display='none'; }
-  EDIT_DOC = { id:rec.id, byName:rec.byName, byEmail:rec.byEmail, uid:rec.uid };
+  const me=FB_AUTH && FB_AUTH.currentUser;
+  const mine=!!(me && rec.uid===me.uid);
+  EDIT_DOC = { id:rec.id, byName:rec.byName, byEmail:rec.byEmail, uid:rec.uid, mine,
+               group:groupOfRecord(rec), rev:rec.rev||0, editCount:rec.editCount||0, jobKey:recJobKey(rec), sent:!!rec.sentToCustomer };
   let b=document.getElementById('editModeBar');
   if(!b){ b=document.createElement('div'); b.id='editModeBar'; b.className='edit-mode-bar no-print'; document.body.appendChild(b); }
-  b.innerHTML='<span>✏️ Editing '+esc(rec.byName||rec.byEmail||'a technician')+'’s report'+(rec.jobName?(' · '+esc(rec.jobName)):'')+' — submitting will <b>replace the original</b>.</span><button type="button" id="editCancelBtn">Cancel edit</button>';
+  const who = mine ? 'your submitted report' : (esc(rec.byName||rec.byEmail||'a technician')+'’s report');
+  b.innerHTML='<span>✏️ Editing '+who+(rec.jobName?(' · '+esc(rec.jobName)):'')+' — tap Submit Report to <b>update the original</b>. You will be asked for a reason.</span><button type="button" id="editCancelBtn">Cancel edit</button>';
   b.style.display='flex';
-  const c=document.getElementById('editCancelBtn'); if(c) c.onclick=clearEditMode;
-  flashCloud('Editing '+(rec.byName||rec.byEmail||'report')+' — resubmit will replace it');
+  const c=document.getElementById('editCancelBtn'); if(c) c.onclick=()=>clearEditMode();
+  flashCloud(mine ? 'Editing your report — Submit Report will update it' : ('Editing '+(rec.byName||rec.byEmail||'report')+' — Submit Report will update it'));
 }
 
 function manageUsersModal(){
@@ -4208,7 +4806,7 @@ function draftPicker(keys, drafts){
   bg.querySelector('#dpClose').onclick=close;
   bg.querySelector('#dpFromFile').onclick=()=>{ close(); document.getElementById('draftFileInput').click(); };
   bg.querySelectorAll('[data-load]').forEach(b=> b.onclick=()=>{
-    clearEditMode();   // loading a different draft ends any admin edit session
+    clearEditMode(false);   // loading a different draft ends any edit session
     const k=b.getAttribute('data-load'); const dr=drafts[k];
     if(dr.allValues){ ALLVALUES=JSON.parse(JSON.stringify(dr.allValues)); }
     else { ALLVALUES={}; ALLVALUES[dr.form]=JSON.parse(JSON.stringify(dr.values||{})); }
