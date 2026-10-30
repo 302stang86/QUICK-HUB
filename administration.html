@@ -332,7 +332,7 @@ html.fdec-admin-boot body::after{content:"Loading Administration…";position:fi
       </a>
       <button type="button" class="adm-card" data-view="qfWrap" style="--cc:#1565c0">
         <span class="adm-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="M13.6 13.2c0-.7-.8-1.2-1.6-1.2s-1.6.5-1.6 1.2.8 1.2 1.6 1.2 1.6.5 1.6 1.2-.8 1.2-1.6 1.2-1.6-.5-1.6-1.2"/></svg></span>
-        <span class="adm-body"><b>Quote files</b><small>Drafts, Word docs, and export packages from the Quoting Suite</small></span>
+        <span class="adm-body"><b>Quote files</b><small>Editable quote drafts from the Quoting Suite</small></span>
         <span class="adm-go" aria-hidden="true">&rarr;</span>
       </button>
       <button type="button" class="adm-card" data-admin="1" data-view="mqWrap" style="--cc:#9d0e16">
@@ -360,7 +360,7 @@ html.fdec-admin-boot body::after{content:"Loading Administration…";position:fi
     <div class="qf-wrap" id="qfWrap" style="display:none">
       <div class="qf-head">
         <h2>Quote files</h2>
-        <p>Drafts, Word documents, and export packages saved from the Quoting &amp; Proposal Suite. Search by job name, quote number, user, or file name.</p>
+        <p>Editable quote drafts saved from the Quoting &amp; Proposal Suite (one per quote). Search by job name, quote number, user, or file name.</p>
       </div>
       <input id="qfSearch" class="qf-search" type="search" placeholder="Search job name, quote number, user, or file name&hellip;" autocomplete="off">
       <div id="qfYears" class="qf-years"></div>
@@ -765,7 +765,7 @@ async function loadQuoteFiles(){
     else { snaps = await getDocs(query(collection(db,"quoteFiles"), where("uid","==",me.uid))); }
     QF = [];
     snaps.forEach(function(s){ var o=s.data()||{}; o.id=s.id; QF.push(o); });
-    QF.sort(function(a,b){ return qfMs(b.createdAt) - qfMs(a.createdAt); });
+    QF.sort(function(a,b){ return qfMs(b.updatedAt||b.editedAt||b.createdAt) - qfMs(a.updatedAt||a.editedAt||a.createdAt); });
     renderQFYears();
     renderQF($("qfSearch").value||"");
   }catch(e){
@@ -795,7 +795,7 @@ function renderQF(filter){
   list.innerHTML = rows.map(function(o){
     var job = o.jobName ? qfEsc(o.jobName) : "(no job name)";
     var qn  = o.quoteNo ? ("Quote #"+qfEsc(o.quoteNo)) : "No quote #";
-    var meta = qn+" &middot; "+qfEsc(o.userName||o.userEmail||"Unknown")+" &middot; "+qfEsc(qfDate(o.createdAt))
+    var meta = qn+" &middot; "+qfEsc(o.userName||o.userEmail||"Unknown")+" &middot; "+qfEsc(qfDate(o.updatedAt||o.editedAt||o.createdAt))
       + (o.editedBy ? ' &middot; <span class="qf-editedby">✎ Edited by '+qfEsc(o.editedBy)+'</span>' : '');
     var app = o.app ? '<span class="qf-chip">'+qfEsc(o.app)+'</span>' : "";
     var op = (o.ready === false) ? ""

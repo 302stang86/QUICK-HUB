@@ -3083,8 +3083,10 @@ function saveDraft(){
   const s = clone.querySelector('#draftStatus'); if (s) s.remove();
   const html = '<!DOCTYPE html>\n' + clone.outerHTML;
 
-  const name = ['FDEC_Quote_DRAFT', $('quoteNo').value.trim(), $('jobName').value.trim()]
-    .filter(Boolean).join('_').replace(/[^\w-]+/g,'_') || 'FDEC_Quote_DRAFT';
+  const _fp = x => String(x||'').replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'_');
+  const _td = new Date(), _today = _td.getFullYear()+'-'+String(_td.getMonth()+1).padStart(2,'0')+'-'+String(_td.getDate()).padStart(2,'0');
+  const _dt = ($('quoteDate').value||'').slice(0,10) || _today;
+  const name = [_fp($('jobName').value), _fp($('quoteNo').value), _dt, 'Draft'].filter(Boolean).join('_');
   const blob = new Blob([html], { type:'text/html' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -4493,7 +4495,8 @@ async function generateWordProposal(silent){
     });
     const h = jobHeader();
     const _fp = function(x){ return String(x||"").replace(/[^\w\- ]+/g,"").trim().replace(/\s+/g,"_"); };
-    const _dt = (document.getElementById("jobDate").value || "").slice(0,10);
+    const _td = new Date(), _today = _td.getFullYear()+"-"+String(_td.getMonth()+1).padStart(2,"0")+"-"+String(_td.getDate()).padStart(2,"0");
+    const _dt = (document.getElementById("jobDate").value || "").slice(0,10) || _today;
     const name = [_fp(h.customer), _fp(h.quote), _dt].filter(Boolean).join("_") || "FDEC_Proposal";
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -4765,11 +4768,13 @@ if (_btnSave) _btnSave.addEventListener("click", () => {
 
     const q = document.getElementById("jobQuote").value.trim();
     const c = document.getElementById("jobCustomer").value.trim();
-    const base = (q || c || "FDEC_Proposal").replace(/[^\w\- ]+/g,"").trim().replace(/\s+/g,"_") || "FDEC_Proposal";
-    const stamp = new Date().toISOString().slice(0,10);
+    const _fp = function(x){ return String(x||"").replace(/[^\w\- ]+/g,"").trim().replace(/\s+/g,"_"); };
+    const _td = new Date(), _today = _td.getFullYear()+"-"+String(_td.getMonth()+1).padStart(2,"0")+"-"+String(_td.getDate()).padStart(2,"0");
+    const _dt = (document.getElementById("jobDate").value || "").slice(0,10) || _today;
+    const base = [_fp(c), _fp(q), _dt].filter(Boolean).join("_");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = base + "_Draft_" + stamp + ".html";
+    a.download = base + "_Draft.html";
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -5983,7 +5988,8 @@ async function generateWordProposal(silent){
     });
     const h = jobHeader();
     const _fp = function(x){ return String(x||"").replace(/[^\w\- ]+/g,"").trim().replace(/\s+/g,"_"); };
-    const _dt = (document.getElementById("jobDate").value || "").slice(0,10);
+    const _td = new Date(), _today = _td.getFullYear()+"-"+String(_td.getMonth()+1).padStart(2,"0")+"-"+String(_td.getDate()).padStart(2,"0");
+    const _dt = (document.getElementById("jobDate").value || "").slice(0,10) || _today;
     const name = [_fp(h.customer), _fp(h.quote), _dt].filter(Boolean).join("_") || "FDEC_Proposal";
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -6255,11 +6261,13 @@ if (_btnSave) _btnSave.addEventListener("click", () => {
 
     const q = document.getElementById("jobQuote").value.trim();
     const c = document.getElementById("jobCustomer").value.trim();
-    const base = (q || c || "FDEC_Proposal").replace(/[^\w\- ]+/g,"").trim().replace(/\s+/g,"_") || "FDEC_Proposal";
-    const stamp = new Date().toISOString().slice(0,10);
+    const _fp = function(x){ return String(x||"").replace(/[^\w\- ]+/g,"").trim().replace(/\s+/g,"_"); };
+    const _td = new Date(), _today = _td.getFullYear()+"-"+String(_td.getMonth()+1).padStart(2,"0")+"-"+String(_td.getDate()).padStart(2,"0");
+    const _dt = (document.getElementById("jobDate").value || "").slice(0,10) || _today;
+    const base = [_fp(c), _fp(q), _dt].filter(Boolean).join("_");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = base + "_Draft_" + stamp + ".html";
+    a.download = base + "_Draft.html";
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -7443,7 +7451,8 @@ async function generateWordProposal(silent){
     });
     const h = jobHeader();
     const _fp = function(x){ return String(x||"").replace(/[^\w\- ]+/g,"").trim().replace(/\s+/g,"_"); };
-    const _dt = (document.getElementById("jobDate").value || "").slice(0,10);
+    const _td = new Date(), _today = _td.getFullYear()+"-"+String(_td.getMonth()+1).padStart(2,"0")+"-"+String(_td.getDate()).padStart(2,"0");
+    const _dt = (document.getElementById("jobDate").value || "").slice(0,10) || _today;
     const name = [_fp(h.customer), _fp(h.quote), _dt].filter(Boolean).join("_") || "FDEC_Proposal";
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -7715,11 +7724,13 @@ if (_btnSave) _btnSave.addEventListener("click", () => {
 
     const q = document.getElementById("jobQuote").value.trim();
     const c = document.getElementById("jobCustomer").value.trim();
-    const base = (q || c || "FDEC_Proposal").replace(/[^\w\- ]+/g,"").trim().replace(/\s+/g,"_") || "FDEC_Proposal";
-    const stamp = new Date().toISOString().slice(0,10);
+    const _fp = function(x){ return String(x||"").replace(/[^\w\- ]+/g,"").trim().replace(/\s+/g,"_"); };
+    const _td = new Date(), _today = _td.getFullYear()+"-"+String(_td.getMonth()+1).padStart(2,"0")+"-"+String(_td.getDate()).padStart(2,"0");
+    const _dt = (document.getElementById("jobDate").value || "").slice(0,10) || _today;
+    const base = [_fp(c), _fp(q), _dt].filter(Boolean).join("_");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = base + "_Draft_" + stamp + ".html";
+    a.download = base + "_Draft.html";
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -8055,13 +8066,9 @@ window.addEventListener('message', function(e){
     autosaveStore(d.page, d.data);
     return;
   }
-  // A page downloaded a file. Keep a central copy in Firebase ONLY when it is
-  // part of an Export Full Package — not for saved drafts or one-off downloads.
-  // runExport() opens a short save window; files arriving outside it are ignored.
-  if (d.type === 'filesave' && d.value){
-    if (window.fdecSaveQuoteFile && Date.now() < (window.__fdecExportUntil || 0)) window.fdecSaveQuoteFile(d.value);
-    return;
-  }
+  // A page downloaded a file (Word, page draft, etc.). Downloads go to the user's
+  // PC only — Quote files holds just the editable suite draft (see saveSuiteDraft).
+  if (d.type === 'filesave'){ return; }
   if (d.type === 'request-master-catalog'){
     var sendMaster = function(items){ var f=document.getElementById('view-quote'); if (f && f.contentWindow) f.contentWindow.postMessage({ fdec:true, type:'master-catalog', data: items||null }, '*'); };
     if (window.__fdecMasterLoaded){ sendMaster(window.__fdecMasterCatalog); }
@@ -8156,13 +8163,11 @@ function runExport(){
   });
   if (!selected.length){ alert('Select at least one page to export.'); return; }
 
-  // Save the reopenable quote to Administration — a new record, or, when an admin
-  // is editing a saved quote, a replacement of that same record. Only Export Full
-  // Package saves to quote files; saved drafts and one-off downloads never do.
+  // Export Full Package (PDF + Word) downloads to the PC only and never writes to
+  // Quote files. Just work out the JobName_QuoteNumber_Date base for the PDF name.
   try{
     buildSuiteBundle().then(function(res){
       window.__fdecPkgBase = fdecFileBase(res.jobName, res.quoteNo, res.quoteDate);
-      if (window.fdecSaveQuoteBundle) window.fdecSaveQuoteBundle(res.bundle, res.jobName, res.quoteNo);
     }).catch(function(){});
   }catch(e){}
 
@@ -8311,28 +8316,22 @@ function saveSuiteDraft(){
   var btn = document.getElementById('btn-savedraft');
   btn.disabled = true; var t = btn.textContent; btn.textContent = 'Saving…';
 
-  Promise.all(DRAFT_PAGES.map(function(p){
-    return askDraft(p.frame).then(function(res){ return { id:p.id, res:res||{} }; });
-  })).then(function(results){
-    var bundle = {
-      meta: { app:'FDEC Quoting & Proposal Suite', kind:'suite-draft', version:1, savedAt:new Date().toISOString() },
-      pages: {}
-    };
-    results.forEach(function(r){
-      if (r.res && r.res.data) bundle.pages[r.id] = r.res.data;
-    });
+  buildSuiteBundle().then(function(res){
+    // File name: JobName_QuoteNumber_Date_Draft.json
+    var base = fdecFileBase(res.jobName, res.quoteNo, res.quoteDate);
+    var fname = base + '_Draft.json';
 
-    // Name the file from the quote's job info when available.
-    var q = bundle.pages.quote && bundle.pages.quote.fields ? bundle.pages.quote.fields : {};
-    var fname = fdecFileBase(q.jobName, q.quoteNo, q.quoteDate) + '_Draft.json';
-
-    var blob = new Blob([JSON.stringify(bundle)], { type:'application/json' });
+    var blob = new Blob([JSON.stringify(res.bundle)], { type:'application/json' });
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = fname;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
     markClean();   // draft saved — no unsaved changes to warn about
+
+    // The editable draft is the ONLY thing kept in Quote files — one record per
+    // quote, replaced on every Save Draft (no duplicates).
+    if (window.fdecSaveQuoteBundle) window.fdecSaveQuoteBundle(res.bundle, res.jobName, res.quoteNo, base);
   }).catch(function(err){
     console.error(err); alert('Could not save the suite draft: ' + err);
   }).then(function(){
@@ -8382,7 +8381,7 @@ function loadSuiteDraftFile(input){
   var bar = document.createElement('div');
   bar.id='qfEditBar'; bar.className='no-print';
   bar.style.cssText='position:sticky;top:0;z-index:1200;background:#fff3d6;border-bottom:2px solid #e0b64a;color:#5c4300;font:600 13px/1.4 "Segoe UI",Arial,sans-serif;padding:9px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap';
-  bar.innerHTML='<span>✏️ Editing a saved quote'+(h.byName?(' · '+String(h.byName).replace(/[<>&]/g,'')):'')+' — <b>Export Full Package</b> will replace the original in Administration.</span>';
+  bar.innerHTML='<span>✏️ Editing a saved quote'+(h.byName?(' · '+String(h.byName).replace(/[<>&]/g,'')):'')+' — <b>Save Draft</b> will replace the original in Quote files.</span>';
   document.body.insertBefore(bar, document.body.firstChild);
   // Re-post the saved state a few times so it lands after each page finishes loading.
   var tries=0;
@@ -8406,18 +8405,22 @@ function loadSuiteDraftFile(input){
    origin); here we upload the bytes to Firebase Storage and index the file
    in Firestore (collection "quoteFiles"). */
 import { getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, doc, getDoc, setDoc, deleteDoc, serverTimestamp }
+import { getFirestore, collection, addDoc, doc, getDoc, getDocs, query, where, setDoc, deleteDoc, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 function fdecSafe(s){ return String(s || "").replace(/[^\w.-]+/g, "_").slice(0, 90); }
 function fdecB64(str){ try{ return btoa(unescape(encodeURIComponent(str))); }catch(_){ return btoa(str); } }
 
-/* Save the reopenable quote (the suite state) to Administration. When an admin
-   opened a saved quote with "Edit", window.__fdecEditQF holds that record, and
-   this REPLACES it in place (keeping the original author) with an edited-by
-   stamp; otherwise it files a new quote file. Called only by Export Full Package. */
-window.fdecSaveQuoteBundle = async function(bundle, jobName, quoteNo){
+/* Save the editable suite draft to Quote files. Called ONLY by Save Draft.
+   There is one record per quote: when this quote (matched by quote number, or by
+   job name when there is no number) is already filed, or an admin opened it with
+   "Edit", the existing record is REPLACED in place; otherwise a new one is filed.
+   The file is named JobName_QuoteNumber_Date.fdecsuite. */
+window.fdecSaveQuoteBundle = async function(bundle, jobName, quoteNo, fileBase){
   try{
+    if (!String(quoteNo||"").trim() && !String(jobName||"").trim()){
+      fdecToast("Enter a job name or quote number to save this draft to Quote files.", true); return;
+    }
     if (window.FDECAuth && window.FDECAuth.ready){ try{ await window.FDECAuth.ready; }catch(_){} }
     var dbf = getFirestore(getApp("fdec"));
     var user = (window.FDECAuth && window.FDECAuth.user) || null;
@@ -8426,22 +8429,45 @@ window.fdecSaveQuoteBundle = async function(bundle, jobName, quoteNo){
     var uid = (user && user.uid) || "anon";
     var b64 = fdecB64(JSON.stringify(bundle));
     var total = Math.ceil(b64.length / FDEC_CHUNK) || 1;
-    var fname = fdecSafe(quoteNo || jobName || "quote") + ".fdecsuite";
+    var fname = fdecSafe(fileBase || fdecFileBase(jobName, quoteNo, "")) + ".fdecsuite";
+
+    // Find the record to replace: an admin edit handoff, else a saved record for this quote.
+    var target = null;
     var edit = window.__fdecEditQF || null;
-    if (edit && edit.id){
-      var ref = doc(dbf, "quoteFiles", edit.id);
-      // Clear old chunks, then write the new ones.
-      var oldN = Math.max(total, (edit.chunkCount|0) || 0, 1);
-      for (var k=0;k<oldN+2;k++){ try{ await deleteDoc(doc(dbf,"quoteFiles",edit.id,"chunks",String(k))); }catch(_){} }
-      await setDoc(ref, {
+    if (edit && edit.id){ target = { id: edit.id, uid: edit.uid || uid, chunkCount: edit.chunkCount|0, own: false }; }
+    else {
+      try{
+        var field = String(quoteNo||"").trim() ? "quoteNo" : "jobName";
+        var val = String(quoteNo||"").trim() ? String(quoteNo).trim() : String(jobName||"").trim();
+        var q = fdecCanManageEquip()
+          ? query(collection(dbf, "quoteFiles"), where(field, "==", val))
+          : query(collection(dbf, "quoteFiles"), where(field, "==", val), where("uid", "==", uid));
+        var snap = await getDocs(q), best = null;
+        snap.forEach(function(d){
+          var o = d.data() || {};
+          if (!/\.fdecsuite$/i.test(o.filename || "")) return;      // only editable suite drafts
+          var ms = (o.createdAt && o.createdAt.toMillis) ? o.createdAt.toMillis() : 0;
+          if (!best || ms >= best.ms) best = { id:d.id, uid:o.uid || uid, chunkCount:o.chunkCount|0, ms:ms };
+        });
+        if (best){ target = best; }
+      }catch(e){ console.warn("quote file lookup failed; filing a new record", e); }
+    }
+
+    if (target){
+      var ref = doc(dbf, "quoteFiles", target.id);
+      var oldN = Math.max(total, target.chunkCount || 0, 1);
+      for (var k=0;k<oldN+2;k++){ try{ await deleteDoc(doc(dbf,"quoteFiles",target.id,"chunks",String(k))); }catch(_){} }
+      var upd = {
         jobName: jobName||"", quoteNo: quoteNo||"",
         filename: fname, mime: "application/fdec-suite", size: b64.length, chunkCount: total,
-        editedBy: userName, editedByEmail: (user && user.email) || "", editedAt: serverTimestamp(),
-        ready: false
-      }, { merge:true });
-      for (var i=0;i<total;i++){ await setDoc(doc(dbf,"quoteFiles",edit.id,"chunks",String(i)), { i:i, uid:uid, data:b64.slice(i*FDEC_CHUNK,(i+1)*FDEC_CHUNK) }); }
+        updatedAt: serverTimestamp(), ready: false
+      };
+      if (target.uid !== uid){ upd.editedBy = userName; upd.editedByEmail = (user && user.email) || ""; upd.editedAt = serverTimestamp(); }
+      await setDoc(ref, upd, { merge:true });
+      for (var i=0;i<total;i++){ await setDoc(doc(dbf,"quoteFiles",target.id,"chunks",String(i)), { i:i, uid:target.uid, data:b64.slice(i*FDEC_CHUNK,(i+1)*FDEC_CHUNK) }); }
       await setDoc(ref, { ready:true }, { merge:true });
-      fdecToast("Updated the quote in Administration — replaced the original.");
+      window.__fdecEditQF = { id:target.id, uid:target.uid, chunkCount:total };   // later saves this session replace the same record
+      fdecToast("Draft updated in Quote files.");
     } else {
       var metaRef = await addDoc(collection(dbf, "quoteFiles"), {
         jobName: jobName||"", quoteNo: quoteNo||"", userName: userName, userEmail: (user && user.email) || "",
@@ -8450,9 +8476,10 @@ window.fdecSaveQuoteBundle = async function(bundle, jobName, quoteNo){
       });
       for (var j=0;j<total;j++){ await setDoc(doc(dbf,"quoteFiles",metaRef.id,"chunks",String(j)), { i:j, uid:uid, data:b64.slice(j*FDEC_CHUNK,(j+1)*FDEC_CHUNK) }); }
       await setDoc(metaRef, { ready:true }, { merge:true });
-      fdecToast("Saved the quote to Administration.");
+      window.__fdecEditQF = { id:metaRef.id, uid:uid, chunkCount:total };
+      fdecToast("Draft saved to Quote files.");
     }
-  }catch(err){ console.warn("quote bundle save failed", err); fdecToast("Could not save the quote centrally.", true); }
+  }catch(err){ console.warn("quote bundle save failed", err); fdecToast("Could not save the draft to Quote files.", true); }
 };
 
 function fdecToast(msg, bad){
