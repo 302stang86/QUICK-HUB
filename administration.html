@@ -801,8 +801,7 @@ function renderQF(filter){
     var op = (o.ready === false) ? ""
       : '<button class="qf-btn open" data-op="'+qfEsc(o.id)+'">Open</button>';
     var reopenable = (o.mime==="application/fdec-suite") || (o.mime==="application/fdec-fa-quote") || /\.(fdecsuite|json|fdecfa)$/i.test(o.filename||"");
-    var ed = (canDel && o.ready!==false && reopenable)
-      ? '<button class="qf-btn edit" data-ed="'+qfEsc(o.id)+'">Edit</button>' : "";
+    var ed = "";   // Open and Edit were the same action for saved quotes, so only Open is shown
     var dl = (o.ready === false)
       ? '<span class="qf-btn" style="opacity:.5;cursor:default">Saving&hellip;</span>'
       : '<button class="qf-btn" data-dl="'+qfEsc(o.id)+'">Download</button>';
@@ -815,6 +814,8 @@ function renderQF(filter){
   }).join("");
 }
 
+function qfReopenable(o){ return (o.mime==="application/fdec-suite") || (o.mime==="application/fdec-fa-quote") || /\.(fdecsuite|json|fdecfa)$/i.test(o.filename||""); }
+
 /* Rebuild a file from its Firestore chunks and hand it to the browser. */
 async function qfDownload(o){
   try{
@@ -824,9 +825,9 @@ async function qfDownload(o){
     var b64 = parts.join("");
     var bin = atob(b64), len = bin.length, arr = new Uint8Array(len);
     for(var i=0;i<len;i++) arr[i] = bin.charCodeAt(i);
-    var blob = new Blob([arr], { type: o.mime || "application/octet-stream" });
+    var blob = new Blob([arr], { type: (/fdec-suite|fdec-fa-quote/.test(o.mime||"")) ? "application/json" : (o.mime || "application/octet-stream") });
     var url = URL.createObjectURL(blob);
-    var a = document.createElement("a"); a.href = url; a.download = o.filename || "file";
+    var a = document.createElement("a"); a.href = url; a.download = (o.mime==="application/fdec-suite" || /\.fdecsuite$/i.test(o.filename||"")) ? String(o.filename).replace(/\.fdecsuite$/i,"_Draft.json") : (o.filename || "file");
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
   }catch(e){ P.toast("Download failed: "+(e&&e.code?e.code:"try again")); }
@@ -871,7 +872,8 @@ async function qfOpen(o, win){
 
 /* Edit a reopenable quote: rebuild its saved suite state, hand it to the Quoting
    suite, and open it there. A re-export in the suite replaces this same record. */
-async function qfEdit(o){
+async function qfEdit(o, win){
+  var go=function(u){ if(win && !win.closed){ win.location=u; } else { window.location.href=u; } };
   try{
     var snaps = await getDocs(query(collection(db,"quoteFiles",o.id,"chunks"), orderBy("i")));
     var parts=[]; snaps.forEach(function(s){ var d=s.data()||{}; parts[d.i|0]=d.data||""; });
@@ -882,18 +884,18 @@ async function qfEdit(o){
       if(!bundle || !bundle.job) throw new Error("not a reopenable fire alarm quote");
       var fh={ id:o.id, state:bundle, byName:o.userName||"", byEmail:o.userEmail||"", uid:o.uid||"", chunkCount:o.chunkCount||0 };
       try{ localStorage.setItem("fdec_edit_faquote", JSON.stringify(fh)); }
-      catch(e){ P.toast("Could not start edit — this quote is too large to hand off."); return; }
-      window.location.href="fire-alarm-quoting.html";
+      catch(e){ if(win&&!win.closed){try{win.close();}catch(_){}} P.toast("Could not start edit — this quote is too large to hand off."); return; }
+      go("fire-alarm-quoting.html");
       P.toast("Opening the quote in Fire Alarm Proposals to edit…");
       return;
     }
     if(!bundle || !bundle.pages) throw new Error("not a reopenable quote");
     var handoff={ id:o.id, bundle:bundle, byName:o.userName||"", byEmail:o.userEmail||"", uid:o.uid||"", chunkCount:o.chunkCount||0 };
     try{ localStorage.setItem("fdec_edit_quotefile", JSON.stringify(handoff)); }
-    catch(e){ P.toast("Could not start edit — this quote is too large to hand off."); return; }
-    window.location.href="quoting.html";   // internal hub page: same tab
+    catch(e){ if(win&&!win.closed){try{win.close();}catch(_){}} P.toast("Could not start edit — this quote is too large to hand off."); return; }
+    go("quoting.html");
     P.toast("Opening the quote in the Quoting suite to edit…");
-  }catch(e){ P.toast("Could not open for editing: "+(e&&e.message?e.message:"try again")); }
+  }catch(e){ if(win&&!win.closed){try{win.close();}catch(_){}} P.toast("Could not open for editing: "+(e&&e.message?e.message:"try again")); }
 }
 
 /* Remove a file: its chunk documents first, then the metadata record. */
@@ -930,7 +932,9 @@ async function qfDelete(o){
       // new tab blank because we never got a handle to navigate it.
       var win = window.open("", "_blank");
       var oo = QF.filter(function(o){ return o.id===opBtn.getAttribute("data-op"); })[0];
-      if(oo) qfOpen(oo, win); else if(win) win.close();
+      if(!oo){ if(win) win.close(); }
+      else if(qfReopenable(oo)) qfEdit(oo, win);   // saved quotes are data: open them in the Quoting suite
+      else qfOpen(oo, win);
       return;
     }
     if(dlBtn){
