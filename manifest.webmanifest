@@ -1,17 +1,1 @@
-{
-  "name": "FDEC Quick Hub",
-  "short_name": "Quick Hub",
-  "description": "Fire Defense Equipment Company — Employee Hub",
-  "id": "./",
-  "start_url": "index.html",
-  "scope": "./",
-  "display": "standalone",
-  "orientation": "portrait-primary",
-  "background_color": "#12213c",
-  "theme_color": "#1B2A4A",
-  "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
-  ]
-}
+{"id":"./","name":"Fire Defense Battle Royal","short_name":"Fire Defense Battle Royal","start_url":"./index.html","scope":"./","display":"standalone","orientation":"any","background_color":"#0d121c","theme_color":"#10151f","description":"Tank Battle and Gladiator Duel. Mobile arena practice preview.","icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},{"src":"icon-512.png","sizes":"512x512","type":"image/png","purpose":"any"}]}
