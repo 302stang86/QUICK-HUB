@@ -13,32 +13,32 @@
      - Everything else (Firestore API, etc.): straight to network — Firestore's
        own offline mode handles those when there is no signal.
 */
-const CACHE = 'fdec-quickhub-v108-hub-icon';
+const CACHE = 'fdec-quickhub-v109-asset-paths';
 
 const CORE = [
   "troubleshooting-data.js",
   "troubleshooting-ui.js",
-  "troubleshooting-assets/gem-a6.pdf",
-  "troubleshooting-assets/gem-f311.pdf",
-  "troubleshooting-assets/reliable-b1.pdf",
-  "troubleshooting-assets/reliable-ddx.pdf",
-  "troubleshooting-assets/tyco-acc1.pdf",
-  "troubleshooting-assets/tyco-dpv1.pdf",
-  "troubleshooting-assets/victaulic-746.pdf",
-  "troubleshooting-assets/victaulic-768n.pdf",
+  "gem-a6.pdf",
+  "gem-f311.pdf",
+  "reliable-b1.pdf",
+  "reliable-ddx.pdf",
+  "tyco-acc1.pdf",
+  "tyco-dpv1.pdf",
+  "victaulic-746.pdf",
+  "victaulic-768n.pdf",
 
   "field-library-resources.js",
-  "library-assets/agf-1000-1.jpg",
-  "library-assets/agf-1000-2.jpg",
-  "library-assets/agf-5600-1.jpg",
-  "library-assets/agf-5600-2.jpg",
-  "library-assets/agf-7900-1.jpg",
-  "library-assets/agf-7900-2.jpg",
-  "library-assets/agf-inspectorstest-5600.pdf",
-  "library-assets/agf-purgenvent-7900.pdf",
-  "library-assets/agf-testandrain-1000.pdf",
-  "library-assets/tyco-dv5a.jpg",
-  "library-assets/victaulic-768n.jpg",
+  "agf-1000-1.jpg",
+  "agf-1000-2.jpg",
+  "agf-5600-1.jpg",
+  "agf-5600-2.jpg",
+  "agf-7900-1.jpg",
+  "agf-7900-2.jpg",
+  "agf-inspectorstest-5600.pdf",
+  "agf-purgenvent-7900.pdf",
+  "agf-testandrain-1000.pdf",
+  "tyco-dv5a.jpg",
+  "victaulic-768n.jpg",
 
   'fdec-industrial-header-option1.png',
   './',
