@@ -12,28 +12,28 @@ window.FDEC_TROUBLESHOOTING = {
       "url": "https://docs.johnsoncontrols.com/tycofire/api/khub/documents/lTy4fdShv_hSwig~513OBg/content",
       "revision": "April 2026",
       "page": 6,
-      "local": "troubleshooting-assets/tyco-acc1.pdf"
+      "local": "tyco-acc1.pdf"
     },
     "b1": {
       "title": "Reliable B1 — Bulletin 323",
       "url": "https://www.reliablesprinkler.com/files/bulletins/323.pdf",
       "revision": "June 2025",
       "page": 4,
-      "local": "troubleshooting-assets/reliable-b1.pdf"
+      "local": "reliable-b1.pdf"
     },
     "f311": {
       "title": "GEM F311 Posi-Quik — TD109",
       "url": "https://docs.johnsoncontrols.com/tycofire/api/khub/documents/uOAOc2VqXsO8hMRnXrRpJQ/content",
       "revision": "June 1998 · obsolete / installed-equipment reference",
       "page": 4,
-      "local": "troubleshooting-assets/gem-f311.pdf"
+      "local": "gem-f311.pdf"
     },
     "a6": {
       "title": "Grinnell/GEM A-6 — TD21",
       "url": "https://docs.johnsoncontrols.com/tycofire/api/khub/documents/S60T9ddZXhqoBUydwk8j~g/content",
       "revision": "February 1978 · obsolete / installed-equipment reference",
       "page": 4,
-      "local": "troubleshooting-assets/gem-a6.pdf"
+      "local": "gem-a6.pdf"
     },
     "e1": {
       "title": "Viking E-1 — F_071692",
@@ -46,28 +46,28 @@ window.FDEC_TROUBLESHOOTING = {
       "url": "https://assets.victaulic.com/assets/uploads/literature/I-746-746-LPA.pdf",
       "revision": "Rev D · March 2012 · verify design variant",
       "page": 1,
-      "local": "troubleshooting-assets/victaulic-746.pdf"
+      "local": "victaulic-746.pdf"
     },
     "768": {
       "title": "Victaulic 768N — I-768N",
       "url": "https://assets.victaulic.com/assets/uploads/literature/I-768N.pdf",
       "revision": "Rev C · August 2016 · confirm installed trim",
       "page": 15,
-      "local": "troubleshooting-assets/victaulic-768n.pdf"
+      "local": "victaulic-768n.pdf"
     },
     "dpv1": {
       "title": "Tyco DPV-1 — TFP1020",
       "url": "https://docs.johnsoncontrols.com/tycofire/api/khub/documents/VYs44aB4zVpQOP8fApYcaQ/content",
       "revision": "Manufacturer-hosted edition; see PDF revision",
       "page": 7,
-      "local": "troubleshooting-assets/tyco-dpv1.pdf"
+      "local": "tyco-dpv1.pdf"
     },
     "ddx": {
       "title": "Reliable DDX — Bulletin 520",
       "url": "https://www.reliablesprinkler.com/files/bulletins/520.pdf",
       "revision": "October 2026",
       "page": 5,
-      "local": "troubleshooting-assets/reliable-ddx.pdf"
+      "local": "reliable-ddx.pdf"
     },
     "vf": {
       "title": "Viking Model F dry system manual",
