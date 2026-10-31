@@ -81,8 +81,8 @@ window.FDEC_LIBRARY_RESOURCES = [
     ],
     "checked": "2026-10-29",
     "tags": "inspector test express drain sight glass test orifice K factor",
-    "image": "library-assets/agf-1000-1.jpg",
-    "local": "library-assets/agf-testandrain-1000.pdf",
+    "image": "agf-1000-1.jpg",
+    "local": "agf-testandrain-1000.pdf",
     "links": [
       {
         "label": "Current download center",
@@ -105,8 +105,8 @@ window.FDEC_LIBRARY_RESOURCES = [
     ],
     "checked": "2026-10-29",
     "tags": "",
-    "image": "library-assets/agf-1000-2.jpg",
-    "local": "library-assets/agf-testandrain-1000.pdf"
+    "image": "agf-1000-2.jpg",
+    "local": "agf-testandrain-1000.pdf"
   },
   {
     "cat": "testdrain",
@@ -123,8 +123,8 @@ window.FDEC_LIBRARY_RESOURCES = [
     ],
     "checked": "2026-10-29",
     "tags": "",
-    "image": "library-assets/agf-5600-1.jpg",
-    "local": "library-assets/agf-inspectorstest-5600.pdf",
+    "image": "agf-5600-1.jpg",
+    "local": "agf-inspectorstest-5600.pdf",
     "links": [
       {
         "label": "Current download center",
@@ -334,8 +334,8 @@ window.FDEC_LIBRARY_RESOURCES = [
     ],
     "checked": "2026-10-29",
     "tags": "",
-    "image": "library-assets/agf-7900-1.jpg",
-    "local": "library-assets/agf-purgenvent-7900.pdf"
+    "image": "agf-7900-1.jpg",
+    "local": "agf-purgenvent-7900.pdf"
   },
   {
     "cat": "venting",
@@ -352,8 +352,8 @@ window.FDEC_LIBRARY_RESOURCES = [
     ],
     "checked": "2026-10-29",
     "tags": "",
-    "image": "library-assets/agf-7900-2.jpg",
-    "local": "library-assets/agf-purgenvent-7900.pdf"
+    "image": "agf-7900-2.jpg",
+    "local": "agf-purgenvent-7900.pdf"
   },
   {
     "cat": "venting",
@@ -430,7 +430,7 @@ window.FDEC_LIBRARY_RESOURCES = [
     ],
     "checked": "2026-10-29",
     "tags": "FireLock NXT 776 actuator I-768N PST trim FG SBSC",
-    "image": "library-assets/victaulic-768n.jpg"
+    "image": "victaulic-768n.jpg"
   },
   {
     "cat": "dry",
@@ -500,7 +500,7 @@ window.FDEC_LIBRARY_RESOURCES = [
     ],
     "checked": "2026-10-29",
     "tags": "diaphragm automatic water control trim reset",
-    "image": "library-assets/tyco-dv5a.jpg"
+    "image": "tyco-dv5a.jpg"
   },
   {
     "cat": "preaction",
