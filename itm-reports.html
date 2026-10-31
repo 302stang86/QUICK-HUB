@@ -486,6 +486,21 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:18px}
 .modal .mbtns button{flex:1;padding:11px;border-radius:8px;border:1px solid var(--line);background:#fff;font-weight:600;cursor:pointer}
 .modal .mbtns .go{background:var(--navy);color:#fff;border-color:var(--navy)}
 .modal .merr{color:var(--red);font-size:12px;min-height:15px;margin-top:8px}
+/* Submit confirmation checklist */
+.ck{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px;background:#fff;transition:background .15s,border-color .15s}
+.ck.done{background:#eef7f1;border-color:#9fd0b2}
+.ck .num{flex:0 0 auto;width:24px;height:24px;border-radius:50%;background:var(--navy);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.ck.done .num{background:var(--ok)}
+.ck .body{flex:1;font-size:14px;line-height:1.4}
+.ck label.row{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+.ck input[type=checkbox]{width:22px;height:22px;flex:0 0 auto;margin:0;accent-color:var(--ok)}
+.ck .yn{display:flex;gap:10px;margin-top:10px}
+.ck .yn label{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border:1px solid var(--line);border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;background:#fff}
+.ck .yn input{width:18px;height:18px;margin:0;accent-color:var(--navy)}
+.ck .yn label.sel{border-color:var(--navy);background:#e9eef7}
+.ck textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:14px;resize:vertical}
+.modal .mbtns .go:disabled{opacity:.4;cursor:not-allowed}
+.ad-survey{background:#fdecea;color:#8f0e12}
 /* Full-page admin dashboard (opened in its own tab) */
 .ad-fullwrap{max-width:1080px;margin:18px auto;padding:0 16px calc(40px + env(safe-area-inset-bottom))}
 .ad-fullpanel{background:#fff;border-radius:14px;padding:20px;box-shadow:0 10px 30px rgba(8,16,30,.28)}
@@ -2302,7 +2317,7 @@ function buildReportPayload(sel, group){
   };
 }
 
-function createReport(payload, u){
+function createReport(payload, u, conf){
   const ref=FB_DB.collection('reports').doc();
   const ts=firebase.firestore.FieldValue.serverTimestamp();
   const rec=Object.assign({
@@ -2310,14 +2325,18 @@ function createReport(payload, u){
     submittedAt:ts, updatedAt:ts, rev:0, editCount:0
   }, payload);
   linkRecord(payload.reportGroup, ref.id, payload.jobKey, 0, 0);   // known immediately, even offline
-  ref.set(rec)
+  // The report and its confirmation checklist are saved together or not at all.
+  const batch=FB_DB.batch();
+  batch.set(ref, rec);
+  if(conf) batch.set(FB_DB.collection('reportConfirmations').doc(), buildConfirmation(conf, u, ref.id, payload, 'submit', 0));
+  batch.commit()
     .then(()=>flashCloud('✓ Report submitted to office'))
     .catch(e=>{ unlinkGroup(payload.reportGroup); flashCloud('⚠ Saved locally — cloud sync failed'); console.warn('cloud submit failed', e); });
 }
 
 /* Update an existing record in place. Uses a transaction so a change made by someone
    else since this report was opened is noticed instead of silently overwritten. */
-async function updateReport(target, payload, force){
+async function updateReport(target, payload, force, conf, confRef){
   const u=FB_AUTH.currentUser;
   const ref=FB_DB.collection('reports').doc(target.id);
   const ts=firebase.firestore.FieldValue.serverTimestamp();
@@ -2333,24 +2352,29 @@ async function updateReport(target, payload, force){
       if(!force && curRev!==(target.rev||0)){ const e=new Error('conflict'); e.code='conflict'; e.cur=cur; throw e; }
       const u2=Object.assign({}, upd, { rev:curRev+1, editCount:(cur.editCount||0)+1 });
       tx.update(ref,u2);
+      if(conf && confRef) tx.set(confRef, buildConfirmation(conf, u, target.id, payload, 'update', u2.rev));   // new record; the original submission's stays as it was
       return { rev:u2.rev, editCount:u2.editCount };
     });
   }catch(e){
     if(e && (e.code==='unavailable' || /offline/i.test(e.message||''))){
       // No signal: queue the update on the device; it syncs when the phone reconnects.
       const u2=Object.assign({}, upd, { rev:(target.rev||0)+1, editCount:(target.editCount||0)+1 });
-      ref.update(u2).catch(err=>{ flashCloud('⚠ Update failed — try again'); console.warn('queued update failed', err); });
+      const qb=FB_DB.batch();
+      qb.update(ref,u2);
+      if(conf && confRef) qb.set(confRef, buildConfirmation(conf, u, target.id, payload, 'update', u2.rev));
+      qb.commit().catch(err=>{ flashCloud('⚠ Update failed — try again'); console.warn('queued update failed', err); });
       return { rev:u2.rev, editCount:u2.editCount, queued:true };
     }
     throw e;
   }
 }
 
-async function runUpdate(target, payload){
+async function runUpdate(target, payload, conf){
   let force=false;
+  const confRef = conf ? FB_DB.collection('reportConfirmations').doc() : null;   // one id, so a retry cannot save it twice
   for(;;){
     try{
-      const res=await Promise.race([ updateReport(target, payload, force), new Promise((_,rej)=>setTimeout(()=>{ const e=new Error('slow'); e.code='slow'; rej(e); }, 15000)) ]);
+      const res=await Promise.race([ updateReport(target, payload, force, conf, confRef), new Promise((_,rej)=>setTimeout(()=>{ const e=new Error('slow'); e.code='slow'; rej(e); }, 15000)) ]);
       if(target.mine) linkRecord(payload.reportGroup, target.id, payload.jobKey, res.rev, res.editCount);
       flashCloud(res.queued ? '✓ Update saved on this device — it will sync when you have signal' : '✓ Report updated');
       if(EDIT_DOC) FINISH_EDIT_AFTER_PRINT=true;
@@ -2446,6 +2470,73 @@ async function chooseSubmitTarget(group, payload, u){
   return {mode:'create'};
 }
 
+/* Confirmation checklist shown before an ITM report is filed with the office.
+   Resolves to { returnVisit:'Yes'|'No', surveyReason } once all items are answered,
+   or null if the tech goes back to the report. Not used for Deficiency Correction Reports. */
+function confirmationModal(){
+  return new Promise(resolve=>{
+    const mh=document.getElementById('modalHost')||document.body;
+    const bg=document.createElement('div'); bg.className='modal-bg'; bg.style.zIndex=1500;
+    bg.innerHTML=`<div class="modal" style="max-width:520px" role="dialog" aria-modal="true" aria-labelledby="ckTitle">
+      <h3 id="ckTitle">Confirm Before Submitting</h3>
+      <p>Complete every item below to submit this Inspection, Testing and Maintenance (ITM) report.</p>
+      <div class="ck" id="ck1"><span class="num">1</span><div class="body">
+        <label class="row"><input type="checkbox" id="ckC1"><span>I reviewed this ITM report before submitting and verified its accuracy.</span></label>
+      </div></div>
+      <div class="ck" id="ck2"><span class="num">2</span><div class="body">
+        <label class="row"><input type="checkbox" id="ckC2"><span>The comments, pictures, and deficiencies noted and uploaded in ServiceTrade match the findings in this ITM report.</span></label>
+      </div></div>
+      <div class="ck" id="ck3"><span class="num">3</span><div class="body">
+        <div>Will a return visit be required to complete a survey of the deficiencies identified?</div>
+        <div class="yn">
+          <label id="ckLblYes"><input type="radio" name="ckRv" value="Yes"> Yes</label>
+          <label id="ckLblNo"><input type="radio" name="ckRv" value="No"> No</label>
+        </div>
+        <div id="ckWhyWrap" style="display:none;margin-top:10px">
+          <label for="ckWhy" style="display:block;font-size:13px;color:var(--muted);margin-bottom:6px">Why is a survey required? Describe what needs to be surveyed and why.</label>
+          <textarea id="ckWhy" rows="4" maxlength="600" placeholder="Example: Corroded branch line above the north stairwell. Need to measure pipe runs and ceiling height before quoting replacement."></textarea>
+        </div>
+      </div></div>
+      <div class="merr" id="ckErr"></div>
+      <div class="mbtns"><button id="ckBack">Back to Report</button><button id="ckGo" class="go" disabled>Confirm and Submit</button></div>
+    </div>`;
+    mh.appendChild(bg);
+    const $=s=>bg.querySelector(s);
+    const c1=$('#ckC1'), c2=$('#ckC2'), go=$('#ckGo'), err=$('#ckErr'), why=$('#ckWhy');
+    const rv=()=>{ const r=bg.querySelector('input[name=ckRv]:checked'); return r?r.value:null; };
+    function sync(){
+      $('#ckWhyWrap').style.display=rv()==='Yes'?'block':'none';
+      const whyOk=rv()!=='Yes' || why.value.trim().length>=10;
+      $('#ck1').classList.toggle('done',c1.checked);
+      $('#ck2').classList.toggle('done',c2.checked);
+      $('#ck3').classList.toggle('done',!!rv() && whyOk);
+      $('#ckLblYes').classList.toggle('sel',rv()==='Yes');
+      $('#ckLblNo').classList.toggle('sel',rv()==='No');
+      const ok=c1.checked && c2.checked && !!rv() && whyOk;
+      go.disabled=!ok;
+      err.textContent = ok ? '' : (rv()==='Yes' && !whyOk && c1.checked && c2.checked ? 'Enter the reason a survey is required.' : 'Complete all three (3) items to continue.');
+    }
+    bg.addEventListener('change',sync); bg.addEventListener('input',sync); sync();
+    const finish=(v)=>{ if(bg.parentNode) bg.parentNode.removeChild(bg); resolve(v); };
+    $('#ckBack').onclick=()=>finish(null);
+    go.onclick=()=>{ if(go.disabled) return; finish({ returnVisit:rv(), surveyReason: rv()==='Yes' ? why.value.trim() : '' }); };
+  });
+}
+
+/* The saved record of one checklist. Lives in its own collection so only admins can read it. */
+function buildConfirmation(conf, u, reportId, payload, kind, rev){
+  return {
+    reportId:reportId, kind:kind, rev:rev||0,
+    uid:u.uid, byEmail:(u.email||'').toLowerCase(), byName:reporterName(u),
+    jobName:payload.jobName||'', jobNumber:payload.jobNumber||'',
+    reportGroup:payload.reportGroup, reports:(payload.reports||[]).slice(),
+    reviewedAccurate:true, servicetradeMatches:true,
+    returnVisitRequired:conf.returnVisit==='Yes',
+    surveyReason: conf.returnVisit==='Yes' ? (conf.surveyReason||'') : '',
+    confirmedAt:firebase.firestore.FieldValue.serverTimestamp()
+  };
+}
+
 /* Returns true when the caller should go on to print/PDF, false if the tech cancelled. */
 async function submitReportFlow(sel){
   try{
@@ -2467,12 +2558,16 @@ async function submitReportFlow(sel){
         buttons:[ {label:'Update report', value:'update', primary:true, needsReason:true}, {label:'Cancel', value:'cancel'} ]
       });
       if(r.value!=='update'){ flashCloud('Update canceled — original report unchanged'); return false; }
-      return await runUpdate({ mode:'update', id:EDIT_DOC.id, rev:EDIT_DOC.rev, editCount:EDIT_DOC.editCount, reason:r.reason, mine:EDIT_DOC.mine }, payload);
+      let confE=null;
+      if(group!=='correction'){ confE=await confirmationModal(); if(!confE) return false; }   // not required for Deficiency Correction Reports
+      return await runUpdate({ mode:'update', id:EDIT_DOC.id, rev:EDIT_DOC.rev, editCount:EDIT_DOC.editCount, reason:r.reason, mine:EDIT_DOC.mine }, payload, confE);
     }
     const target=await chooseSubmitTarget(group, payload, u);
     if(!target) return false;
-    if(target.mode==='create'){ createReport(payload, u); return true; }
-    return await runUpdate(target, payload);
+    let conf=null;
+    if(group!=='correction'){ conf=await confirmationModal(); if(!conf) return false; }       // not required for Deficiency Correction Reports
+    if(target.mode==='create'){ createReport(payload, u, conf); return true; }
+    return await runUpdate(target, payload, conf);
   }catch(e){
     console.warn('submitReportFlow error', e);
     flashCloud('⚠ Could not reach the office — PDF only');
@@ -4347,6 +4442,38 @@ async function adminDashboard(fullPage){
     const listEl=body.querySelector('#adReportList'), moreEl=body.querySelector('#adMore'), bulkEl=body.querySelector('#adBulk');
     yearSel.value=String(selYear);
 
+    /* Submit checklists (admin-only collection), grouped by report id, newest first. */
+    const CONFS={};
+    async function loadConfs(list){
+      const ids=list.map(r=>r.id).filter(id=>!(id in CONFS));
+      ids.forEach(id=>{ CONFS[id]=[]; });
+      const chunks=[]; for(let i=0;i<ids.length;i+=30) chunks.push(ids.slice(i,i+30));
+      try{
+        const snaps=await Promise.all(chunks.map(c=>FB_DB.collection('reportConfirmations').where('reportId','in',c).get()));
+        snaps.forEach(s=>s.forEach(d=>{ const x=Object.assign({id:d.id}, d.data()); (CONFS[x.reportId]=CONFS[x.reportId]||[]).push(x); }));
+        Object.keys(CONFS).forEach(k=>CONFS[k].sort((a,b)=>tsMs(b.confirmedAt)-tsMs(a.confirmedAt)));
+      }catch(e){ console.warn('Submit checklists could not be loaded', e); }
+    }
+    function showConfirmations(r){
+      const list=CONFS[r.id]||[];
+      const mh=document.getElementById('modalHost')||document.body;
+      const m=document.createElement('div'); m.className='modal-bg'; m.style.zIndex=1500;
+      let h='<div class="modal" style="max-width:560px"><h3>Submit Checklist</h3><p>'+esc(r.jobName||'Report')+(r.jobNumber?(' · '+esc(r.jobNumber)):'')+' · '+esc(recTechName(r)||'')+'</p>';
+      if(!list.length) h+='<div style="padding:10px;color:#777">No checklist is on file for this report. Reports submitted before the checklist was added, and Deficiency Correction Reports, do not have one.</div>';
+      list.forEach(c=>{
+        const when=c.confirmedAt&&c.confirmedAt.toDate?c.confirmedAt.toDate().toLocaleString():'pending';
+        h+='<div style="border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:13px;line-height:1.5">'+
+          '<div style="color:var(--muted);font-size:12px">'+(c.kind==='update'?'Resubmitted after edit':'Original submission')+' · '+esc(when)+' · '+esc(FDEC_ID.nameFor(c.uid,c.byName,c.byEmail)||'')+'</div>'+
+          '<div>✓ Report reviewed and accuracy verified</div>'+
+          '<div>✓ ServiceTrade comments, pictures and deficiencies match the report</div>'+
+          '<div>Return visit for survey: <b>'+(c.returnVisitRequired?'Yes':'No')+'</b></div>'+
+          (c.returnVisitRequired?('<div style="margin-top:4px;padding:8px;background:var(--pink);border-radius:8px">Reason: '+esc(c.surveyReason||'')+'</div>'):'')+
+          '</div>';
+      });
+      h+='<div class="mbtns"><button id="cfClose" class="go">Close</button></div></div>';
+      m.innerHTML=h; mh.appendChild(m);
+      m.querySelector('#cfClose').onclick=()=>m.remove();
+    }
     async function loadPage(reset){
       if(reset){ rows=[]; lastDoc=null; done=false; sel.clear(); }
       let q=FB_DB.collection('reports')
@@ -4359,6 +4486,7 @@ async function adminDashboard(fullPage){
       snap.forEach(d=>{ n++; lastDoc=d; const x=d.data(); if(x.withdrawn) return; const r=Object.assign({id:d.id}, x); deriveRow(r); rows.push(r); });
       if(n<PAGE) done=true;
       computeDupes(rows);
+      await loadConfs(rows);
     }
     function visibleRows(){
       const q=(searchBox.value||'').trim().toLowerCase(), tf=typeSel.value;
@@ -4375,6 +4503,8 @@ async function adminDashboard(fullPage){
       else if(dup) badge=' <span class="dup-dup" title="A newer report has the same job number, type and inspection date">⚠ Possible duplicate</span>';
       const edited = r.editedBy ? (' <span class="edited-by" title="'+esc(r.editReason?('Reason: '+r.editReason):'Edited after submission')+'">✎ Edited by '+esc(recEditorName(r))+(r._editedWhen?(' · '+esc(r._editedWhen)):'')+(r.editReason?(' · “'+esc(r.editReason)+'”'):'')+'</span>') : '';
       const sent = r.sentToCustomer ? ' <span class="ad-chip ad-sent" title="Marked sent to customer">Sent</span>' : '';
+      const cl=CONFS[r.id]||[];
+      const survey = cl.length && cl[0].returnVisitRequired ? ' <span class="ad-chip ad-survey" title="The tech marked that a return visit is needed to survey the deficiencies">Survey required</span>' : '';
       const more='<select class="ad-more" data-id="'+esc(r.id)+'"><option value="">More…</option><option value="fixjob">Correct job number</option>'+
         (dup?'<option value="notdup">Not a duplicate</option>':'')+
         (r.sentToCustomer?'<option value="unsent">Unmark sent to customer</option>':'<option value="sent">Mark sent to customer</option>')+
@@ -4382,9 +4512,9 @@ async function adminDashboard(fullPage){
       return '<tr class="'+(dup?'dup-row':'')+'">'+
         '<td><input type="checkbox" class="ad-sel" data-id="'+esc(r.id)+'"'+(sel.has(r.id)?' checked':'')+'></td>'+
         '<td>'+esc(r._when)+'</td><td>'+esc(recTechName(r)||'—')+'</td>'+
-        '<td>'+esc(r.jobName||'—')+(r.jobNumber?(' · '+esc(r.jobNumber)):'')+' '+typeChip(r)+badge+sent+edited+'</td>'+
+        '<td>'+esc(r.jobName||'—')+(r.jobNumber?(' · '+esc(r.jobNumber)):'')+' '+typeChip(r)+badge+sent+survey+edited+'</td>'+
         '<td style="font-size:11px">'+esc(r._names)+'</td>'+
-        '<td style="white-space:nowrap"><button class="ad-view" data-id="'+esc(r.id)+'">View</button> <button class="ad-pdf" data-id="'+esc(r.id)+'" title="Open this report and choose pages to save as PDF">PDF</button> <button class="ad-edit" data-id="'+esc(r.id)+'">Edit</button> <button class="ad-dl" data-id="'+esc(r.id)+'">Download</button> <button class="ad-arch" data-id="'+esc(r.id)+'">Archive</button> '+more+'</td></tr>';
+        '<td style="white-space:nowrap"><button class="ad-view" data-id="'+esc(r.id)+'">View</button> <button class="ad-pdf" data-id="'+esc(r.id)+'" title="Open this report and choose pages to save as PDF">PDF</button> <button class="ad-edit" data-id="'+esc(r.id)+'">Edit</button> <button class="ad-dl" data-id="'+esc(r.id)+'">Download</button> <button class="ad-conf" data-id="'+esc(r.id)+'" title="Tech submit checklist">Checklist</button> <button class="ad-arch" data-id="'+esc(r.id)+'">Archive</button> '+more+'</td></tr>';
     }
     function draw(){
       const v=visibleRows();
@@ -4423,6 +4553,7 @@ async function adminDashboard(fullPage){
       listEl.querySelectorAll('.ad-pdf').forEach(b=>b.onclick=()=>{ viewCloudReport(byId(idOf(b)), close); reportPickerModal(); });
       listEl.querySelectorAll('.ad-edit').forEach(b=>b.onclick=()=>editCloudReport(byId(idOf(b)), close));
       listEl.querySelectorAll('.ad-dl').forEach(b=>b.onclick=()=>downloadCloudReport(byId(idOf(b))));
+      listEl.querySelectorAll('.ad-conf').forEach(b=>b.onclick=()=>showConfirmations(byId(idOf(b))));
       listEl.querySelectorAll('.ad-sel').forEach(b=>b.onchange=()=>{ if(b.checked) sel.add(idOf(b)); else sel.delete(idOf(b)); draw(); });
       const all=listEl.querySelector('#adSelAll');
       if(all){ all.checked = v.length>0 && v.every(r=>sel.has(r.id)); all.onchange=()=>{ v.forEach(r=>{ if(all.checked) sel.add(r.id); else sel.delete(r.id); }); draw(); }; }
