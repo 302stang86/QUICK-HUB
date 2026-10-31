@@ -273,7 +273,7 @@ button{font-family:inherit}
 .ad-table{width:100%;border-collapse:collapse;font-size:12.5px}
 .ad-table th{text-align:left;padding:7px 8px;border-bottom:2px solid var(--line);color:var(--navy);font-size:11px;text-transform:uppercase;letter-spacing:.3px}
 .ad-table td{padding:7px 8px;border-bottom:1px solid var(--line2);vertical-align:top}
-.ad-dl,.ad-del{border:1px solid var(--navy);background:#fff;color:var(--navy);border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer}
+.ad-dl,.ad-del,.ad-conf{border:1px solid var(--navy);background:#fff;color:var(--navy);border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer}
 .ad-view,.ad-edit,.ad-pdf{border:1px solid var(--navy);background:var(--navy);color:#fff;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer}
 .ad-view:hover,.ad-edit:hover,.ad-pdf:hover{background:var(--navy2,#16294a)}
 .edited-by{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:700;color:#7a5c00;background:#fff3d6;border:1px solid #e6cf8a;border-radius:20px;padding:1px 7px}
@@ -281,7 +281,7 @@ button{font-family:inherit}
 .edit-mode-bar b{color:#8a1212}
 .edit-mode-bar button{border:1px solid #8a1212;background:#fff;color:#8a1212;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
 .edit-mode-bar button:hover{background:#8a1212;color:#fff}
-.ad-dl:hover{background:#eef2f8}
+.ad-dl:hover,.ad-conf:hover{background:#eef2f8}
 .ad-del{border-color:var(--red);color:var(--red)}
 .ad-approve{border:1px solid #1a7f37;background:#1a7f37;color:#fff;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer}
 .ad-approve:hover{background:#166a2e}
@@ -4456,8 +4456,8 @@ async function adminDashboard(fullPage){
     }
     function showConfirmations(r){
       const list=CONFS[r.id]||[];
-      const mh=document.getElementById('modalHost')||document.body;
-      const m=document.createElement('div'); m.className='modal-bg'; m.style.zIndex=1500;
+      const mh=document.body;   // not #modalHost: the full-page dashboard sits above that layer and would hide the window
+      const m=document.createElement('div'); m.className='modal-bg'; m.style.zIndex=3000;
       let h='<div class="modal" style="max-width:560px"><h3>Submit Checklist</h3><p>'+esc(r.jobName||'Report')+(r.jobNumber?(' · '+esc(r.jobNumber)):'')+' · '+esc(recTechName(r)||'')+'</p>';
       if(!list.length) h+='<div style="padding:10px;color:#777">No checklist is on file for this report. Reports submitted before the checklist was added, and Deficiency Correction Reports, do not have one.</div>';
       list.forEach(c=>{
