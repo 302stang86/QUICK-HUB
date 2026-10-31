@@ -332,7 +332,7 @@ html.fdec-admin-boot body::after{content:"Loading Administration…";position:fi
       </a>
       <button type="button" class="adm-card" data-view="qfWrap" style="--cc:#1565c0">
         <span class="adm-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="M13.6 13.2c0-.7-.8-1.2-1.6-1.2s-1.6.5-1.6 1.2.8 1.2 1.6 1.2 1.6.5 1.6 1.2-.8 1.2-1.6 1.2-1.6-.5-1.6-1.2"/></svg></span>
-        <span class="adm-body"><b>Quote files</b><small>Editable quote drafts from the Quoting Suite</small></span>
+        <span class="adm-body"><b>Quote files</b><small>Drafts, Word docs, and export packages from the Quoting Suite</small></span>
         <span class="adm-go" aria-hidden="true">&rarr;</span>
       </button>
       <button type="button" class="adm-card" data-admin="1" data-view="mqWrap" style="--cc:#9d0e16">
@@ -360,7 +360,7 @@ html.fdec-admin-boot body::after{content:"Loading Administration…";position:fi
     <div class="qf-wrap" id="qfWrap" style="display:none">
       <div class="qf-head">
         <h2>Quote files</h2>
-        <p>Editable quote drafts saved from the Quoting &amp; Proposal Suite (one per quote). Search by job name, quote number, user, or file name.</p>
+        <p>Drafts, Word documents, and export packages saved from the Quoting &amp; Proposal Suite. Search by job name, quote number, user, or file name.</p>
       </div>
       <input id="qfSearch" class="qf-search" type="search" placeholder="Search job name, quote number, user, or file name&hellip;" autocomplete="off">
       <div id="qfYears" class="qf-years"></div>
@@ -466,6 +466,7 @@ window.PERM = (function () {
       ["incident","Incident Reporting","Open and submit incident reports"],
       ["help","Help & Bug Fix","Open the help page, quick help topics, and bug-fix form"],
       ["library","NFPA Field Library","Open the NFPA Field Library reference page"],
+      ["bathroom","Bathroom brake","Play Fire Defense Battle Royal and view its leaderboard"],
       ["itm","ITM Inspection Reports","Create, view, and submit NFPA 25 ITM reports"],
       ["servicetrade","ServiceTrade","Open the ServiceTrade link"],
       ["timeoff","Time-Off Requests","Submit and view time-off requests"],
@@ -490,10 +491,10 @@ window.PERM = (function () {
   /* Seeded from fdec-auth.js DEFAULT_PAGES so the editor opens showing exactly
      what is already in force. admin = every page. */
   var DEFAULTS = {
-    new:    ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","timeoff","fleet"],
-    tech:   ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","timeoff","itm","servicetrade","oncall","inventory","fleet"],
-    temp:   ["home","troubleshooting","frequencies","help","library","fleet"],
-    manager:["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","timeoff","itm","servicetrade","oncall","inventory","quoting","faquoting","administration","fleet"],
+    new:    ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","bathroom","timeoff","fleet"],
+    tech:   ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","bathroom","timeoff","itm","servicetrade","oncall","inventory","fleet"],
+    temp:   ["home","troubleshooting","frequencies","help","library","bathroom","fleet"],
+    manager:["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","bathroom","timeoff","itm","servicetrade","oncall","inventory","quoting","faquoting","administration","fleet"],
     admin:null
   };
   var ALL = [];
@@ -765,7 +766,7 @@ async function loadQuoteFiles(){
     else { snaps = await getDocs(query(collection(db,"quoteFiles"), where("uid","==",me.uid))); }
     QF = [];
     snaps.forEach(function(s){ var o=s.data()||{}; o.id=s.id; QF.push(o); });
-    QF.sort(function(a,b){ return qfMs(b.updatedAt||b.editedAt||b.createdAt) - qfMs(a.updatedAt||a.editedAt||a.createdAt); });
+    QF.sort(function(a,b){ return qfMs(b.createdAt) - qfMs(a.createdAt); });
     renderQFYears();
     renderQF($("qfSearch").value||"");
   }catch(e){
@@ -795,13 +796,14 @@ function renderQF(filter){
   list.innerHTML = rows.map(function(o){
     var job = o.jobName ? qfEsc(o.jobName) : "(no job name)";
     var qn  = o.quoteNo ? ("Quote #"+qfEsc(o.quoteNo)) : "No quote #";
-    var meta = qn+" &middot; "+qfEsc(o.userName||o.userEmail||"Unknown")+" &middot; "+qfEsc(qfDate(o.updatedAt||o.editedAt||o.createdAt))
+    var meta = qn+" &middot; "+qfEsc(o.userName||o.userEmail||"Unknown")+" &middot; "+qfEsc(qfDate(o.createdAt))
       + (o.editedBy ? ' &middot; <span class="qf-editedby">✎ Edited by '+qfEsc(o.editedBy)+'</span>' : '');
     var app = o.app ? '<span class="qf-chip">'+qfEsc(o.app)+'</span>' : "";
     var op = (o.ready === false) ? ""
       : '<button class="qf-btn open" data-op="'+qfEsc(o.id)+'">Open</button>';
     var reopenable = (o.mime==="application/fdec-suite") || (o.mime==="application/fdec-fa-quote") || /\.(fdecsuite|json|fdecfa)$/i.test(o.filename||"");
-    var ed = "";   // Open and Edit were the same action for saved quotes, so only Open is shown
+    var ed = (canDel && o.ready!==false && reopenable)
+      ? '<button class="qf-btn edit" data-ed="'+qfEsc(o.id)+'">Edit</button>' : "";
     var dl = (o.ready === false)
       ? '<span class="qf-btn" style="opacity:.5;cursor:default">Saving&hellip;</span>'
       : '<button class="qf-btn" data-dl="'+qfEsc(o.id)+'">Download</button>';
@@ -814,8 +816,6 @@ function renderQF(filter){
   }).join("");
 }
 
-function qfReopenable(o){ return (o.mime==="application/fdec-suite") || (o.mime==="application/fdec-fa-quote") || /\.(fdecsuite|json|fdecfa)$/i.test(o.filename||""); }
-
 /* Rebuild a file from its Firestore chunks and hand it to the browser. */
 async function qfDownload(o){
   try{
@@ -825,9 +825,9 @@ async function qfDownload(o){
     var b64 = parts.join("");
     var bin = atob(b64), len = bin.length, arr = new Uint8Array(len);
     for(var i=0;i<len;i++) arr[i] = bin.charCodeAt(i);
-    var blob = new Blob([arr], { type: (/fdec-suite|fdec-fa-quote/.test(o.mime||"")) ? "application/json" : (o.mime || "application/octet-stream") });
+    var blob = new Blob([arr], { type: o.mime || "application/octet-stream" });
     var url = URL.createObjectURL(blob);
-    var a = document.createElement("a"); a.href = url; a.download = (o.mime==="application/fdec-suite" || /\.fdecsuite$/i.test(o.filename||"")) ? String(o.filename).replace(/\.fdecsuite$/i,"_Draft.json") : (o.filename || "file");
+    var a = document.createElement("a"); a.href = url; a.download = o.filename || "file";
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
   }catch(e){ P.toast("Download failed: "+(e&&e.code?e.code:"try again")); }
@@ -872,8 +872,7 @@ async function qfOpen(o, win){
 
 /* Edit a reopenable quote: rebuild its saved suite state, hand it to the Quoting
    suite, and open it there. A re-export in the suite replaces this same record. */
-async function qfEdit(o, win){
-  var go=function(u){ if(win && !win.closed){ win.location=u; } else { window.location.href=u; } };
+async function qfEdit(o){
   try{
     var snaps = await getDocs(query(collection(db,"quoteFiles",o.id,"chunks"), orderBy("i")));
     var parts=[]; snaps.forEach(function(s){ var d=s.data()||{}; parts[d.i|0]=d.data||""; });
@@ -884,18 +883,18 @@ async function qfEdit(o, win){
       if(!bundle || !bundle.job) throw new Error("not a reopenable fire alarm quote");
       var fh={ id:o.id, state:bundle, byName:o.userName||"", byEmail:o.userEmail||"", uid:o.uid||"", chunkCount:o.chunkCount||0 };
       try{ localStorage.setItem("fdec_edit_faquote", JSON.stringify(fh)); }
-      catch(e){ if(win&&!win.closed){try{win.close();}catch(_){}} P.toast("Could not start edit — this quote is too large to hand off."); return; }
-      go("fire-alarm-quoting.html");
+      catch(e){ P.toast("Could not start edit — this quote is too large to hand off."); return; }
+      window.location.href="fire-alarm-quoting.html";
       P.toast("Opening the quote in Fire Alarm Proposals to edit…");
       return;
     }
     if(!bundle || !bundle.pages) throw new Error("not a reopenable quote");
     var handoff={ id:o.id, bundle:bundle, byName:o.userName||"", byEmail:o.userEmail||"", uid:o.uid||"", chunkCount:o.chunkCount||0 };
     try{ localStorage.setItem("fdec_edit_quotefile", JSON.stringify(handoff)); }
-    catch(e){ if(win&&!win.closed){try{win.close();}catch(_){}} P.toast("Could not start edit — this quote is too large to hand off."); return; }
-    go("quoting.html");
+    catch(e){ P.toast("Could not start edit — this quote is too large to hand off."); return; }
+    window.location.href="quoting.html";   // internal hub page: same tab
     P.toast("Opening the quote in the Quoting suite to edit…");
-  }catch(e){ if(win&&!win.closed){try{win.close();}catch(_){}} P.toast("Could not open for editing: "+(e&&e.message?e.message:"try again")); }
+  }catch(e){ P.toast("Could not open for editing: "+(e&&e.message?e.message:"try again")); }
 }
 
 /* Remove a file: its chunk documents first, then the metadata record. */
@@ -932,9 +931,7 @@ async function qfDelete(o){
       // new tab blank because we never got a handle to navigate it.
       var win = window.open("", "_blank");
       var oo = QF.filter(function(o){ return o.id===opBtn.getAttribute("data-op"); })[0];
-      if(!oo){ if(win) win.close(); }
-      else if(qfReopenable(oo)) qfEdit(oo, win);   // saved quotes are data: open them in the Quoting suite
-      else qfOpen(oo, win);
+      if(oo) qfOpen(oo, win); else if(win) win.close();
       return;
     }
     if(dlBtn){

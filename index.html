@@ -139,6 +139,7 @@
   a.hublink .hcat.news{background:#1f7a3d}
   a.hublink .hcat.quoting{background:#1565c0}
   a.hublink .hcat.team{background:var(--fdec-red)}
+  a.hublink .hcat.break{background:#b0306a}
   a.hublink .hcat.field,a.hublink .hcat.admin,a.hublink .hcat.help{background:#3b4654}
   a.hublink .hdesc{font-size:13px;color:var(--ink-soft);margin:0;line-height:1.4}
   a.hublink.unset{opacity:.85;cursor:default}
@@ -847,6 +848,7 @@ document.addEventListener('click', function(e){
     {name:'Time-Off Requests',       cat:'Team',    access:'Everyone',     page:'timeoff',        url:'timeoff.html', color:'#1f7a3d', icon:'calendar', desc:'Submit paid time-off (PTO) requests and follow their approval status.'},
     {name:'On-Call Rotation',        cat:'Team',    access:'Everyone',     page:'oncall',         url:'oncall.html', color:'#d12f2f', icon:'phone', desc:'Current sprinkler department on-call schedule.'},
     {name:'Weekly Time Sheet',       cat:'Team',    access:'Admin only · pending release', page:'timesheet', url:'timesheet.html', color:'#6d3bb5', icon:'clock', desc:'Interactive weekly time sheet for technicians. Locked until released by an administrator.'},
+    {name:'Bathroom brake',        cat:'Break',   access:'Everyone',     page:'bathroom',       url:'battle-royal/index.html', color:'#b0306a', icon:'bathroom', desc:'Fire Defense Battle Royal — quick tank and gladiator matches against bots. Wins count on the leaderboard.'},
     {name:'Administration',          cat:'Admin',   access:'Admin & managers', page:'administration', url:'administration.html', color:'#c08a1e', icon:'admin', desc:'Quote files for managers; full management tools for admins.'},
     {name:'Help',                    cat:'Help',    access:'Everyone',     page:'help',           url:'help.html', color:'#5b6570', icon:'hammer', desc:'Report a bug with a photo, and find quick help on using Quick Hub.'}
   ];
@@ -868,6 +870,7 @@ document.addEventListener('click', function(e){
     quote:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="M13.6 13.2c0-.7-.8-1.2-1.6-1.2s-1.6.5-1.6 1.2.8 1.2 1.6 1.2 1.6.5 1.6 1.2-.8 1.2-1.6 1.2-1.6-.5-1.6-1.2"/>',
     calendar:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/>',
     phone:'<path d="M6.6 10.8c1.4 2.8 3.8 5.2 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.2c1.1.4 2.4.6 3.6.6a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.6 21 3 13.4 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.2.2 2.5.6 3.6a1 1 0 0 1-.2 1l-2.3 2.2z"/>',
+    bathroom:'<rect x="3.5" y="2.5" width="8" height="5" rx="1"/><path d="M7.5 7.5V10"/><path d="M2 10h11v1.4c0 3.2-2.2 5.1-5.5 5.1S2 14.6 2 11.4z"/><path d="M5.5 16.5V21h4v-4.5"/><rect x="15.5" y="6.5" width="6.5" height="12" rx="1.7"/><path d="M17.5 16.5h2.5"/><path d="M17.800 8.800h1.900"/>',
     clock:'<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>',
     admin:'<circle cx="12" cy="8" r="3.2"/><path d="M5.5 20a6.5 6.5 0 0 1 10-.3"/><circle cx="18" cy="17" r="2.3"/><path d="M18 14.3v-1.1M18 20.8v-1.1M20.3 15.7l-.9.5M16.6 17.8l-.9.5M20.3 18.3l-.9-.5M16.6 16.2l-.9-.5"/>',
     nicet:'<circle cx="12" cy="4.3" r="1.6"/><path d="M12 1.2v1.1M12 6.2v1.1M9 4.3h1.1M13.9 4.3h1.1M9.9 2.2l.8.8M13.3 5.6l.8.8M14.1 2.2l-.8.8M10.7 5.6l-.8.8"/><rect x="3.5" y="8.6" width="17" height="9.4" rx="1.6"/><path d="M2 21h20"/><path d="M6.3 13.4l1.5 1.5 2.6-3"/><path d="M14 12.3l3.2 3.2M17.2 12.3l-3.2 3.2"/>'

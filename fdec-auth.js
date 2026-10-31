@@ -48,6 +48,7 @@ const DEFAULT_PAGES = {
   incident:        ["new","tech","manager","admin"],
   help:            ["new","tech","manager","admin","temp"],
   library:         ["new","tech","manager","admin","temp"],
+  bathroom:        ["new","tech","manager","admin","temp"],   // Bathroom brake (Battle Royal game)
   nicet:           ["new","tech","manager","admin","temp"],
   itm:             ["tech","manager","admin"],
   servicetrade:    ["tech","manager","admin"],
@@ -177,11 +178,12 @@ async function submit(){
   } catch(e){ loginUI(niceErr(e)); }
 }
 
+const HUB_HOME = new URL("index.html", import.meta.url).href;   // hub home, even when the gate runs on a page in a subfolder
 function infoScreen(title, body){
   overlay(`<h2 style="margin:0 0 8px;font-size:18px;">${title}</h2>
     <p style="font-size:14px;color:#55606e;line-height:1.5;">${body}</p>
     <div style="display:flex;gap:10px;margin-top:16px;">
-      <a href="index.html" style="${styleBtn};display:inline-block;text-align:center;text-decoration:none;width:auto;flex:1;padding:10px 14px;">Back to hub</a>
+      <a href="${HUB_HOME}" style="${styleBtn};display:inline-block;text-align:center;text-decoration:none;width:auto;flex:1;padding:10px 14px;">Back to hub</a>
       <button id="fdec-out" style="${styleLink};border:1px solid #1B2A4A;border-radius:8px;padding:10px 14px;">Sign out</button>
     </div>`);
   const o = document.getElementById("fdec-out"); if (o) o.onclick = () => signOut(auth);
