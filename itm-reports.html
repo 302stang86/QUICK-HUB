@@ -315,6 +315,13 @@ button{font-family:inherit}
 .form-head .co-logo{display:block;margin:2px auto 4px;height:52px;width:auto;max-width:90%}
 .form-head .emerg{position:absolute;top:0;right:0;color:var(--red);font-weight:700;font-size:11px;max-width:150px;text-align:right}
 .form-head.addon-head .rtitle{margin-top:2px}
+.sysnum{margin:8px 0 2px;padding:6px 12px;background:var(--navy);color:#fff;font-size:13px;font-weight:600;border-radius:4px;text-align:center;letter-spacing:.3px}
+.sysnum b{font-size:16px}
+.sysbar{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;max-width:850px;margin:22px 0 8px;padding:8px 14px;background:#fff7e6;border:1px dashed #d9a441;border-radius:6px;font-size:13px;font-weight:600;color:#7a5200}
+.sysadd{width:100%;max-width:850px;margin:18px 0 28px;text-align:center}
+.sysadd .add-instance{padding:11px 18px;font-size:14px}
+.sysadd .sysnote{margin-top:8px;font-size:12px;color:var(--muted)}
+@media print{ .noprint{display:none!important} }
 .form-head .addr,.form-head .contact{font-size:11px;color:var(--muted)}
 .form-head .rtitle{margin-top:10px;font-weight:700;color:var(--red);font-size:14px}
 .form-head .rcode{font-size:11px;color:var(--muted);letter-spacing:.5px}
@@ -1446,7 +1453,20 @@ const STANDPIPE = {
 };
 
 const ADDON_FORMS = [DRY, AF, DELUGE_A, DELUGE_SA, STANDPIPE];
-const FORMS = CORE_FORMS.concat(ADDON_FORMS);
+/* ---- Additional Limited Systems ----
+   Each extra system is a full copy of FD-16 with its own ids (fd16x2, fd16x3, ...), its own
+   store, job name/address and riser(s). Job number and date stay shared with the job.
+   The System Number is NOT stored: it is the position in the list (original = 1). */
+const LIMITED_MAX = 10;                       // original + 9 additional
+const LIMITED_EXTRAS = [];
+for(let k=2;k<=LIMITED_MAX;k++){
+  const c = JSON.parse(JSON.stringify(FD16).replace(/fd16/g,'fd16x'+k));
+  c.extraOf = 'fd16';
+  c.sections.forEach(sec=>{ if(sec.compliance) sec.compliance+='_x'+k; if(sec.deficiency) sec.deficiency+='_x'+k; });
+  LIMITED_EXTRAS.push(c);
+}
+const FORMS = CORE_FORMS.concat(ADDON_FORMS, LIMITED_EXTRAS);
+function isLimitedExtra(id){ return /^fd16x\d+$/.test(id||''); }
 
 
 /* ============================================================================
@@ -1745,12 +1765,53 @@ document.getElementById('adminToggle').onclick=()=>{
 /* ---------- tabs ---------- */
 let ADDED = [];   // ids of addon forms the user has added (in order)
 
+/* All reports in play, in print/summary order: core forms (extra limited systems right after
+   FD-16), then the other added forms. */
+function orderedIds(added){
+  added = Array.isArray(added) ? added : ADDED;
+  const extras = added.filter(isLimitedExtra);
+  const out=[];
+  CORE_FORMS.forEach(f=>{ out.push(f.id); if(f.id==='fd16') extras.forEach(x=>out.push(x)); });
+  added.forEach(id=>{ if(!isLimitedExtra(id)) out.push(id); });
+  return out;
+}
+/* Automatic System Number: original = 1, additional systems count up in the order added. */
+function limitedIds(added){ return ['fd16'].concat((Array.isArray(added)?added:ADDED).filter(isLimitedExtra)); }
+function systemNumber(fid, added){ const i=limitedIds(added).indexOf(fid); return i<0 ? 0 : i+1; }
+function hasExtraSystems(added){ return limitedIds(added).length>1; }
+function systemAddress(fid, store){
+  const st=store || (fid==='fd16' ? sharedStore() : (ALLVALUES[fid]||{}));
+  const g=k=> String((fid==='fd16' ? st['shared_'+k] : st[fid+'_'+k])||'').trim();
+  return [g('job'),g('job_street'),g('job_csz')].filter(Boolean).join(', ');
+}
+function addLimitedSystem(){
+  if(limitedIds().length>=LIMITED_MAX){ alert('A job can have up to '+LIMITED_MAX+' limited systems on one report.'); return; }
+  const id = LIMITED_EXTRAS.map(f=>f.id).find(x=>!ADDED.includes(x));
+  ADDED.push(id);
+  if(!ALLVALUES[id]) ALLVALUES[id]={};
+  DIRTY=true;
+  if(ACTIVE_FORM!=='fd16'){ ACTIVE_FORM='fd16'; loadFormValues('fd16'); buildTabs(); }
+  renderForm('fd16');
+  const el=document.getElementById('sysblock_'+id); if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+  try{ flash(); }catch(e){}
+}
+function removeLimitedSystem(id){
+  const n=systemNumber(id);
+  if(!confirm('Remove System '+n+'? Everything entered on it will be cleared, and the systems after it will be renumbered.')) return;
+  ADDED=ADDED.filter(x=>x!==id);
+  delete ALLVALUES[id];
+  DIRTY=true;
+  renderForm('fd16');
+  try{ flash(); }catch(e){}
+}
+
 function buildTabs(){
+  if(isLimitedExtra(ACTIVE_FORM)){ ACTIVE_FORM='fd16'; loadFormValues('fd16'); }
   const host=document.getElementById('tabs'); host.innerHTML='';
   // core forms always shown
   CORE_FORMS.forEach(f=> host.appendChild(tabButton(f,false)));
   // added addon forms (removable)
-  ADDED.forEach(id=>{ const f=FORMS.find(x=>x.id===id); if(f) host.appendChild(tabButton(f,true)); });
+  ADDED.forEach(id=>{ if(isLimitedExtra(id)) return; const f=FORMS.find(x=>x.id===id); if(f) host.appendChild(tabButton(f,true)); });
   // + Add System Report dropdown
   const remaining = ADDON_FORMS.filter(f=>!ADDED.includes(f.id));
   if(remaining.length){
@@ -1771,7 +1832,7 @@ function buildTabs(){
 function tabButton(f,removable){
   const b=document.createElement('button');
   b.className=(f.id===ACTIVE_FORM?'active':'')+(removable?' removable':'');
-  const label=document.createElement('span'); label.textContent=shortName(f);
+  const label=document.createElement('span'); label.textContent=shortName(f,true);
   b.appendChild(label);
   if(removable){
     const x=document.createElement('span'); x.className='tab-x'; x.textContent='×'; x.title='Remove this report';
@@ -1798,7 +1859,9 @@ function removeFormTab(id){
 function addonName(f){
   return ({dry:'Dry System', af:'Antifreeze System', deluge_a:'Deluge/Preaction (Annual)', deluge_sa:'Deluge/Preaction (Semi-Annual)', standpipe:'Standpipe System'})[f.id]||f.title;
 }
-function shortName(f){
+function shortName(f, plain){
+  if(f && isLimitedExtra(f.id)) return 'Annual Limited System Inspection \u2014 System '+systemNumber(f.id);
+  if(f && f.id==='fd16' && !plain && hasExtraSystems()) return 'Annual Limited System Inspection \u2014 System 1';
   return ({
     fd17:'Annual Wet System Inspection',
     fd24:'5-Year Internal Pipe Inspection',
@@ -1835,6 +1898,7 @@ function sharedKeyFor(id){
     if(id.endsWith(suf)){
       // Only treat as shared if the prefix is a known form id
       const prefix=id.slice(0, id.length-suf.length);
+      if(isLimitedExtra(prefix) && (suf==='_job'||suf==='_job_street'||suf==='_job_csz')) return null;   // own address
       if(FORMS.some(f=>f.id===prefix)) return 'shared'+suf;
     }
   }
@@ -1842,15 +1906,22 @@ function sharedKeyFor(id){
 }
 function sharedStore(){ if(!ALLVALUES.__shared) ALLVALUES.__shared={}; return ALLVALUES.__shared; }
 
+/* Store that owns a field id. Extra limited systems (fd16x2_...) have their own store. */
+function storeFor(id){
+  const m=/^(fd16x\d+)_/.exec(id||'');
+  if(m){ if(!ALLVALUES[m[1]]) ALLVALUES[m[1]]={}; return ALLVALUES[m[1]]; }
+  return VALUES;
+}
 function val(id){
   const sk=sharedKeyFor(id);
   if(sk){ const s=sharedStore(); return s[sk]!=null?s[sk]:''; }
-  return VALUES[id]!=null?VALUES[id]:'';
+  const st=storeFor(id);
+  return st[id]!=null?st[id]:'';
 }
 function setVal(id,v){
   const sk=sharedKeyFor(id);
   if(sk){ sharedStore()[sk]=v; DIRTY=true; return; }
-  VALUES[id]=v; DIRTY=true;
+  storeFor(id)[id]=v; DIRTY=true;
 }
 
 /* An input the tech can edit. Locked (label) fields are only editable when admin has unlocked. */
@@ -1859,11 +1930,16 @@ function inputEl(id, opts={}){
   i.className='fin'+(opts.cls?(' '+opts.cls):'');
   if(opts.placeholder) i.placeholder=opts.placeholder;
   i.value=val(id);
-  i.oninput=()=>{ setVal(id,i.value); if(opts.onchange) opts.onchange(); flash(); };
+  i.dataset.fid=id;
+  const sk=sharedKeyFor(id);
+  if(sk) i.dataset.sk=sk;
+  /* shared fields (job number, date) appear on every stacked limited system: keep them in step */
+  const syncShared=()=>{ if(!sk) return; document.querySelectorAll('[data-sk="'+sk+'"]').forEach(o=>{ if(o!==i) o.value=i.value; }); };
+  i.oninput=()=>{ setVal(id,i.value); syncShared(); if(opts.onchange) opts.onchange(); flash(); };
   if(/_jobno$/.test(id)){
     // Job numbers are cleaned on leaving the field: trimmed, single spaces, UPPERCASE.
     i.setAttribute('autocapitalize','characters');
-    i.addEventListener('change',()=>{ const n=normalizeJobNo(i.value); i.value=n; setVal(id,n); flash(); });
+    i.addEventListener('change',()=>{ const n=normalizeJobNo(i.value); i.value=n; setVal(id,n); syncShared(); flash(); });
   }
   if(/_firedispatch$/.test(id)) attachDispatchLookup(i, id);
   if(/_job_csz$/.test(id)) attachCityAutostamp(i, id);
@@ -1962,6 +2038,13 @@ function buildPaper(fid){
     <div class="rtitle">${esc(f.title)}</div>`;
   paper.appendChild(head);
 
+  /* automatic System Number (shown once a job has more than one limited system) */
+  if((f.id==='fd16' || isLimitedExtra(f.id)) && hasExtraSystems()){
+    const sb=document.createElement('div'); sb.className='sysnum';
+    sb.innerHTML='System Number: <b>'+systemNumber(f.id)+'</b> of '+limitedIds().length;
+    paper.appendChild(sb);
+  }
+
   /* job header grid */
   paper.appendChild(headerGrid(f));
 
@@ -2008,9 +2091,33 @@ function buildPaper(fid){
 }
 
 function renderForm(fid){
+  if(isLimitedExtra(fid)){ fid='fd16'; ACTIVE_FORM='fd16'; }
   loadFormValues(fid);
   host.innerHTML='';
-  host.appendChild(buildPaper(fid));
+  if(fid!=='fd16'){ host.appendChild(buildPaper(fid)); return; }
+  /* FD-16 tab: the original system, every additional system stacked below it, and an add button. */
+  limitedIds().forEach(id=>{
+    if(id!=='fd16'){
+      const bar=document.createElement('div'); bar.className='sysbar noprint'; bar.id='sysblock_'+id;
+      bar.innerHTML='<span>System '+systemNumber(id)+' \u2014 Additional limited system on this job</span>';
+      const rm=document.createElement('button'); rm.type='button'; rm.className='defadd'; rm.textContent='\u2212 Remove System '+systemNumber(id);
+      rm.onclick=()=>removeLimitedSystem(id);
+      bar.appendChild(rm);
+      host.appendChild(bar);
+    }
+    host.appendChild(buildPaper(id));
+  });
+  loadFormValues(fid);
+  const wrap=document.createElement('div'); wrap.className='sysadd noprint';
+  const add=document.createElement('button'); add.type='button'; add.className='add-instance';
+  add.textContent='+ Add additional limited system (System '+(limitedIds().length+1)+')';
+  add.disabled = limitedIds().length>=LIMITED_MAX;
+  add.onclick=addLimitedSystem;
+  wrap.appendChild(add);
+  const note=document.createElement('div'); note.className='sysnote';
+  note.textContent='Each additional system carries the same Job Number and date. Enter the job name, address and riser(s) for each one.';
+  wrap.appendChild(note);
+  host.appendChild(wrap);
 }
 
 function renderSummary(){
@@ -2032,7 +2139,7 @@ function printSelectedReports(ids, includeSummary){
 }
 function printAllReports(){
   // default: every report currently in play
-  printSelectedReports(CORE_FORMS.map(f=>f.id).concat(ADDED.slice()), false);
+  printSelectedReports(orderedIds(), false);
 }
 
 /* Does a form have any user-entered data worth printing? Used to pre-check the picker. */
@@ -2049,7 +2156,7 @@ function formHasData(fid){
    (2) compliance blocks where neither box is checked. Only forms that have
    been worked on (any data entered) are checked, so untouched forms don't spam. */
 function validateDeficiencyTypes(onlyIds){
-  const all=CORE_FORMS.map(f=>f.id).concat(ADDED.slice());
+  const all=orderedIds();
   const order = (Array.isArray(onlyIds) && onlyIds.length) ? all.filter(id=>onlyIds.includes(id)) : all;
   const problems=[];
   order.forEach(fid=>{
@@ -2576,7 +2683,7 @@ async function submitReportFlow(sel){
 }
 
 function reportPickerModal(){
-  const ids=CORE_FORMS.map(f=>f.id).concat(ADDED.slice());
+  const ids=orderedIds();
   const free=!!VIEW_DOC;                                   // viewing a filed report: PDF only, any mix
   const lockGroup=EDIT_DOC ? (EDIT_DOC.group||null) : null;
   const mh=document.getElementById('modalHost')||document.body;
@@ -2832,23 +2939,23 @@ function sigField(id,label,opts={}){
     i.classList.add('cursive');
     i.id='siginput_'+id;
     // Direct typing into a signature stops auto-mirroring from the print field.
-    i.addEventListener('input', ()=>{ VALUES[id+'_auto']=false; });
+    i.addEventListener('input', ()=>{ storeFor(id)[id+'_auto']=false; });
   }
   if(opts.dateTarget){
     i.id='dateinput_'+id;
     // Direct typing into the bottom date stops auto-mirroring from the header date.
-    i.addEventListener('input', ()=>{ VALUES[id+'_auto']=false; });
+    i.addEventListener('input', ()=>{ storeFor(id)[id+'_auto']=false; });
   }
   // A PRINT field that drives a signature field.
   if(opts.drives){
     i.addEventListener('input', ()=>{
       const target=opts.drives;
       const sigEl=document.getElementById('siginput_'+target);
-      const alreadyManual = VALUES[target+'_auto']===false && val(target);
+      const alreadyManual = storeFor(target)[target+'_auto']===false && val(target);
       if(sigEl && !alreadyManual){
         sigEl.value=i.value;
         setVal(target, i.value);
-        VALUES[target+'_auto']=true;   // mark as auto-filled
+        storeFor(target)[target+'_auto']=true;   // mark as auto-filled
       }
     });
   }
@@ -2896,8 +3003,8 @@ function headerGrid(f){
 function mirrorDate(f,id){
   const target=f.id+'_date';
   const sigEl=document.getElementById('siginput_'+target) || document.getElementById('dateinput_'+target);
-  const manual = VALUES[target+'_auto']===false && val(target);
-  if(sigEl && !manual){ sigEl.value=val(id); setVal(target, val(id)); VALUES[target+'_auto']=true; }
+  const manual = storeFor(target)[target+'_auto']===false && val(target);
+  if(sigEl && !manual){ sigEl.value=val(id); setVal(target, val(id)); storeFor(target)[target+'_auto']=true; }
 }
 
 /* 3-row Job Name & Location block: Job name / Street address / City, State, Zip */
@@ -3101,7 +3208,7 @@ function extractDeficienciesFromRecord(rec){
   // forms present in that report, in the usual tab order. Only MAIN INSPECTION forms
   // that were part of the submission carry deficiencies over to a correction.
   const subm=Array.isArray(rec && rec.reports) && rec.reports.length ? rec.reports : null;
-  const order=CORE_FORMS.map(f=>f.id).concat(added.slice())
+  const order=orderedIds(added)
     .filter(fid=>groupOfForm(fid)==='inspection' && (!subm || subm.indexOf(fid)>=0));
   order.forEach(fid=>{
     const f=FORMS.find(x=>x.id===fid); if(!f) return;
@@ -3292,7 +3399,7 @@ function stampJobInfo(rec){
   // Find the source inspection form in the prior report that has riser/job
   // header data. Prefer the forms that were actually submitted, in tab order;
   // skip the correction form itself.
-  const order=CORE_FORMS.map(f=>f.id).concat(Array.isArray(rec.added)?rec.added:[]);
+  const order=orderedIds(Array.isArray(rec.added)?rec.added:[]);
   let src=null, srcId=null;
   for(const fid of order){
     if(fid==='correction') continue;
@@ -3638,7 +3745,7 @@ function renderRisers(container,f){
   btns.appendChild(add);
   if(count>1){
     const rem=document.createElement('button'); rem.type='button'; rem.className='defadd'; rem.style.marginLeft='6px'; rem.textContent='− Remove';
-    rem.onclick=()=>{ VALUES[f.id+'_riser'+count+'_time']=''; VALUES[f.id+'_riser'+count+'_label']=''; setVal(f.id+'_riser_count', count-1); renderRisers(container,f); };
+    rem.onclick=()=>{ setVal(f.id+'_riser'+count+'_time',''); setVal(f.id+'_riser'+count+'_label',''); setVal(f.id+'_riser_count', count-1); renderRisers(container,f); };
     btns.appendChild(rem);
   }
   container.appendChild(btns);
@@ -3709,7 +3816,7 @@ function complianceSections(fid){
 /* Collect filled entries for every form (in tab order: core + added). */
 function collectSummary(){
   // The summary covers inspection reports only (never 5-Year Internal, FDC Hydro or Corrections).
-  const order=CORE_FORMS.map(f=>f.id).concat(ADDED.slice()).filter(fid=>groupOfForm(fid)==='inspection');
+  const order=orderedIds().filter(fid=>groupOfForm(fid)==='inspection');
   const result=[];
   order.forEach(fid=>{
     const f=FORMS.find(x=>x.id===fid);
@@ -3805,6 +3912,10 @@ function buildSummaryPaper(){
     const rt=document.createElement('div'); rt.className='summary-rtitle';
     const repForm=FORMS.find(x=>x.id===rep.formId);
     rt.textContent = repForm ? shortName(repForm) : rep.title;
+    if(repForm && (repForm.id==='fd16' || isLimitedExtra(repForm.id)) && hasExtraSystems()){
+      const addr=systemAddress(repForm.id);
+      rt.textContent = 'System '+systemNumber(repForm.id)+(addr?(' \u2014 '+addr):'')+' \u2014 Annual Limited System Inspection';
+    }
     block.appendChild(rt);
 
     const table=document.createElement('div'); table.className='summary-table';
@@ -4196,6 +4307,7 @@ document.getElementById('newDraftBtn').onclick=()=>{
   const pop=document.getElementById('abMenuPop'); if(pop) pop.classList.remove('open');
   if(confirm('Clear all entries on this form?\n\nThis cannot be undone. Anything not saved to a draft will be lost. (Saved drafts are not affected.)')){
     if(ACTIVE_FORM!=='__summary') unlinkGroup(groupOfForm(ACTIVE_FORM));   // a cleared form starts a new report
+    if(ACTIVE_FORM==='fd16'){ ADDED.filter(isLimitedExtra).forEach(x=>{ delete ALLVALUES[x]; }); ADDED=ADDED.filter(x=>!isLimitedExtra(x)); }
     ALLVALUES[ACTIVE_FORM]={}; loadFormValues(ACTIVE_FORM); DIRTY=false; renderForm(ACTIVE_FORM);
     if(hasAnyData()) writeAutosave(); else clearAutosave();
   }
