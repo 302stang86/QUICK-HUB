@@ -13,7 +13,7 @@
      - Everything else (Firestore API, etc.): straight to network — Firestore's
        own offline mode handles those when there is no signal.
 */
-const CACHE = 'fdec-quickhub-v113-itm-checklist-fix';
+const CACHE = 'fdec-quickhub-v114-switchback-td';
 
 const CORE = [
   "troubleshooting-data.js",
@@ -40,19 +40,7 @@ const CORE = [
   "library-assets/tyco-dv5a.jpg",
   "library-assets/victaulic-768n.jpg",
 
-  'battle-royal/index.html',
-  'battle-royal/arena.html',
-  'battle-royal/style.css',
-  'battle-royal/lobby.js',
-  'battle-royal/engine.js',
-  'battle-royal/game.js',
-  'battle-royal/leaderboard.js',
-  'battle-royal/touch-fullscreen.js',
-  'battle-royal/fb.js',
-  'battle-royal/live.js',
-  'battle-royal/netplay.js',
-  'battle-royal/tank-art.svg',
-  'battle-royal/gladiator-art.svg',
+  'switchback/index.html',
 
   'fdec-industrial-header-option1.png',
   './',
