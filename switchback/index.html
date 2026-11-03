@@ -321,7 +321,7 @@ html.touch .dexov { z-index: 30; }
   <div class="picker" id="picker" hidden></div>
   <div class="btns">
     <button class="act" id="bBuild"><span class="l">Build</span><span class="s" id="sBuild">$100</span></button>
-    <button class="act" id="bNuke"><span class="l">Nuke</span><span class="s" id="sNuke">$1,000</span><span class="cd"></span></button>
+    <button class="act" id="bNuke"><span class="l">Nuke</span><span class="s" id="sNuke">$2,000</span><span class="cd"></span></button>
     <button class="act" id="bKami"><span class="l">Kamikaze</span><span class="s" id="sKami">$1,000</span><span class="cd"></span></button>
     <button class="act" id="bNext"><span class="l">Send wave</span><span class="s" id="sNext">now</span></button>
   </div>
@@ -778,7 +778,7 @@ html.touch .dexov { z-index: 30; }
   UNITS.push(...INVISIBLE_UNITS);UNITS.sort(rosterOrder);
   const MEDIUM_BOSSES=[{id:'siege_warden',name:'Siege Warden',role:'Medium Escort Boss',medium:1,boss:1,level:5,from:5,
     hp:4200,dmg:110,range:2,sw:'Slow',r:23,armor:.15,
-    desc:'A fortified ground commander that advances with the troops every fifth wave.',play:'Appears on waves 5, 10, 15 and onward.',
+    desc:'A fortified ground commander that advances with the troops every fifth wave.',play:'Appears on waves 5, 10, 15 and onward. Carries a cargo crate that drops when it is destroyed.',
     base:'brute',art:{a:'#566475',b:'#242e3c',c:'#ffb760',m:'#9aa8b5',gears:['plates','hammer','crown']}}];
   const UMAP = {};
   UNITS.concat(BOSSES,MEDIUM_BOSSES).forEach((d) => { UMAP[d.id] = d; });
@@ -799,7 +799,7 @@ html.touch .dexov { z-index: 30; }
     { id: 'flame', name: 'Inferno Flamethrower', col: '#ff5a1a', ground: 1,
       desc: 'Close-range continuous torrent incinerating dense groups of enemy swarms with progressive burn effects.', play: 'Ground only. Burns targets over time and splashes nearby enemies.',
       tiers: [
-        { name: 'Spark Burner', look: 'Hand-pumped fuel nozzle mounted on a wooden pivot platform', dmg: 15, dps: 1, range: 2.5, rate: 'Rapid', cost: 75, burn: 3 },
+        { name: 'Spark Burner', look: 'Hand-pumped fuel nozzle mounted on a wooden pivot platform', dmg: 16.5, dps: 1, range: 3.125, rate: 'Rapid', cost: 75, burn: 3 },
         { name: 'Napalm Pyre', look: 'Dual-tank pressurized steel thrower with automatic pilot ignition rings', dmg: 35, dps: 1, range: 3.5, rate: 'Rapid', cost: 180, burn: 5 },
         { name: 'Hellfire Dragon Head', look: 'Forged mechanical dragon maw vomiting pressurized liquid blue fire', dmg: 75, dps: 1, range: 4.5, rate: 'Extreme', cost: 400, burn: 5, melt: 1 }
       ] },
@@ -1227,6 +1227,7 @@ html.touch .dexov { z-index: 30; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
   // Gentle through wave 15, then enemies toughen noticeably each wave
+  const ENEMY_HP_BASE = 1.5; // every enemy's starting base health is 50% higher (wave sizes and gold rewards still use the original base)
   const hpMult = (w) => (w <= 15 ? 0.1 + 0.03 * w : 0.55 + 0.065 * (w - 15));
   const BOSS_ATK_WAVE = 30;
   const bossMult = (w) => 0.05 + 0.012 * w;
@@ -1276,25 +1277,26 @@ html.touch .dexov { z-index: 30; }
   const routeLen = (p) => { let s = 0; for (let i = 1; i < p.length; i++) s += Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]); return s; };
   // every enemy can hit a tower in an adjacent cell; ranged ones reach further
   const reachOf = (e) => e.def.reach || Math.max(58, e.def.range * TILE + 22);
-  const ATK_GAP = 120; // two seconds between attacks
+  const ATK_GAP = 240; // four seconds between a boss's attacks
   // base health by tier and mastery, plus a further 10% of it for every upgrade the tower has received
   const towerMax = (t) => Math.round(1.5 * (TMAP[t.type].slows ? 1.875 : 1) * ([400, 650, 950][t.tier - 1] + 120 * t.mastery) * (1 + 0.1 * (t.tier - 1 + t.mastery))); // all tower health +50%
-  // random 2-5 second pause between a regular enemy's attacks; bosses keep their slower fixed rhythm
-  const nextGap = (e) => (e.boss ? ATK_GAP : 120 + Math.floor(Math.random() * 181));
+  // random 4-10 second pause between a regular enemy's attacks; bosses keep their slower fixed rhythm
+  const nextGap = (e) => (e.boss ? ATK_GAP : 240 + Math.floor(Math.random() * 181) * 2);
   const repairCost = (t) => { const mx = towerMax(t); return t.hp >= mx ? null : Math.max(10, Math.round(TMAP[t.type].tiers[0].cost * 0.8 * (1 - t.hp / mx) / 5) * 5); };
 
   function makeEnemy(d, w, o = {}) {
     const pts = d.fly ? makeFlightPath(d.spd * 0.9 * speedFactor(w) * 0.75 * FLY_MIN_SECONDS * REAL_TPS, isHighFlyer(d) ? FLY_LAPS : 0) : (o.lane === 'B' && pathB ? pathB : path);
     const bm = d.boss ? bossMult(w) : hpMult(w);
     const e = {
-      waveNumber:w, level: Math.max(d.level,w), attack: Math.round(d.dmg*(1+.02*Math.max(0,w-1))),
+      waveNumber:w, level: Math.max(d.level,w), attack: d.boss ? Math.round(d.dmg*(1+.02*Math.max(0,w-1))) : d.dmg, // only medium and major bosses grow stronger with the wave
+     
       def: d, x: pts[0][0], y: pts[0][1], idx: 1, travel: 0, age: 0, fx: 1, fly: !!d.fly, boss: !!d.boss, r: d.r,
       total: routeLen(pts), guard: 0, spdMul: 1, atkT: d.boss ? 60 : 60 + Math.floor(Math.random() * 240), spT: d.spCd ? Math.round(d.spCd * 0.6) : 0, healT: 0,
       trail: [], lane: o.lane === 'B' && pathB ? 'B' : 'A', noRew: !!o.summon, armor: d.armor || 0, egg: 0, burrowed: false
     };
     if(e.fly)e.flightPath=pts;
     // +25% boss, +15% regular health
-    e.maxHp = Math.round(d.hp * bm * (d.hpF || 1) * (d.boss ? 1.25 : 1.15)); e.hp = e.maxHp;
+    e.maxHp = Math.round(d.hp * ENEMY_HP_BASE * bm * (d.hpF || 1) * (d.boss ? 1.25 : 1.15)); e.hp = e.maxHp;
     e.speed = d.boss ? SPW[d.sw] * (0.85 + 0.003 * w) : d.spd * 0.9 * speedFactor(w);
     if (e.fly) e.speed *= 0.75; // flyers move at three quarters speed
     if (d.invisible) { e.speed *= 1.25; e.maxHp = Math.round(e.maxHp * 1.5); e.hp = e.maxHp; } // invisible units: +25% speed, +50% health
@@ -1430,6 +1432,12 @@ html.touch .dexov { z-index: 30; }
     if (G.enemies.some((o) => o.fly && o.wv === e.wv && o.hp > 0) || G.queue.some((q) => q.waveNumber===e.wv && UMAP[q.id].fly)) return;
     G.cargo.delete(e.wv);
     if (killed) { G.item = { x: e.x, y: e.y, left: 3000, max: 3000 }; ring(e.x, e.y, 40, '#ffd24d'); G.floats.push({ x: e.x, y: e.y - 24, text: 'CARGO DROP! TAP IT', life: 70, colr: '#ffd24d' }); }
+  }
+  // A destroyed medium boss drops its crate where it fell, same bonus and timer as a flier's cargo.
+  function mediumDrop(e) {
+    if (!e.def || !e.def.medium || e.noRew) return;
+    G.item = { x: e.x, y: e.y, left: 3000, max: 3000 }; ring(e.x, e.y, 40, '#ffd24d');
+    G.floats.push({ x: e.x, y: e.y - 24, text: 'CARGO DROP! TAP IT', life: 70, colr: '#ffd24d' });
   }
   function collectItem() {
     const bonus = Math.max(1, Math.round(G.gold * 0.15));
@@ -1672,7 +1680,7 @@ html.touch .dexov { z-index: 30; }
           if (!e.noRew && e.reward) { G.gold += e.reward; G.floats.push({ x: e.x, y: e.y - e.r, text: '+' + e.reward, life: 40 }); }
           if (G.inspect === e) G.inspect = null;
           deathFx(e);
-          SFX.play(e.boss ? 'bossDie' : 'die'); G.enemies.splice(i, 1); flierGone(e, true); continue;
+          SFX.play(e.boss ? 'bossDie' : 'die'); G.enemies.splice(i, 1); flierGone(e, true); mediumDrop(e); continue;
         }
       }
       if (e.egg > 0) e.egg--;
@@ -1693,7 +1701,7 @@ html.touch .dexov { z-index: 30; }
     }
 
     // Every overlapping flying wave keeps its own cargo carrier.
-    G.enemies.forEach(e=>{e.carrier=false;});
+    G.enemies.forEach(e=>{e.carrier=!!(e.def&&e.def.medium&&e.hp>0);}); // medium bosses always carry a crate
     for(const waveNumber of G.cargo){
       let car=null;for(const e of G.enemies)if(e.fly&&e.wv===waveNumber&&e.hp>0&&(!car||e.travel<car.travel))car=e;
       if(car)car.carrier=true;
@@ -2441,7 +2449,7 @@ html.touch .dexov { z-index: 30; }
 
   function placeGhost() {
     const g = build.ghost;
-    if (!g || G.gold < buildCost(build.type) || !canPlace(g.x, g.y)) return false;
+    if (G.paused || !g || G.gold < buildCost(build.type) || !canPlace(g.x, g.y)) return false;
     G.gold -= buildCost(build.type); G.towers.push(makeTower(build.type, g.x, g.y));
     { const col = TMAP[build.type].col; ring(g.x, g.y, 46, col); burst(g.x, g.y, 12, [col, '#ffffff'], 2.4, 20, 2); }
     if(G.awaitingFirstTower){G.awaitingFirstTower=false;G.breakT=180;}
@@ -2509,7 +2517,7 @@ html.touch .dexov { z-index: 30; }
 
   function doBuild() {
     G.nukeAim=false;
-    if (G.over || !G.started) return;
+    if (G.over || !G.started || G.paused) return;
     if (build.on) { placeGhost(); return; }
     if (G.gold < buildCost(build.type)) return;
     build.on = true; build.ghost = null; G.selected = null; G.inspect = null;
@@ -2518,7 +2526,7 @@ html.touch .dexov { z-index: 30; }
   // On-map upgrade / repair marker beside the selected tower; lit only when the player can afford it
   const MARK_DX = 30, MARK_DY = -38, MARK_R = 15;
   function markerInfo(t) {
-    if (!t || G.over) return null;
+    if (!t || G.over || G.paused) return null; // paused: no upgrade, repair or shield marker
     const tes = !!TMAP[t.type].slows, cost = tes ? repairCost(t) : upgradeCost(t);
     if (cost == null) { // a fully upgraded tower can buy a shield (once the old one is gone)
       if (tes || !(t.tier >= 3 && t.mastery >= MASTERY_MAX) || t.shield > 0) return null;
@@ -2551,12 +2559,13 @@ html.touch .dexov { z-index: 30; }
     return Math.hypot(a.x + MARK_DX * q.zoom - sx, a.y + MARK_DY * q.zoom - sy) <= (MARK_R + (touch ? 12 : 4)) * q.zoom;
   }
   function doUpgrade() {
+    if (G.paused) return;
     const t = G.selected;
     if (t && TMAP[t.type].slows) { const r = repairCost(t); if (r != null && G.gold >= r && !G.over) { G.gold -= r; t.hp = towerMax(t); SFX.play('repair'); SFX.haptic(20); ring(t.x, t.y, 40, '#5ad7ff'); G.floats.push({ x: t.x, y: t.y - 26, text: 'repaired', life: 40, colr: '#5ad7ff' }); } return; }
     const sm = t && markerInfo(t);
     if (sm && sm.shield) { if (sm.ok && !G.over) { G.gold -= SHIELD_COST; t.shield = t.shieldMax = towerMax(t); SFX.play('shield'); SFX.haptic(25); ring(t.x, t.y, 44, '#7fd8ff'); G.floats.push({ x: t.x, y: t.y - 26, text: 'shield up', life: 40, colr: '#7fd8ff' }); } return; }
     const k = t && upgradeCost(t); if (t && k != null && G.gold >= k && !G.over) { G.gold -= k; upgrade(t); { const col = TMAP[t.type].col; ring(t.x, t.y, 50 + t.tier * 6, col); burst(t.x, t.y - 10, 12 + t.tier * 4, [col, '#fff6c0'], 2.8, 22, 2.2); } SFX.play('upgrade'); SFX.haptic(25); } }
-  const NUKE_COST=1000,NUKE_RADIUS=HEX_X*6,NUKE_DAMAGE=5000,NUKE_COOLDOWN=15000;
+  const NUKE_COST=2000,NUKE_RADIUS=HEX_X*4.5,NUKE_DAMAGE=3750,NUKE_COOLDOWN=30000;
   function doNuke(){
     if(!G.started||G.over||G.paused||codexOpen||G.gold<NUKE_COST||performance.now()<G.nukeReadyAt)return;
     G.nukeAim=!G.nukeAim;build.on=false;build.ghost=null;G.selected=null;G.inspect=null;
@@ -2637,7 +2646,7 @@ html.touch .dexov { z-index: 30; }
   }
 
   /* ---------- Kamikaze: five planes that hunt flyers first, then ground groups ---------- */
-  const KAMI_COST = 1000, KAMI_COOLDOWN = 15000, KAMI_COUNT = 5, KAMI_DAMAGE = NUKE_DAMAGE / 4, KAMI_RADIUS = HEX_X * 4, KAMI_SPEED = 6.5;
+  const KAMI_COST = 1000, KAMI_COOLDOWN = 30000, KAMI_COUNT = 5, KAMI_DAMAGE = 1250, KAMI_RADIUS = HEX_X * 4, KAMI_SPEED = 6.5;
   const kamiLive = (e) => e.hp > 0 && e.egg <= 0 && !e.burrowed && detected(e);
   function doKami() {
     if (!G.started || G.over || G.paused || codexOpen || G.gold < KAMI_COST || performance.now() < G.kamiReadyAt || !G.enemies.some(kamiLive)) return;
@@ -2730,7 +2739,7 @@ html.touch .dexov { z-index: 30; }
     cdWas[id] = cooling;
   }
   function doNext() { if (G.isBreak && !G.over && G.started && !G.awaitingFirstTower) G.breakT = 0; }
-  function togglePause() { if (G.started && !G.over) G.paused = !G.paused; }
+  function togglePause() { if (G.started && !G.over) { G.paused = !G.paused; if (G.paused) cancelBuild(); } } // pausing also drops any build or nuke aiming
   function cycleSpeed() { G.speed = G.speed === 1 ? 2 : 1; } // 1× or 2× only
   $('bBuild').addEventListener('click', doBuild);
   $('bNuke').addEventListener('click', doNuke);
@@ -2748,7 +2757,7 @@ html.touch .dexov { z-index: 30; }
     if (codexOpen) { if (k === 'escape') openCodex(false); return; }
     if (!G.started || G.over) { if (k === 'enter') start(); return; }
     if (k === 'b') doBuild(); else if (k === 'u') doUpgrade(); else if (k === 's') doNuke(); else if (k === 'k') doKami();
-    else if (k === 'n') doNext(); else if (k >= '1' && k <= '4') { build.type = TOWERS[+k - 1].id; if (!build.on) doBuild(); } else if (k === 'f') cycleSpeed();
+    else if (k === 'n') doNext(); else if (k >= '1' && k <= '4') { if (G.paused) return; build.type = TOWERS[+k - 1].id; if (!build.on) doBuild(); } else if (k === 'f') cycleSpeed();
     else if (k === 'escape') { cancelBuild(); G.selected = null; G.inspect = null; }
     else if (k === ' ') { e.preventDefault(); togglePause(); }
   });
@@ -2808,7 +2817,7 @@ html.touch .dexov { z-index: 30; }
     const mk = (cls, s) => { const n = document.createElement('div'); n.className = cls; n.textContent = s; txt.appendChild(n); };
     if (known) {
       mk('dname', d.name); mk('drole', 'Level '+d.level+'+ · '+d.role+(d.fly?' · Flying':' · Ground'));
-      mk('dstats', 'Base HP ' + d.hp.toLocaleString() + ' · Base attack ' + d.dmg + ' · Range ' + d.range.toFixed(1) + ' · ' + d.sw);
+      mk('dstats', 'Base HP ' + Math.round(d.hp * ENEMY_HP_BASE).toLocaleString() + ' · Base attack ' + d.dmg + ' · Range ' + d.range.toFixed(1) + ' · ' + d.sw);
       mk('ddesc', d.desc);
       if (d.play) mk('dplay', d.play);
     } else { mk('dname', 'Unknown'); mk('drole', d.boss ? 'Boss · Wave ' + (BOSSES.indexOf(d) + 1) * 10 : 'Unlocks around wave ' + d.from); mk('ddesc', 'Not yet encountered.'); }
@@ -2849,15 +2858,15 @@ html.touch .dexov { z-index: 30; }
     $('bPause').textContent = G.paused ? 'Resume' : 'Pause'; $('bSpeed').textContent = G.speed + '×';
     const t = G.selected, okSpot = build.ghost && canPlace(build.ghost.x, build.ghost.y), bc = buildCost(build.type); let uc = t ? upgradeCost(t) : null;
     $('bBuild').classList.toggle('on', build.on);
-    $('sBuild').textContent = build.on ? (build.ghost ? (okSpot ? 'Place here' : 'Blocked') : 'Aim on map') : '$' + bc;
-    $('bBuild').disabled = G.over || (!build.on && G.gold < bc) || (build.on && !(okSpot && G.gold >= bc));
+    $('sBuild').textContent = G.paused ? 'Paused' : build.on ? (build.ghost ? (okSpot ? 'Place here' : 'Blocked') : 'Aim on map') : '$' + bc;
+    $('bBuild').disabled = G.over || G.paused || (!build.on && G.gold < bc) || (build.on && !(okSpot && G.gold >= bc));
     $('bBuild').firstElementChild.textContent = build.on ? 'Place' : 'Build';
     const tes = t && TMAP[t.type].slows;
     if (tes) uc = repairCost(t);
     const cooldown=Math.max(0,G.nukeReadyAt-performance.now());
     $('bNuke').disabled=!G.started||G.over||G.paused||G.gold<NUKE_COST||cooldown>0;
     $('bNuke').classList.toggle('on',G.nukeAim);
-    $('sNuke').textContent=cooldown>0?Math.ceil(cooldown/1000)+'s cooldown':G.nukeAim?'Tap field · $1,000':G.gold>=NUKE_COST?'Ready':'$1,000';
+    $('sNuke').textContent=cooldown>0?Math.ceil(cooldown/1000)+'s cooldown':G.nukeAim?'Tap field · $2,000':G.gold>=NUKE_COST?'Ready':'$2,000';
     const kCool=Math.max(0,G.kamiReadyAt-performance.now()),kTargets=G.enemies.some(kamiLive);
     $('bKami').disabled=!G.started||G.over||G.paused||G.gold<KAMI_COST||kCool>0||!kTargets;
     $('sKami').textContent=kCool>0?Math.ceil(kCool/1000)+'s cooldown':!kTargets?'no targets':G.gold>=KAMI_COST?'Ready':'$1,000';
@@ -2868,16 +2877,16 @@ html.touch .dexov { z-index: 30; }
     $('picker').querySelectorAll('button').forEach((bt) => bt.classList.toggle('on', bt.dataset.t === build.type));
     let info;
     const ie = G.inspect;
-    if(G.nukeAim)info='<b>Nuclear strike.</b> Tap the field: 5,000 damage within roughly 6 hexes. Ground only. Invisible enemies require Tesla detection or its 3-second reveal grace period. $1,000 · 15s real-time cooldown.';
+    if(G.nukeAim)info='<b>Nuclear strike.</b> Tap the field: 3,750 damage within roughly 4.5 hexes. Ground only. Invisible enemies require Tesla detection or its 3-second reveal grace period. $2,000 · 30s real-time cooldown.';
     else if (build.on) info = '<b>' + TMAP[build.type].name + '.</b> ' + TMAP[build.type].play + (build.ghost ? ' Tap it again or press Place.' : ' Tap the map to aim.');
     else if (t) {
       const st = tstat(t), b = st.b;
       info = '<b>' + b.name + '</b>' + (st.d.slows ? '' : ' · tier ' + TIER_NAMES[t.tier - 1] + (t.mastery ? ' +' + t.mastery : '')) + ' · ' +
         (b.slow ? 'zap ' + Math.round(st.dmg) + ' · slows ' + Math.round(b.slow * 100) + '%' : 'dmg ' + Math.round(st.dmg) + (b.dps ? '/s' : '') + ' · ' + b.rate) +
-        ' · range ' + (st.range / TILE).toFixed(1) + ' · HP ' + Math.ceil(t.hp) + '/' + towerMax(t) + (t.shield > 0 ? ' · Shield ' + Math.ceil(t.shield) : '') + (markerInfo(t) ? ' · ' + (markerInfo(t).shield ? 'Shield' : st.d.slows ? 'Repair' : t.tier === 3 ? 'Master' : 'Upgrade') + ' $' + markerInfo(t).cost + (markerInfo(t).ok ? ' (tap the marker)' : '') : '');
+        ' · range ' + (st.range / TILE).toFixed(1) + ' · HP ' + Math.ceil(t.hp) + '/' + towerMax(t) + (t.shield > 0 ? ' · Shield ' + Math.ceil(t.shield) : '') + (G.paused ? ' · Paused: no upgrades' : markerInfo(t) ? ' · ' + (markerInfo(t).shield ? 'Shield' : st.d.slows ? 'Repair' : t.tier === 3 ? 'Master' : 'Upgrade') + ' $' + markerInfo(t).cost + (markerInfo(t).ok ? ' (tap the marker)' : '') : '');
     }
     else if (ie) info = '<b>' + ie.def.name + '</b> · Level '+ie.level+' · '+ie.def.role+' · HP '+Math.ceil(ie.hp)+'/'+ie.maxHp+' · Attack '+ie.attack + (ie.def.play ? ' · ' + ie.def.play : '');
-    else info = '<b>' + SECTOR.name + '.</b> Enemies attack towers beside the route, every two to five seconds, each on its own timer. Tap an enemy to inspect it.';
+    else info = '<b>' + SECTOR.name + '.</b> Enemies attack towers beside the route, every four to ten seconds, each on its own timer. Tap an enemy to inspect it.';
     const el = $('vInfo');
     if (el.dataset.v !== info) { el.dataset.v = info; el.innerHTML = info; }
   }
@@ -2946,10 +2955,10 @@ html.touch .dexov { z-index: 30; }
     try { const r = await LBAPI.top(); lbCache = { at: performance.now(), rows: r.rows, uid: r.uid }; if ($('lbList') === list) paintBoard(lbCache); }
     catch (e) { if ($('lbList') === list) say("Couldn't load the leaderboard.", true); }
   }
-  const HOW_HTML = '<ul><li>Pick from three fire towers, each with three tiers, plus a Tesla coil that zaps, slows and reveals every enemy in range. Every upgrade costs more than the last, and a maxed tower can be mastered. The coil cannot be upgraded; repair it with gold instead. Nuke costs $1,000 and launches a ground-only nuclear strike, with a 15-second real-time cooldown. Kamikaze costs $1,000 and sends five planes, with its own 15-second cooldown: they hunt flyers first, then strike ground groups with a smaller four-hex blast at a quarter of the Nuke\'s power. Neither special attack can hurt your towers.</li>' +
-      '<li>Every tower has health and every enemy can attack it, each pausing two to five seconds between strikes. Towers cannot be repaired, but any upgrade restores full health. After wave 30, some individual ground enemies spawn with a shield worth twice their health; Tesla zaps strip shields fastest. After five seconds in the air, flyers divert to the nearest tower and drop a freeze bomb that stops it firing for two to three seconds. A fully upgraded tower can buy a $500 shield equal to its total health; buy a new one once it breaks.</li>' +
+  const HOW_HTML = '<ul><li>Pick from three fire towers, each with three tiers, plus a Tesla coil that zaps, slows and reveals every enemy in range. Every upgrade costs more than the last, and a maxed tower can be mastered. The coil cannot be upgraded; repair it with gold instead. Nuke costs $2,000 and launches a ground-only nuclear strike, with a 30-second real-time cooldown. Kamikaze costs $1,000 and sends five planes, with its own 30-second cooldown: they hunt flyers first, then strike ground groups with a smaller four-hex blast for 1,250 damage. Neither special attack can hurt your towers.</li>' +
+      '<li>Every tower has health and every enemy can attack it, each pausing four to ten seconds between strikes. Towers cannot be repaired, but any upgrade restores full health. After wave 30, some individual ground enemies spawn with a shield worth twice their health; Tesla zaps strip shields fastest. After five seconds in the air, flyers divert to the nearest tower and drop a freeze bomb that stops it firing for two to three seconds. A fully upgraded tower can buy a $500 shield equal to its total health; buy a new one once it breaks.</li>' +
       '<li>Waves overlap after 20 game seconds if enemies remain. Clearing the field early starts a three-second break.</li>' +
-      '<li>One flier in each flying wave carries cargo. Destroy the last flier and the crate drops: tap it within three seconds for a bonus of 15% of your cash.</li>' +
+      '<li>One flier in each flying wave carries cargo. Destroy the last flier and the crate drops: tap it within three seconds for a bonus of 15% of your cash. Every Siege Warden carries a crate too, and drops it where it falls.</li>' +
       '<li>New units unlock as you survive. Open the Codex from this menu to read about each one.</li>' +
       '<li>Keys: B build, U upgrade, S nuke, K kamikaze, N send wave, F speed, 1–4 pick tower, Space pause. The Codex is available from this menu.</li></ul>' + '';
   function showIntro() {
