@@ -42,6 +42,7 @@
   .status{font-weight:700;color:#235b43}
   #notice,#archivedNotice{min-height:18px}
   a{color:#234e8a}
+  .quicklink{margin:18px 4px 6px;font-size:13px;color:#607084}
   @media print{header,.toolbar,.no-print,.tabs,#list,#archivedPanel,button{display:none!important}main{margin:0;padding:0}.panel{box-shadow:none}#detail{display:block!important}}
 </style>
 <script src="fdec-identity.js"></script>
@@ -116,6 +117,8 @@
       <p id="saveNotice" role="status"></p>
     </div>
   </section>
+
+  <p class="no-print quicklink">Quick link: <a href="https://www.saveonautoglass.com/" target="_blank" rel="noopener noreferrer">Save On Auto Glass</a></p>
 </main>
 
 <script type="module">
@@ -129,6 +132,22 @@ const db=getFirestore(getApp('fdec'));
 const DAY=86400000, KEEP_DAYS=30;
 const techOf=r=>window.FDEC_ID?FDEC_ID.nameFor(r.uid,r.technicianName,r.technicianEmail):(r.technicianName||'');
 let requests=[], chosen=null;
+
+/* Year and VIN. New requests store them. Older requests do not, so look the vehicle up in the
+   assigned-vehicle list by Vehicle Number (read once, only when needed). */
+let assetsPromise=null;
+const loadAssets=()=>assetsPromise||(assetsPromise=getDocs(collection(db,'fleetAssets')).then(s=>s.docs.map(d=>d.data())).catch(()=>[]));
+const normNo=v=>String(v||'').replace(/\s+/g,' ').trim().toUpperCase();
+async function vehicleYearVin(r){
+  const d=r.details||{};
+  let year=d.vehicleYear||d.otherYear||'', vin=d.vehicleVin||'';
+  if((!year||!vin)&&(r.vehicleNumber||d.vin)){
+    const no=normNo(r.vehicleNumber||d.vin);
+    const a=(await loadAssets()).find(x=>normNo(x.vehicleNumber)===no);
+    if(a){ year=year||a.year||''; vin=vin||a.vin||''; }
+  }
+  return {year,vin};
+}
 
 const field=(name,val)=>'<div class="field"><span>'+esc(name)+'</span><b>'+esc(val||'—')+'</b></div>';
 const archSeconds=r=>(r.archivedAt&&(r.archivedAt.seconds||r.archivedAt._seconds))||0;
@@ -196,9 +215,10 @@ function openRecord(r){
   $('archiveBtn').hidden=!!r.archived;
   $('restoreBtn').hidden=!r.archived;
   let d=r.details||{};
-  $('meta').innerHTML=field('Submitted by',techOf(r))+field('Assigned to',r.recipientName)+field('Vehicle',r.vehicleName)+field('Vehicle Number',r.vehicleNumber)+field('License Plate',d.plate)+field('Service Date',d.date)+field('Status',r.status);
+  $('meta').innerHTML=field('Submitted by',techOf(r))+field('Assigned to',r.recipientName)+field('Vehicle',r.vehicleName)+field('Vehicle Number',r.vehicleNumber)+'<span id="fYearVin" style="display:contents">'+field('Year',d.vehicleYear||d.otherYear)+field('VIN',d.vehicleVin)+'</span>'+field('License Plate',d.plate)+field('Service Date',d.date)+field('Status',r.status);
+  vehicleYearVin(r).then(v=>{ if(chosen!==r) return; const el=$('fYearVin'); if(el) el.innerHTML=field('Year',v.year)+field('VIN',v.vin); });
   const isOther=d.vehicleType==='other';
-  const info=(isOther?field('Vehicle Make',d.otherMake)+field('Vehicle Model',d.otherModel)+field('Model Year',d.otherYear):'')+field('Drop-off',d.dropOff)+(d.dropOff==='yes'?field('Drop-off days',d.dropOffDays):'')+field('Spare needed',d.spareVehicle)+field('Transport needed',d.transportNeeded);
+  const info=(isOther?field('Vehicle Make',d.otherMake)+field('Vehicle Model',d.otherModel):'')+field('Drop-off',d.dropOff)+(d.dropOff==='yes'?field('Drop-off days',d.dropOffDays):'')+field('Spare needed',d.spareVehicle)+field('Transport needed',d.transportNeeded);
   $('body').innerHTML='<div class="fields">'+info+'</div>'+
     '<h2 style="margin-top:14px">Service checklist</h2><p style="margin:4px 0">'+esc((d.checklist||[]).join(', ')||'None selected')+'</p>'+
     '<h2 style="margin-top:14px">Marked areas</h2><div id="areas"></div>'+

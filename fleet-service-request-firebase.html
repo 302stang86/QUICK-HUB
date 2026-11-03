@@ -637,6 +637,8 @@
       otherIssue:state.vehicle==="other"?$("otherIssue").value.trim():"",
       vin:(state.vehicle==="other"?$("vin").value.trim():((window.__fleetAsset&&window.__fleetAsset.vehicleNumber)||"")),
       plate:(state.vehicle==="other"?$("plate").value.trim().toUpperCase():((window.__fleetAsset&&window.__fleetAsset.plate)||"")),
+      vehicleYear:(state.vehicle==="other"?$("otherYear").value.trim():((window.__fleetAsset&&window.__fleetAsset.year)||"")),
+      vehicleVin:(state.vehicle==="other"?"":((window.__fleetAsset&&window.__fleetAsset.vin)||"")),
       checklist:getChecks(),
       points:(state.vehicle==="other"?[]:state.markers[state.vehicle]).map(function(m){ return { n:m.n, x:m.x, y:m.y, note:(m.note||"").trim() }; }),
       notes:$("notes").value.trim()
