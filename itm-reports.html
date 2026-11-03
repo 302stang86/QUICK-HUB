@@ -2578,7 +2578,7 @@ async function chooseSubmitTarget(group, payload, u){
 }
 
 /* Confirmation checklist shown before an ITM report is filed with the office.
-   Resolves to { returnVisit:'Yes'|'No', surveyReason } once all items are answered,
+   Resolves to { servicetradeMatches, servicetradeReason, returnVisit:'Yes'|'No', surveyReason } once all items are answered,
    or null if the tech goes back to the report. Not used for Deficiency Correction Reports. */
 function confirmationModal(){
   return new Promise(resolve=>{
@@ -2591,7 +2591,15 @@ function confirmationModal(){
         <label class="row"><input type="checkbox" id="ckC1"><span>I reviewed this ITM report before submitting and verified its accuracy.</span></label>
       </div></div>
       <div class="ck" id="ck2"><span class="num">2</span><div class="body">
-        <label class="row"><input type="checkbox" id="ckC2"><span>The comments, pictures, and deficiencies noted and uploaded in ServiceTrade match the findings in this ITM report.</span></label>
+        <div>The comments, pictures, and deficiencies noted and uploaded in ServiceTrade match the findings in this ITM report.</div>
+        <div class="yn">
+          <label id="ckStLblYes"><input type="radio" name="ckSt" value="Yes"> Yes</label>
+          <label id="ckStLblNo"><input type="radio" name="ckSt" value="No"> No</label>
+        </div>
+        <div id="ckStWhyWrap" style="display:none;margin-top:10px">
+          <label for="ckStWhy" style="display:block;font-size:13px;color:var(--muted);margin-bottom:6px">Why do they not match? Describe what is different or missing.</label>
+          <textarea id="ckStWhy" rows="4" maxlength="600" placeholder="Example: Two (2) deficiency photos for the dry valve room are not uploaded to ServiceTrade yet."></textarea>
+        </div>
       </div></div>
       <div class="ck" id="ck3"><span class="num">3</span><div class="body">
         <div>Will a return visit be required to complete a survey of the deficiencies identified?</div>
@@ -2609,24 +2617,30 @@ function confirmationModal(){
     </div>`;
     mh.appendChild(bg);
     const $=s=>bg.querySelector(s);
-    const c1=$('#ckC1'), c2=$('#ckC2'), go=$('#ckGo'), err=$('#ckErr'), why=$('#ckWhy');
+    const c1=$('#ckC1'), go=$('#ckGo'), err=$('#ckErr'), why=$('#ckWhy'), stWhy=$('#ckStWhy');
+    const st=()=>{ const r=bg.querySelector('input[name=ckSt]:checked'); return r?r.value:null; };
     const rv=()=>{ const r=bg.querySelector('input[name=ckRv]:checked'); return r?r.value:null; };
     function sync(){
       $('#ckWhyWrap').style.display=rv()==='Yes'?'block':'none';
       const whyOk=rv()!=='Yes' || why.value.trim().length>=10;
+      $('#ckStWhyWrap').style.display=st()==='No'?'block':'none';
+      const stOk=st()==='Yes' || (st()==='No' && stWhy.value.trim().length>=10);
       $('#ck1').classList.toggle('done',c1.checked);
-      $('#ck2').classList.toggle('done',c2.checked);
+      $('#ck2').classList.toggle('done',!!st() && stOk);
+      $('#ckStLblYes').classList.toggle('sel',st()==='Yes');
+      $('#ckStLblNo').classList.toggle('sel',st()==='No');
       $('#ck3').classList.toggle('done',!!rv() && whyOk);
       $('#ckLblYes').classList.toggle('sel',rv()==='Yes');
       $('#ckLblNo').classList.toggle('sel',rv()==='No');
-      const ok=c1.checked && c2.checked && !!rv() && whyOk;
+      const ok=c1.checked && !!st() && stOk && !!rv() && whyOk;
       go.disabled=!ok;
-      err.textContent = ok ? '' : (rv()==='Yes' && !whyOk && c1.checked && c2.checked ? 'Enter the reason a survey is required.' : 'Complete all three (3) items to continue.');
+      err.textContent = ok ? '' : (st()==='No' && !stOk ? 'Enter why the ServiceTrade comments, pictures and deficiencies do not match the report.'
+        : (rv()==='Yes' && !whyOk && c1.checked && st() ? 'Enter the reason a survey is required.' : 'Complete all three (3) items to continue.'));
     }
     bg.addEventListener('change',sync); bg.addEventListener('input',sync); sync();
     const finish=(v)=>{ if(bg.parentNode) bg.parentNode.removeChild(bg); resolve(v); };
     $('#ckBack').onclick=()=>finish(null);
-    go.onclick=()=>{ if(go.disabled) return; finish({ returnVisit:rv(), surveyReason: rv()==='Yes' ? why.value.trim() : '' }); };
+    go.onclick=()=>{ if(go.disabled) return; finish({ servicetradeMatches:st()==='Yes', servicetradeReason: st()==='No' ? stWhy.value.trim() : '', returnVisit:rv(), surveyReason: rv()==='Yes' ? why.value.trim() : '' }); };
   });
 }
 
@@ -2637,7 +2651,9 @@ function buildConfirmation(conf, u, reportId, payload, kind, rev){
     uid:u.uid, byEmail:(u.email||'').toLowerCase(), byName:reporterName(u),
     jobName:payload.jobName||'', jobNumber:payload.jobNumber||'',
     reportGroup:payload.reportGroup, reports:(payload.reports||[]).slice(),
-    reviewedAccurate:true, servicetradeMatches:true,
+    reviewedAccurate:true,
+    servicetradeMatches: conf.servicetradeMatches!==false,
+    servicetradeReason: conf.servicetradeMatches===false ? (conf.servicetradeReason||'') : '',
     returnVisitRequired:conf.returnVisit==='Yes',
     surveyReason: conf.returnVisit==='Yes' ? (conf.surveyReason||'') : '',
     confirmedAt:firebase.firestore.FieldValue.serverTimestamp()
@@ -4577,7 +4593,9 @@ async function adminDashboard(fullPage){
         h+='<div style="border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:13px;line-height:1.5">'+
           '<div style="color:var(--muted);font-size:12px">'+(c.kind==='update'?'Resubmitted after edit':'Original submission')+' · '+esc(when)+' · '+esc(FDEC_ID.nameFor(c.uid,c.byName,c.byEmail)||'')+'</div>'+
           '<div>✓ Report reviewed and accuracy verified</div>'+
-          '<div>✓ ServiceTrade comments, pictures and deficiencies match the report</div>'+
+          (c.servicetradeMatches===false
+            ? ('<div>✗ ServiceTrade comments, pictures and deficiencies <b>do not</b> match the report</div><div style="margin:4px 0;padding:8px;background:var(--pink);border-radius:8px">Why: '+esc(c.servicetradeReason||'')+'</div>')
+            : '<div>✓ ServiceTrade comments, pictures and deficiencies match the report</div>')+
           '<div>Return visit for survey: <b>'+(c.returnVisitRequired?'Yes':'No')+'</b></div>'+
           (c.returnVisitRequired?('<div style="margin-top:4px;padding:8px;background:var(--pink);border-radius:8px">Reason: '+esc(c.surveyReason||'')+'</div>'):'')+
           '</div>';
