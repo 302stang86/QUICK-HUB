@@ -94,9 +94,11 @@
       <div class="acts">
         <button id="archiveBtn" class="warn">Archive record</button>
         <button id="restoreBtn" class="primary" hidden>Restore record</button>
-        <button onclick="window.print()">Print / Save PDF</button>
+        <button id="pdfBtn" class="primary">Save PDF</button>
+        <button onclick="window.print()">Print</button>
       </div>
     </div>
+    <div id="pdfNotice" class="muted no-print" role="status" style="min-height:18px;margin:-2px 0 8px"></div>
     <h2>Fleet Service Report <span id="ref" class="muted"></span> <span id="archivedTag" class="pill" hidden>Archived</span></h2>
     <div id="meta" class="fields"></div>
     <h2 style="margin-top:14px">Service information</h2>
@@ -235,6 +237,8 @@ function openRecord(r){
   for(const pt of (d.points||[])){const div=document.createElement('div');div.className='field';div.textContent='Area '+pt.n+' (x '+pt.x+'%, y '+pt.y+'%): '+(pt.note||'No description');areas.appendChild(div);}
   if(!(d.points||[]).length) areas.textContent='No marked areas.';
   $('newStatus').value=r.status||'new'; $('managerNotes').value=r.managementNotes||'';
+  $('pdfNotice').textContent='';
+  loadPdfLib();
   window.scrollTo(0,0);
 }
 
@@ -276,6 +280,112 @@ $('save').onclick=async()=>{
   }catch(e){ $('saveNotice').textContent='Not saved: '+e.message; }
   finally{ btn.disabled=false; }
 };
+/*PDF-START*/
+/* ---- Save PDF ----
+   window.print() does nothing on most phones and in the installed home-screen app, so the record
+   is built into a real PDF file here. On a phone it opens the share sheet (Save to Files, Print,
+   Mail, Messages); on a computer it downloads. The quick link is never part of the PDF. */
+let pdfLoader=null;
+function loadPdfLib(){
+  if(window.jspdf&&window.jspdf.jsPDF) return Promise.resolve(true);
+  if(pdfLoader) return pdfLoader;
+  const providers=[
+    'https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js',
+    'https://unpkg.com/jspdf@2.5.2/dist/jspdf.umd.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js'
+  ];
+  pdfLoader=(async()=>{
+    for(const src of providers){
+      const ok=await new Promise(res=>{
+        const sc=document.createElement('script'); sc.src=src; sc.async=true;
+        const t=setTimeout(()=>{ sc.remove(); res(false); },8000);
+        sc.onload=()=>{ clearTimeout(t); res(!!(window.jspdf&&window.jspdf.jsPDF)); };
+        sc.onerror=()=>{ clearTimeout(t); sc.remove(); res(false); };
+        document.head.appendChild(sc);
+      });
+      if(ok) return true;
+    }
+    return false;
+  })();
+  pdfLoader.then(ok=>{ if(!ok) pdfLoader=null; });
+  return pdfLoader;
+}
+
+async function buildRecordPdf(r){
+  if(!await loadPdfLib()) throw new Error('The PDF tool could not load. Check your connection and try again.');
+  const d=r.details||{}, yv=await vehicleYearVin(r);
+  const doc=new window.jspdf.jsPDF({unit:'pt',format:'letter',compress:true});
+  const W=612, M=42, PB=750; let y=45;
+  const next=h=>{ if(y+h>PB){ doc.addPage(); y=45; } };
+  const line=(label,value)=>{
+    const t=doc.splitTextToSize(String(value==null||value===''?'—':value),350);
+    next(Math.max(22,t.length*12+8));
+    doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.text(label,M,y);
+    doc.setFont('helvetica','normal'); doc.text(t,205,y); y+=Math.max(22,t.length*12+8);
+  };
+  const section=title=>{ next(30); y+=12; doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.text(title,M,y); y+=17; };
+  const paragraph=text=>{
+    doc.setFont('helvetica','normal'); doc.setFontSize(9);
+    doc.splitTextToSize(String(text||'None'),W-M*2).forEach(t=>{ next(13); doc.text(t,M,y); y+=13; });
+  };
+  doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.text('FLEET SERVICE REPORT',M,y); y+=22;
+  doc.setFont('helvetica','normal'); doc.setFontSize(9);
+  doc.text('Fire Defense Equipment Co.   Ref: FS-'+String(r.id||'').slice(0,8).toUpperCase()+(r.archived?'   (Archived)':''),M,y); y+=24;
+  line('Submitted by',techOf(r)); line('Assigned to',r.recipientName);
+  line('Vehicle',r.vehicleName); line('Vehicle Number',r.vehicleNumber);
+  line('Year',yv.year); line('VIN',yv.vin);
+  line('License Plate',d.plate); line('Service Date',d.date); line('Status',r.status);
+  const isOther=d.vehicleType==='other';
+  if(isOther){ section('OTHER VEHICLE INFORMATION'); line('Make',d.otherMake); line('Model',d.otherModel); }
+  section('SERVICE INFORMATION');
+  line('Drop-off',d.dropOff); if(d.dropOff==='yes') line('Drop-off days',d.dropOffDays);
+  line('Spare needed',d.spareVehicle); line('Transport needed',d.transportNeeded);
+  const img=(window.FLEET_VEHICLE_IMG||{})[d.vehicleType], pts=d.points||[];
+  if(img&&pts.length){
+    section('SERVICE AREAS / VEHICLE DIAGRAM');
+    const probe=new Image(); probe.src=img; try{ await probe.decode(); }catch(e){}
+    const ratio=(probe.naturalHeight||1)/(probe.naturalWidth||2);
+    let pw=W-M*2, ph=pw*ratio; if(ph>330){ ph=330; pw=ph/ratio; }
+    next(ph+16); doc.addImage(img,'PNG',M,y,pw,ph);
+    pts.forEach(pt=>{
+      const x=M+pw*pt.x/100, py=y+ph*pt.y/100;
+      doc.setFillColor(200,16,46); doc.circle(x,py,9,'F');
+      doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(9);
+      doc.text(String(pt.n),x,py+3,{align:'center'}); doc.setTextColor(0,0,0);
+    });
+    y+=ph+16;
+  }
+  pts.forEach(pt=>{ section('Area '+pt.n); paragraph(pt.note||'Area marked — no description provided'); });
+  if(isOther){ section('OTHER VEHICLE ISSUES'); paragraph(d.otherIssue||'None'); }
+  section('SERVICE CHECKLIST'); paragraph((d.checklist||[]).length?d.checklist.join(', '):'No service items selected');
+  section('INSPECTION NOTES'); paragraph(d.notes||'None');
+  section('MANAGEMENT NOTES'); paragraph(r.managementNotes||'None');
+  const pages=doc.getNumberOfPages();
+  for(let i=1;i<=pages;i++){ doc.setPage(i); doc.setTextColor(110,110,110); doc.setFontSize(8); doc.text('Fleet Service Report  |  Page '+i+' of '+pages,M,775); }
+  return doc.output('blob');
+}
+
+async function savePdf(){
+  if(!chosen) return;
+  const btn=$('pdfBtn'), note=$('pdfNotice'); btn.disabled=true; note.textContent='Preparing PDF…';
+  try{
+    const blob=await buildRecordPdf(chosen);
+    const tag=String(chosen.vehicleNumber||(chosen.details||{}).plate||'vehicle').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-|-$/g,'')||'vehicle';
+    const name='fleet-service-'+tag+'-'+new Date().toISOString().slice(0,10)+'.pdf';
+    const file=new File([blob],name,{type:'application/pdf'});
+    const phone=window.matchMedia&&matchMedia('(pointer: coarse)').matches;
+    if(phone&&navigator.canShare&&navigator.canShare({files:[file]})){
+      try{ await navigator.share({files:[file],title:'Fleet Service Report'}); note.textContent=''; return; }
+      catch(e){ if(e&&e.name==='AbortError'){ note.textContent=''; return; } /* otherwise fall through to download */ }
+    }
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+    note.innerHTML='PDF ready. If it did not save, <a href="'+url+'" target="_blank" rel="noopener">tap here to open it</a>, then use Share or Save to Files.';
+  }catch(e){ note.textContent='Could not create the PDF: '+(e.message||e); }
+  finally{ btn.disabled=false; }
+}
+$('pdfBtn').onclick=savePdf;
+/*PDF-END*/
 load();
 </script>
 </body>
