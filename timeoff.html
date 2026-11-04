@@ -704,7 +704,7 @@ function wireCommon(){
     const days = Number(raw);
     if (!isFinite(days) || days <= 0) return toast("Enter a number greater than zero (0).", 4000);
     try {
-      await updateDoc(doc(db,"requests",r.id), { hours: d2h(days), decidedBy: profile.name, updatedAt: serverTimestamp() });
+      await updateDoc(doc(db,"requests",r.id), { hours: d2h(days), hoursChangedFrom: (r.hoursChangedFrom != null ? r.hoursChangedFrom : r.hours), decidedBy: profile.name, updatedAt: serverTimestamp() });
       toast(`Charged time set to ${days} d.`);
     } catch(e){ toast("Could not save: " + e.message, 5000); }
   }));
@@ -725,8 +725,9 @@ async function decide(id, status){
   const note = prompt(status === "approved" ? "Note for the tech (optional):" : "Reason for denial (optional):", (prior && prior.managerNote) || "");
   if (note === null) return;
   try {
+    const changedFrom = (prior && prior.status !== "pending" && prior.status !== status) ? prior.status : "";
     await updateDoc(doc(db,"requests",id), {
-      status, managerNote: note || "", decidedBy: profile.name, decidedAt: serverTimestamp(), updatedAt: serverTimestamp()
+      status, managerNote: note || "", changedFrom, decidedBy: profile.name, decidedAt: serverTimestamp(), updatedAt: serverTimestamp()
     });
     toast(status === "approved" ? "Approved." : "Denied.");
   } catch(e){ toast("Could not save the decision: " + e.message, 5000); }
@@ -901,7 +902,7 @@ function viewApprovals(){
     <div class="panel-head">
       <h2>Decided</h2>
       <p class="note">Dates still current or ahead.</p>
-      <button class="btn ghost small" id="exportBtn" style="margin-left:auto">Export approved time to CSV</button>
+      <button class="btn ghost small" id="emailBtn" style="margin-left:auto">Email status to MP and WH</button>
     </div>
     ${decided.length ? `<div class="reqs">${decided.map(r => reqRow(r, true)).join("")}</div>`
       : `<p class="empty">Nothing decided with dates still ahead.</p>`}
@@ -928,18 +929,57 @@ function coverageConflicts(){
   return Object.entries(counts).filter(([d,n]) => n >= COVERAGE_WARN_AT && d >= todayStr())
     .sort((a,b) => a[0].localeCompare(b[0])).slice(0,6).map(([date,n]) => ({ date, n }));
 }
+/* ---------- Email status (opens the manager's mail app, prefilled) ----------
+   Covers every open and still-current decided request. Plain text. A status
+   line says approved, denied or pending, and flags a decision that was changed
+   or a day count that was adjusted. */
+const STATUS_EMAIL_TO = ["mp1@firedefense.com", "wh1@firedefense.com"];
+function statusLine(r){
+  const span = r.startDate === r.endDate ? fmtLong(r.startDate) : `${fmtLong(r.startDate)} to ${fmtLong(r.endDate)}`;
+  const kind = r.type === "unpaid" ? "Unpaid" : "PTO";
+  let st = String(r.status || "").toUpperCase();
+  if (r.changedFrom && r.status !== "pending") st += ` (CHANGED from ${r.changedFrom})`;
+  if (r.hoursChangedFrom != null && Number(r.hoursChangedFrom) !== Number(r.hours))
+    st += ` (CHANGED: days adjusted from ${fmtDays(r.hoursChangedFrom)} to ${fmtDays(r.hours)})`;
+  let line = `- ${nameOf(r)}: ${kind}, ${span}, ${fmtDays(r.hours)} (${fmtHours(r.hours)} hrs) - ${st}`;
+  if (r.decidedBy && r.status !== "pending") line += `, handled by ${r.decidedBy}`;
+  if (r.managerNote) line += `. Manager note: ${r.managerNote}`;
+  return line;
+}
+function emailStatus(){
+  const live = myRequests.filter(r => r.status !== "canceled" && !isArchived(r))
+    .sort((a,b) => (a.startDate||"").localeCompare(b.startDate||""));
+  if (!live.length) return toast("No open or current requests to email.", 3500);
+  const groups = [["pending","Pending (waiting on a decision)"],["approved","Approved"],["denied","Denied"]];
+  const head = [`Time off status as of ${fmtLong(todayStr())}.`, ""];
+  const tail = ["", `Sent from the FDEC time off tool by ${profile.name}.`];
+  const blocks = [];
+  for (const [key, label] of groups){
+    const rows = live.filter(r => r.status === key);
+    if (rows.length) blocks.push({ label: `${label}: ${rows.length}`, lines: rows.map(statusLine) });
+  }
+  const build = (limit) => {
+    let used = 0, cut = 0; const out = [...head];
+    for (const b of blocks){
+      out.push(b.label);
+      for (const l of b.lines){ if (used < limit){ out.push(l); used++; } else cut++; }
+      out.push("");
+    }
+    if (cut) out.push(`Plus ${cut} more request${cut===1?"":"s"}. Open the Approvals tab to see them all.`);
+    return out.concat(tail).join("\n");
+  };
+  const total = blocks.reduce((n,b) => n + b.lines.length, 0);
+  const subject = `Time off status update - ${fmtShort(todayStr())}`;
+  let limit = total, url;
+  for (;;){
+    url = `mailto:${STATUS_EMAIL_TO.join(",")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(build(limit))}`;
+    if (url.length <= 1900 || limit <= 1) break;
+    limit--;
+  }
+  window.location.href = url;
+}
 function wireApprovals(){
-  $("#exportBtn")?.addEventListener("click", () => {
-    const rows = [["Name","Start","End","Days","Hours","Status","Decided by","Note"]];
-    myRequests.filter(r => r.status === "approved").forEach(r => rows.push([
-      nameOf(r), r.startDate, r.endDate, h2d(r.hours), r.hours, r.status, r.decidedBy || "", r.note || ""
-    ]));
-    const csv = rows.map(r => r.map(c => `"${String(c ?? "").replace(/"/g,'""')}"`).join(",")).join("\n");
-    const url = URL.createObjectURL(new Blob([csv], { type:"text/csv" }));
-    const a = document.createElement("a");
-    a.href = url; a.download = `fdec-pto-approved-${todayStr()}.csv`; a.click();
-    URL.revokeObjectURL(url);
-  });
+  $("#emailBtn")?.addEventListener("click", emailStatus);
 }
 
 
