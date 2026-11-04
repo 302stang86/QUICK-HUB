@@ -2913,11 +2913,11 @@ html.touch .dexov { z-index: 30; }
       this._p.catch(() => { this._p = null; }); // a failed start can be retried
       return this._p;
     },
-    // Top ten: highest wave first; on a tie the earlier score ranks higher.
+    // Top five players from every device: highest wave first; on a tie the earlier score ranks higher.
     async top() {
       await withTimeout(this.init(), 12000);
       const { collection, query, orderBy, limit, getDocs } = this.F;
-      const snap = await withTimeout(getDocs(query(collection(this.db, 'leaderboard'), orderBy('wave', 'desc'), orderBy('createdAt', 'asc'), limit(10))), 12000);
+      const snap = await withTimeout(getDocs(query(collection(this.db, 'leaderboard'), orderBy('wave', 'desc'), orderBy('createdAt', 'asc'), limit(5))), 12000);
       return { rows: snap.docs.map((d) => ({ id: d.id, name: String(d.data().name || ''), wave: Number(d.data().wave) || 0 })), uid: this.uid };
     },
     // One entry per player (document id = anonymous user id). A score never replaces a higher one.
@@ -2953,7 +2953,15 @@ html.touch .dexov { z-index: 30; }
     if (lbCache && !force && performance.now() - lbCache.at < 30000) { paintBoard(lbCache); return; }
     say('Loading scores…');
     try { const r = await LBAPI.top(); lbCache = { at: performance.now(), rows: r.rows, uid: r.uid }; if ($('lbList') === list) paintBoard(lbCache); }
-    catch (e) { if ($('lbList') === list) say("Couldn't load the leaderboard.", true); }
+    catch (e) {
+      // say what is wrong so a failure on any device can be fixed quickly
+      const c = String((e && (e.code || e.message)) || '');
+      const why = /permission-denied/.test(c) ? 'The database rules are not published yet.'
+        : /failed-precondition|index/.test(c) ? 'The leaderboard index is still building. Try again in a few minutes.'
+        : /operation-not-allowed|admin-restricted|configuration-not-found/.test(c) ? 'Anonymous sign-in is not turned on in Firebase.'
+        : /timeout|network|unavailable/.test(c) ? 'Check your connection.' : '';
+      if ($('lbList') === list) say("Couldn't load the leaderboard." + (why ? ' ' + why : '') + (c ? ' (' + c.slice(0, 60) + ')' : ''), true);
+    }
   }
   const HOW_HTML = '<ul><li>Pick from three fire towers, each with three tiers, plus a Tesla coil that zaps, slows and reveals every enemy in range. Every upgrade costs more than the last, and a maxed tower can be mastered. The coil cannot be upgraded; repair it with gold instead. Nuke costs $2,000 and launches a ground-only nuclear strike, with a 30-second real-time cooldown. Kamikaze costs $1,000 and sends five planes, with its own 30-second cooldown: they hunt flyers first, then strike ground groups with a smaller four-hex blast for 1,250 damage. Neither special attack can hurt your towers.</li>' +
       '<li>Every tower has health and every enemy can attack it, each pausing four to ten seconds between strikes. Towers cannot be repaired, but any upgrade restores full health. After wave 30, some individual ground enemies spawn with a shield worth twice their health; Tesla zaps strip shields fastest. After five seconds in the air, flyers divert to the nearest tower and drop a freeze bomb that stops it firing for two to three seconds. A fully upgraded tower can buy a $500 shield equal to its total health; buy a new one once it breaks.</li>' +
@@ -2974,7 +2982,7 @@ html.touch .dexov { z-index: 30; }
         audioControls() +
         '<div class="bestline">' + (best ? 'Best on this device: wave ' + best : 'Place your first tower to start the countdown.') + '</div>' +
       '</div>' +
-      '<div class="menuBoard"><h2>Leaderboard<small>Top 10 by wave</small></h2><ol class="lb" id="lbList"><li class="msg">Loading scores…</li></ol>' +
+      '<div class="menuBoard"><h2>Leaderboard<small>Top 5 by wave</small></h2><ol class="lb" id="lbList"><li class="msg">Loading scores…</li></ol>' +
       '<div class="lbfoot"><span>' + (lbBest ? 'Your posted best: wave ' + lbBest : '') + '</span><button class="link" id="lbRefresh" type="button">Refresh</button></div></div>';
     overlay.hidden = false; bindAudioControls();
     $('goBtn').addEventListener('click', start); $('dexBtn').addEventListener('click', () => openCodex(true));
