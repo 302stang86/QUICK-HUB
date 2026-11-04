@@ -13,7 +13,7 @@
      - Everything else (Firestore API, etc.): straight to network — Firestore's
        own offline mode handles those when there is no signal.
 */
-const CACHE = 'fdec-quickhub-v114-switchback-td';
+const CACHE = 'fdec-quickhub-v115-tfp610';
 
 const CORE = [
   "troubleshooting-data.js",
@@ -38,6 +38,9 @@ const CORE = [
   "library-assets/agf-purgenvent-7900.pdf",
   "library-assets/agf-testandrain-1000.pdf",
   "library-assets/tyco-dv5a.jpg",
+  "tyco-tfp610.pdf",
+  "tyco-tfp610-1.jpg",
+  "tyco-tfp610-2.jpg",
   "library-assets/victaulic-768n.jpg",
 
   'switchback/index.html',
