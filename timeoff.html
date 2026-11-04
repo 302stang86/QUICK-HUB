@@ -417,6 +417,14 @@ const fmtDays = n => h2d(n) + " d";
 let app, auth, db;
 let me = null;
 let profile = null;
+/* Managers and administrators both review requests. Admins carry role "admin" (or are on the admin email list in fdec-auth.js), so a plain role === "manager" check locked them out. */
+const ADMIN_EMAILS_TO = ["mp1@firedefense.com", "302stang86@gmail.com", "wh1@firedefense.com"];
+function isReviewer(){
+  if (!profile) return false;
+  if (profile.role === "manager" || profile.role === "admin") return true;
+  const e = String(profile.email || (me && me.email) || "").toLowerCase();
+  return ADMIN_EMAILS_TO.includes(e) || !!(window.FDECAuth && window.FDECAuth.isAdmin);
+}
 let myRequests = [];
 let roster = [];
 let unsub = [];
@@ -552,7 +560,7 @@ async function onAuth(user){
 
   profile = { id:user.uid, ...snap.data() };
   try{ if(window.FDEC_ID) FDEC_ID.rememberMe(user.uid, profile.name, profile.email||user.email); }catch(e){}
-  $("#whoami").textContent = `${profile.name} · ${profile.role === "manager" ? "Manager" : "Technician"}`;
+  $("#whoami").textContent = `${profile.name} · ${profile.role === "admin" ? "Administrator" : isReviewer() ? "Manager" : "Technician"}`;
   show("appView");
   startFeeds();
   buildTabs();
@@ -563,7 +571,7 @@ async function onAuth(user){
    Live data
    ========================================================================= */
 function startFeeds(){
-  const isMgr = profile.role === "manager";
+  const isMgr = isReviewer();
   const q = isMgr
     ? query(collection(db, "requests"), orderBy("startDate", "desc"))
     : query(collection(db, "requests"), where("uid", "==", me.uid));
@@ -603,7 +611,7 @@ function requestsForUser(uid){ return myRequests.filter(r => r.uid === uid); }
    ========================================================================= */
 function tabList(){
   const t = [{ id:"request", label:"Request time off" }];
-  if (profile.role === "manager"){
+  if (isReviewer()){
     t.push({ id:"approvals", label:"Approvals" });
     t.push({ id:"roster",    label:"Roster" });
   }
@@ -944,6 +952,7 @@ function viewRoster(){
         <select data-uid="${u.id}" data-field="role">
           <option value="tech" ${u.role==="tech"?"selected":""}>Technician</option>
           <option value="manager" ${u.role==="manager"?"selected":""}>Manager</option>
+          ${u.role==="admin"?'<option value="admin" selected>Administrator</option>':''}
         </select>
       </td>
       <td>
