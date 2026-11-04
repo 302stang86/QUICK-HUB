@@ -902,7 +902,7 @@ function viewApprovals(){
     <div class="panel-head">
       <h2>Decided</h2>
       <p class="note">Dates still current or ahead.</p>
-      <button class="btn ghost small" id="emailBtn" style="margin-left:auto">Email status to MP and WH</button>
+      <button class="btn ghost small" id="emailBtn" style="margin-left:auto">Email status (to MP, cc WH)</button>
     </div>
     ${decided.length ? `<div class="reqs">${decided.map(r => reqRow(r, true)).join("")}</div>`
       : `<p class="empty">Nothing decided with dates still ahead.</p>`}
@@ -933,7 +933,8 @@ function coverageConflicts(){
    Covers every open and still-current decided request. Plain text. A status
    line says approved, denied or pending, and flags a decision that was changed
    or a day count that was adjusted. */
-const STATUS_EMAIL_TO = ["mp1@firedefense.com", "wh1@firedefense.com"];
+const STATUS_EMAIL_TO = ["mp1@firedefense.com"];
+const STATUS_EMAIL_CC = ["wh1@firedefense.com"];
 function statusLine(r){
   const span = r.startDate === r.endDate ? fmtLong(r.startDate) : `${fmtLong(r.startDate)} to ${fmtLong(r.endDate)}`;
   const kind = r.type === "unpaid" ? "Unpaid" : "PTO";
@@ -972,7 +973,7 @@ function emailStatus(){
   const subject = `Time off status update - ${fmtShort(todayStr())}`;
   let limit = total, url;
   for (;;){
-    url = `mailto:${STATUS_EMAIL_TO.join(",")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(build(limit))}`;
+    url = `mailto:${STATUS_EMAIL_TO.join(",")}?cc=${encodeURIComponent(STATUS_EMAIL_CC.join(","))}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(build(limit))}`;
     if (url.length <= 1900 || limit <= 1) break;
     limit--;
   }
