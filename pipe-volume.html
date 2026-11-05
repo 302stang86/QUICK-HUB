@@ -1,0 +1,1033 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Water volume in steel fire sprinkler pipe by size and schedule, with fill make-up and expansion tank sizing.">
+<title>Pipe Volume Calculator — FDEC Quick Hub</title>
+<meta name="fdec-page-title" content="Pipe Volume Calculator">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1B2A4A">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Quick Hub">
+<link rel="stylesheet" href="fdec-bg.css">
+<style>
+  /* Quick Hub theme: banner from fdec-header.js, shared photo background from fdec-bg.css,
+     white panels, FDEC red for the figure you act on. */
+  :root {
+    color-scheme: light;
+    --bg: transparent;
+    --surface: #ffffff;
+    --surface-2: #f6f8fa;
+    --ink: #1b1f24;
+    --ink-2: #4a5560;
+    --ink-3: #5f6a75;
+    --line: #cfd5dc;
+    --line-2: #e6e9ed;
+    --accent: #C1121C;
+    --accent-dark: #9d0e16;
+    --accent-on: #ffffff;
+    --accent-ink: #9d0e16;
+    --accent-soft: #fdecec;
+    --warn: #b4690e;
+    --warn-bg: #fff8ec;
+    --warn-ink: #5c4a22;
+    --scrim: rgba(16, 24, 40, 0.55);
+    --r-in: 8px;
+    --r-card: 12px;
+    --shadow: 0 1px 3px rgba(16,24,40,.08), 0 1px 2px rgba(16,24,40,.06);
+    --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-num: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: transparent;
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: 15px;
+    line-height: 1.45;
+    margin: 0;
+    -webkit-text-size-adjust: 100%;
+  }
+  .wrap {
+    max-width: 880px;
+    margin: 0 auto;
+    padding-block: 18px 40px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+  }
+
+  /* ---- intro line (the page title lives in the Quick Hub banner) ---- */
+  .lead {
+    margin: 0; font-size: 15px; color: #eef1f4;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+  }
+
+  /* ---- shared field styling ---- */
+  .field { display: flex; flex-direction: column; gap: 3px; flex: 1 1 190px; min-width: 0; }
+  .field label {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.07em;
+    text-transform: uppercase; color: var(--ink-2);
+  }
+  input {
+    font: 400 16px/1.25 var(--font-ui);
+    color: var(--ink); background: #fff;
+    border: 1px solid var(--line); border-radius: var(--r-in);
+    padding: 8px 10px; width: 100%; min-width: 0;
+  }
+  input::placeholder { color: var(--ink-3); }
+  input:focus-visible { outline: 2px solid rgba(193, 18, 28, 0.35); border-color: var(--accent); }
+  button:focus-visible, .qm:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+
+  /* ---- job bar ---- */
+  .jobbar {
+    display: flex; flex-wrap: wrap; gap: 10px 12px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--r-card); padding: 12px 14px;
+    box-shadow: var(--shadow);
+  }
+
+  /* ---- summary band ---- */
+  .summary {
+    display: grid; gap: 1px;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    background: var(--line); border: 1px solid var(--line);
+    border-radius: var(--r-card); overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .stat { background: var(--surface); padding: 11px 14px; min-width: 0; }
+  .stat .k {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.07em;
+    text-transform: uppercase; color: var(--ink-2); display: block;
+  }
+  .stat .v {
+    font-family: var(--font-num); font-variant-numeric: tabular-nums;
+    font-size: 24px; font-weight: 600; letter-spacing: -0.02em;
+    display: block; margin-top: 1px; color: var(--ink);
+  }
+  .stat .u { font-size: 13px; color: var(--ink-2); font-family: var(--font-ui); font-weight: 400; }
+  .stat.lead { background: var(--accent); }
+  .stat.lead .k, .stat.lead .v, .stat.lead .u { color: var(--accent-on); }
+  .stat.lead .k { opacity: 0.9; }
+
+  /* ---- panels ---- */
+  .block {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--r-card); overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .block > h2 {
+    display: flex; align-items: center; gap: 9px;
+    font-size: 11.5px; font-weight: 700; letter-spacing: 0.09em;
+    text-transform: uppercase; color: var(--ink);
+    margin: 0; padding: 9px 14px;
+    background: var(--surface-2); border-bottom: 1px solid var(--line);
+  }
+  .block > h2 span { color: var(--ink-2); font-weight: 400; letter-spacing: 0.02em; text-transform: none; }
+  .block > h2 .flex { flex: 1 1 auto; min-width: 0; color: inherit; letter-spacing: inherit; text-transform: inherit; font-weight: inherit; }
+
+  .qm {
+    flex: none; width: 24px; height: 24px; padding: 0;
+    border: 1px solid var(--ink-2); border-radius: 999px;
+    background: transparent; color: var(--ink);
+    font: 700 13px/1 var(--font-ui); cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .qm:hover { border-color: var(--accent); color: var(--accent-ink); background: var(--accent-soft); }
+
+  /* ---- takeoff rows ---- */
+  .hrow, .row, .trow {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 100px 82px 92px;
+    align-items: center; gap: 8px; padding: 0 14px;
+  }
+  .hrow {
+    padding-block: 6px; border-bottom: 1px solid var(--line-2);
+    font-size: 11px; font-weight: 600; letter-spacing: 0.07em;
+    text-transform: uppercase; color: var(--ink-2);
+  }
+  .hrow span:not(:first-child), .row .num, .trow .num { text-align: right; }
+
+  .row { padding-block: 4px; border-bottom: 1px solid var(--line-2); }
+  .row:last-of-type { border-bottom: 0; }
+  .row.on { background: var(--accent-soft); }
+
+  .desig { min-width: 0; display: flex; align-items: baseline; gap: 2px 7px; flex-wrap: wrap; }
+  .desig b { font-family: var(--font-num); font-weight: 700; font-size: 15px; letter-spacing: -0.01em; color: var(--ink); }
+  .desig em { font-style: normal; font-size: 12px; color: var(--ink-2); font-family: var(--font-num); }
+
+  .row input {
+    font: 600 15px/1.2 var(--font-num); font-variant-numeric: tabular-nums;
+    text-align: right; padding: 7px 9px;
+  }
+  .row input::placeholder { font-weight: 400; }
+  .row.on input { border-color: var(--accent); background: #fff; }
+
+  .num {
+    font-family: var(--font-num); font-variant-numeric: tabular-nums;
+    font-size: 14px; font-weight: 500; color: var(--ink);
+  }
+
+  .trow {
+    padding-block: 9px; border-top: 1px solid var(--line);
+    background: var(--surface-2);
+    font-size: 11.5px; font-weight: 700; letter-spacing: 0.07em;
+    text-transform: uppercase; color: var(--ink);
+  }
+  .trow .num { font-size: 15px; font-weight: 700; letter-spacing: 0; text-transform: none; }
+
+  /* ---- input panels ---- */
+  .sizer {
+    display: grid; gap: 10px 12px;
+    grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+    padding: 12px 14px;
+  }
+  .sizer .field { flex: none; }
+  .sizer .inline { display: flex; align-items: center; gap: 6px; }
+  .sizer .inline input {
+    font: 600 16px/1.2 var(--font-num); font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+  .sizer .unit { font-size: 13px; color: var(--ink-2); flex: none; }
+  .sizer .help { font-size: 12px; color: var(--ink-2); line-height: 1.35; }
+  .sizer .help button {
+    font: 600 12px/1 var(--font-ui); padding: 2px 8px;
+    border-radius: 999px; vertical-align: baseline; min-height: 0;
+  }
+
+  .result {
+    display: grid; gap: 1px;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    background: var(--line); border-top: 1px solid var(--line);
+  }
+  .result .stat { padding: 11px 14px; }
+  .result .stat .v { font-size: 21px; }
+
+  .warn {
+    padding: 10px 14px; font-size: 13px; line-height: 1.45;
+    color: var(--warn-ink); background: var(--warn-bg);
+    border-top: 1px solid var(--line);
+    box-shadow: inset 4px 0 0 var(--warn);
+  }
+
+  /* ---- actions ---- */
+  .actions {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--r-card); padding: 10px 14px; box-shadow: var(--shadow);
+  }
+  button {
+    font: 600 14px/1 var(--font-ui);
+    color: var(--ink); background: var(--surface);
+    border: 1px solid var(--line); border-radius: var(--r-in);
+    padding: 10px 16px; min-height: 40px; cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); color: var(--accent-ink); background: var(--accent-soft); }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button.primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); color: #fff; }
+  .note { font-size: 13px; color: var(--ink-2); }
+
+  .seed {
+    font-size: 13px; color: var(--ink-2);
+    background: var(--surface); border: 1px dashed var(--line);
+    border-radius: var(--r-card); padding: 9px 14px;
+  }
+
+  /* ---- help dialog ---- */
+  dialog.help {
+    max-width: 480px; width: calc(100% - 28px);
+    max-height: 84vh; padding: 0; overflow: hidden;
+    background: var(--surface); color: var(--ink);
+    border: 1px solid var(--line); border-radius: var(--r-card);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.32);
+  }
+  dialog.help::backdrop { background: var(--scrim); }
+  .help-hd {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-bottom: 1px solid var(--line);
+    background: var(--surface-2);
+  }
+  .help-hd h3 {
+    margin: 0; flex: 1 1 auto; min-width: 0;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--ink);
+  }
+  .help-hd button { padding: 8px 13px; min-height: 36px; font-size: 13px; }
+  .help-body {
+    padding: 14px; overflow-y: auto; max-height: calc(84vh - 60px);
+    font-size: 14px; line-height: 1.5;
+    -webkit-overflow-scrolling: touch;
+  }
+  .help-body dt { font-weight: 700; font-size: 13.5px; margin-top: 12px; color: var(--ink); }
+  .help-body dt:first-child { margin-top: 0; }
+  .help-body dd { margin: 1px 0 0; color: var(--ink-2); }
+  .help-body dd b { color: var(--ink); font-weight: 700; }
+  .help-body .lede { margin: 0 0 12px; color: var(--ink-2); }
+  .help-body .tail {
+    margin: 14px 0 0; padding-top: 11px; border-top: 1px solid var(--line-2);
+    color: var(--ink-2); font-size: 13px;
+  }
+  .help-body code { font-family: var(--font-num); font-size: 12.5px; color: var(--ink); }
+
+  footer.fine {
+    font-size: 12.5px; color: #e4e8ed; line-height: 1.5;
+    border-top: 1px solid rgba(255,255,255,.35); padding-top: 11px;
+    text-shadow: 0 1px 3px rgba(0,0,0,.55);
+  }
+  footer.fine code { font-family: var(--font-num); font-size: 12px; color: #fff; }
+
+  /* ---- narrow screens ---- */
+  @media (max-width: 620px) {
+    .summary, .result { grid-template-columns: 1fr; }
+    .hrow, .row, .trow { grid-template-columns: minmax(0, 1fr) 94px 88px; }
+    .hrow .cuft, .row .cuft, .trow .cuft { display: none; }
+    .stat .v { font-size: 22px; }
+    .result .stat .v { font-size: 20px; }
+  }
+  @media (max-width: 420px) {
+    .wrap { padding-block: 14px 32px; gap: 9px; }
+    .hrow, .row, .trow { grid-template-columns: minmax(0, 1fr) 84px 80px; gap: 7px; padding: 0 11px; }
+    .jobbar, .sizer { padding: 11px; }
+    .block > h2 { padding: 9px 11px; }
+    .stat, .result .stat { padding: 10px 11px; }
+    .desig b { font-size: 14px; }
+    .desig em { font-size: 11.5px; }
+    .num { font-size: 13px; }
+    .warn { padding: 10px 11px; }
+    .actions button { flex: 1 1 auto; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+<script type="module" src="fdec-auth.js" data-page="pipevolume"></script>
+<script defer src="fdec-offline.js"></script>
+<script defer src="fdec-header.js?v=88-industrial"></script>
+</head>
+<body>
+<div class="bg-layer" aria-hidden="true"></div>
+<div class="wrap">
+
+  <p class="lead">Steel pipe, Schedule 10 and Schedule 40 &middot; gallons and cubic feet</p>
+
+  <div class="jobbar">
+    <div class="field">
+      <label for="job">Job</label>
+      <input id="job" type="text" placeholder="Building / location">
+    </div>
+    <div class="field">
+      <label for="sys">System</label>
+      <input id="sys" type="text" placeholder="Wet, dry, antifreeze riser">
+    </div>
+  </div>
+
+  <div class="summary">
+    <div class="stat lead">
+      <span class="k">Total volume</span>
+      <span class="v"><span id="tGal">0.0</span> <span class="u">gal</span></span>
+    </div>
+    <div class="stat">
+      <span class="k">Cubic feet</span>
+      <span class="v"><span id="tCu">0.00</span> <span class="u">ft&sup3;</span></span>
+    </div>
+    <div class="stat">
+      <span class="k">Linear feet</span>
+      <span class="v"><span id="tFt">0</span> <span class="u">ft</span></span>
+    </div>
+  </div>
+
+  <div class="seed" id="seedNote">Example takeoff loaded so you can see how it works. Press Clear to start your own.</div>
+
+  <section class="block">
+    <h2>Schedule 10 <span>&mdash; ASTM A135 / A795 light wall</span></h2>
+    <div class="hrow">
+      <span>Pipe size</span>
+      <span>Linear ft</span>
+      <span class="cuft">Cu. ft</span>
+      <span>Gallons</span>
+    </div>
+    <div id="s10"></div>
+    <div class="trow">
+      <span>Schedule 10 subtotal</span>
+      <span class="num" id="s10Ft">0</span>
+      <span class="num cuft" id="s10Cu">0.00</span>
+      <span class="num" id="s10Gal">0.0</span>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>Schedule 40 <span>&mdash; ASTM A53 / A795 standard wall</span></h2>
+    <div class="hrow">
+      <span>Pipe size</span>
+      <span>Linear ft</span>
+      <span class="cuft">Cu. ft</span>
+      <span>Gallons</span>
+    </div>
+    <div id="s40"></div>
+    <div class="trow">
+      <span>Schedule 40 subtotal</span>
+      <span class="num" id="s40Ft">0</span>
+      <span class="num cuft" id="s40Cu">0.00</span>
+      <span class="num" id="s40Gal">0.0</span>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2><span class="flex">Fill volume and make-up <span>&mdash; how much to order</span></span><button type="button" class="qm" data-help="fill" aria-label="How to fill out the fill volume section">?</button></h2>
+    <div class="sizer">
+      <div class="field">
+        <label for="air">Residual air</label>
+        <div class="inline">
+          <input id="air" type="number" min="0" max="99" step="any" inputmode="decimal" value="15">
+          <span class="unit">%</span>
+        </div>
+        <span class="help">Left in the pipe after venting</span>
+      </div>
+      <div class="field">
+        <label for="pPsi">Target pressure</label>
+        <div class="inline">
+          <input id="pPsi" type="number" min="0" step="any" inputmode="decimal" value="175">
+          <span class="unit">psi</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="pct">Heel and hose</label>
+        <div class="inline">
+          <input id="pct" type="number" min="0" max="100" step="any" inputmode="decimal" value="10">
+          <span class="unit">%</span>
+        </div>
+        <span class="help">Drum heel, hose, spillage</span>
+      </div>
+    </div>
+    <div class="result">
+      <div class="stat">
+        <span class="k">Initial fill</span>
+        <span class="v"><span id="rFill">0.0</span> <span class="u">gal</span></span>
+      </div>
+      <div class="stat">
+        <span class="k">Make-up to pressurize</span>
+        <span class="v"><span id="rMake">0.0</span> <span class="u">gal</span></span>
+      </div>
+      <div class="stat">
+        <span class="k">In system at pressure</span>
+        <span class="v"><span id="rInSys">0.0</span> <span class="u">gal</span></span>
+      </div>
+      <div class="stat lead">
+        <span class="k">Order</span>
+        <span class="v"><span id="tOrder">0.0</span> <span class="u">gal</span></span>
+      </div>
+    </div>
+    <div class="warn" id="fillNote"></div>
+  </section>
+
+  <section class="block">
+    <h2><span class="flex">Expansion tank sizing <span>&mdash; antifreeze and other closed systems</span></span><button type="button" class="qm" data-help="tank" aria-label="How to fill out the expansion tank section">?</button></h2>
+    <div class="sizer">
+      <div class="field">
+        <label for="svol">System volume</label>
+        <div class="inline">
+          <input id="svol" type="number" min="0" step="any" inputmode="decimal">
+          <span class="unit">gal</span>
+        </div>
+        <span class="help" id="svolHelp"></span>
+      </div>
+      <div class="field">
+        <label for="tLo">Low temp</label>
+        <div class="inline">
+          <input id="tLo" type="number" step="any" inputmode="decimal" value="40">
+          <span class="unit">&deg;F</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="tHi">High temp</label>
+        <div class="inline">
+          <input id="tHi" type="number" step="any" inputmode="decimal" value="120">
+          <span class="unit">&deg;F</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="coef">Expansion rate</label>
+        <div class="inline">
+          <input id="coef" type="number" step="any" inputmode="decimal" value="0.00022">
+          <span class="unit">/&deg;F</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="evol">Expansion volume</label>
+        <div class="inline">
+          <input id="evol" type="number" min="0" step="any" inputmode="decimal">
+          <span class="unit">gal</span>
+        </div>
+        <span class="help" id="evolHelp"></span>
+      </div>
+      <div class="field">
+        <label for="pFill">Fill pressure</label>
+        <div class="inline">
+          <input id="pFill" type="number" min="0" step="any" inputmode="decimal" value="50">
+          <span class="unit">psi</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="pMax">Max pressure</label>
+        <div class="inline">
+          <input id="pMax" type="number" min="0" step="any" inputmode="decimal" value="175">
+          <span class="unit">psi</span>
+        </div>
+        <span class="help">Less 5 psi margin</span>
+      </div>
+    </div>
+    <div class="result">
+      <div class="stat lead">
+        <span class="k">Recommended tank</span>
+        <span class="v"><span id="rModel">&mdash;</span> <span class="u" id="rModelSub"></span></span>
+      </div>
+      <div class="stat">
+        <span class="k">Tank acceptance</span>
+        <span class="v"><span id="rAccept">0.0</span> <span class="u">gal</span></span>
+      </div>
+      <div class="stat">
+        <span class="k">Expansion to absorb</span>
+        <span class="v"><span id="rNeed">0.0</span> <span class="u">gal</span></span>
+      </div>
+      <div class="stat">
+        <span class="k">Precharge to</span>
+        <span class="v"><span id="rPre">50</span> <span class="u">psi</span></span>
+      </div>
+    </div>
+    <div class="warn" id="sizeWarn" hidden></div>
+  </section>
+
+  <div class="actions">
+    <button type="button" id="copy" class="primary">Copy takeoff</button>
+    <button type="button" id="clear">Clear</button>
+    <span class="note" id="msg"></span>
+  </div>
+
+  <dialog class="help" id="help">
+    <div class="help-hd">
+      <h3 id="helpTitle"></h3>
+      <button type="button" id="helpX">Close</button>
+    </div>
+    <div class="help-body" id="helpBody"></div>
+  </dialog>
+
+  <footer class="fine">
+    Volume is the pipe bore only. Fittings, valves, risers and the drop to each sprinkler are not counted, so a
+    field takeoff normally runs a few percent over this figure.
+    Inside diameters are nominal steel pipe dimensions.
+    <code>gallons = &pi; &times; (ID &divide; 24)&sup2; &times; linear ft &times; 7.48052</code>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // Nominal steel pipe inside diameters, inches.
+  var SIZES = [
+    { nom: '1"',      s10: 1.097, s40: 1.049 },
+    { nom: '1-1/4"',  s10: 1.442, s40: 1.380 },
+    { nom: '1-1/2"',  s10: 1.682, s40: 1.610 },
+    { nom: '2"',      s10: 2.157, s40: 2.067 },
+    { nom: '2-1/2"',  s10: 2.635, s40: 2.469 },
+    { nom: '3"',      s10: 3.260, s40: 3.068 },
+    { nom: '4"',      s10: 4.260, s40: 4.026 },
+    { nom: '5"',      s10: 5.295, s40: 5.047 },
+    { nom: '6"',      s10: 6.357, s40: 6.065 },
+    { nom: '8"',      s10: 8.329, s40: 7.981 }
+  ];
+
+  var GAL_PER_CUFT = 7.48052;
+
+  function cuftPerFt(idIn) {
+    var rFt = idIn / 24;
+    return Math.PI * rFt * rFt;
+  }
+
+  var STORE = "fdec-pipe-takeoff-v1";
+  var SEED = { "s40-0": 420, "s40-1": 180, "s10-3": 240, "s10-6": 60 };
+
+  var rows = [];
+
+  function buildRows(hostId, key) {
+    var host = document.getElementById(hostId);
+    SIZES.forEach(function (s, i) {
+      var id = key + "-" + i;
+      var el = document.createElement("div");
+      el.className = "row";
+      el.innerHTML =
+        '<span class="desig"><b>' + s.nom + '</b><em>ID ' + s[key].toFixed(3) + '"</em></span>' +
+        '<input id="f-' + id + '" type="number" min="0" step="any" inputmode="decimal" placeholder="0" ' +
+          'aria-label="Linear feet of ' + s.nom + ' ' + (key === "s10" ? "Schedule 10" : "Schedule 40") + '">' +
+        '<span class="num cuft" data-cu></span>' +
+        '<span class="num" data-gal></span>';
+      host.appendChild(el);
+      rows.push({
+        id: id, key: key, nom: s.nom, perFt: cuftPerFt(s[key]),
+        el: el,
+        input: el.querySelector("input"),
+        cu: el.querySelector("[data-cu]"),
+        gal: el.querySelector("[data-gal]")
+      });
+    });
+  }
+
+  buildRows("s10", "s10");
+  buildRows("s40", "s40");
+
+  var fmt = {
+    ft:  function (n) { return n.toLocaleString(undefined, { maximumFractionDigits: 0 }); },
+    cu:  function (n) { return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); },
+    gal: function (n) { return n.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }); }
+  };
+
+  var el = {
+    job: document.getElementById("job"),
+    sys: document.getElementById("sys"),
+    pct: document.getElementById("pct"),
+    tGal: document.getElementById("tGal"),
+    tCu: document.getElementById("tCu"),
+    tFt: document.getElementById("tFt"),
+    tOrder: document.getElementById("tOrder"),
+    seedNote: document.getElementById("seedNote"),
+    msg: document.getElementById("msg"),
+    svol: document.getElementById("svol"),
+    svolHelp: document.getElementById("svolHelp"),
+    tLo: document.getElementById("tLo"),
+    tHi: document.getElementById("tHi"),
+    coef: document.getElementById("coef"),
+    evol: document.getElementById("evol"),
+    evolHelp: document.getElementById("evolHelp"),
+    pFill: document.getElementById("pFill"),
+    pMax: document.getElementById("pMax"),
+    rModel: document.getElementById("rModel"),
+    rModelSub: document.getElementById("rModelSub"),
+    rAccept: document.getElementById("rAccept"),
+    rNeed: document.getElementById("rNeed"),
+    rPre: document.getElementById("rPre"),
+    sizeWarn: document.getElementById("sizeWarn"),
+    air: document.getElementById("air"),
+    pPsi: document.getElementById("pPsi"),
+    rFill: document.getElementById("rFill"),
+    rMake: document.getElementById("rMake"),
+    rInSys: document.getElementById("rInSys"),
+    fillNote: document.getElementById("fillNote")
+  };
+
+  var MARGIN_PSI = 5;
+  var ATM = 14.696;
+
+  // Watts PLT series. "eff" is the usable tank volume implied by the published
+  // acceptance figures at 150 psi, taken at the most conservative pre-charge point,
+  // so acceptance can be re-derived at any fill and max pressure.
+  var PLT_MAX_PSI = 150;
+  var PLT = [
+    { m: "PLT-5",  nom: 2.1,  eff: 1.83,  conn: "3/4\" male" },
+    { m: "PLT-12", nom: 4.5,  eff: 4.31,  conn: "3/4\" male" },
+    { m: "PLT-20", nom: 8.5,  eff: 8.61,  conn: "3/4\" male" },
+    { m: "PLT-35", nom: 14.0, eff: 13.54, conn: "1\" female" }
+  ];
+  var svolOverride = false;
+  var evolOverride = false;
+
+  function num(input, fallback) {
+    var v = parseFloat(input.value);
+    return isFinite(v) ? v : fallback;
+  }
+
+  // Liquid is near incompressible; steel pipe stretches a little. Combined, per psi.
+  var LIQ_PIPE_PER_PSI = 0.0000038;
+
+  function fillVolume(pipeGal) {
+    var a = Math.min(99, Math.max(0, num(el.air, 0))) / 100;
+    var p = Math.max(0, num(el.pPsi, 0));
+    var heel = Math.max(0, num(el.pct, 0)) / 100;
+
+    var airGal = pipeGal * a;
+    var initial = pipeGal - airGal;                 // liquid in at atmospheric
+    var makeup = airGal * (p / (p + ATM));          // liquid taking the compressed air space
+    var squeeze = (initial + makeup) * LIQ_PIPE_PER_PSI * p;
+    var inSystem = initial + makeup + squeeze;
+
+    el.rFill.textContent = fmt.gal(initial);
+    el.rMake.textContent = fmt.gal(makeup + squeeze);
+    el.rInSys.textContent = fmt.gal(inSystem);
+    el.tOrder.textContent = fmt.gal(inSystem * (1 + heel));
+
+    if (pipeGal <= 0) {
+      el.fillNote.textContent = "Enter pipe footage above to size the fill.";
+      return;
+    }
+    var pctOfPipe = (inSystem / pipeGal) * 100;
+    el.fillNote.textContent =
+      "At " + Math.round(p) + " psi the trapped air compresses to almost nothing, so the system ends up " +
+      pctOfPipe.toFixed(0) + "% liquid by pipe volume. Residual air defers part of the fill to the " +
+      "pressurization stage, it does not reduce what you order.";
+  }
+
+  function sizeTank(takeoffGal) {
+    // System volume follows the takeoff until it is typed over.
+    if (!svolOverride) {
+      el.svol.value = takeoffGal > 0 ? takeoffGal.toFixed(1) : "";
+    }
+    el.svolHelp.innerHTML = svolOverride
+      ? 'Entered &middot; <button type="button" id="svolAuto">use takeoff</button>'
+      : "From takeoff above";
+    var auto = document.getElementById("svolAuto");
+    if (auto) {
+      auto.addEventListener("click", function () {
+        svolOverride = false;
+        recalc();
+      });
+    }
+
+    var sysGal = num(el.svol, 0);
+    var dT = Math.max(0, num(el.tHi, 0) - num(el.tLo, 0));
+    var coef = Math.max(0, num(el.coef, 0));
+    var suggested = sysGal * dT * coef;
+
+    if (!evolOverride) {
+      el.evol.value = suggested > 0 ? suggested.toFixed(2) : "";
+    }
+    el.evolHelp.innerHTML = evolOverride
+      ? 'Entered &middot; <button type="button" id="evolAuto">recalculate</button>'
+      : Math.round(dT) + "&deg;F rise";
+    var eAuto = document.getElementById("evolAuto");
+    if (eAuto) {
+      eAuto.addEventListener("click", function () {
+        evolOverride = false;
+        recalc();
+      });
+    }
+
+    var expGal = num(el.evol, 0);
+    var pf = num(el.pFill, 0);
+    var pm = num(el.pMax, 0);
+    var af = 1 - (pf + ATM) / ((pm - MARGIN_PSI) + ATM);
+
+    el.rPre.textContent = fmt.gal(pf).replace(/\.0$/, "");
+    el.rNeed.textContent = fmt.gal(expGal);
+    el.sizeWarn.hidden = false;
+
+    function noPick(msg) {
+      el.rModel.textContent = "—";
+      el.rModelSub.textContent = "";
+      el.rAccept.textContent = "0.0";
+      el.sizeWarn.textContent = msg;
+    }
+
+    if (!(af > 0) || pm - MARGIN_PSI <= pf) {
+      noPick("Max pressure must sit at least " + (MARGIN_PSI + 1) +
+             " psi above fill pressure. With no working range between them, no tank will hold the expansion.");
+      return;
+    }
+    if (pm > PLT_MAX_PSI) {
+      noPick("The Watts PLT series is rated " + PLT_MAX_PSI + " psi maximum. At " +
+             Math.round(pm) + " psi no PLT model is suitable. Use a tank rated for your " +
+             "system pressure and listed for fire protection service.");
+      return;
+    }
+    if (!(expGal > 0)) {
+      noPick("Enter a system volume and temperature range above to size the tank.");
+      return;
+    }
+
+    var pick = null;
+    for (var i = 0; i < PLT.length; i++) {
+      if (PLT[i].eff * af >= expGal) { pick = PLT[i]; break; }
+    }
+    if (!pick) {
+      noPick("Expansion of " + fmt.gal(expGal) + " gal is more than a PLT-35 can absorb at these " +
+             "pressures. Use a larger tank listed for fire protection service.");
+      return;
+    }
+
+    el.rModel.textContent = pick.m;
+    el.rModelSub.textContent = pick.nom.toFixed(1) + " gal, " + pick.conn;
+    el.rAccept.textContent = fmt.gal(pick.eff * af);
+
+    var notes = [
+      "Acceptance factor at these pressures is " + (af * 100).toFixed(0) + "%. " +
+      "PLT models are potable water tanks and carry no fire protection listing, so confirm " +
+      "acceptance with the AHJ and check diaphragm compatibility with your antifreeze before ordering."
+    ];
+    if (sysGal > 0 && expGal / sysGal > 0.08) {
+      notes.push("Expansion is over 8% of system volume. Check the temperature range and expansion " +
+                 "rate against the antifreeze manufacturer's table.");
+    }
+    el.sizeWarn.textContent = notes.join(" ");
+  }
+
+  var sub = {
+    s10: { ft: document.getElementById("s10Ft"), cu: document.getElementById("s10Cu"), gal: document.getElementById("s10Gal") },
+    s40: { ft: document.getElementById("s40Ft"), cu: document.getElementById("s40Cu"), gal: document.getElementById("s40Gal") }
+  };
+
+  function recalc() {
+    var tot = { ft: 0, cu: 0 };
+    var by = { s10: { ft: 0, cu: 0 }, s40: { ft: 0, cu: 0 } };
+
+    rows.forEach(function (r) {
+      var ft = parseFloat(r.input.value);
+      if (!isFinite(ft) || ft <= 0) { ft = 0; }
+      var cu = ft * r.perFt;
+      var on = ft > 0;
+      r.el.classList.toggle("on", on);
+      r.cu.textContent = on ? fmt.cu(cu) : "";
+      r.gal.textContent = on ? fmt.gal(cu * GAL_PER_CUFT) : "";
+      by[r.key].ft += ft;
+      by[r.key].cu += cu;
+      tot.ft += ft;
+      tot.cu += cu;
+    });
+
+    ["s10", "s40"].forEach(function (k) {
+      sub[k].ft.textContent = fmt.ft(by[k].ft);
+      sub[k].cu.textContent = fmt.cu(by[k].cu);
+      sub[k].gal.textContent = fmt.gal(by[k].cu * GAL_PER_CUFT);
+    });
+
+    var gal = tot.cu * GAL_PER_CUFT;
+    el.tFt.textContent = fmt.ft(tot.ft);
+    el.tCu.textContent = fmt.cu(tot.cu);
+    el.tGal.textContent = fmt.gal(gal);
+
+    fillVolume(gal);
+    sizeTank(gal);
+    save();
+  }
+
+  function snapshot() {
+    var d = {
+      job: el.job.value, sys: el.sys.value, pct: el.pct.value,
+      air: el.air.value, pPsi: el.pPsi.value,
+      tLo: el.tLo.value, tHi: el.tHi.value, coef: el.coef.value,
+      pFill: el.pFill.value, pMax: el.pMax.value,
+      svolO: svolOverride, evolO: evolOverride,
+      svol: svolOverride ? el.svol.value : "",
+      evol: evolOverride ? el.evol.value : "",
+      f: {}
+    };
+    rows.forEach(function (r) { if (r.input.value !== "") { d.f[r.id] = r.input.value; } });
+    return d;
+  }
+
+  function save() {
+    try { localStorage.setItem(STORE, JSON.stringify(snapshot())); } catch (e) { /* storage blocked */ }
+  }
+
+  function apply(d) {
+    el.job.value = d.job || "";
+    el.sys.value = d.sys || "";
+    if (d.pct !== undefined && d.pct !== "") { el.pct.value = d.pct; }
+    ["air", "pPsi", "tLo", "tHi", "coef", "pFill", "pMax"].forEach(function (k) {
+      if (d[k] !== undefined && d[k] !== "") { el[k].value = d[k]; }
+    });
+    svolOverride = !!d.svolO;
+    evolOverride = !!d.evolO;
+    if (svolOverride) { el.svol.value = d.svol || ""; }
+    if (evolOverride) { el.evol.value = d.evol || ""; }
+    rows.forEach(function (r) {
+      r.input.value = (d.f && d.f[r.id] !== undefined) ? d.f[r.id] : "";
+    });
+  }
+
+  function load() {
+    var raw = null;
+    try { raw = localStorage.getItem(STORE); } catch (e) { /* storage blocked */ }
+    if (raw) {
+      try {
+        apply(JSON.parse(raw));
+        el.seedNote.hidden = true;
+        return;
+      } catch (e) { /* fall through to seed */ }
+    }
+    rows.forEach(function (r) {
+      if (SEED[r.id] !== undefined) { r.input.value = SEED[r.id]; }
+    });
+  }
+
+  function flash(text) {
+    el.msg.textContent = text;
+    setTimeout(function () { el.msg.textContent = ""; }, 2600);
+  }
+
+  rows.forEach(function (r) {
+    r.input.addEventListener("input", function () {
+      el.seedNote.hidden = true;
+      recalc();
+    });
+  });
+  [el.job, el.sys, el.pct, el.air, el.pPsi,
+   el.tLo, el.tHi, el.coef, el.pFill, el.pMax].forEach(function (f) {
+    f.addEventListener("input", recalc);
+  });
+  el.svol.addEventListener("input", function () { svolOverride = true; recalc(); });
+  el.evol.addEventListener("input", function () { evolOverride = true; recalc(); });
+
+  document.getElementById("clear").addEventListener("click", function () {
+    rows.forEach(function (r) { r.input.value = ""; });
+    el.job.value = "";
+    el.sys.value = "";
+    el.seedNote.hidden = true;
+    recalc();
+    flash("Cleared.");
+  });
+
+  document.getElementById("copy").addEventListener("click", function () {
+    var lines = [];
+    lines.push("PIPE VOLUME TAKEOFF");
+    if (el.job.value) { lines.push("Job: " + el.job.value); }
+    if (el.sys.value) { lines.push("System: " + el.sys.value); }
+    lines.push("");
+    ["s10", "s40"].forEach(function (k) {
+      var any = rows.filter(function (r) {
+        return r.key === k && parseFloat(r.input.value) > 0;
+      });
+      if (!any.length) { return; }
+      lines.push(k === "s10" ? "Schedule 10" : "Schedule 40");
+      any.forEach(function (r) {
+        var ft = parseFloat(r.input.value);
+        lines.push("  " + r.nom + "  " + fmt.ft(ft) + " ft  =  " +
+                   fmt.gal(ft * r.perFt * GAL_PER_CUFT) + " gal");
+      });
+      lines.push("");
+    });
+    lines.push("Total linear feet: " + el.tFt.textContent + " ft");
+    lines.push("Total volume: " + el.tCu.textContent + " cu ft / " + el.tGal.textContent + " gal");
+    lines.push("");
+    lines.push("FILL VOLUME at " + el.pPsi.value + " psi, " + el.air.value + "% residual air");
+    lines.push("  Initial fill: " + el.rFill.textContent + " gal");
+    lines.push("  Make-up to pressurize: " + el.rMake.textContent + " gal");
+    lines.push("  In system at pressure: " + el.rInSys.textContent + " gal");
+    lines.push("  ORDER (incl. " + (el.pct.value || "0") + "% heel and hose): " + el.tOrder.textContent + " gal");
+    if (el.rModel.textContent !== "—") {
+      lines.push("");
+      lines.push("EXPANSION TANK");
+      lines.push("  System volume: " + (el.svol.value || "0") + " gal");
+      lines.push("  Temp range: " + el.tLo.value + " to " + el.tHi.value + " F");
+      lines.push("  Expansion to absorb: " + el.rNeed.textContent + " gal");
+      lines.push("  Fill " + el.pFill.value + " psi / max " + el.pMax.value + " psi");
+      lines.push("  Tank: Watts " + el.rModel.textContent + " (" + el.rModelSub.textContent + ")");
+      lines.push("  Acceptance " + el.rAccept.textContent + " gal, precharge to " + el.rPre.textContent + " psi");
+      lines.push("  NOTE: PLT is a potable water tank, not listed for fire protection.");
+    }
+    var text = lines.join("\n");
+
+    function fallback() {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); flash("Copied."); }
+      catch (e) { flash("Select the summary manually to copy."); }
+      document.body.removeChild(ta);
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { flash("Copied."); }, fallback);
+    } else {
+      fallback();
+    }
+  });
+
+  // ---- section help ----
+  var HELP = {
+    fill: {
+      title: "Fill volume and make-up",
+      body:
+        '<p class="lede">Works out how much water or antifreeze to order, using the pipe volume ' +
+        'from the takeoff above.</p>' +
+        '<dl>' +
+        '<dt>Residual air</dt><dd>How much of the pipe volume still holds air once you have finished ' +
+        'venting. <b>15%</b> is typical on a system without vents at the high points. Lower it where ' +
+        'the system has vents or where you can walk the whole run and bleed it properly.</dd>' +
+        '<dt>Target pressure</dt><dd>The pressure the system will sit at once it is back in service. ' +
+        'Use the normal static pressure at the riser, not the hydrostatic test pressure.</dd>' +
+        '<dt>Heel and hose</dt><dd>What you never get into the pipe: the heel left in the drum, what ' +
+        'stays in the fill hose and pump, and spillage. <b>10%</b> is a working figure for antifreeze, ' +
+        'where you cannot casually top off later.</dd>' +
+        '</dl>' +
+        '<p class="tail"><b>Reading the results.</b> Initial fill is what goes in at atmospheric ' +
+        'pressure, before you charge the system. Make-up is what gets pulled in as the trapped air ' +
+        'compresses. The two together are what is actually in the system at pressure, and Order adds ' +
+        'your heel and hose allowance on top.<br><br>' +
+        'Residual air does not reduce what you order. Past about 100 psi the air compresses to almost ' +
+        'nothing and liquid takes the space back, so the air only defers part of the fill to the ' +
+        'pressurization stage.</p>'
+    },
+    tank: {
+      title: "Expansion tank sizing",
+      body:
+        '<p class="lede">Sizes the expansion chamber NFPA 13 requires on an antifreeze system. The ' +
+        'tank absorbs the fluid that expands when the space warms up.</p>' +
+        '<dl>' +
+        '<dt>System volume</dt><dd>Follows the takeoff above on its own. Type over it to size a tank ' +
+        'for a system you have not done a takeoff for; a <b>use takeoff</b> link then appears to put ' +
+        'it back.</dd>' +
+        '<dt>Low and high temp</dt><dd>The range the space actually sees. Low is the temperature you ' +
+        'fill at. High is the summer peak at the highest point in the system, which in an attic runs ' +
+        'well above the occupied space.</dd>' +
+        '<dt>Expansion rate</dt><dd>How much volume the fluid gains per degree F, as a fraction. The ' +
+        'default suits a typical listed premixed antifreeze. Replace it with the figure from your ' +
+        'antifreeze manufacturer’s expansion table when you have it.</dd>' +
+        '<dt>Expansion volume</dt><dd>Calculated from the three fields above. Type over it with the ' +
+        'manufacturer’s table value for a firm number; a <b>recalculate</b> link then appears to ' +
+        'return to the computed figure.</dd>' +
+        '<dt>Fill pressure</dt><dd>The system’s normal resting pressure. Precharge the tank to ' +
+        'this same value.</dd>' +
+        '<dt>Max pressure</dt><dd>The component rating or the relief setting, whichever is lower. ' +
+        'The calculation holds 5 psi back as margin so the relief does not lift.</dd>' +
+        '</dl>' +
+        '<p class="tail"><b>Reading the results.</b> Acceptance factor is the fraction of the tank ' +
+        'that is actually usable between fill and max pressure. Tank required is nominal volume, so ' +
+        'round up to the next stock size.<br><br>' +
+        'Precharge the tank to the fill pressure. If the precharge is set to anything else, the ' +
+        'acceptance factor you sized against no longer applies and the tank will be undersized.<br><br>' +
+        '<code>tank = expansion &divide; (1 &minus; (fill+14.7) &divide; (max&minus;5+14.7))</code></p>'
+    }
+  };
+
+  var dlg = document.getElementById("help");
+  var dlgTitle = document.getElementById("helpTitle");
+  var dlgBody = document.getElementById("helpBody");
+
+  Array.prototype.forEach.call(document.querySelectorAll(".qm"), function (btn) {
+    btn.addEventListener("click", function () {
+      var h = HELP[btn.getAttribute("data-help")];
+      if (!h) { return; }
+      dlgTitle.textContent = h.title;
+      dlgBody.innerHTML = h.body;
+      dlgBody.scrollTop = 0;
+      if (dlg.showModal) { dlg.showModal(); } else { dlg.setAttribute("open", ""); }
+    });
+  });
+
+  document.getElementById("helpX").addEventListener("click", function () {
+    if (dlg.close) { dlg.close(); } else { dlg.removeAttribute("open"); }
+  });
+
+  dlg.addEventListener("click", function (ev) {
+    if (ev.target === dlg) { dlg.close(); }
+  });
+
+  load();
+  recalc();
+})();
+</script>
+</body>
+</html>

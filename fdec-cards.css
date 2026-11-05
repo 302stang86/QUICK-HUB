@@ -1,0 +1,44 @@
+/* FDEC Quick Hub — card tiles (same look as the home page). Used by Field Tools and Tech Cards. */
+  .hubgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:680px){.hubgrid{grid-template-columns:1fr}}
+  a.hublink{
+    position:relative;display:flex;align-items:center;gap:15px;text-decoration:none;color:inherit;
+    background:#ffffff;border:1px solid #dfe3e8;border-left:5px solid var(--cc,#5b6570);
+    border-radius:14px;box-shadow:0 1px 3px rgba(16,24,40,.08),0 1px 2px rgba(16,24,40,.06);padding:15px 18px;transition:.15s;overflow:hidden;
+  }
+  a.hublink:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(16,24,40,.16)}
+  /* Realistic enamel button: chrome bezel, glossy domed face, embossed icon */
+  a.hublink .hubicon{
+    --l:#6aa0e0;--d:#22304a;
+    --l:color-mix(in srgb,var(--cc,#5b6570) 62%,#fff);--d:color-mix(in srgb,var(--cc,#5b6570) 52%,#000);
+    position:relative;flex:0 0 auto;width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(145deg,#f5f7f9 0%,#9aa4ae 38%,#e9edf0 55%,#5f6a75 100%);
+    box-shadow:0 8px 14px rgba(16,24,40,.35),0 2px 3px rgba(0,0,0,.45);
+  }
+  a.hublink .hubicon::before{
+    content:"";position:absolute;inset:4px;border-radius:50%;
+    background:var(--cc,#5b6570);
+    background:radial-gradient(circle at 32% 24%,var(--l) 0%,var(--cc,#5b6570) 45%,var(--d) 100%);
+    box-shadow:inset 0 -5px 8px rgba(0,0,0,.35),inset 0 2px 4px rgba(255,255,255,.35),inset 0 0 0 2px rgba(0,0,0,.25);
+  }
+  a.hublink .hubicon::after{
+    content:"";position:absolute;left:17%;top:8%;width:66%;height:40%;border-radius:50%;
+    background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,0));
+  }
+  a.hublink .hubicon svg{position:relative;z-index:1;width:30px;height:30px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 2px 1px rgba(0,0,0,.55))}
+  a.hublink .hbody{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:6px}
+  a.hublink .htop{display:flex;align-items:flex-start;gap:9px}
+  a.hublink .hname{font-weight:800;font-size:16px;color:#1b1f24;line-height:1.2}
+  a.hublink .hcat{margin-left:auto;font-size:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:800;color:#fff;background:#3b4654;padding:4px 10px;border-radius:20px;flex:0 0 auto;white-space:nowrap}
+  a.hublink .hcat.news{background:#1f7a3d}
+  a.hublink .hcat.quoting{background:#1565c0}
+  a.hublink .hcat.team{background:#C1121C}
+  a.hublink .hcat.break{background:#b0306a}
+  a.hublink .hcat.field,a.hublink .hcat.admin,a.hublink .hcat.help{background:#3b4654}
+  a.hublink .hdesc{font-size:13px;color:#4a5560;margin:0;line-height:1.4}
+  a.hublink.unset{opacity:.85;cursor:default}
+  a.hublink.unset:hover{transform:none;box-shadow:0 1px 3px rgba(16,24,40,.08),0 1px 2px rgba(16,24,40,.06)}
+  a.hublink.unset .hname::after{content:' — URL not set';color:#b4690e;font-weight:600;font-size:12px}
+  a.hublink .haccess{align-self:flex-start;font-size:11px;font-weight:700;letter-spacing:.3px;padding:3px 11px;border-radius:20px;margin-top:2px}
+  a.hublink .haccess.everyone{background:#e7f4ec;color:#1f7a3d}
+  a.hublink .haccess.manager{background:#fff3df;color:#b4690e}

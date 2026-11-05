@@ -48,6 +48,7 @@ const DEFAULT_PAGES = {
   incident:        ["new","tech","manager","admin"],
   help:            ["new","tech","manager","admin","temp"],
   library:         ["new","tech","manager","admin","temp"],
+  pipevolume:      ["new","tech","manager","admin","temp"],   // Pipe Volume Calculator (Field Tools)
   bathroom:        ["new","tech","manager","admin","temp"],   // SwitchBack TD (hub card)
   nicet:           ["new","tech","manager","admin","temp"],
   itm:             ["tech","manager","admin"],
