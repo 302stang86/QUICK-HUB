@@ -1,9 +1,12 @@
 import {roomLineup} from './enemy-roster.mjs';
-import {WEAPONS,UPGRADE_BY_ID,computeStats,rollUpgradeOffer} from './weapons.mjs';
+import {WEAPONS,UPGRADE_BY_ID,computeStats,rollUpgradeOffer,SPLASH_DAMAGE,PUDDLE,CHAIN,SPREAD_DEG,ORBIT} from './weapons.mjs';
 export const ROOM_LIMIT = 30;
 // Round arena. The previous 24 × 18 rectangle was 432 units²; this disc is five times that
 // area (2,160 units², about 52.4 units across). width/height are the diameter, kept for callers
 // that only need the overall extent.
+// Waves arrive progressively: a small first group, then a steady stream. Any mini-boss or boss is held
+// back until half of the wave's regular enemies have been defeated.
+export const SPAWN={initial:5,interval:1,maxAlive:25,specialAt:.5};
 const OLD_AREA=24*18,AREA_FACTOR=5,RADIUS=Math.sqrt(OLD_AREA*AREA_FACTOR/Math.PI);
 export const MAP={shape:'round',radius:RADIUS,width:RADIUS*2,height:RADIUS*2,edgeBand:.5,margin:.6};
 // Hero and enemy bodies are half their previous size, so their contact padding is halved as well.
@@ -59,6 +62,8 @@ export class Engine {
     this.cooldown=0;this.specialCooldown=0;this.grace=0;this.charges=0;this.id=0;
     // Per-run loadout (never saved): chosen weapon, upgrade stacks, and the pick offered after a cleared room.
     this.weapon='hose';this.upgrades={};this.offer=[];this.burstQueue=[];this.interval=.19;
+    this.pending=[];this.specialQueue=[];this.totalRegular=0;this.defeatedRegular=0;this.spawnTimer=0;
+    this.puddles=[];this.orbAngle=0;
   }
   stats(){return computeStats(this.weapon,this.profile,this.upgrades);}
   setWeapon(key){if(!WEAPONS[key]||!['ready','defeat','victory'].includes(this.mode))return false;this.weapon=key;return true;}
@@ -71,17 +76,36 @@ export class Engine {
     this.hero={x:0,y:0};this.mode='active';this.grace=1;this.upgrades={};this.offer=[];this.spawnRoom();
   }
   spawnRoom(){
-    this.enemies=[];this.shots=[];this.burstQueue=[];this.fx=[];this.cooldown=0;this.specialCooldown=0;
+    this.enemies=[];this.shots=[];this.burstQueue=[];this.puddles=[];this.fx=[];this.cooldown=0;this.specialCooldown=0;
     this.charges=2+(this.profile.foam>0?1:0)+(this.profile.cannon>0?1:0);
     const lineup=roomLineup(this.room,this.random);
-    const special=lineup.find(e=>e.tier==='boss')||lineup.find(e=>e.tier==='mini');
-    this.roomEvent=special?(special.tier==='boss'?'BOSS: ':'MINI-BOSS: ')+special.name:'Room '+this.room;
-    this.encounterTimer=special?5:0;
-    for(const type of lineup){
-      const p=randomEdgeSpawn(this.random,this.hero,this.enemies);
-      this.enemies.push({...type,...p,id:++this.id,maxHp:type.hp,charger:type.behavior==='charge',
-        timer:this.random()*3.2,flash:0});
+    this.pending=lineup.filter(e=>e.tier==='base');          // regular enemies still to arrive
+    this.specialQueue=lineup.filter(e=>e.tier!=='base');      // mini-boss / boss, held back
+    this.totalRegular=this.pending.length;this.defeatedRegular=0;
+    this.roomEvent='Room '+this.room;this.encounterTimer=0;this.spawnTimer=SPAWN.interval;
+    for(let i=0;i<SPAWN.initial&&this.pending.length;i++)this.spawnOne(this.pending.shift());
+  }
+  spawnOne(type){
+    const p=randomEdgeSpawn(this.random,this.hero,this.enemies);
+    this.enemies.push({...type,...p,id:++this.id,maxHp:type.hp,charger:type.behavior==='charge',timer:this.random()*3.2,flash:0});
+  }
+  /** Enemies still to defeat this wave: on the map plus everything queued. */
+  remaining(){return this.enemies.length+(this.pending?.length||0)+(this.specialQueue?.length||0);}
+  advanceSpawns(dt){
+    // Release the mini-boss / boss once half of the regular enemies are down.
+    if(this.specialQueue?.length&&this.defeatedRegular>=Math.ceil(this.totalRegular*SPAWN.specialAt)){
+      const special=this.specialQueue[0];
+      this.roomEvent=(special.tier==='boss'?'BOSS: ':'MINI-BOSS: ')+special.name;this.encounterTimer=5;
+      for(const type of this.specialQueue.splice(0))this.spawnOne(type);
     }
+    if(!this.pending?.length)return;
+    this.spawnTimer-=dt;
+    // An empty map brings the next enemy in immediately instead of waiting out the timer.
+    while(this.pending.length&&this.enemies.length<SPAWN.maxAlive&&(this.spawnTimer<=0||!this.enemies.length)){
+      this.spawnOne(this.pending.shift());this.spawnTimer+=SPAWN.interval;
+      if(this.spawnTimer<=0)this.spawnTimer=SPAWN.interval;
+    }
+    if(this.spawnTimer<0)this.spawnTimer=0;
   }
 
   nextRoom(){
@@ -99,19 +123,54 @@ export class Engine {
     this.fx.push({x:enemy.x,y:enemy.y,type:crit?'crit':'splash',life:.28,total:.28});
     if(enemy.hp<=0){
       const index=this.enemies.indexOf(enemy);if(index>=0)this.enemies.splice(index,1);
+      if(enemy.tier==='base'||enemy.tier===undefined)this.defeatedRegular=(this.defeatedRegular||0)+1;
       this.score+=enemy.score??(enemy.charger?200:100);
       this.profile.credits=clamp(this.profile.credits+(enemy.reward??(enemy.charger?8:5)),0,1000000);
       this.fx.push({x:enemy.x,y:enemy.y,type:'steam',life:.65,total:.65});
     }
   }
   fireVolley(st,dir){
-    // Extra streams fly side by side, spaced across the aim direction.
-    const px=-dir.y,py=dir.x;
-    for(let i=0;i<st.projectiles;i++){
-      const off=(i-(st.projectiles-1)/2)*.32,crit=this.random()<st.critChance;
-      this.shots.push({x:this.hero.x+px*off,y:this.hero.y+py*off,vx:dir.x*st.speed,vy:dir.y*st.speed,speed:st.speed,
+    // Extra streams fan out around the aim direction.
+    const n=st.projectiles,step=SPREAD_DEG*Math.PI/180,base=Math.atan2(dir.y,dir.x);
+    for(let i=0;i<n;i++){
+      const ang=base+(i-(n-1)/2)*step,dx=Math.cos(ang),dy=Math.sin(ang),crit=this.random()<st.critChance;
+      this.shots.push({x:this.hero.x,y:this.hero.y,vx:dx*st.speed,vy:dy*st.speed,speed:st.speed,
         life:st.range/st.speed*(st.bounce?1.5:1)+.05,damage:st.damage*(crit?st.critMult:1),crit,kind:st.kind,
-        homing:st.homing,knock:st.knockback,pierce:st.pierce,keep:st.pierceKeep,bounce:st.bounce,hit:new Set()});
+        homing:st.homing,knock:st.knockback,splash:st.splash,puddle:st.puddle,chain:st.chain,chainKeep:st.chainKeep,bounce:st.bounce,hit:new Set()});
+    }
+  }
+  /** Water balloon burst: other enemies near the impact take reduced damage and a shove. */
+  splash(x,y,primary,s){
+    this.fx.push({x,y,type:'burst',radius:s.splash,life:.35,total:.35});
+    for(const e of [...this.enemies]){
+      if(e===primary)continue;
+      const dx=e.x-x,dy=e.y-y,d=Math.hypot(dx,dy);
+      if(d>s.splash)continue;
+      this.damage(e,s.damage*SPLASH_DAMAGE,s.crit);
+      if(s.knock&&this.enemies.includes(e))this.knockback(e,{vx:dx||1,vy:dy,knock:s.knock*(1-d/s.splash*.5)});
+    }
+  }
+  addPuddle(x,y){
+    this.puddles.push({x,y,r:PUDDLE.radius,life:PUDDLE.life,total:PUDDLE.life});
+    if(this.puddles.length>14)this.puddles.shift();
+  }
+  orbPositions(count=this.stats().orbs){
+    const out=[];
+    for(let i=0;i<count;i++){const a=this.orbAngle+i*Math.PI*2/count;out.push({x:this.hero.x+Math.cos(a)*ORBIT.radius,y:this.hero.y+Math.sin(a)*ORBIT.radius});}
+    return out;
+  }
+  /** Frost Orbs circle the hero; an enemy they touch takes damage and is slowed. */
+  updateOrbitals(st,dt){
+    if(!(st.orbs>0))return;
+    this.orbAngle=(this.orbAngle+ORBIT.speed*dt)%(Math.PI*2);
+    const orbs=this.orbPositions(st.orbs);
+    for(const e of [...this.enemies]){
+      if((e.orbCd||0)>this.time)continue;
+      const r=(e.radius??(e.charger?.25:.18))+ORBIT.hitRadius;
+      if(!orbs.some(o=>(o.x-e.x)**2+(o.y-e.y)**2<r*r))continue;
+      e.orbCd=this.time+ORBIT.cooldown;
+      e.slowT=ORBIT.slowTime;e.slowF=e.tier==='boss'?ORBIT.bossSlow:ORBIT.slow;
+      this.damage(e,st.orbDamage,false);
     }
   }
   knockback(enemy,shot){
@@ -133,6 +192,7 @@ export class Engine {
     const length=Math.hypot(move.x,move.y),scale=length>1?1/length:1;
     this.moving=length>.01;
     this.hero.x+=move.x*scale*3.6*dt;this.hero.y+=move.y*scale*3.6*dt;clampToMap(this.hero,HERO_PAD);
+    this.advanceSpawns(dt);
     const st=this.stats();this.interval=st.interval;
     if(this.enemies.length){
       let nearest=this.enemies[0];
@@ -165,9 +225,22 @@ export class Engine {
       let hit=null,first=Infinity;
       for(const e of this.enemies){if(s.hit?.has(e))continue;const t=firstHit(old,s,e,e.radius??(e.charger?.25:.18));if(t!==null&&t<first){first=t;hit=e;}}
       if(hit){
+        const hx=hit.x,hy=hit.y;
         this.damage(hit,s.damage,s.crit);
         if(s.knock&&this.enemies.includes(hit))this.knockback(hit,s);
-        if(s.pierce){s.hit.add(hit);s.damage*=s.keep;}else s.life=0;
+        if(s.splash)this.splash(hx,hy,hit,s);
+        if(s.puddle)this.addPuddle(hx,hy);
+        s.hit?.add(hit);
+        // Chain Splash: hop to the nearest enemy that has not been hit by this stream yet.
+        let next=null;
+        if(s.chain>0){
+          let best=CHAIN.range*CHAIN.range;
+          for(const e of this.enemies){if(s.hit?.has(e))continue;const d=(e.x-hx)**2+(e.y-hy)**2;if(d<best){best=d;next=e;}}
+        }
+        if(next){
+          const dx=next.x-hx,dy=next.y-hy,l=Math.hypot(dx,dy)||1,sp=s.speed||Math.hypot(s.vx,s.vy);
+          s.x=hx;s.y=hy;s.vx=dx/l*sp;s.vy=dy/l*sp;s.chain--;s.damage*=s.chainKeep;s.life=Math.max(s.life,CHAIN.range/sp+.3);
+        }else s.life=0;
       }
       if(s.bounce){
         const d=Math.hypot(s.x,s.y),edge=MAP.radius-.3;
@@ -175,12 +248,17 @@ export class Engine {
       }
       if(s.life<=0||Math.hypot(s.x,s.y)>MAP.radius+1)this.shots.splice(i,1);
     }
+    for(const p of this.puddles)p.life-=dt;
+    this.puddles=this.puddles.filter(p=>p.life>0);
+    this.updateOrbitals(st,dt);
     for(const e of this.enemies){
       e.timer+=dt;e.flash=Math.max(0,e.flash-dt);
       const dx=this.hero.x-e.x,dy=this.hero.y-e.y,l=Math.hypot(dx,dy)||1;
       const behavior=e.behavior||(e.charger?'charge':'chase');
       const burst=behavior==='charge'&&e.timer%3.2>2.6?2.7:behavior==='pulse'?(e.timer%1.6>.9?1.7:.45):1;
-      const stagger=e.kt>0?.25:1,speed=e.speed*burst*stagger;
+      for(const p of this.puddles)if((e.x-p.x)**2+(e.y-p.y)**2<p.r*p.r){e.slowT=Math.max(e.slowT||0,.3);e.slowF=e.tier==='boss'?PUDDLE.bossSlow:PUDDLE.slow;}
+      const slow=e.slowT>0?(e.slowF||.5):1;if(e.slowT>0)e.slowT-=dt;
+      const stagger=e.kt>0?.25:1,speed=e.speed*burst*stagger*slow;
       const weave=behavior==='zigzag'?Math.sin(e.timer*4+e.id)*.42:0;
       const vx=dx/l-dy/l*weave,vy=dy/l+dx/l*weave,vl=Math.hypot(vx,vy)||1;
       e.x+=vx/vl*speed*dt;e.y+=vy/vl*speed*dt;
@@ -194,7 +272,7 @@ export class Engine {
     }
     for(const f of this.fx)f.life-=dt;
     this.fx=this.fx.filter(f=>f.life>0).slice(-100);
-    if(!this.enemies.length){
+    if(!this.enemies.length&&!this.pending?.length&&!this.specialQueue?.length){
       this.cleared=this.room;this.profile.credits=clamp(this.profile.credits+25+this.room*5,0,1000000);
       this.health=Math.min(this.maxHealth,this.health+1);this.mode=this.room>=ROOM_LIMIT?'victory':'clear';
       this.offer=this.mode==='clear'?rollUpgradeOffer(this.upgrades,this.random):[];

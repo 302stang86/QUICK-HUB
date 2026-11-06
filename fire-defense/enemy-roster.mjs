@@ -51,9 +51,11 @@ export const BASE_ENEMIES=build(base,'base');
 export const MINI_BOSSES=build(mini,'mini');
 export const BOSSES=build(bosses,'boss');
 export const ENEMY_ROSTER=[...BASE_ENEMIES,...MINI_BOSSES,...BOSSES];
+export const ENEMY_COUNT_MULTIPLIER=2.5,MAX_WAVE_ENEMIES=55;
 export function roomLineup(room,random=Math.random){
   const pool=BASE_ENEMIES.filter(e=>e.unlock<=room),boss=BOSSES.find(e=>e.unlock===room);
-  const count=Math.min(22,4+Math.ceil(room*.7));
+  // Each wave has 2.5× the earlier enemy count (a 150% increase); the old 22 cap becomes 55.
+  const count=Math.min(MAX_WAVE_ENEMIES,Math.round((4+Math.ceil(room*.7))*ENEMY_COUNT_MULTIPLIER));
   const lineup=Array.from({length:boss?Math.ceil(count*.45):count},()=>pool[Math.min(pool.length-1,Math.floor(random()*pool.length))]);
   // Guarantee the newly introduced base type is actually encountered that room.
   const newest=pool.find(e=>e.unlock===room);if(newest)lineup[0]=newest;

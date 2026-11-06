@@ -6,3 +6,4 @@ html{overscroll-behavior:none}body{touch-action:manipulation}#bestiary{width:min
 #picker{margin:4px 0 16px}#picker-title{margin-bottom:9px}#picker .gear.sel{border-color:#6fdbef;box-shadow:0 0 0 1px #6fdbef55 inset}#picker .gear .stat{color:#9eb3cb;font-size:9.5px;letter-spacing:.3px;margin:2px 0 0}#picker .gear .owned{color:#d9c28f;font-size:9px;letter-spacing:1px}
 #loadout{position:fixed;left:max(16px,env(safe-area-inset-left));top:82px;z-index:4;pointer-events:none;font-size:11px;line-height:1.5;color:#d8f3ff;text-shadow:0 1px 3px #000c;max-width:min(300px,42vw)}#loadout b{color:#fff}#loadout span{color:#f1d0a0}
 @media(max-height:450px) and (orientation:landscape){#loadout{top:68px;font-size:10px}#picker .gear .stat{display:none}}
+#loadout i{font-style:normal;color:#ffd0a0}
