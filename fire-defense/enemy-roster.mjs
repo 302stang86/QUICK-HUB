@@ -42,8 +42,9 @@ const bosses=[
  ['pyroclast','Pyroclast',225,3.30,.76,30,'charge','violet','crown','The final volcanic boss: tough, deliberate and dangerous.']
 ];
 function build(rows,tier){return rows.map(([key,name,hp,attack,speed,unlock,behavior,palette,crest,description],index)=>({key,name,hp,attack,speed,unlock,behavior,palette,crest,description,tier,variant:index,
-  radius:tier==='boss'?1.0:tier==='mini'?.70:crest==='legs'?.36:.42,
-  visualScale:tier==='boss'?1.8:tier==='mini'?1.3:crest==='legs'?.85:1,
+  // Half of the previous body and art size (radius was 1.0 / .70 / .36 / .42; art scale 1.8 / 1.3 / .85 / 1).
+  radius:tier==='boss'?.50:tier==='mini'?.35:crest==='legs'?.18:.21,
+  visualScale:tier==='boss'?.90:tier==='mini'?.65:crest==='legs'?.425:.50,
   score:tier==='boss'?2500:tier==='mini'?600:100+index*10,
   reward:tier==='boss'?150:tier==='mini'?35:5+Math.floor(index/4)}));}
 export const BASE_ENEMIES=build(base,'base');

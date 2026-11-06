@@ -1,6 +1,6 @@
 # Fire Defense enemy field guide
 
-The map is now 24 × 18 units, four times the original area (a 300% increase). Rookie Wobble starts every room at the center. Enemies spawn randomly in the outer 25% band on any side, at least three world units from the hero. The camera follows the hero; the minimap shows remaining enemies. Mobile game zoom is limited to 75–125%, with a 100% reset button and double-tap zoom disabled.
+The map is now a round arena about 52 units across (radius 26.2), five times the area of the previous 24 × 18 rectangle. Rookie Wobble and every enemy are drawn and collide at half their previous size. Rookie Wobble starts every room at the center. Enemies spawn randomly in the outer ring (beyond half the radius) at any angle, at least three world units from the hero. The camera follows the hero; the minimap shows remaining enemies. Mobile game zoom is limited to 75–125%, with a 100% reset button and double-tap zoom disabled.
 
 ## Introduction plan
 

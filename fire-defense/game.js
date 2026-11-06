@@ -3,9 +3,14 @@ import {pinchZoom} from './viewport.mjs';
 import { drawRookieWobble } from './rookie-wobble.mjs';
 import { drawFireEnemy } from './enemy-art.mjs';
 import { Engine, EQUIPMENT, MAP, iso, movementFromScreen, clamp } from './game-core.mjs';
+import { WEAPONS, WEAPON_KEYS, UPGRADES, UPGRADE_BY_ID } from './weapons.mjs';
+// The hero is drawn at half of its previous size (enemies carry their own visualScale).
+const HERO_SCALE=.5;
 const $=id=>document.getElementById(id);
 const canvas=$('canvas'),ctx=canvas.getContext('2d');
 const navy='#12283c',muted='#7594a9';
+import { computeStats } from './weapons.mjs';
+const computeFor=(e,key)=>computeStats(key,e.profile,{});
 class FireDefense {
   constructor(){
     this.zoom=1;this.camera={x:0,y:0};this.touchPoints=new Map();this.pinchActive=false;this.pinchStart=null;
@@ -33,6 +38,7 @@ class FireDefense {
     $('special').onclick=()=>this.special();
     $('continue').onclick=()=>{
       if(this.saving||this.pending||!this.loaded)return;
+      if(!this.paused&&this.engine.mode==='clear'&&this.engine.offer.length)return;
       if(this.paused){this.paused=false;}
       else if(this.engine.mode==='clear')this.engine.nextRoom();
       else this.engine.newRun();
@@ -99,7 +105,7 @@ class FireDefense {
   sendPending(){this.saving=true;this.saveMessage='Saving progress…';this.updateView();window.FDEC?.save(JSON.stringify(this.pending));}
   togglePause(){if(!this.loaded||this.engine.mode!=='active'||!$('gate').hidden)return;this.paused=!this.paused;this.clearInput();this.readyMenu='';this.updateView();}
   special(){if(!this.loaded||this.paused||!$('gate').hidden||this.h>this.w||$('board').open||$('bestiary').open)return;if(this.engine.special()){this.shake=.18;this.updateHUD();}}
-  updateHUD(){if(!this.engine)return;const e=this.engine;$('room').textContent=String(e.room).padStart(2,'0')+' / 30';$('health').textContent=e.health+' / '+e.maxHealth;$('score').textContent=e.score.toLocaleString();$('credits').textContent=e.profile.credits.toLocaleString();$('floor-label').firstChild.textContent='SECTOR '+String(e.room).padStart(2,'0')+' ';const unlocked=e.profile.foam||e.profile.cannon;$('special').disabled=!unlocked||e.charges<=0||e.specialCooldown>0;$('special-name').textContent=e.profile.cannon?'WATER CANNON':'FOAM BURST';$('encounter-banner').hidden=!(e.mode==='active'&&e.encounterTimer>0&&!this.paused);$('encounter-banner').textContent=e.roomEvent||'';$('special-state').textContent=!unlocked?'Unlock in equipment':e.specialCooldown>0?Math.ceil(e.specialCooldown)+'s cooldown':e.charges+' charges · Space';}
+  updateHUD(){if(!this.engine)return;const e=this.engine;$('room').textContent=String(e.room).padStart(2,'0')+' / 30';$('health').textContent=e.health+' / '+e.maxHealth;$('score').textContent=e.score.toLocaleString();$('credits').textContent=e.profile.credits.toLocaleString();$('floor-label').firstChild.textContent='SECTOR '+String(e.room).padStart(2,'0')+' ';const unlocked=e.profile.foam||e.profile.cannon;$('special').disabled=!unlocked||e.charges<=0||e.specialCooldown>0;$('special-name').textContent=e.profile.cannon?'WATER CANNON':'FOAM BURST';$('encounter-banner').hidden=!(e.mode==='active'&&e.encounterTimer>0&&!this.paused);$('encounter-banner').textContent=e.roomEvent||'';const st=e.stats(),owned=UPGRADES.filter(u=>e.upgrades[u.id]).map(u=>u.name+(u.max>1?' ×'+e.upgrades[u.id]:''));$('loadout').hidden=!(e.mode==='active'||e.mode==='clear');$('loadout').innerHTML='<b></b><br><span></span>';$('loadout').firstChild.textContent=WEAPONS[e.weapon].name+' · '+st.damage.toFixed(1)+' dmg · '+Math.round(st.critChance*100)+'% crit';$('loadout').lastChild.textContent=owned.join(' · ');$('special-state').textContent=!unlocked?'Unlock in equipment':e.specialCooldown>0?Math.ceil(e.specialCooldown)+'s cooldown':e.charges+' charges · Space';}
   updateView(){
     if(!$('menu'))return;
     const e=this.engine;const active=this.loaded&&e?.mode==='active'&&!this.paused;
@@ -115,8 +121,13 @@ class FireDefense {
     $('continue').disabled=this.saving||!!this.pending;
     $('save-status').textContent=this.saveMessage;$('retry').hidden=!this.pending||this.saving;
     $('shop').hidden=menuMode==='pause';
-    if(this.readyMenu!==menuMode+JSON.stringify(e.profile)+this.saving+!!this.pending){
-      this.readyMenu=menuMode+JSON.stringify(e.profile)+this.saving+!!this.pending;
+    const pickWeapon=['ready','defeat','victory'].includes(menuMode),pickUpgrade=menuMode==='clear'&&e.offer.length>0;
+    $('picker').hidden=!(pickWeapon||pickUpgrade);
+    if(pickUpgrade)$('continue').disabled=true;
+    const key=menuMode+JSON.stringify(e.profile)+this.saving+!!this.pending+e.weapon+JSON.stringify(e.upgrades)+e.offer.join();
+    if(this.readyMenu!==key){
+      this.readyMenu=key;
+      this.buildPicker(e,pickWeapon,pickUpgrade);
       $('shop').replaceChildren();
       for(const [index,item] of EQUIPMENT.entries()){
         const card=document.createElement('article');card.className='gear';
@@ -128,6 +139,29 @@ class FireDefense {
         buy.disabled=this.saving||!!this.pending||e.profile[item.key]>=item.max||e.profile.credits<e.price(item.key);
         buy.onclick=()=>{if(!this.pending&&!this.saving&&e.buy(item.key)){this.checkpoint();this.readyMenu='';this.updateView();}};
         card.append(icon,heading,level,description,buy);$('shop').append(card);
+      }
+    }
+  }
+  buildPicker(e,pickWeapon,pickUpgrade){
+    const host=$('picker-cards');host.replaceChildren();
+    const card=(icon,name,lines,label,selected,onclick,disabled)=>{
+      const c=document.createElement('article');c.className='gear'+(selected?' sel':'');
+      const i=document.createElement('span');i.className='gear-icon';i.textContent=icon;
+      const h=document.createElement('h3');h.textContent=name;c.append(i,h);
+      for(const [cls,text] of lines){const p=document.createElement(cls==='p'?'p':'span');if(cls!=='p')p.className=cls;p.textContent=text;if(cls!=='p')p.style.display='block';c.append(p);}
+      const b=document.createElement('button');b.textContent=label;b.disabled=!!disabled;b.onclick=onclick;c.append(b);host.append(c);
+    };
+    if(pickWeapon){
+      $('picker-title').textContent='CHOOSE YOUR WEAPON';
+      for(const k of WEAPON_KEYS){
+        const w=WEAPONS[k],st=computeFor(e,k);
+        card(w.icon,w.name,[['p',w.trait],['stat','DMG '+st.damage.toFixed(2)+' · '+(1/st.interval).toFixed(1)+'/s'],['stat','RANGE '+Math.round(st.range)+' · CRIT '+Math.round(st.critChance*100)+'%']],e.weapon===k?'Equipped':'Equip',e.weapon===k,()=>{if(e.setWeapon(k)){this.readyMenu='';this.updateView();}},e.weapon===k);
+      }
+    }else if(pickUpgrade){
+      $('picker-title').textContent='PICK AN UPGRADE · THIS RUN ONLY';
+      for(const id of e.offer){
+        const u=UPGRADE_BY_ID[id],n=e.upgrades[id]||0;
+        card(u.icon,u.name,[['p',u.description],['owned',n?'OWNED ×'+n+(u.max>1?' / '+u.max:''):(u.max>1?'MAX ×'+u.max:'ONE-TIME')]],'Take',false,()=>{if(e.chooseUpgrade(id)){this.readyMenu='';this.updateHUD();this.updateView();}},false);
       }
     }
   }
@@ -148,34 +182,53 @@ class FireDefense {
   ellipse(x,y,rx,ry,fill){ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();}
   line(a,b,color,width=1){ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.stroke();}
   render(){
-    const {w,h,unit:u}=this,halfW=MAP.width/2,halfH=MAP.height/2;ctx.setTransform(this.ratio,0,0,this.ratio,0,0);ctx.clearRect(0,0,w,h);
+    const {w,h,unit:u}=this,R=MAP.radius;ctx.setTransform(this.ratio,0,0,this.ratio,0,0);ctx.clearRect(0,0,w,h);
     const backdrop=ctx.createRadialGradient(w*.53,h*.45,0,w*.5,h*.5,w*.7);backdrop.addColorStop(0,'#1b3549');backdrop.addColorStop(1,'#071323');ctx.fillStyle=backdrop;ctx.fillRect(0,0,w,h);
     ctx.save();if(this.shake>0)ctx.translate(Math.sin(this.time*140)*3,Math.cos(this.time*120)*2);
-    // Enlarged 24 × 18 arena; the camera follows the hero to retain readable character sizes.
-    this.box(-halfW-.12,-halfH-.12,MAP.width+.24,MAP.height+.24,.15,'#243f50','#102431','#172b38');
-    for(let x=-halfW;x<halfW;x++)for(let y=-halfH;y<halfH;y++)this.tile(x,y,(x+Math.floor(y))%2?'#3a5360':'#354d5c');
-    // Warehouse grid lines and safety perimeter.
-    for(const [a,b] of [[[-halfW+.1,-halfH+.1],[halfW-.1,-halfH+.1]],[[halfW-.1,-halfH+.1],[halfW-.1,halfH-.1]],[[halfW-.1,halfH-.1],[-halfW+.1,halfH-.1]],[[-halfW+.1,halfH-.1],[-halfW+.1,-halfH+.1]]])this.line(this.project(...a),this.project(...b),'#f5bd6d88',2);
-    this.box(-halfW-.25,halfH+.1,MAP.width+.5,.2,1,'#527080','#213849','#354c5a');
-    this.box(halfW+.05,-halfH,.2,MAP.height+.3,1,'#527080','#213849','#354c5a');
-    for(let x=-halfW+1;x<halfW;x+=2)this.box(x,halfH+.25,.12,.12,1.65,'#718a97','#365161','#416375');
-    for(let y=-halfH+.9;y<halfH;y+=2)this.box(halfW+.17,y,.12,.12,1.65,'#718a97','#365161','#416375');
-    // A red service pipe and yellow hazard markings.
-    this.line(this.project(-halfW,halfH+.15,1.1),this.project(halfW+.25,halfH+.15,1.1),'#8f3b42',u*.075);
-    for(let x=-halfW+.2;x<halfW-.5;x+=.5)this.line(this.project(x,-halfH+.05),this.project(x+.2,-halfH+.35),'#e9b96e75',2);
+    // Round arena (about 52 units across). The isometric view turns the disc into an ellipse:
+    // semi-axes are R·0.72·√2 across and R·0.36·√2 down, in world units.
+    const o=this.project(0,0),RX=R*1.0182,RY=R*.5091;
+    const ring=(radius,lift=0)=>{ctx.beginPath();ctx.ellipse(o.x,o.y-lift*u,radius*1.0182*u,radius*.5091*u,0,0,Math.PI*2);};
+    // Slab edge under the floor gives the disc some thickness.
+    ring(R+.35,-.22);ctx.fillStyle='#102431';ctx.fill();ring(R+.2,0);ctx.fillStyle='#243f50';ctx.fill();
+    // Floor tiles, clipped to the disc and culled to what is on screen.
+    ctx.save();ring(R,0);ctx.clip();
+    const pad=u*1.3;
+    for(let x=-Math.ceil(R);x<Math.ceil(R);x++)for(let y=-Math.ceil(R);y<Math.ceil(R);y++){
+      if(Math.hypot(x+.5,y+.5)>R+.8)continue;
+      const c=this.project(x+.5,y+.5);if(c.x<-pad||c.x>w+pad||c.y<-pad||c.y>h+pad)continue;
+      this.tile(x,y,(x+Math.floor(y))%2?'#3a5360':'#354d5c');
+    }
+    // Faint ring marking where enemies can appear.
+    ring(R*MAP.edgeBand,0);ctx.setLineDash([u*.35,u*.25]);ctx.strokeStyle='#c6e7ed26';ctx.lineWidth=2;ctx.stroke();ctx.setLineDash([]);
+    ctx.restore();
+    // Safety perimeter: solid line with yellow hazard dashes.
+    ring(R-.1,0);ctx.strokeStyle='#f5bd6d88';ctx.lineWidth=2;ctx.stroke();
+    ring(R-.35,0);ctx.setLineDash([u*.3,u*.22]);ctx.strokeStyle='#e9b96e75';ctx.lineWidth=2;ctx.stroke();ctx.setLineDash([]);
+    // Back railing: posts and a red service pipe along the far half of the rim.
+    const rail=[];
+    for(let deg=-45;deg<=135;deg+=4){const a=deg*Math.PI/180;rail.push([Math.cos(a)*(R+.25),Math.sin(a)*(R+.25)]);}
+    ctx.beginPath();rail.forEach(([x,y],i)=>{const p=this.project(x,y,1.1);i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);});ctx.strokeStyle='#8f3b42';ctx.lineWidth=u*.075;ctx.lineJoin='round';ctx.stroke();
+    for(let deg=-45;deg<=135;deg+=8){const a=deg*Math.PI/180;this.box(Math.cos(a)*(R+.25)-.06,Math.sin(a)*(R+.25)-.06,.12,.12,1.65,'#718a97','#365161','#416375');}
+    // Stacked crates outside the rim on the left side.
     for(let i=0;i<4;i++){
-      this.box(-halfW-.9,-halfH+1.7+i*1.6,.65,1,.2,'#675649','#3b3836','#4e433a');
-      this.box(-halfW-.85,-halfH+1.75+i*1.6,.55,.82,.7,'#a07e57','#6f543c','#846643');
-      this.line(this.project(-halfW-.8,-halfH+1.85+i*1.6,.72),this.project(-halfW-.35,-halfH+2.4+i*1.6,.72),'#d3ad7355',2);
+      const a=(196+i*9)*Math.PI/180,cx=Math.cos(a)*(R+1.1),cy=Math.sin(a)*(R+1.1);
+      this.box(cx-.16,cy-.25,.33,.5,.1,'#675649','#3b3836','#4e433a');
+      this.box(cx-.135,cy-.225,.275,.41,.35,'#a07e57','#6f543c','#846643');
     }
     // Loading bay painted on the floor.
-    ctx.save();const sign=this.project(-1,-halfH+.9);ctx.translate(sign.x,sign.y);ctx.transform(.9,-.45,.9,.45,0,0);ctx.font=`800 ${u*.18}px system-ui`;ctx.textAlign='center';ctx.fillStyle='#bfd0d13b';ctx.fillText('FDEC  /  RESPONSE ZONE',0,0);ctx.restore();
+    ctx.save();const sign=this.project(-1,-(R-3));ctx.translate(sign.x,sign.y);ctx.transform(.9,-.45,.9,.45,0,0);ctx.font=`800 ${u*.18}px system-ui`;ctx.textAlign='center';ctx.fillStyle='#bfd0d13b';ctx.fillText('FDEC  /  RESPONSE ZONE',0,0);ctx.restore();
     const e=this.engine;
     let actors=e?[...e.enemies.map(a=>({kind:'enemy',...a})),{kind:'hero',...e.hero}]:[{kind:'hero',x:1,y:-1},{kind:'enemy',x:-2,y:2,charger:false,timer:1,flash:0,hp:3,maxHp:3},{kind:'enemy',x:3,y:2,charger:true,timer:2,flash:0,hp:5,maxHp:5},{kind:'enemy',x:-3,y:0,charger:false,timer:1,flash:0,hp:3,maxHp:3}];
     actors.sort((a,b)=>(b.x+b.y)-(a.x+a.y));
     for(const a of actors){if(a.kind==='hero')this.drawHero(a,e);else this.drawEnemy(a);}
     if(e){
-      for(const s of e.shots){const p=this.project(s.x,s.y,.4),tail=this.project(s.x-s.vx*.024,s.y-s.vy*.024,.4);this.line(tail,p,'#a8f1ff',3+e.profile.nozzle*.3);this.ellipse(p.x,p.y,2.5,2.5,'#e8fcff');}
+      for(const s of e.shots){
+        const p=this.project(s.x,s.y,.2),tail=this.project(s.x-s.vx*.024,s.y-s.vy*.024,.2),lv=e.profile.nozzle;
+        if(s.kind==='chop'){this.line(this.project(s.x-s.vx*.05,s.y-s.vy*.05,.2),p,s.crit?'#fff0a0':'#ffb45a',7);this.ellipse(p.x,p.y,4.5,4.5,s.crit?'#ffffff':'#ffe2a8');}
+        else if(s.kind==='foam'){this.line(this.project(s.x-s.vx*.035,s.y-s.vy*.035,.2),p,'#7fe3b166',6);this.ellipse(p.x,p.y,s.crit?6.5:5,s.crit?6.5:5,'#d6ffe8');this.ellipse(p.x-1,p.y-1,2,2,'#ffffff');}
+        else{this.line(tail,p,s.crit?'#fff29a':'#a8f1ff',(s.crit?5:3)+lv*.3);this.ellipse(p.x,p.y,s.crit?3.5:2.5,s.crit?3.5:2.5,s.crit?'#fffbe0':'#e8fcff');}
+      }
       for(const f of e.fx)this.drawEffect(f);
       if(e.grace>.85&&e.health<e.maxHealth){ctx.fillStyle='#f64c4c0b';ctx.fillRect(0,0,w,h);}
     }
@@ -185,25 +238,26 @@ class FireDefense {
     if(this.loaded&&e)this.drawMinimap(e);
   }
   drawMinimap(e){
-    const mw=this.h<450?108:140,mh=this.h<450?80:103,x=this.w-mw-16,y=this.h<450?74:100;
-    ctx.save();ctx.fillStyle='#081725cc';ctx.fillRect(x,y,mw,mh);ctx.strokeStyle='#839eb866';ctx.lineWidth=1;ctx.strokeRect(x,y,mw,mh);
-    ctx.fillStyle='#a8c6d9';ctx.font='9px system-ui';ctx.fillText('MAP ×4',x+7,y+13);
-    const plot=p=>({x:x+7+(p.x/MAP.width+.5)*(mw-14),y:y+22+(.5-p.y/MAP.height)*(mh-29)});
+    const d=this.h<450?84:112,rad=d/2,cx=this.w-rad-16,cy=(this.h<450?74:100)+rad+8;
+    ctx.save();ctx.fillStyle='#081725cc';ctx.beginPath();ctx.arc(cx,cy,rad+6,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#839eb866';ctx.lineWidth=1;ctx.stroke();
+    ctx.strokeStyle='#839eb833';ctx.beginPath();ctx.arc(cx,cy,rad*MAP.edgeBand,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle='#a8c6d9';ctx.font='9px system-ui';ctx.textAlign='center';ctx.fillText('MAP ×5',cx,cy-rad-8+2);
+    const plot=p=>({x:cx+(p.x/MAP.radius)*rad,y:cy-(p.y/MAP.radius)*rad});
     for(const enemy of e.enemies){const p=plot(enemy);ctx.fillStyle=enemy.tier==='boss'?'#ff626c':enemy.tier==='mini'?'#c796ff':'#edac63';ctx.beginPath();ctx.arc(p.x,p.y,enemy.tier==='boss'?3:enemy.tier==='mini'?2:1.2,0,Math.PI*2);ctx.fill();}
     const p=plot(e.hero);ctx.fillStyle='#d6fbff';ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fill();ctx.restore();
   }
   drawHero(a,e){
     const p=this.project(a.x,a.y),active=e?.mode==='active'&&!this.paused;
-    const interval=.19/(1+(e?.profile.nozzle||0)*.08);
+    const interval=e?.interval||.19;
     const shooting=!!(active&&e.enemies.length);
     const recoil=shooting?Math.max(0,(e.cooldown-(interval-.10))/.10):0;
-    if(!drawRookieWobble(ctx,{x:p.x,y:p.y,unit:this.unit,time:this.time,
+    if(!drawRookieWobble(ctx,{x:p.x,y:p.y,unit:this.unit*HERO_SCALE,time:this.time,
       moving:!!(active&&e.moving),aim:e?iso(e.aim.x,e.aim.y):{x:1,y:0},
       celebrate:!!(e&&(e.mode==='clear'||e.mode==='victory')),shooting,recoil,
       upgrades:e?.profile||{},hurt:!!(active&&e.grace>0&&e.health<e.maxHealth)}))this.drawHeroFallback(a,e);
   }
   drawHeroFallback(a,e){
-    const p=this.project(a.x,a.y),u=this.unit;ctx.save();ctx.translate(p.x,p.y);
+    const p=this.project(a.x,a.y),u=this.unit*HERO_SCALE;ctx.save();ctx.translate(p.x,p.y);
     const walk=e?.moving&&e.mode==='active'&&!this.paused?Math.sin(this.time*16):0;const aim=e?iso(e.aim.x,e.aim.y):{x:.8,y:.1};const facing=aim.x>=0?1:-1;
     this.ellipse(0,0,u*.40,u*.15,'#07151c77');
     // Hose trailing behind the firefighter.
@@ -242,9 +296,10 @@ class FireDefense {
   }
   drawEffect(f){const p=this.project(f.x,f.y,.3),t=1-f.life/f.total,u=this.unit;ctx.save();ctx.globalAlpha=1-t;
     if(f.type==='burst'){const r=f.radius*u*t;ctx.beginPath();ctx.ellipse(p.x,p.y,r,r*.5,0,0,Math.PI*2);ctx.fillStyle='#c2fff51a';ctx.fill();ctx.lineWidth=5*(1-t)+1;ctx.strokeStyle='#c2fff5';ctx.stroke();}
-    else if(f.type==='steam'){for(let i=0;i<4;i++)this.ellipse(p.x+(i-1.5)*u*.15,p.y-u*(.2+t*.8)-Math.sin(i)*u*.1,u*(.1+t*.15),u*(.14+t*.2),'#d2e6db');}
-    else if(f.type==='splash'){for(let i=0;i<7;i++){const angle=i/7*Math.PI*2,r=t*u*.5;this.ellipse(p.x+Math.cos(angle)*r,p.y+Math.sin(angle)*r,2,2,'#aef0fc');}}
-    else{ctx.strokeStyle='#ff7a73';ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,p.y,u*(.25+t*.6),0,Math.PI*2);ctx.stroke();}
+    else if(f.type==='steam'){for(let i=0;i<4;i++)this.ellipse(p.x+(i-1.5)*u*.08,p.y-u*(.1+t*.4)-Math.sin(i)*u*.05,u*(.05+t*.08),u*(.07+t*.1),'#d2e6db');}
+    else if(f.type==='crit'){for(let i=0;i<10;i++){const angle=i/10*Math.PI*2,r=t*u*.4;this.ellipse(p.x+Math.cos(angle)*r,p.y+Math.sin(angle)*r,2.6,2.6,'#ffe27a');}}
+    else if(f.type==='splash'){for(let i=0;i<7;i++){const angle=i/7*Math.PI*2,r=t*u*.25;this.ellipse(p.x+Math.cos(angle)*r,p.y+Math.sin(angle)*r,2,2,'#aef0fc');}}
+    else{ctx.strokeStyle='#ff7a73';ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,p.y,u*(.13+t*.3),0,Math.PI*2);ctx.stroke();}
     ctx.restore();}
 }
 export const game=new FireDefense();
