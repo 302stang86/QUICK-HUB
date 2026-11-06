@@ -13,7 +13,7 @@
      - Everything else (Firestore API, etc.): straight to network — Firestore's
        own offline mode handles those when there is no signal.
 */
-const CACHE = 'fdec-quickhub-v119-game-access';
+const CACHE = 'fdec-quickhub-v120-rookie-wobble';
 
 const CORE = [
   "troubleshooting-data.js",
@@ -47,6 +47,11 @@ const CORE = [
   'fire-defense/index.html',
   'fire-defense/style.css',
   'fire-defense/game.js',
+  'fire-defense/rookie-wobble.mjs',
+  'fire-defense/enemy-art.mjs',
+  'fire-defense/assets/rookie-spray.webp',
+  'fire-defense/assets/rookie-run.webp',
+  'fire-defense/assets/rookie-victory.webp',
   'fire-defense/game-core.mjs',
   'fire-defense/game-model.mjs',
   'fire-defense/access-policy.mjs',

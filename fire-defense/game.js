@@ -1,3 +1,5 @@
+import { drawRookieWobble } from './rookie-wobble.mjs';
+import { drawFireEnemy } from './enemy-art.mjs';
 import { Engine, EQUIPMENT, iso, movementFromScreen, clamp } from './game-core.mjs';
 const $=id=>document.getElementById(id);
 const canvas=$('canvas'),ctx=canvas.getContext('2d');
@@ -133,6 +135,16 @@ class FireDefense {
     ctx.restore();
   }
   drawHero(a,e){
+    const p=this.project(a.x,a.y),active=e?.mode==='active'&&!this.paused;
+    const interval=.19/(1+(e?.profile.nozzle||0)*.08);
+    const shooting=!!(active&&e.enemies.length);
+    const recoil=shooting?Math.max(0,(e.cooldown-(interval-.10))/.10):0;
+    if(!drawRookieWobble(ctx,{x:p.x,y:p.y,unit:this.unit,time:this.time,
+      moving:!!(active&&e.moving),aim:e?iso(e.aim.x,e.aim.y):{x:1,y:0},
+      celebrate:!!(e&&(e.mode==='clear'||e.mode==='victory')),shooting,recoil,
+      upgrades:e?.profile||{},hurt:!!(active&&e.grace>0&&e.health<e.maxHealth)}))this.drawHeroFallback(a,e);
+  }
+  drawHeroFallback(a,e){
     const p=this.project(a.x,a.y),u=this.unit;ctx.save();ctx.translate(p.x,p.y);
     const walk=e?.moving&&e.mode==='active'&&!this.paused?Math.sin(this.time*16):0;const aim=e?iso(e.aim.x,e.aim.y):{x:.8,y:.1};const facing=aim.x>=0?1:-1;
     this.ellipse(0,0,u*.40,u*.15,'#07151c77');
@@ -164,17 +176,10 @@ class FireDefense {
     ctx.restore();
   }
   drawEnemy(a){
-    const p=this.project(a.x,a.y),u=this.unit*(a.charger?1.2:.82),bob=Math.sin(this.time*6+(a.id||0))*u*.035;
-    ctx.save();ctx.translate(p.x,p.y);
-    this.ellipse(0,0,u*.36,u*.13,'#11202970');
-    const glow=ctx.createRadialGradient(0,-u*.4,0,0,-u*.4,u*.9);glow.addColorStop(0,'#ff874b24');glow.addColorStop(1,'#ff874b00');ctx.fillStyle=glow;ctx.fillRect(-u,-u*1.4,u*2,u*2);
-    ctx.translate(0,bob);ctx.beginPath();ctx.moveTo(-u*.31,-u*.12);ctx.bezierCurveTo(-u*.55,-u*.4,-u*.08,-u*.6,-u*.16,-u*.96);ctx.bezierCurveTo(u*.17,-u*.8,u*.06,-u*.42,u*.25,-u*.73);ctx.bezierCurveTo(u*.62,-u*.38,u*.43,-u*.02,u*.09,-u*.02);ctx.closePath();
-    const fire=ctx.createLinearGradient(0,-u,0,0);fire.addColorStop(0,a.charger?'#ffaf59':'#ffce6f');fire.addColorStop(.55,a.charger?'#ee5141':'#f88947');fire.addColorStop(1,'#bd3541');ctx.fillStyle=a.flash?'#dcfaff':fire;ctx.fill();
-    ctx.beginPath();ctx.moveTo(-u*.12,-u*.15);ctx.quadraticCurveTo(-u*.23,-u*.40,0,-u*.63);ctx.quadraticCurveTo(u*.28,-u*.29,u*.10,-u*.12);ctx.fillStyle='#ffd98b';ctx.fill();
-    ctx.fillStyle='#5c2f35';ctx.fillRect(-u*.20,-u*.46,u*.10,u*.08);ctx.fillRect(u*.09,-u*.46,u*.10,u*.08);
-    if(a.charger){this.line({x:-u*.26,y:-u*.50},{x:-u*.10,y:-u*.44},'#5a2830',u*.045);this.line({x:u*.10,y:-u*.44},{x:u*.26,y:-u*.5},'#5a2830',u*.045);}
-    if(a.hp<a.maxHp){ctx.fillStyle='#0a1b2a';ctx.fillRect(-u*.3,-u*1.1,u*.6,3);ctx.fillStyle='#f69562';ctx.fillRect(-u*.3,-u*1.1,u*.6*Math.max(0,a.hp/a.maxHp),3);}
-    ctx.restore();
+    const p=this.project(a.x,a.y),e=this.engine;
+    drawFireEnemy(ctx,{x:p.x,y:p.y,unit:this.unit,time:this.time,id:a.id||0,charger:!!a.charger,
+      hp:a.hp,maxHp:a.maxHp,flash:a.flash||0,
+      heading:e?iso(e.hero.x-a.x,e.hero.y-a.y):{x:1,y:0},charging:!!(a.charger&&a.timer%3.2>2.6)});
   }
   drawEffect(f){const p=this.project(f.x,f.y,.3),t=1-f.life/f.total,u=this.unit;ctx.save();ctx.globalAlpha=1-t;
     if(f.type==='burst'){const r=f.radius*u*t;ctx.beginPath();ctx.ellipse(p.x,p.y,r,r*.5,0,0,Math.PI*2);ctx.fillStyle='#c2fff51a';ctx.fill();ctx.lineWidth=5*(1-t)+1;ctx.strokeStyle='#c2fff5';ctx.stroke();}
