@@ -1,5 +1,0 @@
-<linker>
-  <assembly fullname="Assembly-CSharp">
-    <type fullname="FDEC.Game.FireDefenseGame" preserve="all" />
-  </assembly>
-</linker>
