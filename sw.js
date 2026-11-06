@@ -13,7 +13,7 @@
      - Everything else (Firestore API, etc.): straight to network — Firestore's
        own offline mode handles those when there is no signal.
 */
-const CACHE = 'fdec-quickhub-v125-orbs';
+const CACHE = 'fdec-quickhub-v126-pickups';
 
 const CORE = [
   "troubleshooting-data.js",
