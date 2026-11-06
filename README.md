@@ -30,3 +30,4 @@ Fire Defense recognizes the same existing designated administrator accounts and 
 If an authorized employee cannot access the new game collections because their Firestore setup is not ready, **Local test — no online scores** is offered. This option appears only after the employee's existing profile has been checked against the server (or an existing designated admin is recognized following that read). Its progress is stored separately per UID on the current device and is never uploaded to the online leaderboard. A persistent badge distinguishes this mode. It is not a guest mode.
 
 Cloud play requires publishing the game rule fragment (with the same administrator policy) and building the leaderboard index in Firebase Console. Updating files on GitHub does not publish Firebase security rules. Reload after completing Firebase setup to return to cloud play. Local-test progress is not merged into cloud progress.
+
