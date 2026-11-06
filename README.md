@@ -22,3 +22,11 @@ The test command starts an isolated `demo-fdec-game` Firestore emulator using `f
 ## Existing games
 
 SwitchBack remains in `switchback/index.html`. Its separate public, anonymous leaderboard is unchanged. Tank Battle and Gladiator Duel retain their existing root-level game files. Removing the Unity files does not change these applications, employee records, or deployed Firebase rules.
+
+## Game access and local testing
+
+Fire Defense recognizes the same existing designated administrator accounts and administrator-role overrides as the hub, as well as approved employees. It does not approve users or change employee profiles. Anonymous, pending ordinary and denied ordinary accounts remain blocked.
+
+If an authorized employee cannot access the new game collections because their Firestore setup is not ready, **Local test — no online scores** is offered. This option appears only after the employee's existing profile has been checked against the server (or an existing designated admin is recognized following that read). Its progress is stored separately per UID on the current device and is never uploaded to the online leaderboard. A persistent badge distinguishes this mode. It is not a guest mode.
+
+Cloud play requires publishing the game rule fragment (with the same administrator policy) and building the leaderboard index in Firebase Console. Updating files on GitHub does not publish Firebase security rules. Reload after completing Firebase setup to return to cloud play. Local-test progress is not merged into cloud progress.

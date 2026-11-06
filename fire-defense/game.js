@@ -37,7 +37,7 @@ class FireDefense {
   loadProfile(profile){this.engine=new Engine(profile);this.loaded=true;this.paused=false;this.pending=null;this.saving=false;this.saveMessage='Progress connected to your employee account.';this.readyMenu='';this.updateView();}
   block(message){this.loaded=false;this.paused=true;this.clearInput();this.saveMessage=message;this.updateView();}
   receive(method,value){if(method==='OnCloudProfile')this.loadProfile(typeof value==='string'?JSON.parse(value):value);else if(method==='OnCloudBlocked')this.block(value);else if(method==='OnCloudSaved')this.saved(typeof value==='string'?JSON.parse(value):value);}
-  saved(reply){this.saving=false;if(reply.ok){this.engine.profile.revision=reply.revision;this.pending=null;this.saveMessage='✓ Progress saved';}else this.saveMessage=reply.message||'Save failed. Reconnect and retry.';this.readyMenu='';this.updateView();}
+  saved(reply){this.saving=false;if(reply.ok){this.engine.profile.revision=reply.revision;this.pending=null;this.saveMessage=reply.message||'✓ Progress saved';}else this.saveMessage=reply.message||'Save failed. Reconnect and retry.';this.readyMenu='';this.updateView();}
   checkpoint(){
     if(!this.loaded||this.pending)return;
     const e=this.engine,p=e.profile;

@@ -6,7 +6,7 @@
   "scripts": {
     "test": "npm run test:game && npm run test:rules",
     "test:rules": "firebase emulators:exec --config firebase.emulator.json --only firestore --project demo-fdec-game \"node --test tests/rules.test.mjs\"",
-    "test:game": "node --test tests/fire-defense-game.test.mjs"
+    "test:game": "node --test tests/fire-defense-game.test.mjs tests/access-policy.test.mjs"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^3.0.0",

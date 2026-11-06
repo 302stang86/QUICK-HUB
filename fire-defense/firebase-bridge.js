@@ -1,4 +1,5 @@
 import { game } from './game.js';
+import { canPlay } from './access-policy.mjs';
 import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { getFirestore, doc, getDocFromServer, onSnapshot, runTransaction, serverTimestamp, collection, query, orderBy, limit, getDocsFromServer }
@@ -12,18 +13,25 @@ const auth = getAuth(app), db = getFirestore(app);
 const $ = id => document.getElementById(id);
 let approved = false, profile = null, currentUid = null, stopProfile = null;
 let launching = false, saveBusy = false, gateGeneration = 0;
+let localMode = false, localAvailable = false;
+function localKey() { return 'fdec-fire-defense-local-v1:' + auth.currentUser.uid; }
+function allowLocalTest(error) {
+  localAvailable = true;
+  $('practice').hidden = false;
+  message('Your employee access is recognized. Cloud saving is unavailable: ' + niceError(error) + ' You can use Local test below.');
+}
 function message(text) { $('message').textContent = text; }
 function send(method,value) { game.receive(method,value); }
 function block(text) {
-  approved = false; profile = null;
+  approved = false; profile = null; localAvailable = false; $('practice').hidden = true;
   $('gate').hidden = false; $('launch').disabled = true; message(text);
   send('OnCloudBlocked', text);
 }
-function acceptable(data) { return data?.status === 'approved' && ['new','tech','temp','manager','admin'].includes(data.role); }
+function acceptable(data) { return canPlay(auth.currentUser, data); }
 function niceError(error) {
   const code = error?.code || '';
   if (/invalid-credential|wrong-password|user-not-found/.test(code)) return 'Email and password did not match.';
-  if (code.includes('permission-denied')) return 'Access denied. Check employee approval and publish the game Firestore rules.';
+  if (code.includes('permission-denied')) return 'Cloud game access was denied. Check that the game Firestore rules have been published.';
   if (code.includes('resource-exhausted')) return 'Firebase quota reached. Try again after the quota resets.';
   if (code.includes('failed-precondition')) return 'Firestore setup is incomplete. Check the composite index in the setup guide.';
   if (code.includes('unavailable')) return 'Connection unavailable. Reconnect and retry.';
@@ -37,20 +45,27 @@ onAuthStateChanged(auth, async user => {
   $('login').hidden = !!user; $('logout').hidden = !user;
   if (!user || user.isAnonymous) { block('Sign in with your existing approved FDEC account.'); return; }
   message('Checking employee approval…');
+  localMode = false; localAvailable = false; $('practice').hidden = true;
   const ref = doc(db, 'users', user.uid);
   try {
     const employee = await getDocFromServer(ref);
     if (generation !== gateGeneration) return;
-    if (!employee.exists() || !acceptable(employee.data())) { block('This account is not approved for employee game access. Contact your FDEC administrator.'); return; }
+    if (!acceptable(employee.exists() ? employee.data() : null)) { block('Signed in as ' + user.email + '. This employee profile is not approved. Use your approved FDEC account or ask your administrator to check it.'); return; }
     approved = true; message('Approved employee account. Loading your progress…');
-    const snap = await getDocFromServer(doc(db, 'fdGameProfiles', user.uid));
-    if (generation !== gateGeneration) return;
-    profile = snap.exists() ? snap.data() : null;
+    try {
+      const snap = await getDocFromServer(doc(db, 'fdGameProfiles', user.uid));
+      if (generation !== gateGeneration) return;
+      profile = snap.exists() ? snap.data() : null;
+    } catch (error) {
+      if (generation !== gateGeneration) return;
+      // Employee identity was checked on the server above; this is game-data setup, not account approval.
+      allowLocalTest(error);
+    }
     if (profile) { $('nickname').value = profile.nickname; $('nickname').readOnly = true; }
-    $('launch').disabled = false; message('Approved employee account. Ready for response.');
+    $('launch').disabled = localAvailable; if (!localAvailable) message('Employee access recognized. Ready for response.');
     // A single employee-profile listener detects approval being removed during play.
     stopProfile = onSnapshot(ref, s => {
-      if (!s.exists() || !acceptable(s.data())) block('Employee access was removed. Contact your administrator.');
+      if (!acceptable(s.exists() ? s.data() : null)) block('Employee access was removed. Contact your administrator.');
     }, e => block(niceError(e)));
   } catch (e) { if (generation === gateGeneration) block(niceError(e)); }
 });
@@ -79,8 +94,24 @@ $('launch').onclick = async () => {
     game.loadProfile(profile);
     $('gate').hidden = true;
     $('canvas').focus();
-  } catch (error) { message(niceError(error)); }
-  finally { launching = false; $('launch').disabled = !approved; }
+  } catch (error) { if (approved) allowLocalTest(error); else message(niceError(error)); }
+  finally { launching = false; $('launch').disabled = !approved || localAvailable; }
+};
+$('practice').onclick = () => {
+  if (!approved || !auth.currentUser || !localAvailable) return;
+  const nickname=$('nickname').value.trim();
+  if (!validNickname(nickname)) { message('Choose a nickname of 3–16 letters, numbers, spaces, dots, underscores or dashes.'); return; }
+  const initial=blankProfile(nickname);
+  let local=initial;
+  try {
+    const stored=JSON.parse(localStorage.getItem(localKey()) || 'null');
+    if (stored && validNickname(stored.nickname) && ['credits','nozzle','foam','cannon','revision'].every(k=>Number.isInteger(stored[k]))
+        && stored.credits>=0 && stored.credits<=1000000 && stored.nozzle>=0 && stored.nozzle<=5
+        && stored.foam>=0 && stored.foam<=3 && stored.cannon>=0 && stored.cannon<=3 && stored.revision>=0) local=stored;
+  } catch (_) {}
+  profile=local; localMode=true; game.loadProfile(profile);
+  game.saveMessage='Local test — progress stays on this device; no online scores.'; game.updateView();
+  $('mode-badge').hidden=false; $('gate').hidden=true; $('canvas').focus();
 };
 window.FDEC = {
   async save(json) {
@@ -89,6 +120,12 @@ window.FDEC = {
     try {
       if (!approved || !auth.currentUser || !profile) throw new Error('Employee approval is required.');
       const payload = validateSave(JSON.parse(json)), uid = auth.currentUser.uid;
+      if (localMode) {
+        const next={credits:payload.credits,nozzle:payload.nozzle,foam:payload.foam,cannon:payload.cannon,
+          nickname:profile.nickname,revision:profile.revision+1};
+        localStorage.setItem(localKey(),JSON.stringify(next));profile=next;
+        send('OnCloudSaved',{ok:true,revision:next.revision,message:'Local test — saved on this device only.'});return;
+      }
       const playerRef = doc(db,'fdGameProfiles',uid), boardRef = doc(db,'fdGameLeaderboard',uid);
       const result = await runTransaction(db, async tx => {
         const playerSnap = await tx.get(playerRef);
@@ -116,7 +153,7 @@ window.FDEC = {
 let boardAt = 0, cachedBoard = null, boardBusy = false;
 async function showBoard() {
   if (!approved || boardBusy) return;
-  $('board').showModal(); $('standings').textContent = 'Loading…';
+  $('board').showModal(); if (localMode) { $('standings').textContent='Local test runs do not submit online scores. Publish the game Firestore rules and reload to play with cloud saving.'; return; } $('standings').textContent = 'Loading…';
   boardBusy = true;
   try {
     if (!cachedBoard || Date.now()-boardAt > 60000) {

@@ -73,3 +73,15 @@ test('no employee can overwrite another employee leaderboard or use a forged nic
   await assertFails(setDoc(doc(b,'fdGameLeaderboard','alice'),run()));
   await assertFails(setDoc(doc(a,'fdGameLeaderboard','alice'),{...run(),nickname:'ForgedName'}));
 });
+
+test('existing designated administrator email is recognized without an employee profile',async()=>{
+ const a=env.authenticatedContext('existing-admin',{email:'302stang86@gmail.com',firebase:{sign_in_provider:'password'}}).firestore();
+ await assertSucceeds(setDoc(doc(a,'fdGameProfiles','existing-admin'),profile()));
+ const anon=env.authenticatedContext('fake-anon-admin',{email:'302stang86@gmail.com',firebase:{sign_in_provider:'anonymous'}}).firestore();
+ await assertFails(setDoc(doc(anon,'fdGameProfiles','fake-anon-admin'),profile()));
+});
+test('approved legacy profiles without a role and existing admin roles match the hub',async()=>{
+ await env.withSecurityRulesDisabled(async c=>{const d=c.firestore();await setDoc(doc(d,'users','legacy'),{status:'approved'});await setDoc(doc(d,'users','roleadmin'),{role:'admin',status:'pending'});});
+ await assertSucceeds(setDoc(doc(db('legacy'),'fdGameProfiles','legacy'),profile()));
+ await assertSucceeds(setDoc(doc(db('roleadmin'),'fdGameProfiles','roleadmin'),profile()));
+});

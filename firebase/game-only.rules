@@ -6,10 +6,14 @@ service cloud.firestore {
     // Fire Defense — employee-only game. Insert inside the existing documents match.
     // Uses the hub's existing signedIn() helper (which excludes anonymous accounts).
     function fdApproved() {
-      return signedIn()
-        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'approved'
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['new','tech','temp','manager','admin'];
+      // Same administrator overrides as the existing employee hub.
+      return signedIn() && (
+        request.auth.token.email in ['mp1@firedefense.com', '302stang86@gmail.com', 'wh1@firedefense.com']
+        || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'new') == 'admin'
+          || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('status', 'pending') == 'approved'
+        ))
+      );
     }
     function fdProfileValid(d) {
       return d.keys().hasAll(['credits','nozzle','foam','cannon','revision','nickname','lastSaveId','updatedAt'])
