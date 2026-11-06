@@ -6,6 +6,10 @@ export const ROOM_LIMIT = 30;
 // that only need the overall extent.
 // Waves arrive progressively: a small first group, then a steady stream. Any mini-boss or boss is held
 // back until half of the wave's regular enemies have been defeated.
+// Pickups: hydrants spawn at random times, drop a bonus when destroyed; every kill drops a coin.
+export const HYDRANT={hp:12,radius:.4,minDelay:10,maxDelay:30,maxAlive:2};
+export const BONUS={life:12,pickRadiusPx:34,coinsBase:30,coinsPerRoom:3,bombRadius:4.5,bombDamage:6,timedSeconds:8,types:['coins','upgrade','bomb','timed']};
+export const COIN={range:1.4,endGrace:2};   // endGrace: real seconds after the last enemy, to collect coins
 export const SPAWN={initial:5,interval:1,maxAlive:25,specialAt:.5};
 const OLD_AREA=24*18,AREA_FACTOR=5,RADIUS=Math.sqrt(OLD_AREA*AREA_FACTOR/Math.PI);
 export const MAP={shape:'round',radius:RADIUS,width:RADIUS*2,height:RADIUS*2,edgeBand:.5,margin:.6};
@@ -64,8 +68,13 @@ export class Engine {
     this.weapon='hose';this.upgrades={};this.offer=[];this.burstQueue=[];this.interval=.19;
     this.pending=[];this.specialQueue=[];this.totalRegular=0;this.defeatedRegular=0;this.spawnTimer=0;
     this.puddles=[];this.orbAngle=0;
+    this.hydrants=[];this.coins=[];this.bonuses=[];this.hydrantTimer=0;this.timedLeft=0;this.endTimer=null;
   }
-  stats(){return computeStats(this.weapon,this.profile,this.upgrades);}
+  stats(){
+    const s=computeStats(this.weapon,this.profile,this.upgrades);
+    if(this.timedLeft>0){s.interval*=.5;s.projectiles+=2;}   // timed special attack: double fire rate, two extra streams
+    return s;
+  }
   setWeapon(key){if(!WEAPONS[key]||!['ready','defeat','victory'].includes(this.mode))return false;this.weapon=key;return true;}
   chooseUpgrade(id){
     if(this.mode!=='clear'||!this.offer.includes(id))return false;
@@ -77,6 +86,8 @@ export class Engine {
   }
   spawnRoom(){
     this.enemies=[];this.shots=[];this.burstQueue=[];this.puddles=[];this.fx=[];this.cooldown=0;this.specialCooldown=0;
+    this.hydrants=[];this.coins=[];this.bonuses=[];this.endTimer=null;this.timedLeft=0;
+    this.hydrantTimer=HYDRANT.minDelay+this.random()*(HYDRANT.maxDelay-HYDRANT.minDelay);
     this.charges=2+(this.profile.foam>0?1:0)+(this.profile.cannon>0?1:0);
     const lineup=roomLineup(this.room,this.random);
     this.pending=lineup.filter(e=>e.tier==='base');          // regular enemies still to arrive
@@ -125,7 +136,8 @@ export class Engine {
       const index=this.enemies.indexOf(enemy);if(index>=0)this.enemies.splice(index,1);
       if(enemy.tier==='base'||enemy.tier===undefined)this.defeatedRegular=(this.defeatedRegular||0)+1;
       this.score+=enemy.score??(enemy.charger?200:100);
-      this.profile.credits=clamp(this.profile.credits+(enemy.reward??(enemy.charger?8:5)),0,1000000);
+      // The reward drops as a coin that stays on the map until the hero collects it (or the round ends).
+      this.coins.push({x:enemy.x,y:enemy.y,value:enemy.reward??(enemy.charger?8:5),big:enemy.tier==='boss'||enemy.tier==='mini'});
       this.fx.push({x:enemy.x,y:enemy.y,type:'steam',life:.65,total:.65});
     }
   }
@@ -173,6 +185,40 @@ export class Engine {
       this.damage(e,st.orbDamage,false);
     }
   }
+  spawnHydrant(){
+    const outer=MAP.radius*.8;
+    for(let i=0;i<40;i++){
+      const r=Math.sqrt(this.random())*outer,a=this.random()*Math.PI*2,p={x:Math.cos(a)*r,y:Math.sin(a)*r};
+      if(Math.hypot(p.x-this.hero.x,p.y-this.hero.y)<2.5||this.hydrants.some(h=>Math.hypot(h.x-p.x,h.y-p.y)<4))continue;
+      this.hydrants.push({...p,hp:HYDRANT.hp,maxHp:HYDRANT.hp,id:++this.id,flash:0});return true;
+    }
+    return false;
+  }
+  hitHydrant(h,damage){
+    h.hp-=damage;h.flash=.12;this.fx.push({x:h.x,y:h.y,type:'splash',life:.28,total:.28});
+    if(h.hp>0)return;
+    this.hydrants.splice(this.hydrants.indexOf(h),1);
+    let type=BONUS.types[Math.floor(this.random()*BONUS.types.length)];
+    if(type==='upgrade'&&!rollUpgradeOffer(this.upgrades,()=>0,1).length)type='coins';
+    this.bonuses.push({id:++this.id,x:h.x,y:h.y,type,life:BONUS.life,total:BONUS.life});
+    this.fx.push({x:h.x,y:h.y,type:'burst',radius:2,life:.5,total:.5});
+  }
+  /** Click or tap on a bonus: it activates at once. */
+  activateBonus(id){
+    if(this.mode!=='active')return null;
+    const i=this.bonuses.findIndex(b=>b.id===id);if(i<0)return null;
+    const b=this.bonuses.splice(i,1)[0];let text='';
+    if(b.type==='coins'){const n=BONUS.coinsBase+BONUS.coinsPerRoom*this.room;this.profile.credits=clamp(this.profile.credits+n,0,1000000);text='BONUS: +'+n+' coins';}
+    else if(b.type==='upgrade'){const pick=rollUpgradeOffer(this.upgrades,this.random,1)[0];if(pick){this.upgrades[pick]=(this.upgrades[pick]||0)+1;text='BONUS: '+UPGRADE_BY_ID[pick].name;}}
+    else if(b.type==='bomb'){
+      this.fx.push({...this.hero,type:'burst',radius:BONUS.bombRadius,life:.6,total:.6});
+      for(const e of [...this.enemies])if(Math.hypot(e.x-this.hero.x,e.y-this.hero.y)<=BONUS.bombRadius)this.damage(e,BONUS.bombDamage);
+      text='BONUS: BOMB';
+    }
+    else{this.timedLeft=BONUS.timedSeconds;text='BONUS: RAPID FIRE '+BONUS.timedSeconds+'s';}
+    this.roomEvent=text;this.encounterTimer=2.5;
+    return b.type;
+  }
   knockback(enemy,shot){
     // Bosses shrug most of it off; mini-bosses take half.
     const resist=enemy.tier==='boss'?.2:enemy.tier==='mini'?.5:1,l=Math.hypot(shot.vx,shot.vy)||1;
@@ -193,10 +239,29 @@ export class Engine {
     this.moving=length>.01;
     this.hero.x+=move.x*scale*3.6*dt;this.hero.y+=move.y*scale*3.6*dt;clampToMap(this.hero,HERO_PAD);
     this.advanceSpawns(dt);
+    this.timedLeft=Math.max(0,this.timedLeft-dt);
+    if(this.endTimer===null){
+      this.hydrantTimer-=dt;
+      if(this.hydrantTimer<=0){this.hydrantTimer=HYDRANT.minDelay+this.random()*(HYDRANT.maxDelay-HYDRANT.minDelay);if(this.hydrants.length<HYDRANT.maxAlive)this.spawnHydrant();}
+    }
+    for(const h of this.hydrants)h.flash=Math.max(0,h.flash-dt);
+    for(const b of this.bonuses)b.life-=dt;
+    this.bonuses=this.bonuses.filter(b=>b.life>0);
+    for(let i=this.coins.length-1;i>=0;i--){
+      const k=this.coins[i];
+      if(Math.hypot(k.x-this.hero.x,k.y-this.hero.y)<=COIN.range){
+        this.profile.credits=clamp(this.profile.credits+k.value,0,1000000);this.coins.splice(i,1);
+        this.fx.push({x:k.x,y:k.y,type:'splash',life:.28,total:.28});
+      }
+    }
     const st=this.stats();this.interval=st.interval;
-    if(this.enemies.length){
+    if(this.enemies.length||this.hydrants.length){
+      const d2=o=>(o.x-this.hero.x)**2+(o.y-this.hero.y)**2;
       let nearest=this.enemies[0];
-      for(const e of this.enemies)if((e.x-this.hero.x)**2+(e.y-this.hero.y)**2<(nearest.x-this.hero.x)**2+(nearest.y-this.hero.y)**2)nearest=e;
+      for(const e of this.enemies)if(d2(e)<d2(nearest))nearest=e;
+      // A hydrant becomes the target when it is in range and no enemy is close (within 3.5 units).
+      let hyd=null;for(const h of this.hydrants)if(!hyd||d2(h)<d2(hyd))hyd=h;
+      if(hyd&&Math.sqrt(d2(hyd))<=st.range&&(!nearest||(Math.sqrt(d2(nearest))>3.5&&d2(hyd)<d2(nearest))))nearest=hyd;
       const dx=nearest.x-this.hero.x,dy=nearest.y-this.hero.y,dist=Math.hypot(dx,dy),l=dist||1;
       this.aim={x:dx/l,y:dy/l};
       // Weapons only fire once the nearest enemy is inside their range.
@@ -224,7 +289,10 @@ export class Engine {
       const old={x:s.x,y:s.y};s.x+=s.vx*dt;s.y+=s.vy*dt;s.life-=dt;
       let hit=null,first=Infinity;
       for(const e of this.enemies){if(s.hit?.has(e))continue;const t=firstHit(old,s,e,e.radius??(e.charger?.25:.18));if(t!==null&&t<first){first=t;hit=e;}}
-      if(hit){
+      let hyd=null,hydT=Infinity;
+      for(const h of this.hydrants){const t=firstHit(old,s,h,HYDRANT.radius);if(t!==null&&t<hydT){hydT=t;hyd=h;}}
+      if(hyd&&hydT<first){this.hitHydrant(hyd,s.damage);s.life=0;}
+      else if(hit){
         const hx=hit.x,hy=hit.y;
         this.damage(hit,s.damage,s.crit);
         if(s.knock&&this.enemies.includes(hit))this.knockback(hit,s);
@@ -272,11 +340,19 @@ export class Engine {
     }
     for(const f of this.fx)f.life-=dt;
     this.fx=this.fx.filter(f=>f.life>0).slice(-100);
-    if(!this.enemies.length&&!this.pending?.length&&!this.specialQueue?.length){
-      this.cleared=this.room;this.profile.credits=clamp(this.profile.credits+25+this.room*5,0,1000000);
-      this.health=Math.min(this.maxHealth,this.health+1);this.mode=this.room>=ROOM_LIMIT?'victory':'clear';
-      this.offer=this.mode==='clear'?rollUpgradeOffer(this.upgrades,this.random):[];
-      this.shots=[];this.burstQueue=[];return'checkpoint';
+    if(this.endTimer===null&&!this.enemies.length&&!this.pending?.length&&!this.specialQueue?.length){
+      // Wave is over: a short real-time window to pick up coins before the round closes.
+      this.endTimer=COIN.endGrace;this.hydrants=[];this.roomEvent='Collect the coins!';this.encounterTimer=COIN.endGrace;
+    }
+    if(this.endTimer!==null){
+      this.endTimer-=dt;
+      if(this.endTimer<=0){
+        this.endTimer=null;this.coins=[];this.bonuses=[];this.hydrants=[];this.timedLeft=0;   // anything left is lost
+        this.cleared=this.room;this.profile.credits=clamp(this.profile.credits+25+this.room*5,0,1000000);
+        this.health=Math.min(this.maxHealth,this.health+1);this.mode=this.room>=ROOM_LIMIT?'victory':'clear';
+        this.offer=this.mode==='clear'?rollUpgradeOffer(this.upgrades,this.random):[];
+        this.shots=[];this.burstQueue=[];return'checkpoint';
+      }
     }
     return null;
   }

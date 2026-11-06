@@ -2,7 +2,7 @@ import {ENEMY_ROSTER} from './enemy-roster.mjs';
 import {pinchZoom} from './viewport.mjs';
 import { drawRookieWobble } from './rookie-wobble.mjs';
 import { drawFireEnemy } from './enemy-art.mjs';
-import { Engine, EQUIPMENT, MAP, iso, movementFromScreen, clamp } from './game-core.mjs';
+import { Engine, EQUIPMENT, MAP, BONUS, iso, movementFromScreen, clamp } from './game-core.mjs';
 import { WEAPONS, WEAPON_KEYS, UPGRADES, UPGRADE_BY_ID } from './weapons.mjs';
 // The hero is drawn at half of its previous size (enemies carry their own visualScale).
 const HERO_SCALE=.5;
@@ -31,6 +31,14 @@ class FireDefense {
     zone.addEventListener('pointermove',e=>{if(e.pointerId===this.pointer)this.joystick(e);});
     for(const name of ['pointerup','pointercancel','lostpointercapture'])zone.addEventListener(name,e=>{if(e.pointerId===this.pointer)clear();});
     this.bindPinch();
+    // Click or tap a bonus to activate it.
+    canvas.addEventListener('pointerdown',event=>{
+      const e=this.engine;if(!e||e.mode!=='active'||this.paused||!e.bonuses.length)return;
+      const r=canvas.getBoundingClientRect(),sx=event.clientX-r.left,sy=event.clientY-r.top;
+      let best=null,bd=Math.max(BONUS.pickRadiusPx,this.unit*.45);
+      for(const b of e.bonuses){const p=this.project(b.x,b.y,.6),d=Math.hypot(p.x-sx,p.y-sy);if(d<bd){bd=d;best=b;}}
+      if(best){e.activateBonus(best.id);this.updateHUD();}
+    });
     $('zoom-reset').onclick=()=>this.setZoom(1);
     $('enemy-guide').onclick=()=>this.showEnemyGuide();
     $('close-bestiary').onclick=()=>{$('bestiary').close();canvas.focus();};
@@ -221,9 +229,11 @@ class FireDefense {
     const e=this.engine;
     // Foam puddles lie on the floor under everything else.
     if(e)for(const pd of e.puddles){const o2=this.project(pd.x,pd.y),k=Math.min(1,pd.life/.6),rr=pd.r*u;ctx.save();ctx.globalAlpha=.55*k;ctx.beginPath();ctx.ellipse(o2.x,o2.y,rr*1.0182,rr*.5091,0,0,Math.PI*2);ctx.fillStyle='#8fe9c4';ctx.fill();ctx.globalAlpha=.9*k;ctx.lineWidth=2;ctx.strokeStyle='#d8fff0';ctx.stroke();ctx.restore();}
-    let actors=e?[...e.enemies.map(a=>({kind:'enemy',...a})),{kind:'hero',...e.hero}]:[{kind:'hero',x:1,y:-1},{kind:'enemy',x:-2,y:2,charger:false,timer:1,flash:0,hp:3,maxHp:3},{kind:'enemy',x:3,y:2,charger:true,timer:2,flash:0,hp:5,maxHp:5},{kind:'enemy',x:-3,y:0,charger:false,timer:1,flash:0,hp:3,maxHp:3}];
+    // Coins lie on the floor until collected.
+    if(e)for(const k of e.coins){const q=this.project(k.x,k.y,.05),bob=Math.sin(this.time*5+k.x*3)*1.2,rr=(k.big?.2:.12)*u,lowT=e.endTimer!==null&&e.endTimer<.7&&Math.floor(this.time*10)%2;ctx.save();ctx.globalAlpha=lowT?.35:1;ctx.shadowColor='#ffd45a';ctx.shadowBlur=8;this.ellipse(q.x,q.y+bob,rr,rr*.62,'#f4b42c');this.ellipse(q.x,q.y+bob-1,rr*.8,rr*.48,'#ffd95e');this.ellipse(q.x,q.y+bob-1,rr*.35,rr*.2,'#f4b42c');ctx.restore();}
+    let actors=e?[...e.enemies.map(a=>({kind:'enemy',...a})),...e.hydrants.map(a=>({kind:'hydrant',...a})),{kind:'hero',...e.hero}]:[{kind:'hero',x:1,y:-1},{kind:'enemy',x:-2,y:2,charger:false,timer:1,flash:0,hp:3,maxHp:3},{kind:'enemy',x:3,y:2,charger:true,timer:2,flash:0,hp:5,maxHp:5},{kind:'enemy',x:-3,y:0,charger:false,timer:1,flash:0,hp:3,maxHp:3}];
     actors.sort((a,b)=>(b.x+b.y)-(a.x+a.y));
-    for(const a of actors){if(a.kind==='hero')this.drawHero(a,e);else this.drawEnemy(a);}
+    for(const a of actors){if(a.kind==='hero')this.drawHero(a,e);else if(a.kind==='hydrant')this.drawHydrant(a);else this.drawEnemy(a);}
     if(e){
       // Frost Orbs circling the hero.
       const orbCount=e.stats().orbs;
@@ -235,6 +245,8 @@ class FireDefense {
         else{this.line(tail,p,s.crit?'#fff29a':'#a8f1ff',(s.crit?5:3)+lv*.3);this.ellipse(p.x,p.y,s.crit?3.5:2.5,s.crit?3.5:2.5,s.crit?'#fffbe0':'#e8fcff');}
       }
       for(const f of e.fx)this.drawEffect(f);
+      // Bonus pickups float above the floor; click or tap one to use it.
+      for(const b of e.bonuses)this.drawBonus(b);
       if(e.grace>.85&&e.health<e.maxHealth){ctx.fillStyle='#f64c4c0b';ctx.fillRect(0,0,w,h);}
     }
     // Ambient embers remain decorative; combat is fully paused behind menus.
@@ -249,7 +261,34 @@ class FireDefense {
     ctx.fillStyle='#a8c6d9';ctx.font='9px system-ui';ctx.textAlign='center';ctx.fillText('MAP ×5',cx,cy-rad-8+2);
     const plot=p=>({x:cx+(p.x/MAP.radius)*rad,y:cy-(p.y/MAP.radius)*rad});
     for(const enemy of e.enemies){const p=plot(enemy);ctx.fillStyle=enemy.tier==='boss'?'#ff626c':enemy.tier==='mini'?'#c796ff':'#edac63';ctx.beginPath();ctx.arc(p.x,p.y,enemy.tier==='boss'?3:enemy.tier==='mini'?2:1.2,0,Math.PI*2);ctx.fill();}
+    for(const h of e.hydrants){const q=plot(h);ctx.fillStyle='#d93a38';ctx.fillRect(q.x-1.5,q.y-1.5,3,3);}
+    for(const b of e.bonuses){const q=plot(b);ctx.fillStyle='#7fe3b1';ctx.beginPath();ctx.arc(q.x,q.y,2.2,0,Math.PI*2);ctx.fill();}
     const p=plot(e.hero);ctx.fillStyle='#d6fbff';ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fill();ctx.restore();
+  }
+  drawHydrant(a){
+    const p=this.project(a.x,a.y),u=this.unit,f=a.flash>0;
+    ctx.save();ctx.translate(p.x,p.y);
+    this.ellipse(0,2,u*.3,u*.15,'#00000044');
+    const body=f?'#ffb0a8':'#d93a38',dark=f?'#ff8c84':'#a82a2b';
+    ctx.fillStyle=dark;ctx.fillRect(-u*.17,-u*.52,u*.34,u*.5);
+    ctx.fillStyle=body;ctx.fillRect(-u*.17,-u*.52,u*.2,u*.5);
+    ctx.fillStyle=dark;ctx.fillRect(-u*.25,-u*.12,u*.5,u*.12);            // base flange
+    ctx.fillStyle=body;ctx.beginPath();ctx.ellipse(0,-u*.52,u*.19,u*.12,0,Math.PI,0);ctx.fill();   // dome
+    ctx.fillStyle='#f0f0f0';ctx.fillRect(-u*.045,-u*.72,u*.09,u*.12);          // cap nut
+    ctx.fillStyle=dark;ctx.fillRect(-u*.3,-u*.4,u*.13,u*.12);ctx.fillRect(u*.17,-u*.4,u*.13,u*.12);   // side nozzles
+    ctx.fillStyle='#f2c94c';ctx.fillRect(-u*.3,-u*.41,u*.04,u*.14);ctx.fillRect(u*.26,-u*.41,u*.04,u*.14);
+    if(a.hp<a.maxHp){ctx.fillStyle='#00000088';ctx.fillRect(-u*.25,-u*.9,u*.5,5);ctx.fillStyle='#7fe3b1';ctx.fillRect(-u*.25,-u*.9,u*.5*Math.max(0,a.hp/a.maxHp),5);}
+    ctx.restore();
+  }
+  drawBonus(b){
+    const p=this.project(b.x,b.y,.65+Math.sin(this.time*3+b.x)*.06),u=this.unit,r=u*.3,k=Math.min(1,b.life/b.total);
+    const spec={coins:['#f4b42c','$'],upgrade:['#7fe3b1','▲'],bomb:['#ff7a73','✹'],timed:['#8ac8ff','⚡']}[b.type];
+    ctx.save();ctx.globalAlpha=b.life<2?(Math.floor(this.time*8)%2?.4:1):1;
+    ctx.shadowColor=spec[0];ctx.shadowBlur=14+Math.sin(this.time*6)*5;
+    this.ellipse(p.x,p.y,r,r,'#0c1d2cdd');
+    ctx.lineWidth=3;ctx.strokeStyle=spec[0];ctx.beginPath();ctx.arc(p.x,p.y,r,-Math.PI/2,-Math.PI/2+Math.PI*2*k);ctx.stroke();
+    ctx.shadowBlur=0;ctx.fillStyle=spec[0];ctx.font='800 '+Math.round(r*1.1)+'px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(spec[1],p.x,p.y+1);
+    ctx.restore();
   }
   drawHero(a,e){
     const p=this.project(a.x,a.y),active=e?.mode==='active'&&!this.paused;
