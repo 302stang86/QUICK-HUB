@@ -1,0 +1,8 @@
+{
+  "name":"fdec-fire-defense-game",
+  "version":"0.2.0",
+  "private":true,
+  "type":"module",
+  "scripts":{"test":"node --test tests/model.test.mjs","test:rules":"firebase emulators:exec --only firestore --project demo-fdec-game \"node --test tests/rules.test.mjs\""},
+  "devDependencies":{"@firebase/rules-unit-testing":"^3.0.0","firebase":"10.12.2","firebase-tools":"^13.0.0"}
+}

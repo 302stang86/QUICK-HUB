@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Fire Defense — Warehouse Response</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#091322;color:#fff;font:16px system-ui,sans-serif}#canvas{width:100vw;height:100dvh;display:block;touch-action:none;outline:0}#gate{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(at top,#25456b,#091322);padding:20px;overflow:auto}#gate[hidden]{display:none}.panel{width:min(440px,100%);padding:25px;background:#11263d;border:1px solid #405976;border-top:5px solid #ef424c;border-radius:16px;box-shadow:0 25px 70px #0008}h1{font-size:29px;margin:5px 0}p{line-height:1.5;color:#c0d2e8}label{display:block;margin:14px 0 5px}input,button{font:inherit;border-radius:8px;padding:12px;border:1px solid #4d6480}input{width:100%;background:#081827;color:white}button{cursor:pointer;background:#d82738;color:white;font-weight:700}button:disabled{opacity:.45;cursor:wait}#signin,#launch{width:100%;margin-top:16px}#logout{margin-top:12px;background:#243b54}#message{min-height:48px}dialog{color:white;background:#11263d;border:1px solid #62738b;border-radius:12px;width:min(650px,95vw);max-height:85dvh}dialog::backdrop{background:#000b}li{margin:12px 0}#rotate{display:none;position:fixed;inset:0;background:#091322ee;place-items:center;pointer-events:none;font-size:24px;text-align:center;padding:25px} @media(orientation:portrait){#rotate{display:grid}body:has(#gate:not([hidden])) #rotate{display:none}}
+</style></head><body>
+<canvas id="canvas" tabindex="0" aria-label="Fire Defense game"></canvas>
+<div id="gate"><section class="panel"><small>FDEC EMPLOYEE ARCADE</small><h1>FIRE DEFENSE</h1><p>Warehouse Response • Move, spray, and clear the room.</p>
+<form id="login"><label for="email">FDEC account email</label><input id="email" type="email" autocomplete="username" required><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required><button id="signin" type="submit">Sign in</button></form>
+<label for="nickname">Leaderboard nickname</label><input id="nickname" minlength="3" maxlength="16" placeholder="Choose a nickname" autocomplete="off"><button id="launch" disabled>Enter warehouse</button><button id="logout" hidden>Sign out</button><p id="message" role="status">Checking your employee session…</p><small>Existing approved accounts only. For password help, use your FDEC employee hub.</small></section></div>
+<div id="rotate">Rotate your device to landscape.</div>
+<dialog id="board"><h2>Employee leaderboard</h2><p>Rooms cleared, then score, then fastest active play time.</p><div id="standings"></div><button id="closeboard">Back to game</button></dialog>
+<script>
+window.loadFireDefense = function(onProgress) {
+  return new Promise(function(resolve,reject) {
+    const script=document.createElement('script');
+    script.src='Build/{{{ LOADER_FILENAME }}}';
+    script.onerror=()=>reject(new Error('Unity loader missing. Rebuild the Web player using the FDEC template.'));
+    script.onload=()=>createUnityInstance(document.getElementById('canvas'),{
+      dataUrl:'Build/{{{ DATA_FILENAME }}}',frameworkUrl:'Build/{{{ FRAMEWORK_FILENAME }}}',codeUrl:'Build/{{{ CODE_FILENAME }}}',
+      streamingAssetsUrl:'StreamingAssets',companyName:'FDEC',productName:'Fire Defense',productVersion:'0.2.0',
+      devicePixelRatio:Math.min(window.devicePixelRatio||1,1.5)
+    },onProgress).then(resolve,reject);
+    document.body.appendChild(script);
+  });
+};
+</script><script type="module" src="firebase-bridge.js"></script></body></html>
