@@ -219,6 +219,7 @@ body{display:flex !important; flex-direction:column; min-height:0; overflow:hidd
     <button id="tab-proposal" type="button" onclick="showView('proposal')">Repair Verbiage</button>
     <button id="tab-annual" type="button" onclick="showView('annual')">Annual Inspection</button>
     <button id="tab-install" type="button" onclick="showView('install')">New Install</button>
+    <button id="tab-backflow" type="button" onclick="showView('backflow')">Backflow</button>
     <button id="btn-export" class="export" type="button" onclick="exportFullPackage()" title="Combined PDF of selected pages, plus the Word proposal">Export Full Package</button>
     <button id="btn-savedraft" class="draft" type="button" onclick="saveSuiteDraft()" title="Save all pages as one draft file">Save Draft</button>
     <button id="btn-loaddraft" class="draft" type="button" onclick="document.getElementById('suiteDraftFile').click()" title="Load a saved suite draft">Load Draft</button>
@@ -244,6 +245,7 @@ body{display:flex !important; flex-direction:column; min-height:0; overflow:hidd
   <iframe id="view-proposal" title="FDEC Repair Verbiage" hidden></iframe>
   <iframe id="view-annual" title="FDEC Annual Inspection" hidden></iframe>
   <iframe id="view-install" title="FDEC New Install" hidden></iframe>
+  <iframe id="view-backflow" title="FDEC Backflow" hidden></iframe>
 </div>
 
 <div id="exportModal" hidden>
@@ -258,6 +260,7 @@ body{display:flex !important; flex-direction:column; min-height:0; overflow:hidd
       <label class="xm-row"><input type="checkbox" id="xm-proposal" checked> <span>Repair Verbiage</span></label>
       <label class="xm-row"><input type="checkbox" id="xm-annual"> <span>Annual Inspection</span></label>
       <label class="xm-row"><input type="checkbox" id="xm-install"> <span>New Install</span></label>
+      <label class="xm-row"><input type="checkbox" id="xm-backflow"> <span>Backflow</span></label>
       <div class="xm-note">Each selected verbiage page also downloads its own Word (.docx) file.</div>
     </div>
     <div class="xm-foot">
@@ -7842,6 +7845,1554 @@ if (_btnSave) _btnSave.addEventListener("click", () => {
 })();
 <\/script>
 </body></html></script>
+<script type="text/html" id="src-backflow"><!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
+<title>FDEC Proposal Builder V2.0</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"><\/script>
+<style>
+  :root{
+    --ink:#20262d;
+    --paper:#eaf1f8;
+    --panel:#ffffff;
+    --line:#cdd9e8;
+    --red:#3281b9;
+    --red-dark:#256a9c;
+    --navy:#010039;
+    --soft:#eef5fb;
+    --steel:#5b6572;
+    --muted:#7c8896;
+    --check:#3281b9;
+    --radius:6px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    font-size:15px;
+    line-height:1.45;
+    -webkit-text-size-adjust:100%;
+  }
+  header{
+    background:var(--navy);
+    color:#fff;
+    padding:16px 22px;
+    padding-top:calc(16px + env(safe-area-inset-top));
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:8px;
+    border-bottom:4px solid var(--red);
+  }
+  header h1{font-size:20px;font-weight:700;letter-spacing:.3px}
+  header h1 span{color:#8fa8c9;font-weight:400}
+  header .sub{font-size:12.5px;color:#8fa8c9;text-transform:uppercase;letter-spacing:1.2px}
+  main{max-width:1060px;margin:0 auto;padding:22px 18px 120px}
+  .copyright-notice{
+    font-size:11px; color:var(--steel); text-align:center; font-style:italic;
+    margin:30px auto 0; padding-top:12px; border-top:1px solid var(--line);
+  }
+
+  section.card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    margin-bottom:18px;
+    overflow:hidden;
+  }
+  .card-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:12px 16px;
+    background:var(--soft);
+    border-bottom:1px solid var(--line);
+    border-left:4px solid var(--red);
+    flex-wrap:wrap;
+  }
+  .card-head h2{
+    font-size:14px;
+    text-transform:uppercase;
+    letter-spacing:1.1px;
+    color:var(--red);
+  }
+  .card-head .hint{font-size:12.5px;color:var(--muted)}
+  .card-body{padding:14px 16px}
+
+  /* Job info grid */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+  label.field{display:block;font-size:12.5px;font-weight:600;color:var(--steel)}
+  label.field input, label.field textarea{
+    display:block;width:100%;margin-top:4px;
+    font:inherit;font-size:16px;font-weight:400;
+    padding:10px 11px;border:1px solid var(--line);border-radius:4px;background:#fff;
+  }
+  label.field textarea{resize:vertical;min-height:60px}
+  input:focus, textarea:focus{outline:2px solid var(--red);outline-offset:1px;border-color:var(--red)}
+
+  /* Item rows */
+  .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .toolbar input[type="search"]{
+    font:inherit;font-size:16px;padding:9px 11px;border:1px solid var(--line);
+    border-radius:4px;width:210px;background:#fff;
+  }
+  ul.items{list-style:none}
+  li.item{
+    display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;
+    padding:8px 6px;border-bottom:1px dashed var(--line);
+  }
+  li.item:last-child{border-bottom:none}
+  li.item input[type="checkbox"]{
+    width:22px;height:22px;margin-top:4px;accent-color:var(--check);flex-shrink:0;cursor:pointer;
+  }
+  li.item textarea{
+    flex:1;font:inherit;font-size:16px;line-height:1.4;
+    border:1px solid transparent;border-radius:4px;background:transparent;
+    padding:5px 6px;resize:none;overflow:hidden;
+  }
+  li.item textarea:hover{border-color:var(--line);background:#fff}
+  li.item textarea:focus{border-color:var(--red);background:#fff}
+  li.item.unchecked textarea{color:#9aa0a8}
+  li.item .del{
+    border:none;background:none;color:#b9bec5;cursor:pointer;font-size:20px;
+    margin-top:2px;line-height:1;flex-shrink:0;padding:4px 8px;border-radius:3px;
+  }
+  li.item .del:hover{color:var(--red);background:#e2eef7}
+
+  /* Sub-items (optional subcategory under a selected scope item) */
+  ul.subs{
+    list-style:none;flex-basis:100%;
+    margin:4px 0 2px 28px;padding:4px 0 2px 10px;
+    border-left:2px solid var(--line);
+  }
+  li.sub{display:flex;gap:8px;align-items:flex-start;padding:4px 2px}
+  li.sub input[type="checkbox"]{
+    width:20px;height:20px;margin-top:3px;accent-color:var(--steel);flex-shrink:0;cursor:pointer;
+  }
+  li.sub textarea{
+    flex:1;font:inherit;font-size:16px;line-height:1.4;color:var(--steel);
+    border:1px solid transparent;border-radius:4px;background:transparent;
+    padding:3px 6px;resize:none;overflow:hidden;
+  }
+  li.sub textarea:hover{border-color:var(--line);background:#fff}
+  li.sub textarea:focus{border-color:var(--red);background:#fff}
+  li.sub.unchecked textarea{color:#9aa0a8}
+  li.sub .del{
+    border:none;background:none;color:#b9bec5;cursor:pointer;font-size:14px;
+    margin-top:3px;line-height:1;flex-shrink:0;padding:2px 4px;border-radius:3px;
+  }
+  li.sub .del:hover{color:var(--red);background:#e2eef7}
+  button.addsub{
+    font:inherit;font-size:12px;font-weight:600;
+    margin:2px 0 2px 2px;padding:3px 8px;border-radius:4px;cursor:pointer;
+    border:1px dashed var(--line);background:none;color:var(--muted);
+  }
+  button.addsub:hover{border-color:var(--red);color:var(--red)}
+
+  button.small{
+    font:inherit;font-size:13px;font-weight:600;
+    padding:6px 12px;border-radius:4px;cursor:pointer;
+    border:1px solid var(--line);background:#fff;color:var(--steel);
+  }
+  button.small:hover{border-color:var(--red);color:var(--red)}
+  .selcount{font-size:12.5px;color:var(--muted);white-space:nowrap}
+
+  /* Combined Including/Excluding controls */
+  .legend{font-size:12.5px;color:var(--muted);margin:0 0 10px 2px}
+  .seg{
+    display:inline-flex;flex-shrink:0;margin-top:2px;
+    border:1px solid var(--line);border-radius:4px;overflow:hidden;
+  }
+  .seg button{
+    font:inherit;font-size:11.5px;font-weight:700;letter-spacing:.4px;
+    padding:5px 9px;border:none;background:#fff;color:#9aa0a8;cursor:pointer;
+    border-right:1px solid var(--line);
+  }
+  .seg button:last-child{border-right:none}
+  .seg button.on-inc{background:#1a7a3c;color:#fff}
+  .seg button.on-exc{background:var(--red);color:#fff}
+  .seg button.on-off{background:var(--steel);color:#fff}
+  li.item.omitted textarea{color:#9aa0a8;text-decoration:line-through}
+
+  /* Footer action bar */
+  .actionbar{
+    position:fixed;left:0;right:0;bottom:0;
+    background:#fff;border-top:1px solid var(--line);
+    box-shadow:0 -3px 14px rgba(0,0,0,.08);
+    padding:12px 18px;
+    padding-bottom:calc(12px + env(safe-area-inset-bottom));
+    display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;
+    z-index:10;
+  }
+  button.primary{
+    font:inherit;font-size:15px;font-weight:700;
+    background:var(--red);color:#fff;border:none;border-radius:5px;
+    padding:12px 26px;cursor:pointer;letter-spacing:.2px;
+  }
+  button.primary:hover{background:var(--red-dark)}
+  button.secondary{
+    font:inherit;font-size:14px;font-weight:600;
+    background:#fff;color:var(--steel);border:1.5px solid var(--steel);
+    border-radius:5px;padding:11px 20px;cursor:pointer;
+  }
+  button.secondary:hover{border-color:var(--red);color:var(--red)}
+  #status{font-size:13px;color:var(--muted);min-width:160px;text-align:center}
+  #status.ok{color:#1a7a3c;font-weight:600}
+
+  @media (max-width:640px){
+    .toolbar input[type="search"]{width:100%}
+    main{padding:18px 12px calc(170px + env(safe-area-inset-bottom))}
+    header{padding-left:16px;padding-right:16px}
+    .actionbar{gap:8px}
+    .actionbar button.primary{flex:1 1 100%;padding:14px 20px;min-height:50px;font-size:16px}
+    .actionbar button.secondary{flex:1 1 45%;min-height:46px}
+    #status{flex:1 1 100%;order:-1;margin-bottom:2px}
+  }
+  @media (max-width:640px) and (hover:none){
+    .toolbar button{min-height:40px}
+    button.small{min-height:38px}
+    .seg button{padding:9px 13px;font-size:12.5px;min-height:40px}
+    button.addsub{min-height:36px;padding:6px 12px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Backflow <span>· Sprinkler &amp; Fire Alarm Division</span></h1>
+  <div class="sub">ServiceTrade quotation generator &nbsp;·&nbsp; <span id="metaLine">V2.0 · Mitch Peebles</span></div>
+</header>
+
+<main>
+
+  <!-- JOB INFO -->
+  <section class="card">
+    <div class="card-head"><h2>Job Information</h2><span class="hint">Appears at the top of the proposal</span></div>
+    <div class="card-body">
+      <div class="grid">
+        <label class="field">Customer / Facility
+          <input type="text" id="jobCustomer" placeholder="e.g., BIRDI — Plymouth, MI">
+        </label>
+        <label class="field">Quote Number
+          <input type="text" id="jobQuote" placeholder="e.g., Q-2026-0143">
+        </label>
+        <label class="field">Date
+          <input type="date" id="jobDate">
+        </label>
+      </div>
+      <div style="margin-top:12px">
+        <label class="field">Introduction Paragraph
+          <textarea id="jobIntro">Fire Defense Equipment Co. is pleased to present this quotation to perform the following fire sprinkler work at the above-referenced location:</textarea>
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCOPE -->
+  <section class="card" id="sec-scope">
+    <div class="card-head">
+      <h2>Scope of Work</h2>
+      <div class="toolbar">
+        <input type="search" placeholder="Filter scope items…" data-filter="scope">
+        <button class="small" data-add="scope">+ Add Custom Item</button>
+        <span class="selcount" data-count="scope">0 selected</span>
+      </div>
+    </div>
+    <div class="card-body"><ul class="items" id="list-scope"></ul></div>
+  </section>
+
+  <!-- NOTES -->
+  <section class="card" id="sec-notes">
+    <div class="card-head">
+      <h2>Notes</h2>
+      <div class="toolbar">
+        <input type="search" placeholder="Filter notes…" data-filter="notes">
+        <button class="small" data-add="notes">+ Add Custom Note</button>
+        <span class="selcount" data-count="notes">0 selected</span>
+      </div>
+    </div>
+    <div class="card-body"><ul class="items" id="list-notes"></ul></div>
+  </section>
+
+  <!-- INCLUDING / EXCLUDING (combined) -->
+  <section class="card" id="sec-incexc">
+    <div class="card-head">
+      <h2>Including / Excluding</h2>
+      <div class="toolbar">
+        <button class="small" data-add="incexc">+ Add Item</button>
+        <span class="selcount" data-count="incexc">5 included · 18 excluded</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <p class="legend">Mark each item <strong>INCL</strong> (included), <strong>EXCL</strong> (excluded), or <strong>—</strong> (leave off the proposal). The document builds separate INCLUDING and EXCLUDING lists automatically.</p>
+      <ul class="items" id="list-incexc"></ul>
+    </div>
+  </section>
+  <!-- QUALIFICATIONS -->
+  <section class="card" id="sec-quals">
+    <div class="card-head">
+      <h2>Qualifications</h2>
+      <div class="toolbar">
+        <button class="small" data-add="quals">+ Add Qualification</button>
+        <span class="selcount" data-count="quals">4 selected</span>
+      </div>
+    </div>
+    <div class="card-body"><ul class="items" id="list-quals"></ul></div>
+  </section>
+
+  <!-- CUSTOMER RESPONSIBILITIES -->
+  <section class="card" id="sec-resp">
+    <div class="card-head">
+      <h2>Customer Responsibilities</h2>
+      <div class="toolbar">
+        <button class="small" data-add="resp">+ Add Item</button>
+        <span class="selcount" data-count="resp">4 selected</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <p class="legend">Checked items appear as bullets under “The customer is responsible for the following:”</p>
+      <ul class="items" id="list-resp"></ul>
+    </div>
+  </section>
+
+  <!-- BILLING & PAYMENT TERMS -->
+  <section class="card" id="sec-billing">
+    <div class="card-head">
+      <h2>Billing &amp; Payment Terms</h2>
+      <div class="toolbar">
+        <button class="small" data-add="billing">+ Add Term</button>
+        <span class="selcount" data-count="billing">6 selected</span>
+      </div>
+    </div>
+    <div class="card-body"><ul class="items" id="list-billing"></ul></div>
+  </section>
+
+  <!-- CLOSING -->
+  <section class="card" id="sec-closing">
+    <div class="card-head">
+      <h2>Closing</h2>
+      <div class="toolbar">
+        <button class="small" data-add="closing">+ Add Line</button>
+        <span class="selcount" data-count="closing">0 selected</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <p class="legend">Checked closing lines appear at the very end of the proposal, before the signature block below.</p>
+      <ul class="items" id="list-closing"></ul>
+      <label class="field" style="margin-top:12px">Signature Block
+        <textarea id="jobSignature" rows="6" style="min-height:120px">Mitchell Peebles
+Cell (248) 797-4488
+Office (248) 549-8113
+Mp1@firedefense.com</textarea>
+      </label>
+      <button type="button" class="small" onclick="__fdecSaveMySig()" style="margin-top:8px" title="Save this signature to your account so it fills in on your proposals">Save as my signature</button>
+      <script>
+      (function(){
+        var ta=document.getElementById('jobSignature'); if(!ta) return;
+        var SIG_DEFAULT=ta.value.replace(/\s+$/,'');
+        function sigToast(m,bad){ try{var t=document.createElement('div');t.textContent=m;t.style.cssText='position:fixed;left:50%;bottom:76px;transform:translateX(-50%);z-index:99999;background:'+(bad?'#9d0e16':'#1B2A4A')+';color:#fff;padding:10px 15px;border-radius:8px;font:600 13px/1.3 -apple-system,Segoe UI,Arial,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.3);max-width:86vw;text-align:center';document.body.appendChild(t);setTimeout(function(){t.style.transition='opacity .4s';t.style.opacity='0';setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},450);},2600);}catch(_){}}
+        window.addEventListener('message', function(ev){
+          var d=ev&&ev.data; if(!d||d.fdec!==true) return;
+          if(d.type==='my-signature'){
+            if(ta.value.replace(/\s+$/,'')===SIG_DEFAULT){
+              if(d.sig!=null && String(d.sig).trim()!==''){ ta.value=String(d.sig); }
+              else if(d.name){ var fl=SIG_DEFAULT.split('\n')[0].trim().toLowerCase(); if(fl!==String(d.name).trim().toLowerCase()){ ta.value=String(d.name); } }
+            }
+            return;
+          }
+          if(d.type==='my-signature-saved'){ sigToast(d.ok?'Saved as your signature \u2014 it will fill in on your proposals.':'Could not save your signature.', !d.ok); return; }
+        });
+        window.__fdecSaveMySig=function(){ if(window.parent&&window.parent!==window){ window.parent.postMessage({fdec:true,type:'save-my-signature',text:ta.value},'*'); sigToast('Saving your signature\u2026'); } };
+        function reqSig(){ if(window.parent&&window.parent!==window) window.parent.postMessage({fdec:true,type:'request-my-signature'},'*'); }
+        if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(reqSig,90); }); else setTimeout(reqSig,90);
+      })();
+      <\/script>
+    </div>
+  </section>
+
+  <p class="copyright-notice">&copy; 2026 Mitchell Peebles. Licensed to Fire Defense Equipment Company, Inc. for internal use.</p>
+
+</main>
+
+<div class="actionbar">
+  <button class="primary" id="btnWord">Generate Word Proposal (.docx)</button>
+  <button class="secondary" id="btnCopy">Copy as Plain Text</button>
+  <span id="status" class=""></span>
+</div>
+
+<script>
+/* ============================================================
+   APP METADATA — version increases by 0.5 with each revision
+   ============================================================ */
+const APP_META = {
+  author: "Mitch Peebles",
+  version: "2.0"
+};
+/* Identifies this page within the suite draft bundle. The generated clone
+   pages override this value (annual / install). */
+const SUITE_PAGE_ID = "backflow";
+
+/* ============================================================
+   VERBIAGE LIBRARY — edit freely; app numbers/letters items
+   automatically based on what is checked at generation time.
+   ============================================================ */
+
+const LIBRARY = {
+  /* Scope entries may be a plain string, or an object with optional default
+     sub-items:  { text: "...", subs: ["...", "..."] }
+     Sub-items appear (unchecked) beneath the item once it is selected. */
+  scope: [
+    { text: "Prepare and submit shop drawings and manufacturer submittal data for the new backflow assembly to the ____________ for plan review and approval prior to the start of work.",
+      subs: [
+        "Includes manufacturer flow rate charts and hydraulic data for the proposed assembly.",
+        "Includes a hydraulic analysis to confirm the new assembly does not reduce available pressure below the system demand."
+      ] },
+    "Obtain all permits required by the ____________ for this work.",
+    { text: "Coordinate with the ____________ Water Department to schedule the water supply shutdown.",
+      subs: [
+        "Confirm whether the city-side control valve serves the fire protection system only or is shared with the domestic water supply.",
+        "Includes a preliminary on-site meeting with the Water Department prior to scheduling the work."
+      ] },
+    "Conduct a main drain test prior to the start of work. Record and document static and residual pressure readings at the base of the riser.",
+    "Contact the fire alarm monitoring company to place the fire alarm system in test mode prior to the shutdown. Restore the system to normal operation and notify the monitoring company upon completion of each work day.",
+    { text: "Remove the existing ( )\" backflow assembly, including all associated pipe, fittings, and supports.",
+      subs: [
+        "Includes removal and disposal of the existing assembly.",
+        "The existing assembly shall remain on site and become the property and responsibility of the customer. Fire Defense Equipment Co. assumes no responsibility for the storage, condition, disposal, or future use of this equipment."
+      ] },
+    { text: "Remove the existing ( )\" OS&Y city-side control valve and ( ) existing single check valve devices, including all associated pipe, fittings, and supports.",
+      subs: [
+        "Includes removal and disposal of the existing valves and devices."
+      ] },
+    { text: "Shut down and drain all water-filled piping downstream of the existing backflow assembly secondary OS&Y control valve.",
+      subs: [
+        "Includes controlled draining procedures to protect the surrounding work area."
+      ] },
+    { text: "Furnish and install one (1) new ( )\" stainless steel Double Check Valve Assembly (DCVA), listed and approved for fire protection service, together with all associated pipe, fittings, supports, and transition components required to complete the installation.",
+      subs: [
+        "Includes dielectric unions at all dissimilar metal connections."
+      ] },
+    { text: "Furnish and install one (1) new ( )\" stainless steel Double Check Backflow Detector Assembly (DCDA) with integral bypass meter, listed and approved for fire protection service, together with all associated pipe, fittings, supports, and transition components required to complete the installation.",
+      subs: [
+        "Includes dielectric unions at all dissimilar metal connections."
+      ] },
+    "Furnish and install one (1) new ( )\" Reduced Pressure Zone Assembly (RPZ), listed and approved for fire protection service, together with all associated pipe, fittings, supports, and transition components required to complete the installation.",
+    "Furnish and install one (1) new ( )\" Reduced Pressure Detector Assembly (RPDA) with integral bypass meter, listed and approved for fire protection service, together with all associated pipe, fittings, supports, and transition components required to complete the installation.",
+    "Furnish and install new OS&Y control valves with supervisory tamper switches on the inlet and outlet of the new assembly.",
+    "Rewire the existing supervisory tamper switches to the new OS&Y control valves and verify proper signal transmission to the fire alarm control panel (FACP).",
+    { text: "Rework the fire sprinkler system manifold, including all associated pipe and fittings required to accommodate the new assembly.",
+      subs: [
+        "Includes all pipe, fittings, and associated hardware required to connect the new backflow assembly to the wet fire sprinkler system riser piping.",
+        "Includes all pipe, fittings, and associated hardware required to connect the new backflow assembly to the dry fire sprinkler system dry valve inlet flange.",
+        "Includes all pipe, fittings, and associated hardware required to connect the new backflow assembly to the existing fire department connection (FDC) piping.",
+        "Includes replacing the existing FDC check valve.",
+        "Includes one (1) manifold low point auxiliary drain."
+      ] },
+    "Furnish and install all floor-mounted pipe supports and stanchions required for the new manifold assembly.",
+    "Furnish and install one (1) ( )\" blind flange on the existing water supply tee.",
+    "Flush the underground fire service main per NFPA 24 prior to placing the new assembly in service.",
+    "Hydrostatically test all new and reworked piping at 200 PSI for two (2) hours, or at 50 PSI above static pressure where static pressure exceeds 150 PSI, in accordance with NFPA 13.",
+    { text: "Perform backflow assembly certification testing upon completion of the installation.",
+      subs: [
+        "Furnish the completed test report to the owner and the ____________ Water Department.",
+        "Backflow assembly certification testing is subcontracted to ____________ under the direct supervision of Fire Defense Equipment Co."
+      ] },
+    "Conduct a main drain test following completion of the work and document the results for comparison against the pre-work readings.",
+    "Coordinate and attend the ____________ final inspection.",
+    { text: "Upon completion of draining the pit, operate the control valves to determine whether they serve the fire protection system piping.",
+      subs: [
+        "If the findings require further action, a separate proposal will be issued for the necessary repairs."
+      ] }
+  ],
+  notes: [
+    "This work requires a city water supply shutdown to the fire protection system. Depending on the configuration of the service, this may also interrupt the building's domestic water supply for the duration of the work. Anticipate a four (4) to six (6) hour shutdown window.",
+    "The customer/building owner is responsible for maintaining a fire watch while the fire sprinkler system is shut down.",
+    "The customer is responsible for providing a safe and secure location for the equipment and materials required to complete this work. The area must be adequate in size to prep and stage materials.",
+    "The customer must ensure the riser room is cleared and accessible prior to the start of work.",
+    "Plan review, permit, and inspection fees are included up to $____________. The final invoice will reflect actual fees plus ten percent (10%), with any amount exceeding $____________ billed directly to the customer.",
+    "Plan review, permit, and inspection fees are not included in this proposal and are the responsibility of the customer.",
+    "Please allow two (2) to four (4) weeks following proposal approval and receipt of the down payment for plan review approval and material procurement.",
+    "A down payment of $____________ is required prior to scheduling or commencing work.",
+    "Due to fluctuating material costs and delivery lead times, materials will be ordered upon approval of this quotation and invoiced upon receipt.",
+    "This quote is based on the customer furnishing all excavation and hand digging required for this work.",
+    "The customer is responsible for draining the pit of all standing water and ensuring safe working conditions prior to the scheduled start of work. If the pit is not adequately drained or safe working conditions are not met upon arrival, a minimum of four (4) hours per technician will be billed and the work will be rescheduled.",
+    "Per Occupational Safety and Health Administration (OSHA) guidelines, if the pit becomes unsafe at any time, work will stop until safe conditions are restored. Any additional labor costs resulting from a stop-work order will be the customer's responsibility.",
+    "This proposal is based on completing the work during normal business hours, provided the city-side control valve is dedicated to the fire sprinkler system. If overnight work is required at the customer's request, an additional $____________ will be added to the final invoice.",
+    "This proposal includes subcontracted labor under the direct supervision of Fire Defense Equipment Co.",
+    "This work includes surveys and investigations that may prompt additional proposals based on the findings."
+  ],
+  quals: [
+    "Unless otherwise noted, all work will be performed during normal business hours (Monday–Friday, 7:00 a.m. to 5:00 p.m.), excluding holidays.",
+    "This quotation is not a design review to determine whether the building or equipment is properly protected or whether the system was installed correctly. If verification of proper protection or installation is required, a complete building and system survey can be performed at an additional cost.",
+    "During hydrostatic testing, Fire Defense Equipment Co. is not responsible for any damages resulting from leaking or burst pipe or fittings on existing system components. Any required repair or replacement will be invoiced at additional cost.",
+    "Fire Defense Equipment Co. is not responsible for any damage, leaks, or burst pipe or fittings found on existing underground system components. Any required repair or replacement will be quoted separately.",
+    "This proposal is based on the water authority approving the proposed assembly type as submitted. If the water authority requires a different assembly type, a revised proposal will be issued."
+  ],
+  resp: [
+    "Ensuring all areas of fire protection work are accessible and clear of stock, furniture, or any materials that may hinder installation",
+    "Providing timely access to all locked rooms, where applicable",
+    "Providing an authorized representative on site for the duration of the proposed work",
+    "Maintaining a fire watch while the fire sprinkler system is out of service",
+    "Ensuring the building fire alarm system is in proper operating condition prior to the start of work",
+    "Providing fire alarm monitoring account information and authorization required to place the system in test mode",
+    "Notifying building occupants and the local fire department of the scheduled system impairment",
+    "Mitigating any safety hazards caused by drained system water that may freeze on walkways or parking lots during freezing weather conditions"
+  ],
+  billing: [
+    "Billing terms: Net 10 days with approved credit.",
+    "Fire Defense Equipment Co. accepts Visa and Mastercard. American Express is not accepted. Card payments are processed during normal business hours, Monday through Friday, excluding holidays.",
+    "A 3% processing fee will be applied to all credit card transactions.",
+    "Billing will be invoiced monthly based on the percentage of work completed.",
+    "A down payment of $____________ is required prior to scheduling or commencing work.",
+    "Past due amounts accrue interest at one and one-half percent (1.5%) per month, or the maximum rate permitted by law, whichever is less.",
+    "Fire Defense Equipment Co. reserves all rights under the Michigan Construction Lien Act, MCL 570.1101 et seq., including recording a claim of lien against the property for any unpaid balance. The customer is responsible for all costs of collection, including title work, lien preparation and recording, court costs, and reasonable attorney fees.",
+    "Contractor terms are subject to review by Fire Defense Equipment Co. Additional terms and conditions may apply.",
+    "This quotation is valid for 30 days from the date of issue."
+  ],
+  closing: [
+    "Thank you for the opportunity to provide this quotation for the backflow prevention work at your facility.",
+    "Thank you for the opportunity to provide this quotation to bring the fire protection system into compliance with current cross-connection control requirements.",
+    "Thank you for the opportunity to provide this quotation for the requested fire protection services at your facility.",
+    "Please don't hesitate to contact me should you have any questions, or if you would like to schedule an on-site consultation to review this proposal."
+  ],
+  incexc: [
+    // mode: "inc" = included, "exc" = excluded, "off" = left off the proposal
+    { text: "Labor", mode: "inc" },
+    { text: "Materials", mode: "inc" },
+    { text: "Controlled draining procedures to protect the surrounding work area", mode: "inc" },
+    { text: "Fabrication and installation", mode: "inc" },
+    { text: "Freight and cartage of equipment and materials to the site", mode: "inc" },
+    { text: "Wiring of supervisory tamper switches", mode: "inc" },
+    { text: "Backflow assembly certification testing", mode: "inc" },
+    { text: "Plan review and permit fees, up to the allowance stated in the Notes", mode: "inc" },
+    { text: "Hydrostatic testing", mode: "inc" },
+    { text: "Overtime labor, second-shift premium, or prevailing wage rates", mode: "exc" },
+    { text: "Any labor or materials not expressly listed above", mode: "exc" },
+    { text: "Fire Watch", mode: "exc" },
+    { text: "Excavation, dewatering, vault or pit access, and confined space entry", mode: "exc" },
+    { text: "Cutting, patching, repairing, replacing, fireproofing, or painting of any ceiling or wall materials", mode: "exc" },
+    { text: "Engineered submittal drawings and hydraulic calculations", mode: "exc" },
+    { text: "Electrical materials or labor", mode: "exc" },
+    { text: "Fire alarm system testing, repair, or materials", mode: "exc" },
+    { text: "Scaffolding", mode: "exc" },
+    { text: "Scissor or boom lift", mode: "exc" },
+    { text: "System design", mode: "exc" },
+    { text: "Annual backflow preventer testing", mode: "exc" },
+    { text: "Michigan sales tax", mode: "exc" }
+  ]
+};
+
+/* Scope & Notes start unchecked (pick what applies to this job).
+   Scope items carry an optional subs[] list shown once the item is selected.
+   Including/Excluding items carry a mode: "inc", "exc", or "off". */
+const state = {};
+state.scope = LIBRARY.scope.map(entry => {
+  const obj = typeof entry === "string" ? { text: entry, subs: [] } : entry;
+  return {
+    text: obj.text,
+    checked: false,
+    subs: (obj.subs || []).map(s => ({ text: s, checked: false }))
+  };
+});
+state.notes = LIBRARY.notes.map(t => ({ text: t, checked: false }));
+/* Qualifications and boilerplate default ON — uncheck to drop from a proposal. */
+for (const key of ["quals","resp","billing","closing"]) {
+  state[key] = LIBRARY[key].map(t => ({ text: t, checked: true }));
+}
+state.incexc = LIBRARY.incexc.map(i => ({ text: i.text, mode: i.mode }));
+
+/* ---------------- rendering ---------------- */
+function autoGrow(ta){ ta.style.height = "auto"; ta.style.height = (ta.scrollHeight + 2) + "px"; }
+
+function render(key){
+  if (key === "incexc") return renderIncExc();
+  const ul = document.getElementById("list-" + key);
+  ul.innerHTML = "";
+  const filter = (document.querySelector(`[data-filter="${key}"]`)?.value || "").toLowerCase();
+  state[key].forEach((item, i) => {
+    if (filter && !item.text.toLowerCase().includes(filter)) return;
+    const li = document.createElement("li");
+    li.className = "item" + (item.checked ? "" : " unchecked");
+    li.dataset.index = i;
+
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = item.checked;
+    cb.addEventListener("change", () => {
+      item.checked = cb.checked;
+      li.classList.toggle("unchecked", !cb.checked);
+      updateCount(key);
+      if (key === "scope") render(key); // open/close the sub-item block
+    });
+
+    const ta = document.createElement("textarea");
+    ta.rows = 1;
+    ta.value = item.text;
+    ta.addEventListener("input", () => { item.text = ta.value; autoGrow(ta); });
+    ta.addEventListener("focus", () => autoGrow(ta));
+
+    const del = document.createElement("button");
+    del.className = "del";
+    del.title = "Remove item";
+    del.innerHTML = "&times;";
+    del.addEventListener("click", () => { state[key].splice(i,1); render(key); updateCount(key); });
+
+    li.append(cb, ta, del);
+
+    // Optional subcategory: shown only when the scope item is selected
+    if (key === "scope" && item.checked){
+      const subUl = document.createElement("ul");
+      subUl.className = "subs";
+      item.subs.forEach((sub, j) => {
+        const sli = document.createElement("li");
+        sli.className = "sub" + (sub.checked ? "" : " unchecked");
+
+        const scb = document.createElement("input");
+        scb.type = "checkbox";
+        scb.checked = sub.checked;
+        scb.addEventListener("change", () => {
+          sub.checked = scb.checked;
+          sli.classList.toggle("unchecked", !scb.checked);
+          updateCount(key);
+        });
+
+        const sta = document.createElement("textarea");
+        sta.rows = 1;
+        sta.value = sub.text;
+        sta.addEventListener("input", () => { sub.text = sta.value; autoGrow(sta); });
+        sta.addEventListener("focus", () => autoGrow(sta));
+
+        const sdel = document.createElement("button");
+        sdel.className = "del";
+        sdel.title = "Remove sub-item";
+        sdel.innerHTML = "&times;";
+        sdel.addEventListener("click", () => { item.subs.splice(j,1); render(key); updateCount(key); });
+
+        sli.append(scb, sta, sdel);
+        subUl.appendChild(sli);
+        (window.requestAnimationFrame || (fn => setTimeout(fn, 0)))(() => autoGrow(sta));
+      });
+
+      const addSub = document.createElement("button");
+      addSub.className = "addsub";
+      addSub.type = "button";
+      addSub.textContent = "+ Sub-item";
+      addSub.addEventListener("click", () => {
+        item.subs.push({ text: "", checked: true });
+        render(key);
+        const parent = ul.querySelector(`li.item[data-index="${i}"]`);
+        const nt = parent && parent.querySelector("ul.subs li.sub:last-of-type textarea");
+        if (nt) nt.focus();
+      });
+      subUl.appendChild(document.createElement("li")).appendChild(addSub);
+
+      li.appendChild(subUl);
+    }
+
+    ul.appendChild(li);
+    autoGrow(ta);
+  });
+  updateCount(key);
+}
+
+function renderIncExc(){
+  const ul = document.getElementById("list-incexc");
+  ul.innerHTML = "";
+  state.incexc.forEach((item, i) => {
+    const li = document.createElement("li");
+    li.className = "item" + (item.mode === "off" ? " omitted" : "");
+
+    const seg = document.createElement("div");
+    seg.className = "seg";
+    const modes = [ ["inc","INCL","on-inc"], ["exc","EXCL","on-exc"], ["off","\u2014","on-off"] ];
+    const segBtns = [];
+    modes.forEach(([mode, label, cls]) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = label;
+      b.title = mode === "inc" ? "Included" : mode === "exc" ? "Excluded" : "Leave off the proposal";
+      if (item.mode === mode) b.classList.add(cls);
+      b.addEventListener("click", () => {
+        item.mode = mode;
+        /* Update THIS item in place. Rebuilding the whole list made Firefox jump to another section. */
+        modes.forEach(([m2,,c2], j) => segBtns[j].classList.toggle(c2, m2 === mode));
+        li.classList.toggle("omitted", mode === "off");
+        updateCount("incexc");
+      });
+      segBtns.push(b);
+      seg.appendChild(b);
+    });
+
+    const ta = document.createElement("textarea");
+    ta.rows = 1;
+    ta.value = item.text;
+    ta.addEventListener("input", () => { item.text = ta.value; autoGrow(ta); });
+    ta.addEventListener("focus", () => autoGrow(ta));
+
+    const del = document.createElement("button");
+    del.className = "del";
+    del.title = "Remove item";
+    del.innerHTML = "&times;";
+    del.addEventListener("click", () => { state.incexc.splice(i,1); renderIncExc(); });
+
+    li.append(seg, ta, del);
+    ul.appendChild(li);
+    autoGrow(ta);
+  });
+  updateCount("incexc");
+}
+
+function updateCount(key){
+  const el = document.querySelector(`[data-count="${key}"]`);
+  if (!el) return;
+  if (key === "incexc"){
+    const inc = state.incexc.filter(i => i.mode === "inc").length;
+    const exc = state.incexc.filter(i => i.mode === "exc").length;
+    el.textContent = inc + " included \u00b7 " + exc + " excluded";
+  } else if (key === "scope"){
+    const sel = state.scope.filter(i => i.checked);
+    const subs = sel.reduce((n,i) => n + i.subs.filter(s => s.checked).length, 0);
+    el.textContent = sel.length + " selected" + (subs ? " \u00b7 " + subs + " sub-item" + (subs === 1 ? "" : "s") : "");
+  } else {
+    el.textContent = state[key].filter(i => i.checked).length + " selected";
+  }
+}
+
+document.querySelectorAll("[data-add]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const key = btn.dataset.add;
+    if (key === "incexc"){
+      state.incexc.push({ text: "", mode: "inc" });
+    } else {
+      state[key].push({ text: "", checked: true, subs: [] });
+      const f = document.querySelector(`[data-filter="${key}"]`);
+      if (f) f.value = "";
+    }
+    render(key);
+    const ul = document.getElementById("list-" + key);
+    const last = ul.querySelector("li:last-child textarea");
+    if (last) last.focus();
+  });
+});
+
+document.querySelectorAll("[data-filter]").forEach(inp => {
+  inp.addEventListener("input", () => render(inp.dataset.filter));
+});
+
+/* ---------------- draft restore (hydrate from embedded saved state) ---------------- */
+document.getElementById("metaLine").textContent = "V" + APP_META.version + " \u00b7 " + APP_META.author;
+document.title = "FDEC Backflow" + " V" + APP_META.version;
+
+/* Merge any newer LIBRARY items into a restored section so additions made
+   after a draft was saved are never hidden. Saved items keep their text,
+   checked state, and sub-items; library items not present in the saved list
+   are appended (unchecked). Scope library entries may be strings or objects
+   with subs[]. Matching is by normalized text. */
+function mergeLibraryInto(key, savedArr){
+  const norm = t => String(t || "").replace(/\s+/g, " ").trim().toLowerCase();
+  const out = Array.isArray(savedArr) ? savedArr.slice() : [];
+  const seen = new Set(out.map(it => norm(it && it.text)));
+  (LIBRARY[key] || []).forEach(entry => {
+    if (key === "incexc"){
+      const text = entry.text;
+      if (!seen.has(norm(text))){ out.push({ text: text, mode: entry.mode }); seen.add(norm(text)); }
+      return;
+    }
+    const obj = (typeof entry === "string") ? { text: entry, subs: [] } : entry;
+    if (!seen.has(norm(obj.text))){
+      out.push({
+        text: obj.text,
+        checked: false,
+        subs: (obj.subs || []).map(s => ({ text: s, checked: false }))
+      });
+      seen.add(norm(obj.text));
+    }
+  });
+  return out;
+}
+
+let restoredMsg = "";
+(function hydrate(){
+  const el = document.getElementById("savedState");
+  if (!el) return;
+  try {
+    const saved = JSON.parse(el.textContent);
+    if (saved.job){
+      document.getElementById("jobCustomer").value = saved.job.customer || "";
+      document.getElementById("jobQuote").value    = saved.job.quote    || "";
+      // Date intentionally not restored from the template — it is always set
+      // to today's date on open (see below).
+      if (saved.job.intro) document.getElementById("jobIntro").value = saved.job.intro;
+      if (saved.job.signature != null) document.getElementById("jobSignature").value = saved.job.signature;
+    }
+    if (saved.sections){
+      for (const key of ["scope","notes","quals","resp","billing","closing","incexc"]){
+        if (Array.isArray(saved.sections[key])) state[key] = mergeLibraryInto(key, saved.sections[key]);
+      }
+      // guarantee scope items have a subs array
+      state.scope.forEach(i => { if (!Array.isArray(i.subs)) i.subs = []; });
+    }
+    const when = saved.meta && saved.meta.savedAt ? new Date(saved.meta.savedAt) : null;
+    restoredMsg = "Draft restored" + (when ? " \u2014 saved " + when.toLocaleString() : "") + ".";
+  } catch(e){ console.error("Could not restore saved draft:", e); }
+})();
+
+["scope","notes","quals","resp","billing","closing","incexc"].forEach(render);
+// Always open with today's date (local, not UTC, to avoid an off-by-one).
+(function(){
+  const d = new Date();
+  const local = d.getFullYear() + "-" +
+    String(d.getMonth()+1).padStart(2,"0") + "-" +
+    String(d.getDate()).padStart(2,"0");
+  document.getElementById("jobDate").value = local;
+})();
+
+/* ---------------- Shared job-info sync ----------------
+   Repair Verbiage is the MASTER for Job Name / Quote # / Date. When these
+   change here, broadcast to the suite shell, which relays the values to the
+   other pages. Followers (the generated clone pages) set IS_JOBINFO_MASTER
+   to false and only receive. */
+var IS_JOBINFO_MASTER = false;
+(function(){
+  function currentJobInfo(){
+    return {
+      customer: document.getElementById("jobCustomer").value,
+      quote:    document.getElementById("jobQuote").value,
+      date:     document.getElementById("jobDate").value
+    };
+  }
+  function broadcastJobInfo(){
+    if (!IS_JOBINFO_MASTER) return;
+    if (window.parent && window.parent !== window){
+      window.parent.postMessage({ fdec:true, type:"jobinfo", value: currentJobInfo() }, "*");
+    }
+  }
+  function applyJobInfo(v){
+    if (!v) return;
+    if (typeof v.customer === "string") document.getElementById("jobCustomer").value = v.customer;
+    if (typeof v.quote === "string")    document.getElementById("jobQuote").value = v.quote;
+    if (typeof v.date === "string" && v.date) document.getElementById("jobDate").value = v.date;
+  }
+  // Master: broadcast on any edit to the three shared fields.
+  if (IS_JOBINFO_MASTER){
+    ["jobCustomer","jobQuote","jobDate"].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el){ el.addEventListener("input", broadcastJobInfo); el.addEventListener("change", broadcastJobInfo); }
+    });
+    // Broadcast the initial values (incl. today's date) once the shell is ready.
+    setTimeout(broadcastJobInfo, 150);
+  }
+
+  /* Auto-save this page to the suite shell (crash protection), debounced.
+     Silent no-op when opened standalone. */
+  var _autosaveTimer = null;
+  function scheduleAutosave(){
+    if (!(window.parent && window.parent !== window)) return;
+    clearTimeout(_autosaveTimer);
+    _autosaveTimer = setTimeout(function(){
+      try {
+        window.parent.postMessage({ fdec:true, type:'autosave', page:SUITE_PAGE_ID, data:collectState() }, '*');
+      } catch(_){}
+    }, 1200);
+  }
+  document.addEventListener("input", scheduleAutosave);
+  document.addEventListener("change", scheduleAutosave);
+  document.addEventListener("click", function(e){
+    // Catch add/remove/toggle actions that change state without an input event.
+    if (e.target.closest("button")) setTimeout(scheduleAutosave, 50);
+  });
+  // Tell the shell when the user starts working, so it can dismiss the
+  // "restore previous session?" banner.
+  document.addEventListener("focusin", function(e){
+    var t = e.target;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT")){
+      if (window.parent && window.parent !== window){
+        try { window.parent.postMessage({ fdec:true, type:"user-active" }, "*"); } catch(_){}
+      }
+    }
+  });
+  // Everyone: accept incoming job-info from the shell. The shell only relays
+  // to followers, so the master won't receive its own broadcast.
+  window.addEventListener("message", function(e){
+    var d = e && e.data;
+    if (!d || d.fdec !== true) return;
+    if (d.type === "jobinfo") applyJobInfo(d.value);
+    // A follower loaded and asked for values; the shell forwards this to the
+    // master as 'send-jobinfo'. Master responds by broadcasting current values.
+    else if (d.type === "send-jobinfo" && IS_JOBINFO_MASTER) broadcastJobInfo();
+  });
+  // Followers can request the current values when they load/become visible.
+  if (!IS_JOBINFO_MASTER){
+    if (window.parent && window.parent !== window){
+      window.parent.postMessage({ fdec:true, type:"request-jobinfo" }, "*");
+    }
+  }
+})();
+
+if (restoredMsg) setTimeout(() => setStatus(restoredMsg, true), 100);
+
+/* When this app first renders inside a hidden iframe (the Quoting tab is
+   shown by default), every textarea measures scrollHeight = 0 and collapses
+   so its text is invisible. Re-grow all textareas once the tab is actually
+   visible. The suite shell posts {type:'relayout'} on tab switch; we also
+   listen for our own becoming-visible as a fallback. */
+function relayoutTextareas(){
+  var run = function(){ document.querySelectorAll("textarea").forEach(autoGrow); };
+  // Defer so the browser has laid out the now-visible iframe before we
+  // read scrollHeight; run twice to catch any late layout.
+  if (typeof requestAnimationFrame === "function"){
+    requestAnimationFrame(function(){ run(); requestAnimationFrame(run); });
+  } else {
+    run();
+  }
+}
+window.addEventListener("message", function(e){
+  var d = e && e.data;
+  if (d && d.fdec === true && d.type === "relayout") relayoutTextareas();
+});
+/* Self-healing: when this document transitions from hidden (0 size) to
+   visible, re-measure textareas automatically — independent of the shell.
+   Covers the case where the app first rendered inside a hidden iframe. */
+(function(){
+  var seenVisible = false;
+  function checkVisible(){
+    var visible = document.body && document.body.clientHeight > 0 &&
+                  document.documentElement.clientWidth > 0;
+    if (visible && !seenVisible){ seenVisible = true; relayoutTextareas(); }
+  }
+  if (typeof ResizeObserver === "function"){
+    try { new ResizeObserver(checkVisible).observe(document.documentElement); } catch(_){}
+  }
+  window.addEventListener("resize", checkVisible);
+  document.addEventListener("visibilitychange", checkVisible);
+  // initial + a few delayed attempts to catch first layout
+  checkVisible();
+  [60, 200, 500].forEach(function(ms){ setTimeout(checkVisible, ms); });
+})();
+/* Fallback: if this document becomes visible via layout, relayout once. */
+if (typeof requestAnimationFrame === "function"){
+  requestAnimationFrame(function(){ if (document.body.clientHeight) relayoutTextareas(); });
+}
+
+/* ---------------- output helpers ---------------- */
+function checkedItems(key){
+  return state[key].filter(i => i.checked && i.text.trim()).map(i => i.text.trim());
+}
+function scopeItems(){
+  return state.scope
+    .filter(i => i.checked && i.text.trim())
+    .map(i => ({
+      text: i.text.trim(),
+      subs: i.subs.filter(s => s.checked && s.text.trim()).map(s => s.text.trim())
+    }));
+}
+function incexcItems(mode){
+  return state.incexc.filter(i => i.mode === mode && i.text.trim()).map(i => i.text.trim());
+}
+function letterFor(n){ // 0 -> A, 25 -> Z, 26 -> AA
+  let s = "";
+  n += 1;
+  while (n > 0){ n--; s = String.fromCharCode(65 + (n % 26)) + s; n = Math.floor(n / 26); }
+  return s;
+}
+function fmtDate(iso){
+  if (!iso) return "";
+  const [y,m,d] = iso.split("-").map(Number);
+  return new Date(y, m-1, d).toLocaleDateString("en-US", { month:"long", day:"numeric", year:"numeric" });
+}
+function jobHeader(){
+  return {
+    customer: document.getElementById("jobCustomer").value.trim(),
+    recipient:"",
+    address:  "",
+    quote:    document.getElementById("jobQuote").value.trim(),
+    date:     fmtDate(document.getElementById("jobDate").value),
+    intro:    document.getElementById("jobIntro").value.trim(),
+    signature:document.getElementById("jobSignature").value.replace(/\s+$/,"")
+  };
+}
+function setStatus(msg, ok){
+  const s = document.getElementById("status");
+  s.textContent = msg;
+  s.className = ok ? "ok" : "";
+  if (msg) setTimeout(() => { s.textContent = ""; s.className = ""; }, 4000);
+}
+
+/* ---------------- Word generation (WordprocessingML via JSZip) ---------------- */
+function esc(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+                  .replace(/"/g,"&quot;").replace(/'/g,"&apos;");
+}
+// run properties: Calibri 11pt by default
+function rPr(o={}){
+  return `<w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/>` +
+         (o.bold ? "<w:b/>" : "") +
+         (o.underline ? `<w:u w:val="single"/>` : "") +
+         (o.color ? `<w:color w:val="${o.color}"/>` : "") +
+         `<w:sz w:val="${o.size || 22}"/><w:szCs w:val="${o.size || 22}"/></w:rPr>`;
+}
+function textRun(t, o={}){
+  return `<w:r>${rPr(o)}<w:t xml:space="preserve">${esc(t)}</w:t></w:r>`;
+}
+// plain paragraph
+function xPara(runsXml, { before=0, after=120 } = {}){
+  return `<w:p><w:pPr><w:spacing w:before="${before}" w:after="${after}"/></w:pPr>${runsXml}</w:p>`;
+}
+// numbered/lettered list paragraph with hanging indent (label + tab + text)
+function xListPara(label, text){
+  return `<w:p><w:pPr>` +
+         `<w:tabs><w:tab w:val="left" w:pos="720"/></w:tabs>` +
+         `<w:spacing w:after="120"/>` +
+         `<w:ind w:left="720" w:hanging="720"/>` +
+         `</w:pPr>` +
+         textRun(label) +
+         `<w:r>${rPr()}<w:tab/></w:r>` +
+         textRun(text) +
+         `</w:p>`;
+}
+// second-level sub-item paragraph (a., b., …) indented under its parent
+function xSubListPara(label, text){
+  return `<w:p><w:pPr>` +
+         `<w:tabs><w:tab w:val="left" w:pos="1440"/></w:tabs>` +
+         `<w:spacing w:after="120"/>` +
+         `<w:ind w:left="1440" w:hanging="720"/>` +
+         `</w:pPr>` +
+         textRun(label) +
+         `<w:r>${rPr()}<w:tab/></w:r>` +
+         textRun(text) +
+         `</w:p>`;
+}
+function xHeading(t){
+  return xPara(textRun(t, { bold:true, underline:true }), { before:200, after:140 });
+}
+// bulleted paragraph (• + tab + text) with hanging indent
+function xBulletPara(text){
+  return `<w:p><w:pPr>` +
+         `<w:tabs><w:tab w:val="left" w:pos="720"/></w:tabs>` +
+         `<w:spacing w:after="120"/>` +
+         `<w:ind w:left="720" w:hanging="720"/>` +
+         `</w:pPr>` +
+         textRun("\u2022") +
+         `<w:r>${rPr()}<w:tab/></w:r>` +
+         textRun(text) +
+         `</w:p>`;
+}
+
+function buildDocumentXml(){
+  const h = jobHeader();
+  const body = [];
+
+  if (h.customer) body.push(xPara(textRun(h.customer, { bold:true, size:26 }), { after:40 }));
+  if (h.address)  body.push(xPara(textRun(h.address), { after:40 }));
+  const qd = [h.quote ? "Quote No. " + h.quote : "", h.date].filter(Boolean).join("    |    ");
+  if (qd) body.push(xPara(textRun(qd, { color:"555555" }), { after:200 }));
+  if (h.intro) body.push(xPara(textRun(h.intro), { after:200 }));
+
+  const scope = scopeItems();
+  body.push(xHeading("SCOPE OF WORK:"));
+  scope.forEach((it,i) => {
+    body.push(xListPara((i+1) + ".", it.text));
+    it.subs.forEach((s,j) => body.push(xSubListPara(letterFor(j).toLowerCase() + ".", s)));
+  });
+
+  const notes = checkedItems("notes");
+  if (notes.length){
+    body.push(xHeading("NOTES:"));
+    notes.forEach((t,i) => body.push(xListPara(letterFor(i) + ".", t)));
+  }
+  const inc = incexcItems("inc");
+  if (inc.length){
+    body.push(xHeading("INCLUDING:"));
+    inc.forEach((t,i) => body.push(xListPara((i+1) + ".", t)));
+  }
+  const exc = incexcItems("exc");
+  if (exc.length){
+    body.push(xHeading("EXCLUDING:"));
+    exc.forEach((t,i) => body.push(xListPara((i+1) + ".", t)));
+  }
+
+  const quals = checkedItems("quals");
+  if (quals.length){
+    body.push(xHeading("QUALIFICATIONS:"));
+    quals.forEach((t,i) => body.push(xListPara((i+1) + ".", t)));
+  }
+  const resp = checkedItems("resp");
+  if (resp.length){
+    body.push(xHeading("Customer Responsibilities"));
+    body.push(xPara(textRun("The customer is responsible for the following:"), { after:120 }));
+    resp.forEach(t => body.push(xBulletPara(t)));
+  }
+  const billing = checkedItems("billing");
+  if (billing.length){
+    body.push(xHeading("Billing & Payment Terms"));
+    billing.forEach(t => body.push(xBulletPara(t)));
+  }
+
+  const closing = checkedItems("closing");
+  if (closing.length || h.signature){
+    if (h.recipient) body.push(xPara(textRun(h.recipient + ","), { before:200, after:120 }));
+    closing.forEach(t => body.push(xPara(textRun(t), { after:120 })));
+    if (h.signature){
+      const sig = h.signature.split("\n");
+      sig.forEach((line, i) => body.push(xPara(textRun(line), { before: i === 0 ? 120 : 0, after:0 })));
+    }
+  }
+
+  // US Letter, 0.75" margins
+  const sectPr =
+    `<w:sectPr><w:pgSz w:w="12240" w:h="15840"/>` +
+    `<w:pgMar w:top="1080" w:right="1080" w:bottom="1080" w:left="1080" w:header="720" w:footer="720" w:gutter="0"/>` +
+    `</w:sectPr>`;
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+    `<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">` +
+    `<w:body>${body.join("")}${sectPr}</w:body></w:document>`;
+}
+
+const CONTENT_TYPES =
+  `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+  `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">` +
+  `<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>` +
+  `<Default Extension="xml" ContentType="application/xml"/>` +
+  `<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>` +
+  `</Types>`;
+
+const ROOT_RELS =
+  `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+  `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+  `<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>` +
+  `</Relationships>`;
+
+const DOC_RELS =
+  `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+  `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>`;
+
+async function generateWordProposal(silent){
+  const scope = scopeItems();
+  if (!scope.length){ if(!silent) setStatus("Select at least one Scope of Work item."); return false; }
+  if (typeof JSZip === "undefined"){
+    if(!silent) setStatus("Document library failed to load — check internet connection and reload.");
+    return false;
+  }
+  try {
+    const zip = new JSZip();
+    zip.file("[Content_Types].xml", CONTENT_TYPES);
+    zip.folder("_rels").file(".rels", ROOT_RELS);
+    const word = zip.folder("word");
+    word.file("document.xml", buildDocumentXml());
+    word.folder("_rels").file("document.xml.rels", DOC_RELS);
+
+    const blob = await zip.generateAsync({
+      type:"blob",
+      mimeType:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    });
+    const h = jobHeader();
+    const _fp = function(x){ return String(x||"").replace(/[^\w\- ]+/g,"").trim().replace(/\s+/g,"_"); };
+    const _td = new Date(), _today = _td.getFullYear()+"-"+String(_td.getMonth()+1).padStart(2,"0")+"-"+String(_td.getDate()).padStart(2,"0");
+    const _dt = (document.getElementById("jobDate").value || "").slice(0,10) || _today;
+    const name = [_fp(h.customer), _fp(h.quote), _dt].filter(Boolean).join("_") || "FDEC_Proposal";
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name + "_Proposal.docx";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
+    if(!silent) setStatus("Word proposal downloaded.", true);
+    return true;
+  } catch (err){
+    console.error(err);
+    if(!silent) setStatus("Error generating document — see console.");
+    return false;
+  }
+}
+document.getElementById("btnWord").addEventListener("click", () => generateWordProposal(false));
+
+/* ---------------- Plain-text copy (for pasting into ServiceTrade) ---------------- */
+document.getElementById("btnCopy").addEventListener("click", async () => {
+  const scope = scopeItems();
+  if (!scope.length){ setStatus("Select at least one Scope of Work item."); return; }
+  const h = jobHeader();
+  const L = [];
+  if (h.intro) L.push(h.intro, "");
+  L.push("SCOPE OF WORK:", "");
+  scope.forEach((it,i) => {
+    L.push(`${i+1}. ${it.text}`);
+    it.subs.forEach((s,j) => L.push(`     ${letterFor(j).toLowerCase()}. ${s}`));
+  });
+  const notes = checkedItems("notes");
+  if (notes.length){
+    L.push("", "NOTES:", "");
+    notes.forEach((t,i) => L.push(`${letterFor(i)}. ${t}`));
+  }
+  const inc = incexcItems("inc");
+  if (inc.length){
+    L.push("", "INCLUDING:", "");
+    inc.forEach((t,i) => L.push(`${i+1}. ${t}`));
+  }
+  const exc = incexcItems("exc");
+  if (exc.length){
+    L.push("", "EXCLUDING:", "");
+    exc.forEach((t,i) => L.push(`${i+1}. ${t}`));
+  }
+  const quals = checkedItems("quals");
+  if (quals.length){
+    L.push("", "QUALIFICATIONS:", "");
+    quals.forEach((t,i) => L.push(`${i+1}. ${t}`));
+  }
+  const resp = checkedItems("resp");
+  if (resp.length){
+    L.push("", "Customer Responsibilities", "", "The customer is responsible for the following:");
+    resp.forEach(t => L.push(`- ${t}`));
+  }
+  const billing = checkedItems("billing");
+  if (billing.length){
+    L.push("", "Billing & Payment Terms", "");
+    billing.forEach(t => L.push(`- ${t}`));
+  }
+  const closing = checkedItems("closing");
+  if (closing.length || h.signature){
+    L.push("");
+    if (h.recipient) L.push(h.recipient + ",", "");
+    closing.forEach(t => L.push(t, ""));
+    if (h.signature) L.push(h.signature.replace(/\s+$/,""));
+  }
+  try {
+    await navigator.clipboard.writeText(L.join("\n"));
+    setStatus("Copied to clipboard — paste into ServiceTrade.", true);
+  } catch {
+    setStatus("Clipboard blocked by browser — use the Word download instead.");
+  }
+});
+
+/* ---------------- Formatted HTML (for the combined PDF export) ---------------- */
+/* Builds a clean, print-ready HTML document body from the same section data
+   used by the Word/plain-text exports, so the proposal reads as a finished
+   document (not the editor UI) inside the combined PDF. */
+function buildProposalHTML(){
+  const h = jobHeader();
+  const P = [];
+  const head = [];
+  if (h.customer) head.push(`<div class="pp-cust">${esc(h.customer)}</div>`);
+  const meta = [];
+  if (h.quote) meta.push("Quote " + esc(h.quote));
+  if (h.date)  meta.push(esc(h.date));
+  if (meta.length) head.push(`<div class="pp-meta">${meta.join(" &nbsp;·&nbsp; ")}</div>`);
+  if (head.length) P.push(`<div class="pp-head">${head.join("")}</div>`);
+
+  if (h.intro) P.push(`<p class="pp-intro">${esc(h.intro)}</p>`);
+
+  const scope = scopeItems();
+  if (scope.length){
+    P.push(`<h3 class="pp-h">SCOPE OF WORK</h3>`);
+    let li = "";
+    scope.forEach(it => {
+      let subs = "";
+      if (it.subs && it.subs.length){
+        subs = "<ol class='pp-sub' type='a'>" + it.subs.map(s => `<li>${esc(s)}</li>`).join("") + "</ol>";
+      }
+      li += `<li>${esc(it.text)}${subs}</li>`;
+    });
+    P.push(`<ol class="pp-ol">${li}</ol>`);
+  }
+  const notes = checkedItems("notes");
+  if (notes.length){
+    P.push(`<h3 class="pp-h">NOTES</h3><ol class="pp-ol" type="A">` +
+      notes.map(t => `<li>${esc(t)}</li>`).join("") + `</ol>`);
+  }
+  const inc = incexcItems("inc");
+  if (inc.length){
+    P.push(`<h3 class="pp-h">INCLUDING</h3><ol class="pp-ol">` +
+      inc.map(t => `<li>${esc(t)}</li>`).join("") + `</ol>`);
+  }
+  const exc = incexcItems("exc");
+  if (exc.length){
+    P.push(`<h3 class="pp-h">EXCLUDING</h3><ol class="pp-ol">` +
+      exc.map(t => `<li>${esc(t)}</li>`).join("") + `</ol>`);
+  }
+  const quals = checkedItems("quals");
+  if (quals.length){
+    P.push(`<h3 class="pp-h">QUALIFICATIONS</h3><ol class="pp-ol">` +
+      quals.map(t => `<li>${esc(t)}</li>`).join("") + `</ol>`);
+  }
+  const resp = checkedItems("resp");
+  if (resp.length){
+    P.push(`<h3 class="pp-h">Customer Responsibilities</h3>` +
+      `<p class="pp-lead">The customer is responsible for the following:</p>` +
+      `<ul class="pp-ul">` + resp.map(t => `<li>${esc(t)}</li>`).join("") + `</ul>`);
+  }
+  const billing = checkedItems("billing");
+  if (billing.length){
+    P.push(`<h3 class="pp-h">Billing &amp; Payment Terms</h3><ul class="pp-ul">` +
+      billing.map(t => `<li>${esc(t)}</li>`).join("") + `</ul>`);
+  }
+  const closing = checkedItems("closing");
+  if (closing.length || h.signature){
+    let c = `<div class="pp-closing">`;
+    closing.forEach(t => c += `<p>${esc(t)}</p>`);
+    if (h.signature){
+      c += `<p class="pp-sig">` + esc(h.signature).replace(/\n/g,"<br>") + `</p>`;
+    }
+    c += `</div>`;
+    P.push(c);
+  }
+  return P.join("\n");
+}
+
+/* Scoped CSS for the proposal section of the combined PDF. */
+const PROPOSAL_PRINT_CSS = `
+  .pp-wrap{font:12.5px/1.5 Georgia,"Times New Roman",serif; color:#111; max-width:7.2in; margin:0 auto}
+  .pp-head{border-bottom:2px solid #3281b9; padding-bottom:8px; margin-bottom:14px}
+  .pp-cust{font-size:17px; font-weight:700; color:#010039}
+  .pp-meta{font-size:11px; color:#555; margin-top:3px}
+  .pp-intro{margin:0 0 14px}
+  .pp-h{font-size:12.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
+        color:#3281b9; border-bottom:1px solid #ccc; padding-bottom:2px; margin:16px 0 8px}
+  .pp-ol,.pp-ul{margin:0 0 10px; padding-left:24px}
+  .pp-ol>li,.pp-ul>li{margin:4px 0}
+  .pp-sub{margin:4px 0 4px; padding-left:20px}
+  .pp-sub>li{margin:2px 0; color:#333}
+  .pp-lead{margin:0 0 4px}
+  .pp-closing{margin-top:16px}
+  .pp-closing p{margin:0 0 10px}
+  .pp-sig{margin-top:14px; white-space:pre-line}
+`;
+
+/* Shell requests: return formatted HTML, or trigger the Word download. */
+window.addEventListener("message", function(e){
+  const d = e && e.data;
+  if (!d || d.fdec !== true) return;
+  if (d.type === "get-proposal-html"){
+    let html = "", err = null;
+    try {
+      if (!scopeItems().length) err = "no-scope";
+      else html = buildProposalHTML();
+    } catch(ex){ err = String(ex && ex.message || ex); }
+    // reply to the shell
+    if (window.parent && window.parent !== window){
+      window.parent.postMessage({
+        fdec:true, type:"proposal-html", reqId:d.reqId,
+        html: html, css: PROPOSAL_PRINT_CSS, error: err
+      }, "*");
+    }
+  } else if (d.type === "download-proposal-word"){
+    generateWordProposal(true);
+  }
+});
+
+/* ---------------- Save Draft (.html with embedded state) ---------------- */
+function collectState(){
+  return {
+    meta: { app: "FDEC Proposal Builder", author: APP_META.author, version: APP_META.version, savedAt: new Date().toISOString() },
+    job: {
+      customer: document.getElementById("jobCustomer").value,
+      quote:    document.getElementById("jobQuote").value,
+      date:     document.getElementById("jobDate").value,
+      intro:    document.getElementById("jobIntro").value,
+      signature:document.getElementById("jobSignature").value
+    },
+    sections: JSON.parse(JSON.stringify({
+      scope: state.scope, notes: state.notes, quals: state.quals,
+      resp: state.resp, billing: state.billing, closing: state.closing, incexc: state.incexc
+    }))
+  };
+}
+
+/* Apply a saved draft slice (job fields + sections) to this page and
+   re-render. Used by the suite-level Load Draft. */
+function applySuiteDraft(saved){
+  if (!saved) return;
+  try {
+    if (saved.job){
+      document.getElementById("jobCustomer").value = saved.job.customer || "";
+      document.getElementById("jobQuote").value    = saved.job.quote    || "";
+      if (saved.job.date) document.getElementById("jobDate").value = saved.job.date;
+      if (saved.job.intro != null) document.getElementById("jobIntro").value = saved.job.intro;
+      if (saved.job.signature != null) document.getElementById("jobSignature").value = saved.job.signature;
+    }
+    if (saved.sections){
+      for (const key of ["scope","notes","quals","resp","billing","closing","incexc"]){
+        if (Array.isArray(saved.sections[key])) state[key] = mergeLibraryInto(key, saved.sections[key]);
+      }
+      state.scope.forEach(i => { if (!Array.isArray(i.subs)) i.subs = []; });
+    }
+    ["scope","notes","quals","resp","billing","closing","incexc"].forEach(render);
+    relayoutTextareas();
+    setStatus("Draft loaded.", true);
+  } catch(e){ console.error("applySuiteDraft failed:", e); }
+}
+
+/* Suite draft messages: return this page's state, or apply an incoming one. */
+window.addEventListener("message", function(e){
+  var d = e && e.data;
+  if (!d || d.fdec !== true) return;
+  if (d.type === "get-draft"){
+    var payload = null, gerr = null;
+    try { payload = collectState(); } catch(ex){ gerr = String(ex && ex.message || ex); }
+    if (window.parent && window.parent !== window){
+      window.parent.postMessage({ fdec:true, type:"draft-data", page: SUITE_PAGE_ID, reqId:d.reqId, data:payload, error:gerr }, "*");
+    }
+  } else if (d.type === "load-draft" && d.page === SUITE_PAGE_ID){
+    applySuiteDraft(d.data);
+  }
+});
+
+var _btnSave = document.getElementById("btnSave");
+if (_btnSave) _btnSave.addEventListener("click", () => {
+  try {
+    // JSON payload; escape "</" so it can't terminate the script tag
+    const json = JSON.stringify(collectState()).replace(/<\//g, "<\\/");
+
+    // Serialize a clone of the page so the live view is untouched
+    const clone = document.documentElement.cloneNode(true);
+    const oldState = clone.querySelector("#savedState");
+    if (oldState) oldState.remove();
+    // strip rendered list contents — they're rebuilt on load from the saved state
+    clone.querySelectorAll("ul.items").forEach(ul => ul.innerHTML = "");
+    const body = clone.querySelector("body");
+    const stateScript = document.createElement("script");
+    stateScript.type = "application/json";
+    stateScript.id = "savedState";
+    stateScript.textContent = json;
+    body.insertBefore(stateScript, body.firstChild);
+
+    const html = "<!DOCTYPE html>\n" + clone.outerHTML;
+    const blob = new Blob([html], { type: "text/html" });
+
+    const q = document.getElementById("jobQuote").value.trim();
+    const c = document.getElementById("jobCustomer").value.trim();
+    const _fp = function(x){ return String(x||"").replace(/[^\w\- ]+/g,"").trim().replace(/\s+/g,"_"); };
+    const _td = new Date(), _today = _td.getFullYear()+"-"+String(_td.getMonth()+1).padStart(2,"0")+"-"+String(_td.getDate()).padStart(2,"0");
+    const _dt = (document.getElementById("jobDate").value || "").slice(0,10) || _today;
+    const base = [_fp(c), _fp(q), _dt].filter(Boolean).join("_");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = base + "_Draft.html";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
+    setStatus("Draft saved — reopen the file to continue where you left off.", true);
+  } catch (err){
+    console.error(err);
+    setStatus("Error saving draft — see console.");
+  }
+});
+
+/* ============================================================
+   CROSS-APP LINK — auto-fill the down payment note from the
+   Quoting tab. The suite shell relays the quoting app's down
+   payment total here via postMessage; we drop it into the
+   "A down payment of $____ is required..." note automatically.
+   ============================================================ */
+(function(){
+  // Matches the down payment note whether it still has the blank
+  // underscores or a previously auto-filled dollar amount.
+  const DP_RE = /(A down payment of\s+)(\$[\d,]+(?:\.\d{2})?|\$?_+)(\s+is required)/i;
+
+  // Replace the amount inside any down payment line in the given state
+  // array; returns true if at least one line changed.
+  function applyTo(arr, display){
+    let touched = false;
+    (arr || []).forEach(item => {
+      if (DP_RE.test(item.text)){
+        // Function replacer avoids "$" in the amount being read as a
+        // regex backreference (e.g. $1) inside the replacement string.
+        const next = item.text.replace(DP_RE, (m, pre, amt, post) => pre + display + post);
+        if (next !== item.text){ item.text = next; touched = true; }
+      }
+    });
+    return touched;
+  }
+
+  function fillDownPayment(display){
+    // Carry the amount into BOTH the Notes line and the
+    // Billing & Payment Terms line so it only has to be entered once.
+    if (applyTo(state.notes, display)) render("notes");
+    if (applyTo(state.billing, display)) render("billing");
+  }
+
+  window.addEventListener("message", function(e){
+    const d = e && e.data;
+    if (!d || d.fdec !== true || d.type !== "downpayment") return;
+    const display = d.display || ("$" + Number(d.value || 0).toFixed(2));
+    fillDownPayment(display);
+  });
+})();
+<\/script>
+
+
+<button id="backToTop" type="button" class="noprint" title="Back to top" aria-label="Back to top" onclick="scrollToTop()">
+  <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 5l-7 7h4v7h6v-7h4z" fill="currentColor"/></svg>
+</button>
+<style>
+  #backToTop{
+    position:fixed; z-index:120;
+    right:18px; right:max(18px, env(safe-area-inset-right));
+    bottom:78px; bottom:calc(78px + env(safe-area-inset-bottom));
+    width:46px; height:46px; border-radius:50%;
+    background:#010039; color:#fff; border:2px solid #3281b9;
+    box-shadow:0 6px 18px rgba(0,0,0,.28); cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    opacity:0; visibility:hidden; transform:translateY(8px);
+    transition:opacity .2s, transform .2s, visibility .2s;
+  }
+  #backToTop.show{opacity:.92; visibility:visible; transform:translateY(0)}
+  #backToTop:hover{opacity:1; background:#12245c}
+  #backToTop:active{transform:translateY(1px)}
+  @media print{#backToTop{display:none}}
+</style>
+<script>
+(function(){
+  var btn = document.getElementById('backToTop');
+  if (!btn) return;
+  // Scroll happens on the window (document scrolls in this app).
+  function onScroll(){
+    var y = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    if (y > 300) btn.classList.add('show'); else btn.classList.remove('show');
+  }
+  window.scrollToTop = function(){
+    try { window.scrollTo({ top:0, behavior:'smooth' }); }
+    catch(_){ window.scrollTo(0,0); }
+  };
+  window.addEventListener('scroll', onScroll, { passive:true });
+  document.addEventListener('scroll', onScroll, { passive:true, capture:true });
+  onScroll();
+})();
+<\/script>
+
+<script>
+/* FDEC central capture — relay every downloaded file (draft, Word doc, export) to the suite shell for central storage. */
+(function(){
+  if(window.__fdecCapInit) return; window.__fdecCapInit=true;
+  function fld(ids){ for(var i=0;i<ids.length;i++){ var e=document.getElementById(ids[i]); if(e&&'value'in e&&e.value) return e.value; } return ''; }
+  document.addEventListener('click', function(e){
+    var a=(e.target&&e.target.closest)?e.target.closest('a[download]'):null;
+    if(!a||!a.href||a.__fdecSent) return;
+    a.__fdecSent=true;
+    var href=a.href, fname=a.getAttribute('download')||'file';
+    fetch(href).then(function(r){return r.blob();}).then(function(blob){
+      if(!blob) return;
+      var fr=new FileReader();
+      fr.onload=function(){
+        try{ window.parent.postMessage({fdec:true,type:'filesave',value:{
+          filename:fname, dataUrl:fr.result, size:blob.size, mime:blob.type||'',
+          jobName:fld(['jobName','jobCustomer']), quoteNo:fld(['quoteNo','jobQuote']),
+          app:(document.title||'Quoting Suite').replace(/^FDEC\s*/i,'').trim()
+        }},'*'); }catch(_){}
+      };
+      fr.readAsDataURL(blob);
+    }).catch(function(){});
+  }, true);
+})();
+<\/script>
+</body></html></script>
 
 <script>
 /* ============================================================
@@ -7858,6 +9409,7 @@ function loadApps(){
   load("view-proposal", "src-proposal");
   load("view-annual", "src-annual");
   load("view-install", "src-install");
+  load("view-backflow", "src-backflow");
 }
 loadApps();
 /* On a PC, a vertical mouse wheel should pan the (horizontally scrolling) sub-menu
@@ -7997,7 +9549,8 @@ var VIEWS = [
   { key:'quote',    frame:'view-quote',    tab:'tab-quote'    },
   { key:'proposal', frame:'view-proposal', tab:'tab-proposal' },
   { key:'annual',   frame:'view-annual',   tab:'tab-annual'   },
-  { key:'install',  frame:'view-install',  tab:'tab-install'  }
+  { key:'install',  frame:'view-install',  tab:'tab-install'  },
+  { key:'backflow', frame:'view-backflow', tab:'tab-backflow' }
 ];
 
 function showView(which){
@@ -8040,7 +9593,7 @@ window.addEventListener('message', function(e){
   // Shared Job Name / Quote # / Date: the Quoting Template is the master.
   // Relay its jobinfo to every verbiage page but never back to the quote.
   if (d.type === 'jobinfo'){
-    ['view-proposal','view-annual','view-install'].forEach(function(id){
+    ['view-proposal','view-annual','view-install','view-backflow'].forEach(function(id){
       var f = document.getElementById(id);
       if (f && f.contentWindow) f.contentWindow.postMessage(d, '*');
     });
@@ -8100,7 +9653,7 @@ window.addEventListener('message', function(e){
     var nm=(window.FDECAuth&&window.FDECAuth.profile&&window.FDECAuth.profile.name)||'';
     var replySig=function(sig){ var pl={fdec:true,type:'my-signature',sig:(sig==null?null:sig),name:nm};
       try{ if(e.source&&e.source.postMessage){ e.source.postMessage(pl,'*'); return; } }catch(_){}
-      ['view-proposal','view-annual','view-install'].forEach(function(id){var f=document.getElementById(id); if(f&&f.contentWindow) f.contentWindow.postMessage(pl,'*');}); };
+      ['view-proposal','view-annual','view-install','view-backflow'].forEach(function(id){var f=document.getElementById(id); if(f&&f.contentWindow) f.contentWindow.postMessage(pl,'*');}); };
     if(window.__fdecMySigLoaded){ replySig(window.__fdecMySig); }
     else if(window.fdecLoadMySignature){ window.fdecLoadMySignature().then(function(s){ window.__fdecMySig=s; window.__fdecMySigLoaded=true; replySig(s); }); }
     else replySig(null);
@@ -8111,7 +9664,7 @@ window.addEventListener('message', function(e){
     return;
   }
   // Otherwise relay quoting -> all verbiage pages (down payment sync, etc.)
-  ['view-proposal','view-annual','view-install'].forEach(function(id){
+  ['view-proposal','view-annual','view-install','view-backflow'].forEach(function(id){
     var f = document.getElementById(id);
     if (f && f.contentWindow) f.contentWindow.postMessage(d, '*');
   });
@@ -8135,7 +9688,8 @@ var EXPORT_PAGES = [
   { id:'quote',    frame:'view-quote',    check:'xm-quote',    kind:'quote',    label:'Quoting Template' },
   { id:'proposal', frame:'view-proposal', check:'xm-proposal', kind:'verbiage', label:'Repair Verbiage' },
   { id:'annual',   frame:'view-annual',   check:'xm-annual',   kind:'verbiage', label:'Annual Inspection' },
-  { id:'install',  frame:'view-install',  check:'xm-install',  kind:'verbiage', label:'New Install' }
+  { id:'install',  frame:'view-install',  check:'xm-install',  kind:'verbiage', label:'New Install' },
+  { id:'backflow', frame:'view-backflow', check:'xm-backflow', kind:'verbiage', label:'Backflow' }
 ];
 
 function exportFullPackage(){ openExportModal(); }
@@ -8275,7 +9829,8 @@ var DRAFT_PAGES = [
   { id:'quote',    frame:'view-quote'    },
   { id:'proposal', frame:'view-proposal' },
   { id:'annual',   frame:'view-annual'   },
-  { id:'install',  frame:'view-install'  }
+  { id:'install',  frame:'view-install'  },
+  { id:'backflow', frame:'view-backflow' }
 ];
 
 function askDraft(iframeId){
