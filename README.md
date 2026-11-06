@@ -4,7 +4,7 @@ Employee portal hosted on GitHub Pages, with Firebase for employee sign-in and a
 
 ## Fire Defense browser game
 
-The retired Unity source, WebGL template, build placeholder, and Unity setup documents have been removed. The replacement browser game runs from a separate `fire-defense/` folder once its files are uploaded. It requires no Unity installation or build. Keep GitHub Pages configured for the existing root folder so the employee hub stays at its current address.
+The retired Unity source, WebGL template, build placeholder, and Unity setup documents have been removed. The replacement browser game runs from the `fire-defense/` folder and opens from the **Fire Defense** card beside **SwitchBack TD**. It requires no Unity installation or build. Keep GitHub Pages configured for the existing root folder so the employee hub stays at its current address.
 
 The browser game uses the existing approved employee accounts and separate `fdGameProfiles` and `fdGameLeaderboard` collections. `firebase/game.rules.fragment` contains the game rules to merge into the full operational rules. `firebase/firestore.indexes.json` defines its leaderboard index. Neither file deploys automatically or replaces existing live rules.
 

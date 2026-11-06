@@ -13,7 +13,7 @@
      - Everything else (Firestore API, etc.): straight to network — Firestore's
        own offline mode handles those when there is no signal.
 */
-const CACHE = 'fdec-quickhub-v117-field-tools';
+const CACHE = 'fdec-quickhub-v118-fire-defense';
 
 const CORE = [
   "troubleshooting-data.js",
@@ -44,6 +44,13 @@ const CORE = [
   "library-assets/victaulic-768n.jpg",
 
   'switchback/index.html',
+  'fire-defense/index.html',
+  'fire-defense/style.css',
+  'fire-defense/game.js',
+  'fire-defense/game-core.mjs',
+  'fire-defense/game-model.mjs',
+  'fire-defense/firebase-bridge.js',
+  'fire-defense/firebase-config.js',
 
   'fdec-industrial-header-option1.png',
   './',
@@ -129,7 +136,7 @@ self.addEventListener('fetch', (e) => {
     // Code (pages, scripts, styles, manifest) = network-first so updates land
     // immediately when online, then fall back to cache offline. Media/images =
     // stale-while-revalidate (instant, refresh quietly).
-    if (req.mode === 'navigate' || /\.(?:html|js|css|webmanifest|json)(?:$|\?)/i.test(url.pathname)) {
+    if (req.mode === 'navigate' || /\.(?:html|mjs|js|css|webmanifest|json)(?:$|\?)/i.test(url.pathname)) {
       e.respondWith(networkFirst(req));
     } else {
       e.respondWith(staleWhileRevalidate(req));
