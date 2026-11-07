@@ -9,7 +9,7 @@ export const ROOM_LIMIT = 30;
 // Pickups: hydrants spawn at random times, drop a bonus when destroyed; every kill drops a coin.
 export const HYDRANT={hp:12,radius:.4,minDelay:10,maxDelay:30,maxAlive:2};
 export const BONUS={life:12,pickRadiusPx:34,coinsBase:30,coinsPerRoom:3,bombRadius:4.5,bombDamage:6,timedSeconds:8,types:['coins','upgrade','bomb','timed']};
-export const COIN={range:3,dropChance:.25,magnetStep:1.5,magnetMax:5};   // pickup radius; whatever is left on the field is auto-collected when the wave timer ends
+export const COIN={range:3,dropChance:.25,magnetStep:1.5,magnetMax:5};   // pickup radius; uncollected coins are discarded when the wave ends
 // Timed waves: every wave lasts `duration` seconds. The swarm arrives progressively (slow start, heavy finish): the
 // cumulative spawn count follows (t/duration)^ramp. A mini-boss / boss is released at `specialAt` of the wave time.
 export const WAVE={duration:300,baseRate:4,perRoomRate:.4,ramp:1};
@@ -78,7 +78,7 @@ export class Engine {
     this.roomEvent='';this.encounterTimer=0;this.enemies=[];this.shots=[];this.fx=[];this.aim={x:1,y:0};this.moving=false;
     this.cooldown=0;this.specialCooldown=0;this.grace=0;this.charges=0;this.id=0;
     // Per-run loadout (never saved): chosen weapon, upgrade stacks, and the pick offered after a cleared room.
-    this.primaryChosen=false;this.healClock=0;this.weapon='hose';this.upgrades={};this.offer=[];this.burstQueue=[];this.interval=.19;
+    this.betweenWavePurchases=new Set();this.primaryChosen=false;this.healClock=0;this.weapon='hose';this.upgrades={};this.offer=[];this.burstQueue=[];this.interval=.19;
     this.pending=[];this.specialQueue=[];this.totalRegular=0;this.defeatedRegular=0;this.waveTime=0;this.waveTotal=0;this.spawned=0;this.nextRaid=RAID.first;this.finaleDone=false;
     this.puddles=[];this.orbAngle=0;
     this.hydrants=[];this.coins=[];this.bonuses=[];this.hydrantTimer=0;this.timedLeft=0;this.endTimer=null;
@@ -92,9 +92,11 @@ export class Engine {
   powerCost(){return 3*Math.min(25,[5,8,12][this.powerLevel]??(12+(this.powerLevel-2)*3));}
   pickupRange(){return COIN.range+this.magnetLevel*COIN.magnetStep+(this.upgrades.coin_magnet||0)*1.5;}
   magnetPrice(){return 40*(this.magnetLevel+1);}
+  canPurchaseOption(key){return this.mode!=='clear'||(this.betweenWavePurchases.size<2&&!this.betweenWavePurchases.has(key));}
+  recordPurchase(key){if(this.mode==='clear')this.betweenWavePurchases.add(key);}
   buyMagnet(){
-    if(!['active','upgrade','clear'].includes(this.mode)||this.magnetLevel>=COIN.magnetMax||this.profile.credits<this.magnetPrice())return false;
-    this.profile.credits-=this.magnetPrice();this.magnetLevel++;return true;
+    if(!this.canPurchaseOption('magnet')||!['active','upgrade','clear'].includes(this.mode)||this.magnetLevel>=COIN.magnetMax||this.profile.credits<this.magnetPrice())return false;
+    this.profile.credits-=this.magnetPrice();this.magnetLevel++;this.recordPurchase('magnet');return true;
   }
   openPowerUpgrade(){
     if(this.power<this.powerCost())return false;
@@ -109,12 +111,12 @@ export class Engine {
     if(id==='emergency_recovery')this.health=Math.min(this.maxHealth,this.health+2);
     else this.upgrades[id]=(this.upgrades[id]||0)+1;
     this.offer=[];
-    if(during){this.mode='active';this.resumeLeft=3;}
+    if(during){this.mode='active';this.resumeLeft=0;}
     return true;
   }
   newRun(){
     this.power=0;this.powerLevel=0;this.blueCoins=[];this.dropMisses=0;this.magnetLevel=0;this.resumeLeft=0;
-    this.healClock=0;this.room=1;this.cleared=0;this.score=0;this.time=0;this.health=this.maxHealth;
+    this.betweenWavePurchases.clear();this.healClock=0;this.room=1;this.cleared=0;this.score=0;this.time=0;this.health=this.maxHealth;
     this.hero={x:0,y:0};this.mode='active';this.grace=1;this.upgrades={};this.offer=[];this.spawnRoom();
   }
   spawnRoom(){
@@ -179,8 +181,8 @@ export class Engine {
   price(key){const item=EQUIPMENT.find(i=>i.key===key);return item?item.base*(this.profile[key]+1):Infinity;}
   buy(key){
     const item=EQUIPMENT.find(i=>i.key===key);
-    if(!item||!['ready','clear','defeat','victory'].includes(this.mode)||this.profile[key]>=item.max||this.profile.credits<this.price(key))return false;
-    this.profile.credits-=this.price(key);this.profile[key]++;return true;
+    if(!item||!this.canPurchaseOption(key)||!['ready','clear','defeat','victory'].includes(this.mode)||this.profile[key]>=item.max||this.profile.credits<this.price(key))return false;
+    this.profile.credits-=this.price(key);this.profile[key]++;this.recordPurchase(key);return true;
   }
   damage(enemy,damage,crit=false){
     if(enemy.hp<=0)return;
@@ -422,10 +424,8 @@ export class Engine {
     for(const f of this.fx)f.life-=dt;
     this.fx=this.fx.filter(f=>f.life>0).slice(-100);
     if(this.waveTime>=WAVE.duration){
-      // Timer is up: no end grace. Every coin still on the field is collected automatically, leftovers are cleared.
-      for(const k of this.blueCoins)this.power+=k.value;
-      this.blueCoins=[];
-      for(const k of this.coins)this.profile.credits=clamp(this.profile.credits+k.value,0,1000000);
+      // Timer is up: discard every uncollected gold and blue coin.
+      this.blueCoins=[];this.betweenWavePurchases.clear();
       this.coins=[];this.bonuses=[];this.hydrants=[];this.enemies=[];this.pending=[];this.specialQueue=[];this.timedLeft=0;
       this.upgrades={};this.power=0;this.powerLevel=0;this.dropMisses=0;this.healClock=0;
       this.cleared=this.room;this.profile.credits=clamp(this.profile.credits+25+this.room*5,0,1000000);
