@@ -28,6 +28,11 @@ export const WEAPONS=Object.fromEntries(SOURCE.map(w=>[w.key,{
 export const WEAPON_KEYS=SOURCE.map(w=>w.key);
 // Modifier names follow the reference table. `max` caps how many times one upgrade can be taken.
 export const UPGRADES=[
+  {id:'pressure_boost',name:'Pressure Boost',icon:'↑',max:12,description:'+25% weapon damage.',modifiers:{damage_multiplier:1.25}},
+  {id:'long_reach',name:'Long Reach',icon:'↗',max:4,description:'+15% weapon range.',modifiers:{range_multiplier:1.15}},
+  {id:'knockback',name:'Knockback',icon:'➜',max:3,description:'Push enemies farther away with each hit.',modifiers:{}},
+  {id:'coin_magnet',name:'Coin Magnet',icon:'🧲',max:4,description:'+1.5 coin pickup range for blue and gold coins this run.',modifiers:{}},
+  {id:'emergency_recovery',name:'Emergency Recovery',icon:'✚',max:1,description:'Restore 2 health immediately. Can be chosen again later.',modifiers:{}},
   {id:'front_stream',name:'Extra Stream +1',icon:'⫴',max:3,description:'Fire an additional stream. Streams fan out in a spread.',modifiers:{projectile_count_add:1,damage_multiplier:.85}},
   {id:'multi_burst',name:'Multi-Burst',icon:'⁝',max:2,description:'Each trigger pull fires an extra stream right behind the first.',modifiers:{burst_count_add:1,attack_speed_multiplier:.85,damage_multiplier:.9}},
   {id:'ricochet',name:'Ricochet Spray',icon:'⤢',max:1,description:'Streams bounce off the arena wall.',modifiers:{has_bounce:true,damage_multiplier:.9}},
@@ -59,7 +64,7 @@ export function computeStats(weaponKey,profile={},upgrades={}){
   }
   const nozzle=profile.nozzle||0;
   return{
-    key:w.key,kind:w.kind,speed:w.speed,range:w.range,homing:w.homing,knockback:w.knockback,splash:w.splash,puddle:w.puddle,
+    key:w.key,kind:w.kind,speed:w.speed,range:w.range*1.15**Math.min(4,upgrades.long_reach||0),homing:w.homing,knockback:w.knockback+2*Math.min(3,upgrades.knockback||0),splash:w.splash,puddle:w.puddle,
     damage:w.damage*(1+nozzle*.35)*damage,
     interval:BASE_INTERVAL/(w.rate*(1+nozzle*.08)*rate),
     projectiles,bursts,bounce,chain,chainKeep,
