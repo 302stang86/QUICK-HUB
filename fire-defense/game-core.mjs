@@ -282,11 +282,12 @@ export class Engine {
     const st=this.stats();this.interval=st.interval;
     if(this.enemies.length||this.hydrants.length){
       const d2=o=>(o.x-this.hero.x)**2+(o.y-this.hero.y)**2;
-      let nearest=this.enemies[0];
+      let nearest=this.enemies[0]||null;   // the map can hold only a hydrant mid-wave now that waves are timed
       for(const e of this.enemies)if(d2(e)<d2(nearest))nearest=e;
       // A hydrant becomes the target when it is in range and no enemy is close (within 3.5 units).
       let hyd=null;for(const h of this.hydrants)if(!hyd||d2(h)<d2(hyd))hyd=h;
       if(hyd&&Math.sqrt(d2(hyd))<=st.range&&(!nearest||(Math.sqrt(d2(nearest))>3.5&&d2(hyd)<d2(nearest))))nearest=hyd;
+      if(nearest){
       const dx=nearest.x-this.hero.x,dy=nearest.y-this.hero.y,dist=Math.hypot(dx,dy),l=dist||1;
       this.aim={x:dx/l,y:dy/l};
       // Weapons only fire once the nearest enemy is inside their range.
@@ -294,6 +295,7 @@ export class Engine {
         this.fireVolley(st,this.aim);
         for(let k=1;k<st.bursts;k++)this.burstQueue.push({delay:k*.1,dir:{...this.aim}});
         this.cooldown=st.interval;
+      }
       }
     }
     for(let i=this.burstQueue.length-1;i>=0;i--){
