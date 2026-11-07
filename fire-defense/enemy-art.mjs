@@ -7,7 +7,7 @@ const LOW=new Set(['#d34137','#ee5b37','#d34233','#d64238','#bd3332','#df4a33','
 let activeTheme=null;
 function tint(value){return activeTheme?(HOT.has(value)?activeTheme[0]:MID.has(value)?activeTheme[1]:LOW.has(value)?activeTheme[2]:value):value;}
 const paths = new Map();
-function path(d){let p=paths.get(d);if(!p){p=new Path2D(d);paths.set(d,p);}return p;}
+function path(d){let p=paths.get(d);if(!p){p=new Path2D(d);if(paths.size>=512)paths.clear();paths.set(d,p);}return p;}
 function shape(c,d,fill,stroke='#18232b',width=1.5){c.fillStyle=tint(fill);c.fill(path(d));if(stroke){c.strokeStyle=stroke;c.lineWidth=width;c.stroke(path(d));}}
 function ellipse(c,x,y,rx,ry,fill,stroke=null,width=1){c.beginPath();c.ellipse(x,y,rx,ry,0,0,Math.PI*2);c.fillStyle=tint(fill);c.fill();if(stroke){c.strokeStyle=stroke;c.lineWidth=width;c.stroke();}}
 function line(c,points,color,width=2){c.beginPath();points.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.strokeStyle=tint(color);c.lineWidth=width;c.stroke();}
