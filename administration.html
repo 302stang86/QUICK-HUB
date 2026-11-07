@@ -468,6 +468,7 @@ window.PERM = (function () {
       ["library","NFPA Field Library","Open the NFPA Field Library reference page"],
       ["pipevolume","Pipe Volume Calculator","Open the pipe volume, fill make-up, and expansion tank calculator"],
       ["bathroom","SwitchBack TD","Play SwitchBack TD and view its leaderboard"],
+      ["nicet","NICET Study","Open the NICET study guides, flashcards, and practice quizzes"],
       ["itm","ITM Inspection Reports","Create, view, and submit NFPA 25 ITM reports"],
       ["servicetrade","ServiceTrade","Open the ServiceTrade link"],
       ["timeoff","Time-Off Requests","Submit and view time-off requests"],
@@ -492,10 +493,10 @@ window.PERM = (function () {
   /* Seeded from fdec-auth.js DEFAULT_PAGES so the editor opens showing exactly
      what is already in force. admin = every page. */
   var DEFAULTS = {
-    new:    ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","pipevolume","bathroom","timeoff","fleet"],
-    tech:   ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","pipevolume","bathroom","timeoff","itm","servicetrade","oncall","inventory","fleet"],
-    temp:   ["home","troubleshooting","frequencies","help","library","pipevolume","bathroom","fleet"],
-    manager:["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","pipevolume","bathroom","timeoff","itm","servicetrade","oncall","inventory","quoting","faquoting","administration","fleet"],
+    new:    ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","pipevolume","bathroom","nicet","timeoff","fleet"],
+    tech:   ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","pipevolume","bathroom","nicet","timeoff","itm","servicetrade","oncall","inventory","fleet"],
+    temp:   ["home","troubleshooting","frequencies","help","library","pipevolume","bathroom","nicet","fleet"],
+    manager:["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","pipevolume","bathroom","nicet","timeoff","itm","servicetrade","oncall","inventory","quoting","faquoting","administration","fleet"],
     admin:null
   };
   var ALL = [];
@@ -802,36 +803,21 @@ function renderQF(filter){
     var app = o.app ? '<span class="qf-chip">'+qfEsc(o.app)+'</span>' : "";
     var op = (o.ready === false) ? ""
       : '<button class="qf-btn open" data-op="'+qfEsc(o.id)+'">Open</button>';
-    var reopenable = (o.mime==="application/fdec-suite") || (o.mime==="application/fdec-fa-quote") || /\.(fdecsuite|json|fdecfa)$/i.test(o.filename||"");
-    var ed = (canDel && o.ready!==false && reopenable)
-      ? '<button class="qf-btn edit" data-ed="'+qfEsc(o.id)+'">Edit</button>' : "";
-    var dl = (o.ready === false)
-      ? '<span class="qf-btn" style="opacity:.5;cursor:default">Saving&hellip;</span>'
-      : '<button class="qf-btn" data-dl="'+qfEsc(o.id)+'">Download</button>';
+    var saving = (o.ready === false)
+      ? '<span class="qf-btn" style="opacity:.5;cursor:default">Saving&hellip;</span>' : "";
     var del = canDel ? '<button class="qf-btn del" data-del="'+qfEsc(o.id)+'">Delete</button>' : "";
     return '<div class="qf-row"><div class="qf-main">'
       + '<div class="qf-job">'+app+job+'</div>'
       + '<div class="qf-meta">'+meta+'</div>'
       + '<div class="qf-file">'+qfEsc(o.filename||"file")+' &middot; '+qfSize(o.size)+'</div>'
-      + '</div><div class="qf-acts">'+op+ed+dl+del+'</div></div>';
+      + '</div><div class="qf-acts">'+op+saving+del+'</div></div>';
   }).join("");
 }
 
-/* Rebuild a file from its Firestore chunks and hand it to the browser. */
-async function qfDownload(o){
-  try{
-    var snaps = await getDocs(query(collection(db,"quoteFiles",o.id,"chunks"), orderBy("i")));
-    var parts = [];
-    snaps.forEach(function(s){ var d=s.data()||{}; parts[d.i|0] = d.data||""; });
-    var b64 = parts.join("");
-    var bin = atob(b64), len = bin.length, arr = new Uint8Array(len);
-    for(var i=0;i<len;i++) arr[i] = bin.charCodeAt(i);
-    var blob = new Blob([arr], { type: o.mime || "application/octet-stream" });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement("a"); a.href = url; a.download = o.filename || "file";
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
-  }catch(e){ P.toast("Download failed: "+(e&&e.code?e.code:"try again")); }
+/* A suite or fire alarm draft is reopened inside its own tool (so a re-save replaces
+   this same record); anything else opens as a page or file in a new tab. */
+function qfReopenable(o){
+  return (o.mime==="application/fdec-suite") || (o.mime==="application/fdec-fa-quote") || /\.(fdecsuite|json|fdecfa)$/i.test(o.filename||"");
 }
 
 /* Rebuild a file from its chunks and open it in a new browser tab.
@@ -918,26 +904,16 @@ async function qfDelete(o){
   });
   if(l) l.addEventListener("click", async function(e){
     var opBtn  = e.target.closest ? e.target.closest("[data-op]")  : null;
-    var edBtn  = e.target.closest ? e.target.closest("[data-ed]")  : null;
-    var dlBtn  = e.target.closest ? e.target.closest("[data-dl]")  : null;
     var delBtn = e.target.closest ? e.target.closest("[data-del]") : null;
-    if(edBtn){
-      var oe = QF.filter(function(o){ return o.id===edBtn.getAttribute("data-ed"); })[0];
-      if(oe) qfEdit(oe);
-      return;
-    }
     if(opBtn){
+      var o0 = QF.filter(function(o){ return o.id===opBtn.getAttribute("data-op"); })[0];
+      if(o0 && qfReopenable(o0)){ qfEdit(o0); return; }   // editable draft: open it in its tool
       // open the tab synchronously (within the click) so pop-up blockers allow it.
       // No "noopener" here: that makes window.open return null, which left the
       // new tab blank because we never got a handle to navigate it.
       var win = window.open("", "_blank");
       var oo = QF.filter(function(o){ return o.id===opBtn.getAttribute("data-op"); })[0];
       if(oo) qfOpen(oo, win); else if(win) win.close();
-      return;
-    }
-    if(dlBtn){
-      var od = QF.filter(function(o){ return o.id===dlBtn.getAttribute("data-dl"); })[0];
-      if(od) qfDownload(od);
       return;
     }
     if(delBtn){
