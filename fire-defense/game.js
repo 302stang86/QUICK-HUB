@@ -10,7 +10,7 @@ const $=id=>document.getElementById(id);
 const canvas=$('canvas'),ctx=canvas.getContext('2d');
 const navy='#12283c',muted='#7594a9';
 import { computeStats } from './weapons.mjs';
-const computeFor=(e,key)=>computeStats(key,e.profile,{});
+const computeFor=(e,key)=>{const s=computeStats(key,e.profile,{});s.damage*=1.5;return s;};
 class FireDefense {
   constructor(){
     this.zoom=1;this.camera={x:0,y:0};this.touchPoints=new Map();this.pinchActive=false;this.pinchStart=null;
@@ -20,6 +20,12 @@ class FireDefense {
   }
   resize(){this.w=innerWidth;this.h=innerHeight;const ratio=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(this.w*ratio);canvas.height=Math.round(this.h*ratio);ctx.setTransform(ratio,0,0,ratio,0,0);this.ratio=ratio;this.baseUnit=Math.min(this.w/19,this.h/11.6);this.unit=this.baseUnit*this.zoom;this.updateCamera(0,true);this.updateView();}
   bind(){
+    const power=document.createElement('div');power.id='power-meter';power.hidden=true;
+    power.innerHTML='<label id="power-label"></label><progress id="power-progress" max="5" value="0"></progress><button id="buy-magnet" type="button"></button>';
+    document.body.append(power);
+    const countdown=document.createElement('div');countdown.id='resume-countdown';countdown.hidden=true;document.body.append(countdown);
+    $('buy-magnet').onclick=()=>{if(this.loaded&&!this.pending&&!this.saving&&this.engine.buyMagnet()){this.updateHUD();}};
+
     addEventListener('keydown',e=>{if(['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)||!$('gate').hidden||$('board').open||$('bestiary').open)return;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();this.keys.add(e.key.toLowerCase());if(e.key==='Escape')this.togglePause();if(e.code==='Space'&&!e.repeat)this.special();});
     addEventListener('keyup',e=>this.keys.delete(e.key.toLowerCase()));
     const clear=()=>{this.keys.clear();this.stick={x:0,y:0};this.pointer=null;$('stick-knob').style.transform='';};
@@ -46,7 +52,7 @@ class FireDefense {
     $('special').onclick=()=>this.special();
     $('continue').onclick=()=>{
       if(this.saving||this.pending||!this.loaded)return;
-      if(!this.paused&&this.engine.mode==='clear'&&this.engine.offer.length)return;
+      if(this.engine.mode==='upgrade'||(!this.paused&&this.engine.mode==='clear'&&this.engine.offer.length))return;
       if(this.paused){this.paused=false;}
       else if(this.engine.mode==='clear')this.engine.nextRoom();
       else this.engine.newRun();
@@ -112,24 +118,32 @@ class FireDefense {
   }
   sendPending(){this.saving=true;this.saveMessage='Saving progress…';this.updateView();window.FDEC?.save(JSON.stringify(this.pending));}
   togglePause(){if(!this.loaded||this.engine.mode!=='active'||!$('gate').hidden)return;this.paused=!this.paused;this.clearInput();this.readyMenu='';this.updateView();}
-  special(){if(!this.loaded||this.paused||!$('gate').hidden||this.h>this.w||$('board').open||$('bestiary').open)return;if(this.engine.special()){this.shake=.18;this.updateHUD();}}
-  updateHUD(){if(!this.engine)return;const e=this.engine;$('room').textContent=String(e.room).padStart(2,'0')+' / 30';$('health').textContent=e.health+' / '+e.maxHealth;$('score').textContent=e.score.toLocaleString();$('credits').textContent=e.profile.credits.toLocaleString();$('floor-label').firstChild.textContent='SECTOR '+String(e.room).padStart(2,'0')+' ';const unlocked=e.profile.foam||e.profile.cannon;$('special').disabled=!unlocked||e.charges<=0||e.specialCooldown>0;$('special-name').textContent=e.profile.cannon?'WATER CANNON':'FOAM BURST';$('encounter-banner').hidden=!(e.mode==='active'&&e.encounterTimer>0&&!this.paused);$('encounter-banner').textContent=e.roomEvent||'';const st=e.stats(),owned=UPGRADES.filter(u=>e.upgrades[u.id]).map(u=>u.name+(u.max>1?' ×'+e.upgrades[u.id]:''));$('loadout').hidden=!(e.mode==='active'||e.mode==='clear');$('loadout').innerHTML='<b></b><br><span></span><br><i></i>';const lo=$('loadout');lo.querySelector('b').textContent=WEAPONS[e.weapon].name+' · '+st.damage.toFixed(1)+' dmg · '+Math.round(st.critChance*100)+'% crit';lo.querySelector('span').textContent=owned.join(' · ');const tl=Math.ceil(e.timeLeft?e.timeLeft():0);lo.querySelector('i').textContent='Wave '+Math.floor(tl/60)+':'+String(tl%60).padStart(2,'0')+' left · '+e.enemies.length+' on field'+(e.specialQueue.length?' · boss at 2:30':'');$('special-state').textContent=!unlocked?'Unlock in equipment':e.specialCooldown>0?Math.ceil(e.specialCooldown)+'s cooldown':e.charges+' charges · Space';}
+  special(){if(!this.loaded||this.paused||!$('gate').hidden||this.engine.resumeLeft>0||this.h>this.w||$('board').open||$('bestiary').open)return;if(this.engine.special()){this.shake=.18;this.updateHUD();}}
+  updateHUD(){if(!this.engine)return;const e=this.engine;
+    const inRun=['active','upgrade','clear'].includes(e.mode);
+    $('power-meter').hidden=!this.loaded||!inRun;
+    $('power-label').textContent='NEXT UPGRADE · '+e.power+' / '+e.powerCost();
+    $('power-progress').max=e.powerCost();$('power-progress').value=Math.min(e.power,e.powerCost());
+    const magnet=$('buy-magnet');magnet.textContent='🧲 Magnet '+e.magnetLevel+'/5 · '+e.pickupRange().toFixed(1)+' range'+(e.magnetLevel<5?' · Buy '+e.magnetPrice()+' gold':' · MAX');
+    magnet.disabled=this.saving||!!this.pending||e.magnetLevel>=5||e.profile.credits<e.magnetPrice()||!inRun;
+    $('resume-countdown').hidden=!(e.mode==='active'&&e.resumeLeft>0&&!this.paused);$('resume-countdown').textContent=Math.ceil(e.resumeLeft);
+$('room').textContent=String(e.room).padStart(2,'0')+' / 30';$('health').textContent=e.health+' / '+e.maxHealth;$('score').textContent=e.score.toLocaleString();$('credits').textContent=e.profile.credits.toLocaleString();$('floor-label').firstChild.textContent='SECTOR '+String(e.room).padStart(2,'0')+' ';const unlocked=e.profile.foam||e.profile.cannon;$('special').disabled=!unlocked||e.charges<=0||e.specialCooldown>0;$('special-name').textContent=e.profile.cannon?'WATER CANNON':'FOAM BURST';$('encounter-banner').hidden=!(e.mode==='active'&&e.encounterTimer>0&&!this.paused);$('encounter-banner').textContent=e.roomEvent||'';const st=e.stats(),owned=UPGRADES.filter(u=>e.upgrades[u.id]).map(u=>u.name+(u.max>1?' ×'+e.upgrades[u.id]:''));$('loadout').hidden=!(e.mode==='active'||e.mode==='clear');$('loadout').innerHTML='<b></b><br><span></span><br><i></i>';const lo=$('loadout');lo.querySelector('b').textContent=WEAPONS[e.weapon].name+' · '+st.damage.toFixed(1)+' dmg · '+Math.round(st.critChance*100)+'% crit';lo.querySelector('span').textContent=owned.join(' · ');const tl=Math.ceil(e.timeLeft?e.timeLeft():0);lo.querySelector('i').textContent='Wave '+Math.floor(tl/60)+':'+String(tl%60).padStart(2,'0')+' left · '+e.enemies.length+' on field'+(e.specialQueue.length?' · boss at 2:30':'');$('special-state').textContent=!unlocked?'Unlock in equipment':e.specialCooldown>0?Math.ceil(e.specialCooldown)+'s cooldown':e.charges+' charges · Space';}
   updateView(){
     if(!$('menu'))return;
     const e=this.engine;const active=this.loaded&&e?.mode==='active'&&!this.paused;
-    $('hud').hidden=!this.loaded;$('controls').hidden=!active;$('menu').hidden=!this.loaded||active;
+    $('power-meter').hidden=!this.loaded;$('resume-countdown').hidden=true;$('hud').hidden=!this.loaded;$('controls').hidden=!active;$('menu').hidden=!this.loaded||active;
     $('rotate').hidden=!this.loaded||this.w>=this.h;$('pause').textContent=this.paused?'Resume ▶':'Pause ⏸';
     if(!this.loaded||!e)return;
     this.updateHUD();
     const menuMode=this.paused?'pause':e.mode;
-    const labels={ready:['RESPONSE BRIEFING','Ready for response?','Clear each room with your hose. Keep moving—the water aims for you.','Start response →'],clear:['SECTOR SECURED','Room '+e.room+' cleared.','Supplies collected. Recover 1 health and prepare for the next room.','Next room →'],defeat:['RESPONSE COMPLETE','The fire won this round.','Your permanent gear and earned credits stay with you. Start a fresh run.','Try again →'],victory:['WAREHOUSE SECURED','All 30 rooms cleared.','Outstanding response. Upgrade your equipment and take on a new run.','New response →'],pause:['TAKE A BREATHER','Response paused.','Your active play clock is paused.','Resume response →']};
+    const labels={upgrade:['POWER BAR FULL','Choose an upgrade','Pick one free upgrade. Gameplay is paused until you choose.','Choose an upgrade below'],ready:['RESPONSE BRIEFING','Ready for response?','Clear each room with your hose. Keep moving—the water aims for you.','Start response →'],clear:['SECTOR SECURED','Room '+e.room+' cleared.','Supplies collected. Recover 1 health and prepare for the next room.','Next room →'],defeat:['RESPONSE COMPLETE','The fire won this round.','Your permanent gear and earned credits stay with you. Start a fresh run.','Try again →'],victory:['WAREHOUSE SECURED','All 30 rooms cleared.','Outstanding response. Upgrade your equipment and take on a new run.','New response →'],pause:['TAKE A BREATHER','Response paused.','Your active play clock is paused.','Resume response →']};
     const text=labels[menuMode]||labels.ready;
     $('menu-eyebrow').textContent=text[0];$('menu-title').textContent=text[1];$('menu-description').textContent=text[2];$('continue').textContent=text[3];
     $('run-stats').textContent=e.profile.nickname+'  ·  '+e.profile.credits.toLocaleString()+' credits'+(e.cleared?'  ·  '+e.cleared+' rooms secured':'');
     $('continue').disabled=this.saving||!!this.pending;
     $('save-status').textContent=this.saveMessage;$('retry').hidden=!this.pending||this.saving;
-    $('shop').hidden=menuMode==='pause';
-    const pickWeapon=['ready','defeat','victory'].includes(menuMode),pickUpgrade=menuMode==='clear'&&e.offer.length>0;
+    $('shop').hidden=menuMode==='pause'||menuMode==='upgrade';
+    const pickWeapon=['ready','defeat','victory'].includes(menuMode),pickUpgrade=['clear','upgrade'].includes(menuMode)&&e.offer.length>0;
     $('picker').hidden=!(pickWeapon||pickUpgrade);
     if(pickUpgrade)$('continue').disabled=true;
     const key=menuMode+JSON.stringify(e.profile)+this.saving+!!this.pending+e.weapon+JSON.stringify(e.upgrades)+e.offer.join();
@@ -166,7 +180,7 @@ class FireDefense {
         card(w.icon,w.name,[['p',w.trait],['stat','DMG '+st.damage.toFixed(2)+' · '+(1/st.interval).toFixed(1)+'/s'],['stat','RANGE '+Math.round(st.range)+' · CRIT '+Math.round(st.critChance*100)+'%']],e.weapon===k?'Equipped':'Equip',e.weapon===k,()=>{if(e.setWeapon(k)){this.readyMenu='';this.updateView();}},e.weapon===k);
       }
     }else if(pickUpgrade){
-      $('picker-title').textContent='PICK AN UPGRADE · THIS RUN ONLY';
+      $('picker-title').textContent='CHOOSE ONE FREE UPGRADE · THIS RUN';
       for(const id of e.offer){
         const u=UPGRADE_BY_ID[id],n=e.upgrades[id]||0;
         card(u.icon,u.name,[['p',u.description],['owned',n?'OWNED ×'+n+(u.max>1?' / '+u.max:''):(u.max>1?'MAX ×'+u.max:'ONE-TIME')]],'Take',false,()=>{if(e.chooseUpgrade(id)){this.readyMenu='';this.updateHUD();this.updateView();}},false);
@@ -178,6 +192,7 @@ class FireDefense {
       let x=(this.keys.has('d')||this.keys.has('arrowright')?1:0)-(this.keys.has('a')||this.keys.has('arrowleft')?1:0),y=(this.keys.has('s')||this.keys.has('arrowdown')?1:0)-(this.keys.has('w')||this.keys.has('arrowup')?1:0);
       if(Math.hypot(this.stick.x,this.stick.y)>.1){x=this.stick.x;y=this.stick.y;}if(this.pinchActive){x=0;y=0;}
       const event=this.engine.step(dt,movementFromScreen(x,y));
+      if(event==='upgrade'){this.clearInput();this.readyMenu='';this.updateView();}
       if(event==='checkpoint'){this.clearInput();this.checkpoint();this.readyMenu='';this.updateView();}
       this.updateHUD();
     }
@@ -231,6 +246,7 @@ class FireDefense {
     if(e)for(const pd of e.puddles){const o2=this.project(pd.x,pd.y),k=Math.min(1,pd.life/.6),rr=pd.r*u;ctx.save();ctx.globalAlpha=.55*k;ctx.beginPath();ctx.ellipse(o2.x,o2.y,rr*1.0182,rr*.5091,0,0,Math.PI*2);ctx.fillStyle='#8fe9c4';ctx.fill();ctx.globalAlpha=.9*k;ctx.lineWidth=2;ctx.strokeStyle='#d8fff0';ctx.stroke();ctx.restore();}
     // Coins lie on the floor until collected.
     if(e)for(const k of e.coins){const q=this.project(k.x,k.y,.05),bob=Math.sin(this.time*5+k.x*3)*1.2,rr=(k.big?.2:.12)*u,lowT=e.endTimer!==null&&e.endTimer<.7&&Math.floor(this.time*10)%2;ctx.save();ctx.globalAlpha=lowT?.35:1;ctx.shadowColor='#ffd45a';ctx.shadowBlur=8;this.ellipse(q.x,q.y+bob,rr,rr*.62,'#f4b42c');this.ellipse(q.x,q.y+bob-1,rr*.8,rr*.48,'#ffd95e');this.ellipse(q.x,q.y+bob-1,rr*.35,rr*.2,'#f4b42c');ctx.restore();}
+    if(e)for(const k of e.blueCoins){const q=this.project(k.x,k.y,.12),rr=u*.15;ctx.save();ctx.shadowColor='#46b7ff';ctx.shadowBlur=10;this.ellipse(q.x,q.y,rr,rr*.7,'#36a4ff');this.ellipse(q.x,q.y-1,rr*.55,rr*.38,'#c4efff');ctx.restore();}
     let actors=e?[...e.enemies.map(a=>({kind:'enemy',...a})),...e.hydrants.map(a=>({kind:'hydrant',...a})),{kind:'hero',...e.hero}]:[{kind:'hero',x:1,y:-1},{kind:'enemy',x:-2,y:2,charger:false,timer:1,flash:0,hp:3,maxHp:3},{kind:'enemy',x:3,y:2,charger:true,timer:2,flash:0,hp:5,maxHp:5},{kind:'enemy',x:-3,y:0,charger:false,timer:1,flash:0,hp:3,maxHp:3}];
     actors.sort((a,b)=>(b.x+b.y)-(a.x+a.y));
     for(const a of actors){const q=this.project(a.x,a.y),margin=u*4;if(q.x<-margin||q.x>w+margin||q.y<-margin||q.y>h+margin)continue;if(a.kind==='hero')this.drawHero(a,e);else if(a.kind==='hydrant')this.drawHydrant(a);else this.drawEnemy(a);}
