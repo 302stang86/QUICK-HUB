@@ -7,3 +7,10 @@ html{overscroll-behavior:none}body{touch-action:manipulation}#bestiary{width:min
 #loadout{position:fixed;left:max(16px,env(safe-area-inset-left));top:82px;z-index:4;pointer-events:none;font-size:11px;line-height:1.5;color:#d8f3ff;text-shadow:0 1px 3px #000c;max-width:min(300px,42vw)}#loadout b{color:#fff}#loadout span{color:#f1d0a0}
 @media(max-height:450px) and (orientation:landscape){#loadout{top:68px;font-size:10px}#picker .gear .stat{display:none}}
 #loadout i{font-style:normal;color:#ffd0a0}
+
+#power-meter{position:fixed;left:16px;bottom:14px;z-index:5;width:min(330px,43vw);padding:8px 12px;background:#10283aeb;border:1px solid #55b9ff;border-radius:12px;color:#d7f2ff;font:700 11px system-ui}
+#power-meter[hidden],#resume-countdown[hidden]{display:none}
+#power-meter label{display:block;margin-bottom:4px}#power-meter progress{display:block;width:100%;height:10px;accent-color:#299fff}
+#buy-magnet{display:block;margin-top:6px;width:100%;font-size:11px;padding:7px;min-height:32px;border-radius:8px}
+#resume-countdown{position:fixed;inset:0;display:grid;place-items:center;background:#06152270;color:white;font:900 88px system-ui;z-index:15;pointer-events:none}
+@media(max-height:500px){#power-meter{left:50%;transform:translateX(-50%);bottom:8px;width:240px;padding:6px 10px}}
