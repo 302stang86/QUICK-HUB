@@ -12,10 +12,15 @@ export const BONUS={life:12,pickRadiusPx:34,coinsBase:30,coinsPerRoom:3,bombRadi
 export const COIN={range:1.4};   // pickup radius; whatever is left on the field is auto-collected when the wave timer ends
 // Timed waves: every wave lasts `duration` seconds. The swarm arrives progressively (slow start, heavy finish): the
 // cumulative spawn count follows (t/duration)^ramp. A mini-boss / boss is released at `specialAt` of the wave time.
-export const WAVE={duration:300,swarm:4,ramp:1.5};
+export const WAVE={duration:300,baseRate:4,perRoomRate:.4,ramp:1};
 // Triggered swarm attacks: a pack of raiders at 1:00 and every 60 s after, then a bigger finale at 4:30.
-export const RAID={first:60,every:60,finale:270,baseSize:8,perRoom:.6,maxSize:24,finaleFactor:2.5,maxFinale:60,spread:1.1};
-export const SPAWN={initial:5,maxAlive:40,specialAt:.5};
+export const RAID={first:60,every:60,finale:270,baseSize:30,perRoom:2,maxSize:80,finaleFactor:2.5,maxFinale:160,spread:3.5};
+export const SPAWN={initial:20,maxAlive:320,specialAt:.5};
+// Health and contact damage scale directly with wave; speed rises 3% per wave, capped at 1.9×.
+export function scaleEnemy(type,room){
+  const level=Math.max(1,Math.floor(room));
+  return {...type,hp:type.hp*level,attack:type.attack*level,speed:type.speed*Math.min(1.9,1+(level-1)*.03)};
+}
 // Faster play: hero and enemy movement multipliers (enemy table speeds stay as the base values).
 export const SPEED={hero:1.3,enemy:1.4};
 const OLD_AREA=24*18,AREA_FACTOR=5,RADIUS=Math.sqrt(OLD_AREA*AREA_FACTOR/Math.PI);
@@ -99,8 +104,8 @@ export class Engine {
     const lineup=roomLineup(this.room,this.random);
     const regular=lineup.filter(e=>e.tier==='base');
     this.specialQueue=lineup.filter(e=>e.tier!=='base');      // mini-boss / boss, held back until half time
-    // The swarm: the room's regular enemies repeated and reshuffled to fill the full timed wave.
-    const total=regular.length*WAVE.swarm;
+    // A continuous stream throughout the timer, drawn from all unlocked regular types.
+    const total=SPAWN.initial+Math.ceil(WAVE.duration*(WAVE.baseRate+(this.room-1)*WAVE.perRoomRate));
     this.pending=Array.from({length:total},(_,i)=>i<regular.length?regular[i]:regular[Math.floor(this.random()*regular.length)]);
     this.totalRegular=total;this.defeatedRegular=0;this.waveTime=0;this.waveTotal=total;this.spawned=0;this.nextRaid=RAID.first;this.finaleDone=false;
     this.roomEvent='Room '+this.room;this.encounterTimer=0;
@@ -108,7 +113,8 @@ export class Engine {
   }
   spawnOne(type){
     const p=randomEdgeSpawn(this.random,this.hero,this.enemies);
-    this.enemies.push({...type,...p,id:++this.id,maxHp:type.hp,charger:type.behavior==='charge',timer:this.random()*3.2,flash:0});
+    const scaled=scaleEnemy(type,this.room);
+    this.enemies.push({...scaled,...p,id:++this.id,maxHp:scaled.hp,charger:type.behavior==='charge',timer:this.random()*3.2,flash:0});
   }
   /** Enemies still to defeat this wave: on the map plus everything queued. */
   remaining(){return this.enemies.length+(this.pending?.length||0)+(this.specialQueue?.length||0);}
@@ -118,10 +124,11 @@ export class Engine {
     const n=finale?Math.min(RAID.maxFinale,Math.round(base*RAID.finaleFactor)):base;
     const lead=pool[Math.floor(this.random()*pool.length)];
     const centers=finale?[0,1,2,3].map(i=>{const a=i*Math.PI/2+this.random()*.6,r=MAP.radius-MAP.margin-.5;return{x:Math.cos(a)*r,y:Math.sin(a)*r};}):[randomEdgeSpawn(this.random,this.hero,[])];
-    for(let i=0;i<n;i++){
+    for(let i=0;i<n&&this.enemies.length<SPAWN.maxAlive;i++){
       const c=centers[i%centers.length],type=finale?pool[Math.floor(this.random()*pool.length)]:(this.random()<.75?lead:pool[Math.floor(this.random()*pool.length)]);
       const a=this.random()*Math.PI*2,d=Math.sqrt(this.random())*RAID.spread,p={x:c.x+Math.cos(a)*d,y:c.y+Math.sin(a)*d};clampToMap(p,ENEMY_PAD);
-      this.enemies.push({...type,...p,id:++this.id,maxHp:type.hp,charger:false,timer:this.random()*3.2,flash:0});
+      const scaled=scaleEnemy(type,this.room);
+      this.enemies.push({...scaled,...p,id:++this.id,maxHp:scaled.hp,charger:false,timer:this.random()*3.2,flash:0});
     }
     this.roomEvent=finale?'FINALE: THE SWARM!':'SWARM INCOMING!';this.encounterTimer=finale?5:3;
   }
@@ -139,7 +146,7 @@ export class Engine {
     if(this.waveTime>=this.nextRaid&&this.nextRaid<RAID.finale){this.nextRaid+=RAID.every;this.spawnRaid(false);}
     if(!this.finaleDone&&this.waveTime>=RAID.finale){this.finaleDone=true;this.spawnRaid(true);}
     if(!this.pending?.length)return;
-    // Progressive swarm: how many regulars should have arrived by now.
+    // Constant arrivals; queued enemies refill vacancies when the active population hits its cap.
     const f=Math.min(1,this.waveTime/WAVE.duration),due=Math.min(this.waveTotal,SPAWN.initial+Math.floor((this.waveTotal-SPAWN.initial)*Math.pow(f,WAVE.ramp)));
     while(this.pending.length&&this.spawned<due&&this.enemies.length<SPAWN.maxAlive){this.spawnOne(this.pending.shift());this.spawned++;}
   }
@@ -169,7 +176,7 @@ export class Engine {
   fireVolley(st,dir){
     // Extra streams fan out around the aim direction.
     const n=st.projectiles,step=SPREAD_DEG*Math.PI/180,base=Math.atan2(dir.y,dir.x);
-    for(let i=0;i<n;i++){
+    for(let i=0;i<n&&this.enemies.length<SPAWN.maxAlive;i++){
       const ang=base+(i-(n-1)/2)*step,dx=Math.cos(ang),dy=Math.sin(ang),crit=this.random()<st.critChance;
       this.shots.push({x:this.hero.x,y:this.hero.y,vx:dx*st.speed,vy:dy*st.speed,speed:st.speed,
         life:st.range/st.speed*(st.bounce?1.5:1)+.05,damage:st.damage*(crit?st.critMult:1),crit,kind:st.kind,
