@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {COIN,Engine,firstHit,movementFromScreen,MAP,inSpawnBand,randomEdgeSpawn,clampToMap} from '../fire-defense/game-core.mjs';
+import {WAVE,SPEED,Engine,firstHit,movementFromScreen,MAP,inSpawnBand,randomEdgeSpawn,clampToMap} from '../fire-defense/game-core.mjs';
 import {blankProfile,betterRun,validateSave,validNickname} from '../fire-defense/game-model.mjs';
 const create=()=>new Engine(blankProfile('Firefighter'),()=>.2);
 // step() clamps dt to .05 s, so wait out the coin-collection window in real-sized steps.
-const closeRoom=e=>{let r=null;for(let i=0;i<Math.ceil(COIN.endGrace/.05)+5&&r===null;i++)r=e.step(.05);return r;};
+// Jump the wave clock to just before the end, then run the closing step(s).
+const closeRoom=e=>{e.waveTime=WAVE.duration-.02;let r=null;for(let i=0;i<4&&r===null;i++)r=e.step(.05);return r;};
 test('new run spawns safe enemies and resets run only',()=>{const e=create();e.profile.nozzle=2;e.profile.credits=500;e.score=123;e.newRun();assert.equal(e.enemies.length,5);assert.equal(e.score,0);assert.equal(e.profile.credits,500);assert.equal(e.profile.nozzle,2);for(const p of e.enemies)assert.ok(Math.hypot(p.x-e.hero.x,p.y-e.hero.y)>3);});
 test('diagonal movement is normalized and maps screen directions correctly',()=>{for(const [x,y]of[[1,0],[0,1],[1,1],[-1,1]]){const v=movementFromScreen(x,y);assert.ok(Math.abs(Math.hypot(v.x,v.y)-1)<1e-10);}const right=movementFromScreen(1,0);assert.ok(right.x>0&&right.y<0);const up=movementFromScreen(0,-1);assert.ok(up.x>0&&up.y>0);});
 test('hose fires while moving and player stays inside arena',()=>{const e=create();e.newRun();e.step(.05,{x:1,y:0});assert.ok(e.shots.length>0);assert.ok(e.hero.x>0);for(let i=0;i<200;i++){e.enemies=[{x:-5,y:4,hp:1e8,maxHp:1e8,speed:0,timer:0,flash:0}];e.step(.05,{x:1,y:1});}assert.ok(Math.hypot(e.hero.x,e.hero.y)<=MAP.radius-.2+1e-9);});
@@ -23,7 +24,7 @@ import {pinchZoom} from '../fire-defense/viewport.mjs';
 test('map is round with five times the previous 24 × 18 area and hero starts each room at center',()=>{assert.equal(MAP.shape,'round');assert.ok(Math.abs(Math.PI*MAP.radius**2-24*18*5)<1e-6);const e=create();e.newRun();assert.deepEqual(e.hero,{x:0,y:0});e.hero={x:8,y:6};e.mode='clear';e.nextRoom();assert.deepEqual(e.hero,{x:0,y:0});});
 test('random spawns cover the whole outer ring, stay inside the round wall and clear of the hero',()=>{let seed=418;const rng=()=>((seed=(1664525*seed+1013904223)>>>0)/2**32);const sides=new Set();for(let i=0;i<2000;i++){const p=randomEdgeSpawn(rng);assert.ok(inSpawnBand(p));assert.ok(Math.hypot(p.x,p.y)<=MAP.radius-MAP.margin+1e-9);assert.ok(Math.hypot(p.x,p.y)>3);if(p.x<=-13)sides.add('left');if(p.x>=13)sides.add('right');if(p.y<=-13)sides.add('bottom');if(p.y>=13)sides.add('top');}assert.equal(sides.size,4);const fallback=randomEdgeSpawn(()=>.5);assert.ok(inSpawnBand(fallback));});
 test('hero and enemies are half size',()=>{for(const enemy of ENEMY_ROSTER){assert.ok(enemy.radius<=.5);assert.ok(enemy.visualScale<=.9);}assert.equal(BOSSES[0].radius,.5);assert.equal(MINI_BOSSES[0].visualScale,.65);});
-test('all 35 enemies have distinct names and HP, damage and speed',()=>{assert.deepEqual([BASE_ENEMIES.length,MINI_BOSSES.length,BOSSES.length],[20,10,5]);for(const key of ['key','name','hp','attack','speed'])assert.equal(new Set(ENEMY_ROSTER.map(e=>e[key])).size,35,key);});
+test('all 55 enemies have distinct names and HP, damage and speed',()=>{assert.deepEqual([BASE_ENEMIES.length,MINI_BOSSES.length,BOSSES.length],[40,10,5]);for(const key of ['key','name','hp','attack','speed'])assert.equal(new Set(ENEMY_ROSTER.map(e=>e[key])).size,55,key);});
 test('every enemy debuts as scheduled and major boss rooms exclude mini-bosses',()=>{for(const enemy of ENEMY_ROSTER){const lineup=roomLineup(enemy.unlock,()=>.99);assert.ok(lineup.some(e=>e.key===enemy.key),enemy.name);}for(let room=1;room<=30;room++){const lineup=roomLineup(room,()=>.2);assert.ok(lineup.every(e=>e.unlock<=room));if(room%6===0){assert.equal(lineup.filter(e=>e.tier==='boss').length,1);assert.equal(lineup.filter(e=>e.tier==='mini').length,0);}else assert.ok(lineup.every(e=>e.tier!=='boss'));}});
 test('individual enemy attack damage preserves contact grace',()=>{const e=create();e.newRun();e.grace=0;e.cooldown=100;e.enemies=[{...MINI_BOSSES[0],x:0,y:0,id:42,timer:0,flash:0,maxHp:26}];e.step(.01);assert.equal(e.health,4.5);e.step(.05);assert.equal(e.health,4.5);});
 test('projectiles survive beyond old map boundary',()=>{const e=create();e.newRun();e.cooldown=100;e.shots=[{x:8,y:0,vx:1,vy:0,life:1,damage:1}];e.enemies=[{x:-10,y:6,hp:100,maxHp:100,speed:0,timer:0,flash:0}];e.step(.05);assert.equal(e.shots.length,1);assert.ok(e.shots[0].x>8);});
@@ -42,3 +43,50 @@ test('chain splash hops to the next enemy and keeps 80% damage per hop',()=>{con
 test('axe hits knock back regular enemies more than bosses',()=>{const e=create();e.newRun();const base={x:5,y:0,hp:100,maxHp:100,speed:0,timer:0,flash:0},boss={...base,tier:'boss'};const shot={vx:9,vy:0,knock:5};e.knockback(base,shot);e.knockback(boss,shot);assert.equal(base.kvx,5);assert.ok(Math.abs(boss.kvx-1)<1e-12);assert.equal(base.kt,.18);});
 test('bouncing streams reflect off the round wall instead of leaving it',()=>{const e=create();e.newRun();e.grace=99;e.cooldown=100;e.enemies=[{x:0,y:0,hp:1e6,maxHp:1e6,speed:0,timer:0,flash:0,radius:.01}];e.hero={x:0,y:0};e.shots=[{x:MAP.radius-1,y:0,vx:14,vy:0,speed:14,life:2,damage:1,bounce:true,hit:new Set()}];for(let i=0;i<6;i++)e.step(.05);assert.equal(e.shots.length,1);assert.ok(e.shots[0].vx<0);assert.ok(Math.hypot(e.shots[0].x,e.shots[0].y)<=MAP.radius);});
 test('homing foam bends toward an enemy',()=>{const e=create();e.newRun();e.grace=99;e.cooldown=100;e.enemies=[{x:6,y:6,hp:1e6,maxHp:1e6,speed:0,timer:0,flash:0,radius:.2}];e.shots=[{x:0,y:0,vx:10,vy:0,speed:10,life:2,damage:1,homing:true,hit:new Set()}];e.step(.05);assert.ok(e.shots[0].vy>0);assert.ok(Math.abs(Math.hypot(e.shots[0].vx,e.shots[0].vy)-10)<1e-9);});
+
+test('waves last 5:00 and the swarm arrives progressively with no end grace',()=>{
+  assert.equal(WAVE.duration,300);
+  const e=create();e.newRun();e.hero={x:0,y:0};e.health=1e9;e.maxHealth=1e9;
+  const seen=[];let result=null,t=0,n=0;
+  while(result===null&&n<8000){result=e.step(.05);t+=.05;n++;if(n%1200===0)seen.push(e.spawned);}
+  assert.equal(e.mode,'clear');assert.ok(t>=299&&t<301.5,'ended at '+t);
+  assert.ok(seen.length>=4&&seen[0]<seen[2]&&seen[2]<seen[3],'spawns grow: '+seen);
+  assert.equal(e.endTimer,null);assert.equal(e.enemies.length,0);
+  const gaps=seen.map((v,i)=>v-(seen[i-1]||0));assert.ok(gaps[gaps.length-1]>gaps[0],'late minutes busier than early: '+gaps);
+});
+test('wave end auto-collects every coin left on the field',()=>{
+  const e=create();e.newRun();e.enemies=[];e.pending=[];e.specialQueue=[];
+  e.coins=[{x:20,y:20,value:7},{x:-20,y:5,value:11}];const before=e.profile.credits;
+  closeRoom(e);assert.equal(e.mode,'clear');assert.equal(e.coins.length,0);
+  assert.equal(e.profile.credits,before+18+25+e.room*5);
+});
+test('boss is released at half time and hero/enemies move faster',()=>{
+  const e=create();e.newRun();e.room=6;e.spawnRoom();e.health=1e9;
+  assert.ok(e.specialQueue.length>0);e.waveTime=WAVE.duration*.5-.1;e.step(.05);e.step(.1);
+  assert.equal(e.specialQueue.length,0);assert.ok(SPEED.hero>1&&SPEED.enemy>1);
+  const f=create();f.newRun();f.enemies=[];f.pending=[];f.step(1/20,{x:1,y:0});assert.ok(Math.abs(f.hero.x-3.6*SPEED.hero/20)<1e-9);
+});
+
+import {SWARM_ENEMIES,swarmPool} from '../fire-defense/enemy-roster.mjs';
+import {RAID} from '../fire-defense/game-core.mjs';
+test('20 distinct swarm raiders: low HP, medium attack, fast, no coin reward, kept out of the regular roster',()=>{
+  assert.equal(SWARM_ENEMIES.length,20);assert.equal(new Set(SWARM_ENEMIES.map(e=>e.name)).size,20);assert.equal(new Set(SWARM_ENEMIES.map(e=>e.palette+e.shape)).size,20);
+  for(const s of SWARM_ENEMIES){assert.ok(s.hp<=7&&s.hp>=2);assert.ok(s.attack>=.8&&s.attack<=1.3);assert.ok(s.speed>=1.9);assert.equal(s.reward,0);assert.equal(s.tier,'swarm');}
+  assert.ok(!ENEMY_ROSTER.some(e=>e.tier==='swarm'));assert.ok(swarmPool(1).length>=2);assert.equal(swarmPool(30).length,20);
+});
+test('swarm attacks trigger at 1:00 and each minute, finale at 4:30, in tight groups',()=>{
+  assert.deepEqual([RAID.first,RAID.every,RAID.finale],[60,60,270]);
+  const e=create();e.newRun();e.health=1e9;e.maxHealth=1e9;e.hero={x:0,y:0};e.enemies=[];e.pending=[];
+  const count=()=>e.enemies.filter(x=>x.tier==='swarm').length;
+  e.waveTime=59.9;e.step(.05);assert.equal(count(),0);e.waveTime=60;e.step(.01);const n=count();assert.ok(n>=8,'first raid '+n);
+  const xs=e.enemies.filter(x=>x.tier==='swarm');const d=Math.max(...xs.map(a=>Math.hypot(a.x-xs[0].x,a.y-xs[0].y)));assert.ok(d<=RAID.spread*2+.01,'grouped '+d);
+  assert.match(e.roomEvent,/SWARM/);
+  e.enemies=[];e.waveTime=120;e.step(.01);assert.ok(count()>=8);
+  e.enemies=[];e.nextRaid=300;e.waveTime=269.9;e.step(.05);assert.equal(count(),0);e.waveTime=270;e.step(.01);assert.ok(count()>=RAID.baseSize*2,'finale '+count());assert.match(e.roomEvent,/FINALE/);
+  const c=count();e.waveTime=271;e.step(.01);assert.equal(count(),c,'finale fires once');
+});
+test('swarm raiders drop no coins and killing one does not count toward regular progress',()=>{
+  const e=create();e.newRun();e.enemies=[];e.pending=[];e.coins=[];
+  e.spawnRaid(false);const s=e.enemies[0];const reg=e.defeatedRegular;e.damage(s,999);
+  assert.equal(e.coins.length,0);assert.equal(e.defeatedRegular,reg);assert.ok(e.score>=15);
+});
