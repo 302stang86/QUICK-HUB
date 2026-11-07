@@ -6,7 +6,7 @@ const create=()=>new Engine(blankProfile('Firefighter'),()=>.2);
 // step() clamps dt to .05 s, so wait out the coin-collection window in real-sized steps.
 // Jump the wave clock to just before the end, then run the closing step(s).
 const closeRoom=e=>{e.waveTime=WAVE.duration-.02;let r=null;for(let i=0;i<4&&r===null;i++)r=e.step(.05);return r;};
-test('new run spawns safe enemies and resets run only',()=>{const e=create();e.profile.nozzle=2;e.profile.credits=500;e.score=123;e.newRun();assert.equal(e.enemies.length,5);assert.equal(e.score,0);assert.equal(e.profile.credits,500);assert.equal(e.profile.nozzle,2);for(const p of e.enemies)assert.ok(Math.hypot(p.x-e.hero.x,p.y-e.hero.y)>3);});
+test('new run spawns safe enemies and resets run only',()=>{const e=create();e.profile.nozzle=2;e.profile.credits=500;e.score=123;e.newRun();assert.equal(e.enemies.length,20);assert.equal(e.score,0);assert.equal(e.profile.credits,500);assert.equal(e.profile.nozzle,2);for(const p of e.enemies)assert.ok(Math.hypot(p.x-e.hero.x,p.y-e.hero.y)>3);});
 test('diagonal movement is normalized and maps screen directions correctly',()=>{for(const [x,y]of[[1,0],[0,1],[1,1],[-1,1]]){const v=movementFromScreen(x,y);assert.ok(Math.abs(Math.hypot(v.x,v.y)-1)<1e-10);}const right=movementFromScreen(1,0);assert.ok(right.x>0&&right.y<0);const up=movementFromScreen(0,-1);assert.ok(up.x>0&&up.y>0);});
 test('hose fires while moving and player stays inside arena',()=>{const e=create();e.newRun();e.step(.05,{x:1,y:0});assert.ok(e.shots.length>0);assert.ok(e.hero.x>0);for(let i=0;i<200;i++){e.enemies=[{x:-5,y:4,hp:1e8,maxHp:1e8,speed:0,timer:0,flash:0}];e.step(.05,{x:1,y:1});}assert.ok(Math.hypot(e.hero.x,e.hero.y)<=MAP.radius-.2+1e-9);});
 test('swept collision catches a fast shot and selects first contact',()=>{const a={x:0,y:0},b={x:10,y:0};assert.ok(firstHit(a,b,{x:5,y:0},.4)<.5);assert.equal(firstHit(a,b,{x:5,y:2},.4),null);assert.equal(firstHit(a,b,a,.4),0);assert.ok(firstHit(a,b,{x:2,y:0},.4)<firstHit(a,b,{x:8,y:0},.4));});
@@ -48,11 +48,11 @@ test('waves last 5:00 and the swarm arrives progressively with no end grace',()=
   assert.equal(WAVE.duration,300);
   const e=create();e.newRun();e.hero={x:0,y:0};e.health=1e9;e.maxHealth=1e9;
   const seen=[];let result=null,t=0,n=0;
-  while(result===null&&n<8000){result=e.step(.05);t+=.05;n++;if(n%1200===0)seen.push(e.spawned);}
+  while(result===null&&n<8000){result=e.step(.05);t+=.05;n++;if(n%1200===0)seen.push(e.spawned);if(n%20===0)e.enemies=[];}
   assert.equal(e.mode,'clear');assert.ok(t>=299&&t<301.5,'ended at '+t);
   assert.ok(seen.length>=4&&seen[0]<seen[2]&&seen[2]<seen[3],'spawns grow: '+seen);
   assert.equal(e.endTimer,null);assert.equal(e.enemies.length,0);
-  const gaps=seen.map((v,i)=>v-(seen[i-1]||0));assert.ok(gaps[gaps.length-1]>gaps[0],'late minutes busier than early: '+gaps);
+  const gaps=seen.map((v,i)=>v-(seen[i-1]||0));assert.ok(gaps.every(v=>v>=200),'mass arrivals every minute: '+gaps);
 });
 test('wave end auto-collects every coin left on the field',()=>{
   const e=create();e.newRun();e.enemies=[];e.pending=[];e.specialQueue=[];
@@ -115,4 +115,34 @@ test('damaged enemy health bars render for every roster entry',()=>{
       assert.doesNotThrow(()=>drawFireEnemy(context,{...enemy,x:0,y:0,unit:25,time:2,id:1,hp:enemy.hp/2,maxHp:enemy.hp,charger:enemy.tier==='mini'||enemy.tier==='boss'}),enemy.name);
     }
   }finally{if(previous===undefined)delete globalThis.Path2D;else globalThis.Path2D=previous;}
+});
+
+import {scaleEnemy,SPAWN} from '../fire-defense/game-core.mjs';
+test('all enemy types scale health and attack directly with wave without mutating base stats',()=>{
+  for(const type of [...ENEMY_ROSTER,...SWARM_ENEMIES]){
+    const base={...type},one=scaleEnemy(type,1),ten=scaleEnemy(type,10);
+    assert.equal(one.hp,type.hp);assert.equal(one.attack,type.attack);
+    assert.equal(ten.hp,one.hp*10);assert.equal(ten.attack,one.attack*10);
+    assert.ok(ten.speed>one.speed&&ten.speed<one.speed*2);assert.deepEqual(type,base);
+  }
+});
+test('constant mass spawning refills cleared enemies throughout the wave and respects the cap',()=>{
+  const e=create();e.newRun();e.health=1e9;e.cooldown=1e9;
+  for(let second=0;second<295;second++){
+    e.enemies=[];const before=e.spawned;
+    for(let i=0;i<20;i++)e.step(.05);
+    assert.ok(e.spawned-before>=3,'continuous spawning at second '+second);
+  }
+  assert.ok(e.spawned>1100);
+  e.enemies=Array.from({length:SPAWN.maxAlive},()=>({...BASE_ENEMIES[0],x:10,y:10,timer:0,flash:0}));
+  const before=e.spawned;e.advanceSpawns(.05);assert.equal(e.spawned,before);
+  e.spawnRaid(true);assert.equal(e.enemies.length,SPAWN.maxAlive);
+});
+test('regular enemies and raiders use the same wave scaling',()=>{
+  const e=create();e.newRun();e.room=10;e.enemies=[];e.spawnOne(BASE_ENEMIES[0]);
+  assert.equal(e.enemies[0].hp,BASE_ENEMIES[0].hp*10);
+  assert.equal(e.enemies[0].maxHp,e.enemies[0].hp);
+  e.enemies=[];e.spawnRaid(false);
+  for(const enemy of e.enemies){const base=SWARM_ENEMIES.find(x=>x.key===enemy.key);assert.equal(enemy.hp,base.hp*10);assert.equal(enemy.attack,base.attack*10);}
+  assert.equal(RAID.spread,3.5);assert.ok(e.enemies.length>=50);
 });
