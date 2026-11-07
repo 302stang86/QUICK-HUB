@@ -146,3 +146,35 @@ test('regular enemies and raiders use the same wave scaling',()=>{
   for(const enemy of e.enemies){const base=SWARM_ENEMIES.find(x=>x.key===enemy.key);assert.equal(enemy.hp,base.hp*10);assert.equal(enemy.attack,base.attack*10);}
   assert.equal(RAID.spread,3.5);assert.ok(e.enemies.length>=50);
 });
+
+import {COIN} from '../fire-defense/game-core.mjs';
+test('blue drops include swarm kills, guarantee fifth kill, and cannot duplicate on dead enemies',()=>{
+  const e=new Engine(blankProfile('Firefighter'),()=>.99);e.newRun();e.enemies=[];
+  for(let i=0;i<5;i++){e.spawnOne(SWARM_ENEMIES[0]);e.damage(e.enemies[0],999);}
+  assert.equal(e.blueCoins.length,1);assert.equal(e.coins.length,0);
+  e.spawnOne(BASE_ENEMIES[0]);const target=e.enemies[0];e.damage(target,999);const n=e.blueCoins.length;e.damage(target,999);assert.equal(e.blueCoins.length,n);
+});
+test('gold and blue coins collect at expanded range; power pauses all simulation until selection and countdown',()=>{
+  const e=create();e.newRun();e.enemies=[];e.pending=[];e.specialQueue=[];
+  assert.equal(e.pickupRange(),3);e.coins=[{x:2.8,y:0,value:7}];e.blueCoins=[{x:2.8,y:0,value:8}];
+  assert.equal(e.step(.01),'upgrade');assert.equal(e.profile.credits,7);assert.equal(e.power,8);assert.equal(e.offer.length,3);
+  const time=e.time,wave=e.waveTime,hero={...e.hero};e.step(.05,{x:1,y:0});assert.equal(e.time,time);assert.equal(e.waveTime,wave);assert.deepEqual(e.hero,hero);
+  assert.equal(e.chooseUpgrade('invalid'),false);assert.equal(e.chooseUpgrade(e.offer[0]),true);
+  assert.equal(e.power,3);assert.equal(e.powerCost(),8);assert.equal(e.resumeLeft,3);
+  for(let i=0;i<60;i++)e.step(.05,{x:1,y:0});assert.equal(e.waveTime,wave);assert.deepEqual(e.hero,hero);
+  for(let i=0;i<3;i++)e.step(.05);assert.ok(e.waveTime>wave);
+});
+test('gold magnet purchases increase both pickup ranges, enforce price and cap, and last one run',()=>{
+  const e=create();e.newRun();assert.equal(e.buyMagnet(),false);e.profile.credits=1000;
+  for(let i=0;i<5;i++)assert.equal(e.buyMagnet(),true);
+  assert.equal(e.pickupRange(),10.5);assert.equal(e.profile.credits,400);assert.equal(e.buyMagnet(),false);
+  e.upgrades.coin_magnet=2;assert.equal(e.pickupRange(),13.5);
+  e.mode='clear';e.nextRoom();assert.equal(e.magnetLevel,5);assert.equal(e.upgrades.coin_magnet,2);
+  e.newRun();assert.equal(e.magnetLevel,0);assert.equal(e.pickupRange(),COIN.range);
+});
+test('power costs cap at 25 and recovery heals without losing excess blue power',()=>{
+  const e=create();e.newRun();e.power=100;e.health=2;e.mode='upgrade';e.offer=['emergency_recovery'];
+  assert.equal(e.chooseUpgrade('emergency_recovery'),true);assert.equal(e.health,4);assert.equal(e.power,95);
+  e.powerLevel=100;assert.equal(e.powerCost(),25);
+  assert.equal(e.stats().damage,computeStats(e.weapon,e.profile,{}).damage*1.5);
+});
