@@ -33,8 +33,8 @@ function emberParticles(c,time,seed,width,height){
   c.globalAlpha=1;
 }
 
-export function drawFireEnemy(c,{x,y,unit,time,id=0,charger=false,hp=1,maxHp=1,flash=0,heading={x:0,y:1},charging=false,palette='ember',crest='flame',tier='base',name='',shape='',kind='fire'}){
-  if(tier==='swarm'){drawSwarmer(c,{x,y,unit,time,id,hp,maxHp,flash,heading,palette,shape});return;}
+export function drawFireEnemy(c,{x,y,unit,time,id=0,charger=false,hp=1,maxHp=1,flash=0,heading={x:0,y:1},charging=false,palette='ember',crest='flame',tier='base',name='',shape:enemyShape='',kind='fire'}){
+  if(tier==='swarm'){drawSwarmer(c,{x,y,unit,time,id,hp,maxHp,flash,heading,palette,shape:enemyShape});return;}
   if(kind==='electric'||kind==='marshal'||kind==='osha'){drawSpecial(c,{x,y,unit,time,id,kind,palette,hp,maxHp,flash,heading});return;}
   const previousTheme=activeTheme;activeTheme=THEMES[palette]||THEMES.ember;
   c.save();c.translate(x,y);c.scale(unit/90,unit/90);c.lineJoin='round';c.lineCap='round';
