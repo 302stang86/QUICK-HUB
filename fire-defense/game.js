@@ -26,7 +26,7 @@ class FireDefense {
     const countdown=document.createElement('div');countdown.id='resume-countdown';countdown.hidden=true;document.body.append(countdown);
   }
   bind(){
-    $('buy-magnet').onclick=()=>{if(this.loaded&&!this.pending&&!this.saving&&this.engine.buyMagnet()){this.updateHUD();}};
+    $('buy-magnet').onclick=()=>{if(this.loaded&&!this.pending&&!this.saving&&this.engine.buyMagnet()){if(this.engine.mode==='clear')this.checkpoint();this.readyMenu='';this.updateView();}};
 
     addEventListener('keydown',e=>{if(['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)||!$('gate').hidden||$('board').open||$('bestiary').open)return;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();this.keys.add(e.key.toLowerCase());if(e.key==='Escape')this.togglePause();if(e.code==='Space'&&!e.repeat)this.special();});
     addEventListener('keyup',e=>this.keys.delete(e.key.toLowerCase()));
@@ -132,7 +132,7 @@ class FireDefense {
     $('power-label').textContent='NEXT UPGRADE · '+e.power+' / '+e.powerCost();
     $('power-progress').max=e.powerCost();$('power-progress').value=Math.min(e.power,e.powerCost());
     const magnet=$('buy-magnet');magnet.textContent='🧲 Magnet '+e.magnetLevel+'/5 · '+e.pickupRange().toFixed(1)+' range'+(e.magnetLevel<5?' · Buy '+e.magnetPrice()+' gold':' · MAX');
-    magnet.disabled=this.saving||!!this.pending||e.magnetLevel>=5||e.profile.credits<e.magnetPrice()||!inRun;
+    magnet.disabled=this.saving||!!this.pending||e.magnetLevel>=5||!e.canPurchaseOption('magnet')||e.profile.credits<e.magnetPrice()||!inRun;
     $('resume-countdown').hidden=!(e.mode==='active'&&e.resumeLeft>0&&!this.paused);$('resume-countdown').textContent=Math.ceil(e.resumeLeft);
 $('room').textContent=String(e.room).padStart(2,'0')+' / 30';$('health').textContent=e.health+' / '+e.maxHealth;$('score').textContent=e.score.toLocaleString();$('credits').textContent=e.profile.credits.toLocaleString();$('floor-label').firstChild.textContent='SECTOR '+String(e.room).padStart(2,'0')+' ';const unlocked=e.profile.foam||e.profile.cannon;$('special').disabled=!unlocked||e.charges<=0||e.specialCooldown>0;$('special-name').textContent=e.profile.cannon?'WATER CANNON':'FOAM BURST';$('encounter-banner').hidden=!(e.mode==='active'&&e.encounterTimer>0&&!this.paused);$('encounter-banner').textContent=e.roomEvent||'';const st=e.stats(),owned=UPGRADES.filter(u=>e.upgrades[u.id]).map(u=>u.name+(u.max>1?' ×'+e.upgrades[u.id]:''));$('loadout').hidden=!(e.mode==='active'||e.mode==='clear');const lo=$('loadout');if(!lo.querySelector('b'))lo.innerHTML='<b></b><br><span></span><br><i></i>';lo.querySelector('b').textContent=WEAPONS[e.weapon].name+' · '+st.damage.toFixed(1)+' dmg · '+Math.round(st.critChance*100)+'% crit';lo.querySelector('span').textContent=owned.join(' · ');const tl=Math.ceil(e.timeLeft?e.timeLeft():0);lo.querySelector('i').textContent='Wave '+Math.floor(tl/60)+':'+String(tl%60).padStart(2,'0')+' left · '+e.enemies.length+' on field'+(e.specialQueue.length?' · boss at 2:30':'');$('special-state').textContent=!unlocked?'Unlock in equipment':e.specialCooldown>0?Math.ceil(e.specialCooldown)+'s cooldown':e.charges+' charges · Space';}
   updateView(){
@@ -152,8 +152,9 @@ $('room').textContent=String(e.room).padStart(2,'0')+' / 30';$('health').textCon
     $('shop').hidden=menuMode==='pause'||menuMode==='upgrade';
     const pickWeapon=['ready','defeat','victory'].includes(menuMode),pickUpgrade=['clear','upgrade'].includes(menuMode)&&e.offer.length>0;
     $('picker').hidden=!(pickWeapon||pickUpgrade);
+    if(menuMode==='clear')$('run-stats').textContent+=' · Purchases '+e.betweenWavePurchases.size+' / 2 · different options only';
     if(pickUpgrade||(pickWeapon&&!e.primaryChosen))$('continue').disabled=true;
-    const key=menuMode+JSON.stringify(e.profile)+this.saving+!!this.pending+e.weapon+e.primaryChosen+JSON.stringify(e.upgrades)+e.offer.join();
+    const key=menuMode+JSON.stringify(e.profile)+this.saving+!!this.pending+e.weapon+e.primaryChosen+JSON.stringify(e.upgrades)+e.offer.join()+[...e.betweenWavePurchases].join();
     if(this.readyMenu!==key){
       this.readyMenu=key;
       this.buildPicker(e,pickWeapon,pickUpgrade);
@@ -165,10 +166,20 @@ $('room').textContent=String(e.room).padStart(2,'0')+' / 30';$('health').textCon
         const level=document.createElement('span');level.className='level';level.textContent='LEVEL '+e.profile[item.key]+' / '+item.max;
         const description=document.createElement('p');description.textContent=item.description;
         const buy=document.createElement('button');buy.textContent=e.profile[item.key]>=item.max?'Fully upgraded':e.price(item.key)+' credits';
-        buy.disabled=this.saving||!!this.pending||e.profile[item.key]>=item.max||e.profile.credits<e.price(item.key);
+        buy.disabled=this.saving||!!this.pending||!e.canPurchaseOption(item.key)||e.profile[item.key]>=item.max||e.profile.credits<e.price(item.key);
         buy.onclick=()=>{if(!this.pending&&!this.saving&&e.buy(item.key)){this.checkpoint();this.readyMenu='';this.updateView();}};
         card.append(icon,heading,level,description,buy);$('shop').append(card);
       }
+      if(menuMode==='clear'){
+        const card=document.createElement('article');card.className='gear';
+        const title=document.createElement('h3');title.textContent='🧲 Stronger Magnet';
+        const description=document.createElement('p');description.textContent='Level '+e.magnetLevel+' / 5 · Expand gold and blue coin pickup range. Carries into following waves.';
+        const buy=document.createElement('button');buy.textContent=e.magnetLevel>=5?'Fully upgraded':e.magnetPrice()+' credits';
+        buy.disabled=this.saving||!!this.pending||!e.canPurchaseOption('magnet')||e.magnetLevel>=5||e.profile.credits<e.magnetPrice();
+        buy.onclick=()=>{if(!this.pending&&!this.saving&&e.buyMagnet()){this.checkpoint();this.readyMenu='';this.updateView();}};
+        card.append(title,description,buy);$('shop').append(card);
+      }
+
     }
   }
   buildPicker(e,pickWeapon,pickUpgrade){
@@ -252,7 +263,7 @@ $('room').textContent=String(e.room).padStart(2,'0')+' / 30';$('health').textCon
     // Foam puddles lie on the floor under everything else.
     if(e)for(const pd of e.puddles){const o2=this.project(pd.x,pd.y),k=Math.min(1,pd.life/.6),rr=pd.r*u;ctx.save();ctx.globalAlpha=.55*k;ctx.beginPath();ctx.ellipse(o2.x,o2.y,rr*1.0182,rr*.5091,0,0,Math.PI*2);ctx.fillStyle='#8fe9c4';ctx.fill();ctx.globalAlpha=.9*k;ctx.lineWidth=2;ctx.strokeStyle='#d8fff0';ctx.stroke();ctx.restore();}
     // Coins lie on the floor until collected.
-    if(e)for(const k of e.coins){const q=this.project(k.x,k.y,.05),bob=Math.sin(this.time*5+k.x*3)*1.2,rr=(k.big?.2:.12)*u,lowT=e.endTimer!==null&&e.endTimer<.7&&Math.floor(this.time*10)%2;ctx.save();ctx.globalAlpha=lowT?.35:1;ctx.shadowColor='#ffd45a';ctx.shadowBlur=8;this.ellipse(q.x,q.y+bob,rr,rr*.62,'#f4b42c');this.ellipse(q.x,q.y+bob-1,rr*.8,rr*.48,'#ffd95e');this.ellipse(q.x,q.y+bob-1,rr*.35,rr*.2,'#f4b42c');ctx.restore();}
+    if(e)for(const k of e.coins){const q=this.project(k.x,k.y,.05),bob=Math.sin(this.time*5+k.x*3)*1.2,rr=(k.big?.2:.12)*u*.75,lowT=e.endTimer!==null&&e.endTimer<.7&&Math.floor(this.time*10)%2;ctx.save();ctx.globalAlpha=lowT?.35:1;ctx.shadowColor='#ffd45a';ctx.shadowBlur=8;this.ellipse(q.x,q.y+bob,rr,rr*.62,'#f4b42c');this.ellipse(q.x,q.y+bob-1,rr*.8,rr*.48,'#ffd95e');this.ellipse(q.x,q.y+bob-1,rr*.35,rr*.2,'#f4b42c');ctx.restore();}
     if(e)for(const k of e.blueCoins){const q=this.project(k.x,k.y,.12),rr=u*.15;ctx.save();ctx.shadowColor='#46b7ff';ctx.shadowBlur=10;this.ellipse(q.x,q.y,rr,rr*.7,'#36a4ff');this.ellipse(q.x,q.y-1,rr*.55,rr*.38,'#c4efff');ctx.restore();}
     let actors=e?[...e.enemies.map(a=>({kind:'enemy',...a})),...e.hydrants.map(a=>({kind:'hydrant',...a})),{kind:'hero',...e.hero}]:[{kind:'hero',x:1,y:-1},{kind:'enemy',x:-2,y:2,charger:false,timer:1,flash:0,hp:3,maxHp:3},{kind:'enemy',x:3,y:2,charger:true,timer:2,flash:0,hp:5,maxHp:5},{kind:'enemy',x:-3,y:0,charger:false,timer:1,flash:0,hp:3,maxHp:3}];
     actors.sort((a,b)=>(b.x+b.y)-(a.x+a.y));
