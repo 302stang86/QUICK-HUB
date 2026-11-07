@@ -54,11 +54,11 @@ test('waves last 5:00 and the swarm arrives progressively with no end grace',()=
   assert.equal(e.endTimer,null);assert.equal(e.enemies.length,0);
   const gaps=seen.map((v,i)=>v-(seen[i-1]||0));assert.ok(gaps.every(v=>v>=200),'mass arrivals every minute: '+gaps);
 });
-test('wave end auto-collects every coin left on the field',()=>{
+test('wave end discards uncollected gold and blue coins',()=>{
   const e=create();e.newRun();e.enemies=[];e.pending=[];e.specialQueue=[];
-  e.coins=[{x:20,y:20,value:7},{x:-20,y:5,value:11}];const before=e.profile.credits;
+  e.blueCoins=[{x:20,y:20,value:50}];e.coins=[{x:20,y:20,value:7},{x:-20,y:5,value:11}];const before=e.profile.credits;
   closeRoom(e);assert.equal(e.mode,'clear');assert.equal(e.coins.length,0);
-  assert.equal(e.profile.credits,before+18+25+e.room*5);
+  assert.equal(e.profile.credits,before+25+e.room*5);assert.equal(e.blueCoins.length,0);assert.equal(e.power,0);
 });
 test('boss is released at half time and hero/enemies move faster',()=>{
   const e=create();e.newRun();e.room=6;e.spawnRoom();e.health=1e9;
@@ -154,15 +154,14 @@ test('blue drops include swarm kills, guarantee fifth kill, and cannot duplicate
   assert.equal(e.blueCoins.length,1);assert.equal(e.coins.length,0);
   e.spawnOne(BASE_ENEMIES[0]);const target=e.enemies[0];e.damage(target,999);const n=e.blueCoins.length;e.damage(target,999);assert.equal(e.blueCoins.length,n);
 });
-test('gold and blue coins collect at expanded range; power pauses all simulation until selection and countdown',()=>{
+test('gold and blue coins collect at expanded range; power pauses simulation until selection and resumes immediately',()=>{
   const e=create();e.newRun();e.enemies=[];e.pending=[];e.specialQueue=[];
   assert.equal(e.pickupRange(),3);e.coins=[{x:2.8,y:0,value:7}];e.blueCoins=[{x:2.8,y:0,value:18}];
   assert.equal(e.step(.01),'upgrade');assert.equal(e.profile.credits,7);assert.equal(e.power,18);assert.equal(e.offer.length,3);
   const time=e.time,wave=e.waveTime,hero={...e.hero};e.step(.05,{x:1,y:0});assert.equal(e.time,time);assert.equal(e.waveTime,wave);assert.deepEqual(e.hero,hero);
   assert.equal(e.chooseUpgrade('invalid'),false);assert.equal(e.chooseUpgrade(e.offer[0]),true);
-  assert.equal(e.power,3);assert.equal(e.powerCost(),24);assert.equal(e.resumeLeft,3);
-  for(let i=0;i<60;i++)e.step(.05,{x:1,y:0});assert.equal(e.waveTime,wave);assert.deepEqual(e.hero,hero);
-  for(let i=0;i<3;i++)e.step(.05);assert.ok(e.waveTime>wave);
+  assert.equal(e.power,3);assert.equal(e.powerCost(),24);assert.equal(e.resumeLeft,0);
+  e.step(.05,{x:1,y:0});assert.ok(e.waveTime>wave);assert.ok(e.hero.x>hero.x);
 });
 test('gold magnet purchases increase both pickup ranges, enforce price and cap, and last one run',()=>{
   const e=create();e.newRun();assert.equal(e.buyMagnet(),false);e.profile.credits=1000;
@@ -235,4 +234,21 @@ test('defensive and support orbs have capped mitigation, timed healing and limit
   e.upgrades={haste_orbs:2};const base=computeStats(e.weapon,e.profile,{});assert.ok(Math.abs(e.stats().interval-base.interval/1.16)<1e-10);
   const x=e.hero.x;e.step(.05,{x:1,y:0});assert.ok(Math.abs(e.hero.x-x-3.6*SPEED.hero*1.16*.05)<1e-10);
   e.upgrades={frost_orbs:4,flame_orbs:3,storm_orbs:3,shield_orbs:2,healing_orbs:2,haste_orbs:2};assert.equal(e.orbActors().length,16);assert.equal(new Set(e.orbActors().map(x=>x.color)).size,6);
+});
+
+test('between-wave shop permits two distinct options including magnet and resets its allowance next wave',()=>{
+  const e=create();e.newRun();e.profile.credits=10000;e.enemies=[];closeRoom(e);
+  assert.equal(e.buy('nozzle'),true);const credits=e.profile.credits;
+  assert.equal(e.buy('nozzle'),false);assert.equal(e.profile.credits,credits);
+  assert.equal(e.buyMagnet(),true);assert.equal(e.betweenWavePurchases.size,2);
+  assert.equal(e.buy('foam'),false);assert.equal(e.buyMagnet(),false);
+  e.nextRoom();e.enemies=[];closeRoom(e);assert.equal(e.betweenWavePurchases.size,0);
+  assert.equal(e.buy('nozzle'),true);assert.equal(e.buy('foam'),true);assert.equal(e.buy('cannon'),false);
+});
+test('failed shop purchases consume neither credits nor the two-option allowance',()=>{
+  const e=create();e.newRun();e.enemies=[];closeRoom(e);e.profile.credits=0;
+  assert.equal(e.buy('nozzle'),false);assert.equal(e.buyMagnet(),false);assert.equal(e.betweenWavePurchases.size,0);
+  e.profile.credits=10000;e.profile.nozzle=5;
+  assert.equal(e.buy('nozzle'),false);assert.equal(e.betweenWavePurchases.size,0);
+  assert.equal(e.buy('foam'),true);assert.equal(e.buy('cannon'),true);assert.equal(e.betweenWavePurchases.size,2);
 });
