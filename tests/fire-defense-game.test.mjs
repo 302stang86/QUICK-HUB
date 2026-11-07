@@ -102,3 +102,17 @@ test('long timed waves with movement run to completion in every room band',()=>{
   for(const room of [1,6,13,30]){const e=new Engine(blankProfile('Firefighter'),rng);e.newRun();e.room=room;e.spawnRoom();e.health=e.maxHealth=1e9;
     for(let i=0;i<6100&&e.mode==='active';i++)e.step(.05,{x:Math.sin(i/40),y:Math.cos(i/55)});assert.notEqual(e.mode,'active','room '+room);}
 });
+
+// Rendering the first damaged enemy must not stop requestAnimationFrame.
+import {drawFireEnemy} from '../fire-defense/enemy-art.mjs';
+test('damaged enemy health bars render for every roster entry',()=>{
+  const previous=globalThis.Path2D;
+  globalThis.Path2D=class {};
+  const gradient={addColorStop(){}};
+  const context=new Proxy({}, {get:(o,k)=>o[k]??(k.startsWith('create')?()=>gradient:()=>{}),set:(o,k,v)=>(o[k]=v,true)});
+  try{
+    for(const enemy of [...ENEMY_ROSTER,...SWARM_ENEMIES]){
+      assert.doesNotThrow(()=>drawFireEnemy(context,{...enemy,x:0,y:0,unit:25,time:2,id:1,hp:enemy.hp/2,maxHp:enemy.hp,charger:enemy.tier==='mini'||enemy.tier==='boss'}),enemy.name);
+    }
+  }finally{if(previous===undefined)delete globalThis.Path2D;else globalThis.Path2D=previous;}
+});
