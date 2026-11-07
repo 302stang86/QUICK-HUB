@@ -178,3 +178,24 @@ test('power costs cap at 25 and recovery heals without losing excess blue power'
   e.powerLevel=100;assert.equal(e.powerCost(),25);
   assert.equal(e.stats().damage,computeStats(e.weapon,e.profile,{}).damage*1.5);
 });
+
+test('game initializes upgrade HUD before first resize and can load a saved profile',async()=>{
+  const fs=await import('node:fs/promises');
+  const markup=await fs.readFile(new URL('../fire-defense/index.html',import.meta.url),'utf8');
+  const nodes=new Map(),noop=()=>{};
+  const context=new Proxy({}, {get:()=>noop});
+  function element(){return {hidden:false,style:{},firstChild:{},addEventListener:noop,getContext:()=>context,querySelector:()=>({}),replaceChildren:noop,append:noop,focus:noop,
+    set innerHTML(value){for(const match of value.matchAll(/id="([^"]+)"/g))nodes.set(match[1],element());}};}
+  for(const match of markup.matchAll(/id="([^"]+)"/g))nodes.set(match[1],element());
+  const doc={getElementById:id=>nodes.get(id)||null,createElement:element,addEventListener:noop,body:{append(node){nodes.set(node.id,node);}}};
+  const globals={document:doc,window:{addEventListener:noop},addEventListener:noop,innerWidth:1200,innerHeight:700,devicePixelRatio:1,Image:class {},requestAnimationFrame:noop};
+  const previous=new Map(Object.keys(globals).map(k=>[k,Object.getOwnPropertyDescriptor(globalThis,k)]));
+  try{
+    for(const [k,v] of Object.entries(globals))Object.defineProperty(globalThis,k,{value:v,configurable:true,writable:true});
+    const {game}=await import('../fire-defense/game.js?startup-regression');
+    assert.ok(nodes.has('power-meter'));assert.ok(nodes.has('resume-countdown'));
+    game.loadProfile({...blankProfile('SavedPlayer'),credits:321,nozzle:2});
+    assert.equal(game.loaded,true);assert.equal(game.engine.profile.nickname,'SavedPlayer');assert.equal(game.engine.profile.credits,321);
+    game.block('Signed out');assert.equal(game.loaded,false);
+  }finally{for(const [k,d] of previous){if(d)Object.defineProperty(globalThis,k,d);else delete globalThis[k];}}
+});
