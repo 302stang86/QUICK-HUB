@@ -15,15 +15,17 @@ class FireDefense {
   constructor(){
     this.zoom=1;this.camera={x:0,y:0};this.touchPoints=new Map();this.pinchActive=false;this.pinchStart=null;
     this.loaded=false;this.engine=null;this.paused=false;this.pending=null;this.saving=false;this.saveMessage='';this.keys=new Set();this.stick={x:0,y:0};this.pointer=null;this.readyMenu='';this.time=0;this.w=1;this.h=1;this.shake=0;
-    this.resize();window.addEventListener('resize',()=>this.resize());
+    this.createUpgradeHUD();this.resize();window.addEventListener('resize',()=>this.resize());
     this.bind();this.last=performance.now();requestAnimationFrame(t=>this.frame(t));
   }
   resize(){this.w=innerWidth;this.h=innerHeight;const ratio=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(this.w*ratio);canvas.height=Math.round(this.h*ratio);ctx.setTransform(ratio,0,0,ratio,0,0);this.ratio=ratio;this.baseUnit=Math.min(this.w/19,this.h/11.6);this.unit=this.baseUnit*this.zoom;this.updateCamera(0,true);this.updateView();}
-  bind(){
+  createUpgradeHUD(){
     const power=document.createElement('div');power.id='power-meter';power.hidden=true;
     power.innerHTML='<label id="power-label"></label><progress id="power-progress" max="5" value="0"></progress><button id="buy-magnet" type="button"></button>';
     document.body.append(power);
     const countdown=document.createElement('div');countdown.id='resume-countdown';countdown.hidden=true;document.body.append(countdown);
+  }
+  bind(){
     $('buy-magnet').onclick=()=>{if(this.loaded&&!this.pending&&!this.saving&&this.engine.buyMagnet()){this.updateHUD();}};
 
     addEventListener('keydown',e=>{if(['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)||!$('gate').hidden||$('board').open||$('bestiary').open)return;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();this.keys.add(e.key.toLowerCase());if(e.key==='Escape')this.togglePause();if(e.code==='Space'&&!e.repeat)this.special();});
