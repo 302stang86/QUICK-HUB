@@ -33,7 +33,9 @@ function emberParticles(c,time,seed,width,height){
   c.globalAlpha=1;
 }
 
-export function drawFireEnemy(c,{x,y,unit,time,id=0,charger=false,hp=1,maxHp=1,flash=0,heading={x:0,y:1},charging=false,palette='ember',crest='flame',tier='base',name=''}){
+export function drawFireEnemy(c,{x,y,unit,time,id=0,charger=false,hp=1,maxHp=1,flash=0,heading={x:0,y:1},charging=false,palette='ember',crest='flame',tier='base',name='',shape='',kind='fire'}){
+  if(tier==='swarm'){drawSwarmer(c,{x,y,unit,time,id,hp,maxHp,flash,heading,palette,shape});return;}
+  if(kind==='electric'||kind==='marshal'||kind==='osha'){drawSpecial(c,{x,y,unit,time,id,kind,palette,hp,maxHp,flash,heading});return;}
   const previousTheme=activeTheme;activeTheme=THEMES[palette]||THEMES.ember;
   c.save();c.translate(x,y);c.scale(unit/90,unit/90);c.lineJoin='round';c.lineCap='round';
   const phase=time*7+id*1.73,step=Math.sin(phase),facing=heading.x>=0?1:-1;
@@ -47,6 +49,95 @@ export function drawFireEnemy(c,{x,y,unit,time,id=0,charger=false,hp=1,maxHp=1,f
   }
   if(tier!=='base'&&name){c.fillStyle=tier==='boss'?'#ffe1af':'#dec7ff';c.font='bold 9px system-ui';c.textAlign='center';c.fillText(name,0,charger?-153:-110);}
   c.restore();activeTheme=previousTheme;
+}
+// Swarm raiders look nothing like the fire creatures: small, neon, glowing, with a pulsing ring and a dark rim.
+const SWARM_COLORS={cyan:['#e8ffff','#35e6ff','#0a6fa0'],magenta:['#ffe6ff','#ff4de8','#7a1a98'],lime:['#f4ffd0','#a6ff3d','#2f7d18'],white:['#ffffff','#cfdcff','#5a6cb4'],violet:['#e6e0ff','#7b6bff','#2e1f8a']};
+function drawSwarmer(c,{x,y,unit,time,id,hp,maxHp,flash,heading,palette,shape}){
+  const col=SWARM_COLORS[palette]||SWARM_COLORS.cyan,ph=time*14+id*2.1,pulse=1+Math.sin(time*9+id)*.12,ang=Math.atan2(heading.y,heading.x);
+  c.save();c.translate(x,y);c.scale(unit/90,unit/90);c.lineJoin='round';c.lineCap='round';
+  ellipse(c,0,8,22,8,'rgba(3,12,18,.35)');
+  c.translate(0,-30-Math.sin(ph*.5)*3);
+  glow(c,0,0,64*pulse,col[1]+'88');
+  c.strokeStyle=col[1];c.globalAlpha=.7;c.lineWidth=2.5;c.beginPath();c.arc(0,0,27*pulse,0,Math.PI*2);c.stroke();c.globalAlpha=1;
+  const body=flash?'#ffffff':col[1],core=flash?'#ffffff':col[0],rim='#0a1018';
+  c.save();c.rotate(ang);
+  if(shape==='dart'){
+    shape_(c,'M26 0 L-14 -17 L-6 0 L-14 17 Z',body,rim,2.4);shape_(c,'M16 0 L-6 -8 L-3 0 L-6 8 Z',core,null);
+    line(c,[[-14,-17],[-24,-22]],col[2],3);line(c,[[-14,17],[-24,22]],col[2],3);
+  }else if(shape==='orb'){
+    for(let i=0;i<8;i++){const a=i*Math.PI/4+ph*.12;shape_(c,`M${Math.cos(a-.2)*14} ${Math.sin(a-.2)*14} L${Math.cos(a)*27} ${Math.sin(a)*27} L${Math.cos(a+.2)*14} ${Math.sin(a+.2)*14} Z`,col[2],rim,1.6);}
+    ellipse(c,0,0,15,15,body,rim,2.4);ellipse(c,0,0,7,7,core);
+  }else if(shape==='bat'){
+    const f=Math.sin(ph)*9;
+    for(const sd of [-1,1])shape_(c,`M0 ${sd*4} L-6 ${sd*(26+f)} L-14 ${sd*(14+f*.5)} L-22 ${sd*(22+f)} L-20 ${sd*3} Z`,col[2],rim,2);
+    ellipse(c,0,0,12,9,body,rim,2.4);ellipse(c,5,0,4,3.5,core);
+  }else{
+    for(let i=1;i<=4;i++){c.globalAlpha=.6-i*.12;ellipse(c,-i*9,Math.sin(ph+i)*3,13-i*2,10-i*1.6,col[1]);}c.globalAlpha=1;
+    ellipse(c,6,0,14,12,body,rim,2.4);ellipse(c,9,0,6,5,core);
+  }
+  c.restore();
+  // Two hard white eyes keep the silhouette readable at a glance.
+  ellipse(c,-4,-4,3,3.6,'#ffffff',rim,1);ellipse(c,5,-4,3,3.6,'#ffffff',rim,1);ellipse(c,-4,-4,1.2,1.6,rim);ellipse(c,5,-4,1.2,1.6,rim);
+  if(hp<maxHp){shape_(c,'M-17 -40 H17 V-35 H-17 Z','#0b1725','#324457',1);c.fillStyle=col[0];c.fillRect(-16,-39,32*Math.max(0,hp/maxHp),3);}
+  c.restore();
+}
+function shape_(c,d,fill,stroke,width){c.fillStyle=fill;c.fill(path(d));if(stroke){c.strokeStyle=stroke;c.lineWidth=width;c.stroke(path(d));}}
+// Living electricity and the evil inspectors (fire marshals and safety auditors) have their own bodies.
+const VOLT={volt:['#fffbd0','#ffe14a','#c98614'],arc:['#f0ffff','#7be4ff','#2a6fc4'],plasma:['#ffe8ff','#ff6bf0','#8a28b0']};
+function bolt(c,x1,y1,x2,y2,seed,color,w){
+  c.beginPath();c.moveTo(x1,y1);
+  for(let i=1;i<5;i++){const t=i/5;c.lineTo(x1+(x2-x1)*t+Math.sin(seed*3.1+i*7)*6,y1+(y2-y1)*t+Math.cos(seed*2.3+i*5)*6);}
+  c.lineTo(x2,y2);c.strokeStyle=color;c.lineWidth=w;c.stroke();
+}
+function drawSpecial(c,{x,y,unit,time,id,kind,palette,hp,maxHp,flash,heading}){
+  c.save();c.translate(x,y);c.scale(unit/90,unit/90);c.lineJoin='round';c.lineCap='round';
+  const phase=time*8+id*1.7,step=Math.sin(phase),facing=heading.x>=0?1:-1;
+  if(kind==='electric')drawSpark(c,{time,id,phase,palette,flash,facing});else drawInspector(c,{kind,phase,step,flash,facing,palette});
+  if(hp<maxHp){const w=40,yy=-98;shape_(c,`M${-w/2-2} ${yy-2} H${w/2+2} V${yy+5} H${-w/2-2} Z`,'#0b1725','#324457',1);c.fillStyle='#ffce7b';c.fillRect(-w/2,yy,w*Math.max(0,hp/maxHp),3);}
+  c.restore();
+}
+function drawSpark(c,{time,id,phase,palette,flash,facing}){
+  const col=VOLT[palette]||VOLT.volt,tw=Math.floor(time*12+id)%3;
+  shadow(c,24,.3);c.translate(0,-Math.abs(Math.sin(phase*.7))*5);
+  glow(c,0,-38,70,col[1]+'66');
+  // Crackling arcs jump off the body (they re-roll a few times a second), then a hard rim and a hot core.
+  for(let i=0;i<6;i++){const a=i*Math.PI/3+tw*.5+id,r1=18,r2=36+((i+tw)%3)*7;bolt(c,Math.cos(a)*r1,-38+Math.sin(a)*r1,Math.cos(a)*r2,-38+Math.sin(a)*r2,i+tw*4+id,col[0],2.4);}
+  ellipse(c,0,-38,21,20,flash?'#ffffff':col[1],'#0a1220',2.6);
+  ellipse(c,0,-38,13,12,col[0]);
+  shape_(c,'M-3 -52 L5 -41 L-1 -40 L4 -26 L-7 -39 L-1 -41 Z',col[2],null);   // lightning-bolt emblem
+  ellipse(c,-8,-43,3.4,4.2,'#0a1220');ellipse(c,8,-43,3.4,4.2,'#0a1220');ellipse(c,-8,-44,1.2,1.5,'#ffffff');ellipse(c,8,-44,1.2,1.5,'#ffffff');
+  line(c,[[-14,-50],[-4,-46]],'#0a1220',2.4);line(c,[[14,-50],[4,-46]],'#0a1220',2.4);
+  for(const sd of [-1,1])line(c,[[sd*8,-19],[sd*12,-9+Math.sin(phase+sd)*3],[sd*10,-1]],col[2],3);
+}
+function drawInspector(c,{kind,phase,step,flash,facing,palette}){
+  const marshal=kind==='marshal',stride=step*5;
+  shadow(c,22,.34);c.translate(0,-Math.abs(step)*2);
+  // legs
+  for(const sd of [-1,1]){const dy=sd*stride;shape_(c,`M${sd*10-5} -24 L${sd*10+5} -24 L${sd*10+4} ${-3+dy} L${sd*10-7} ${-3+dy} Z`,marshal?'#2a1e24':'#334053','#0a1018',1.6);shape_(c,`M${sd*10-8} ${-4+dy} L${sd*10+7} ${-4+dy} L${sd*10+9} ${1+dy} L${sd*10-9} ${1+dy} Z`,'#15151b','#000',1.2);}
+  // torso: marshal in a red-black uniform with gold buttons; auditor in an orange hi-vis vest with reflective stripes
+  shape_(c,'M-19 -30 L-22 -62 L-12 -70 L12 -70 L22 -62 L19 -30 Z',flash?'#ffffff':marshal?'#b8242b':'#ff8a1f','#0a1018',2);
+  if(marshal){shape_(c,'M-4 -70 L4 -70 L4 -30 L-4 -30 Z','#2a1e24',null);for(let i=0;i<3;i++)ellipse(c,0,-60+i*10,2,2,'#ffd34d');shape_(c,'M-15 -62 L-8 -62 L-8 -55 L-15 -55 Z','#ffd34d','#7a5a10',1);}
+  else{shape_(c,'M-20 -52 H20 V-47 H-20 Z','#eef6ff',null);shape_(c,'M-19 -40 H19 V-35 H-19 Z','#eef6ff',null);shape_(c,'M-12 -70 L-4 -30 H-8 L-16 -66 Z','#2b3646',null);shape_(c,'M12 -70 L4 -30 H8 L16 -66 Z','#2b3646',null);}
+  // arms: marshal holds a red violation tag, auditor a clipboard
+  const swing=-stride*.6;
+  line(c,[[-21,-62],[-30,-46],[-27,-34+swing]],marshal?'#8e1c22':'#e0701a',7);
+  line(c,[[21,-62],[31,-52],[30,-40-swing]],marshal?'#8e1c22':'#e0701a',7);
+  if(marshal){shape_(c,`M26 ${-40-swing} h12 v15 h-12 Z`,'#ff2a2a','#4a0a0a',1.4);line(c,[[28,-36-swing],[36,-36-swing]],'#fff',1.2);line(c,[[28,-31-swing],[34,-31-swing]],'#fff',1.2);}
+  else{shape_(c,`M-37 ${-42+swing} h13 v17 h-13 Z`,'#c9a86a','#3a2a10',1.4);shape_(c,`M-34 ${-45+swing} h7 v4 h-7 Z`,'#7c8794','#222',1);for(let i=0;i<3;i++)line(c,[[-35,-37+swing+i*4],[-26,-37+swing+i*4]],'#47341a',1);}
+  // head with a scowl and glowing red eyes
+  ellipse(c,0,-82,15,15,flash?'#ffffff':'#e9b894','#0a1018',2);
+  line(c,[[-11,-90],[-3,-85]],'#1a0f0f',3);line(c,[[11,-90],[3,-85]],'#1a0f0f',3);
+  ellipse(c,-6,-82,2.8,3.2,'#ff2f2f');ellipse(c,6,-82,2.8,3.2,'#ff2f2f');
+  line(c,[[-6,-73],[-2,-75],[2,-75],[6,-73]],'#5a1a1a',2.2);
+  if(marshal){
+    // peaked cap with a gold badge and little devil horns
+    shape_(c,'M-17 -91 L-15 -104 L15 -104 L17 -91 Z','#1b1620','#000',1.8);shape_(c,'M-20 -91 L20 -91 L16 -86 L-16 -86 Z','#0e0b12','#000',1.4);ellipse(c,0,-97,4,4,'#ffd34d','#7a5a10',1);
+    shape_(c,'M-14 -103 L-20 -114 L-8 -105 Z','#d12b2b','#000',1.2);shape_(c,'M14 -103 L20 -114 L8 -105 Z','#d12b2b','#000',1.2);
+  }else{
+    // hard hat plus safety glasses
+    shape_(c,'M-17 -90 Q-17 -108 0 -108 Q17 -108 17 -90 Z','#f2f2f2','#0a1018',2);shape_(c,'M-21 -90 H21 V-86 H-21 Z','#d9d9d9','#0a1018',1.6);shape_(c,'M-3 -108 H3 V-92 H-3 Z','#ff8a1f',null);
+    line(c,[[-10,-82],[10,-82]],'#1b2a3a',1.4);
+  }
 }
 function drawEmber(c,{time,phase,step,facing,flash,id}){
   shadow(c,27,.28);glow(c,0,-35,66,'#f974352b');

@@ -1,4 +1,4 @@
-import {roomLineup} from './enemy-roster.mjs';
+import {roomLineup,swarmPool} from './enemy-roster.mjs';
 import {WEAPONS,UPGRADE_BY_ID,computeStats,rollUpgradeOffer,SPLASH_DAMAGE,PUDDLE,CHAIN,SPREAD_DEG,ORBIT} from './weapons.mjs';
 export const ROOM_LIMIT = 30;
 // Round arena. The previous 24 × 18 rectangle was 432 units²; this disc is five times that
@@ -9,8 +9,15 @@ export const ROOM_LIMIT = 30;
 // Pickups: hydrants spawn at random times, drop a bonus when destroyed; every kill drops a coin.
 export const HYDRANT={hp:12,radius:.4,minDelay:10,maxDelay:30,maxAlive:2};
 export const BONUS={life:12,pickRadiusPx:34,coinsBase:30,coinsPerRoom:3,bombRadius:4.5,bombDamage:6,timedSeconds:8,types:['coins','upgrade','bomb','timed']};
-export const COIN={range:1.4,endGrace:2};   // endGrace: real seconds after the last enemy, to collect coins
-export const SPAWN={initial:5,interval:1,maxAlive:25,specialAt:.5};
+export const COIN={range:1.4};   // pickup radius; whatever is left on the field is auto-collected when the wave timer ends
+// Timed waves: every wave lasts `duration` seconds. The swarm arrives progressively (slow start, heavy finish): the
+// cumulative spawn count follows (t/duration)^ramp. A mini-boss / boss is released at `specialAt` of the wave time.
+export const WAVE={duration:300,swarm:4,ramp:1.5};
+// Triggered swarm attacks: a pack of raiders at 1:00 and every 60 s after, then a bigger finale at 4:30.
+export const RAID={first:60,every:60,finale:270,baseSize:8,perRoom:.6,maxSize:24,finaleFactor:2.5,maxFinale:60,spread:1.1};
+export const SPAWN={initial:5,maxAlive:40,specialAt:.5};
+// Faster play: hero and enemy movement multipliers (enemy table speeds stay as the base values).
+export const SPEED={hero:1.3,enemy:1.4};
 const OLD_AREA=24*18,AREA_FACTOR=5,RADIUS=Math.sqrt(OLD_AREA*AREA_FACTOR/Math.PI);
 export const MAP={shape:'round',radius:RADIUS,width:RADIUS*2,height:RADIUS*2,edgeBand:.5,margin:.6};
 // Hero and enemy bodies are half their previous size, so their contact padding is halved as well.
@@ -66,7 +73,7 @@ export class Engine {
     this.cooldown=0;this.specialCooldown=0;this.grace=0;this.charges=0;this.id=0;
     // Per-run loadout (never saved): chosen weapon, upgrade stacks, and the pick offered after a cleared room.
     this.weapon='hose';this.upgrades={};this.offer=[];this.burstQueue=[];this.interval=.19;
-    this.pending=[];this.specialQueue=[];this.totalRegular=0;this.defeatedRegular=0;this.spawnTimer=0;
+    this.pending=[];this.specialQueue=[];this.totalRegular=0;this.defeatedRegular=0;this.waveTime=0;this.waveTotal=0;this.spawned=0;this.nextRaid=RAID.first;this.finaleDone=false;
     this.puddles=[];this.orbAngle=0;
     this.hydrants=[];this.coins=[];this.bonuses=[];this.hydrantTimer=0;this.timedLeft=0;this.endTimer=null;
   }
@@ -90,11 +97,14 @@ export class Engine {
     this.hydrantTimer=HYDRANT.minDelay+this.random()*(HYDRANT.maxDelay-HYDRANT.minDelay);
     this.charges=2+(this.profile.foam>0?1:0)+(this.profile.cannon>0?1:0);
     const lineup=roomLineup(this.room,this.random);
-    this.pending=lineup.filter(e=>e.tier==='base');          // regular enemies still to arrive
-    this.specialQueue=lineup.filter(e=>e.tier!=='base');      // mini-boss / boss, held back
-    this.totalRegular=this.pending.length;this.defeatedRegular=0;
-    this.roomEvent='Room '+this.room;this.encounterTimer=0;this.spawnTimer=SPAWN.interval;
-    for(let i=0;i<SPAWN.initial&&this.pending.length;i++)this.spawnOne(this.pending.shift());
+    const regular=lineup.filter(e=>e.tier==='base');
+    this.specialQueue=lineup.filter(e=>e.tier!=='base');      // mini-boss / boss, held back until half time
+    // The swarm: the room's regular enemies repeated and reshuffled to fill the full timed wave.
+    const total=regular.length*WAVE.swarm;
+    this.pending=Array.from({length:total},(_,i)=>i<regular.length?regular[i]:regular[Math.floor(this.random()*regular.length)]);
+    this.totalRegular=total;this.defeatedRegular=0;this.waveTime=0;this.waveTotal=total;this.spawned=0;this.nextRaid=RAID.first;this.finaleDone=false;
+    this.roomEvent='Room '+this.room;this.encounterTimer=0;
+    for(let i=0;i<SPAWN.initial&&this.pending.length;i++){this.spawnOne(this.pending.shift());this.spawned++;}
   }
   spawnOne(type){
     const p=randomEdgeSpawn(this.random,this.hero,this.enemies);
@@ -102,21 +112,36 @@ export class Engine {
   }
   /** Enemies still to defeat this wave: on the map plus everything queued. */
   remaining(){return this.enemies.length+(this.pending?.length||0)+(this.specialQueue?.length||0);}
+  /** Release a pack of swarm raiders: one tight group at a random edge point, or the finale from four sides. */
+  spawnRaid(finale){
+    const pool=swarmPool(this.room),base=Math.min(RAID.maxSize,Math.round(RAID.baseSize+this.room*RAID.perRoom));
+    const n=finale?Math.min(RAID.maxFinale,Math.round(base*RAID.finaleFactor)):base;
+    const lead=pool[Math.floor(this.random()*pool.length)];
+    const centers=finale?[0,1,2,3].map(i=>{const a=i*Math.PI/2+this.random()*.6,r=MAP.radius-MAP.margin-.5;return{x:Math.cos(a)*r,y:Math.sin(a)*r};}):[randomEdgeSpawn(this.random,this.hero,[])];
+    for(let i=0;i<n;i++){
+      const c=centers[i%centers.length],type=finale?pool[Math.floor(this.random()*pool.length)]:(this.random()<.75?lead:pool[Math.floor(this.random()*pool.length)]);
+      const a=this.random()*Math.PI*2,d=Math.sqrt(this.random())*RAID.spread,p={x:c.x+Math.cos(a)*d,y:c.y+Math.sin(a)*d};clampToMap(p,ENEMY_PAD);
+      this.enemies.push({...type,...p,id:++this.id,maxHp:type.hp,charger:false,timer:this.random()*3.2,flash:0});
+    }
+    this.roomEvent=finale?'FINALE: THE SWARM!':'SWARM INCOMING!';this.encounterTimer=finale?5:3;
+  }
+  /** Seconds left on the wave clock. */
+  timeLeft(){return Math.max(0,WAVE.duration-this.waveTime);}
   advanceSpawns(dt){
-    // Release the mini-boss / boss once half of the regular enemies are down.
-    if(this.specialQueue?.length&&this.defeatedRegular>=Math.ceil(this.totalRegular*SPAWN.specialAt)){
+    this.waveTime+=dt;
+    // Release the mini-boss / boss at half time.
+    if(this.specialQueue?.length&&this.waveTime>=WAVE.duration*SPAWN.specialAt){
       const special=this.specialQueue[0];
       this.roomEvent=(special.tier==='boss'?'BOSS: ':'MINI-BOSS: ')+special.name;this.encounterTimer=5;
       for(const type of this.specialQueue.splice(0))this.spawnOne(type);
     }
+    // Timed swarm attacks, independent of the regular queue.
+    if(this.waveTime>=this.nextRaid&&this.nextRaid<RAID.finale){this.nextRaid+=RAID.every;this.spawnRaid(false);}
+    if(!this.finaleDone&&this.waveTime>=RAID.finale){this.finaleDone=true;this.spawnRaid(true);}
     if(!this.pending?.length)return;
-    this.spawnTimer-=dt;
-    // An empty map brings the next enemy in immediately instead of waiting out the timer.
-    while(this.pending.length&&this.enemies.length<SPAWN.maxAlive&&(this.spawnTimer<=0||!this.enemies.length)){
-      this.spawnOne(this.pending.shift());this.spawnTimer+=SPAWN.interval;
-      if(this.spawnTimer<=0)this.spawnTimer=SPAWN.interval;
-    }
-    if(this.spawnTimer<0)this.spawnTimer=0;
+    // Progressive swarm: how many regulars should have arrived by now.
+    const f=Math.min(1,this.waveTime/WAVE.duration),due=Math.min(this.waveTotal,SPAWN.initial+Math.floor((this.waveTotal-SPAWN.initial)*Math.pow(f,WAVE.ramp)));
+    while(this.pending.length&&this.spawned<due&&this.enemies.length<SPAWN.maxAlive){this.spawnOne(this.pending.shift());this.spawned++;}
   }
 
   nextRoom(){
@@ -137,7 +162,7 @@ export class Engine {
       if(enemy.tier==='base'||enemy.tier===undefined)this.defeatedRegular=(this.defeatedRegular||0)+1;
       this.score+=enemy.score??(enemy.charger?200:100);
       // The reward drops as a coin that stays on the map until the hero collects it (or the round ends).
-      this.coins.push({x:enemy.x,y:enemy.y,value:enemy.reward??(enemy.charger?8:5),big:enemy.tier==='boss'||enemy.tier==='mini'});
+      if(enemy.tier!=='swarm')this.coins.push({x:enemy.x,y:enemy.y,value:enemy.reward??(enemy.charger?8:5),big:enemy.tier==='boss'||enemy.tier==='mini'});
       this.fx.push({x:enemy.x,y:enemy.y,type:'steam',life:.65,total:.65});
     }
   }
@@ -237,7 +262,7 @@ export class Engine {
     dt=clamp(dt,0,.05);this.time+=dt;this.encounterTimer=Math.max(0,this.encounterTimer-dt);this.cooldown-=dt;this.grace-=dt;this.specialCooldown=Math.max(0,this.specialCooldown-dt);
     const length=Math.hypot(move.x,move.y),scale=length>1?1/length:1;
     this.moving=length>.01;
-    this.hero.x+=move.x*scale*3.6*dt;this.hero.y+=move.y*scale*3.6*dt;clampToMap(this.hero,HERO_PAD);
+    this.hero.x+=move.x*scale*3.6*SPEED.hero*dt;this.hero.y+=move.y*scale*3.6*SPEED.hero*dt;clampToMap(this.hero,HERO_PAD);
     this.advanceSpawns(dt);
     this.timedLeft=Math.max(0,this.timedLeft-dt);
     if(this.endTimer===null){
@@ -326,7 +351,7 @@ export class Engine {
       const burst=behavior==='charge'&&e.timer%3.2>2.6?2.7:behavior==='pulse'?(e.timer%1.6>.9?1.7:.45):1;
       for(const p of this.puddles)if((e.x-p.x)**2+(e.y-p.y)**2<p.r*p.r){e.slowT=Math.max(e.slowT||0,.3);e.slowF=e.tier==='boss'?PUDDLE.bossSlow:PUDDLE.slow;}
       const slow=e.slowT>0?(e.slowF||.5):1;if(e.slowT>0)e.slowT-=dt;
-      const stagger=e.kt>0?.25:1,speed=e.speed*burst*stagger*slow;
+      const stagger=e.kt>0?.25:1,speed=e.speed*SPEED.enemy*burst*stagger*slow;
       const weave=behavior==='zigzag'?Math.sin(e.timer*4+e.id)*.42:0;
       const vx=dx/l-dy/l*weave,vy=dy/l+dx/l*weave,vl=Math.hypot(vx,vy)||1;
       e.x+=vx/vl*speed*dt;e.y+=vy/vl*speed*dt;
@@ -340,19 +365,14 @@ export class Engine {
     }
     for(const f of this.fx)f.life-=dt;
     this.fx=this.fx.filter(f=>f.life>0).slice(-100);
-    if(this.endTimer===null&&!this.enemies.length&&!this.pending?.length&&!this.specialQueue?.length){
-      // Wave is over: a short real-time window to pick up coins before the round closes.
-      this.endTimer=COIN.endGrace;this.hydrants=[];this.roomEvent='Collect the coins!';this.encounterTimer=COIN.endGrace;
-    }
-    if(this.endTimer!==null){
-      this.endTimer-=dt;
-      if(this.endTimer<=0){
-        this.endTimer=null;this.coins=[];this.bonuses=[];this.hydrants=[];this.timedLeft=0;   // anything left is lost
-        this.cleared=this.room;this.profile.credits=clamp(this.profile.credits+25+this.room*5,0,1000000);
-        this.health=Math.min(this.maxHealth,this.health+1);this.mode=this.room>=ROOM_LIMIT?'victory':'clear';
-        this.offer=this.mode==='clear'?rollUpgradeOffer(this.upgrades,this.random):[];
-        this.shots=[];this.burstQueue=[];return'checkpoint';
-      }
+    if(this.waveTime>=WAVE.duration){
+      // Timer is up: no end grace. Every coin still on the field is collected automatically, leftovers are cleared.
+      for(const k of this.coins)this.profile.credits=clamp(this.profile.credits+k.value,0,1000000);
+      this.coins=[];this.bonuses=[];this.hydrants=[];this.enemies=[];this.pending=[];this.specialQueue=[];this.timedLeft=0;
+      this.cleared=this.room;this.profile.credits=clamp(this.profile.credits+25+this.room*5,0,1000000);
+      this.health=Math.min(this.maxHealth,this.health+1);this.mode=this.room>=ROOM_LIMIT?'victory':'clear';
+      this.offer=this.mode==='clear'?rollUpgradeOffer(this.upgrades,this.random):[];
+      this.shots=[];this.burstQueue=[];return'checkpoint';
     }
     return null;
   }

@@ -1,4 +1,4 @@
-import {ENEMY_ROSTER} from './enemy-roster.mjs';
+import {ENEMY_ROSTER,SWARM_ENEMIES} from './enemy-roster.mjs';
 import {pinchZoom} from './viewport.mjs';
 import { drawRookieWobble } from './rookie-wobble.mjs';
 import { drawFireEnemy } from './enemy-art.mjs';
@@ -83,12 +83,12 @@ class FireDefense {
   }
   showEnemyGuide(){
     const host=$('enemy-roster');host.replaceChildren();
-    for(const [tier,title] of [['base','20 base enemies'],['mini','10 mini-bosses'],['boss','5 major bosses']]){
+    for(const [tier,title] of [['base','40 base enemies'],['mini','10 mini-bosses'],['boss','5 major bosses'],['swarm','20 swarm raiders (attack waves at 1:00, every minute, finale 4:30)']]){
       const section=document.createElement('details');section.open=tier==='base';
       const summary=document.createElement('summary');summary.textContent=title;section.append(summary);
       const table=document.createElement('table');const header=document.createElement('tr');
       for(const text of ['Enemy / behavior','HP','Damage','Speed','Debut']){const th=document.createElement('th');th.textContent=text;header.append(th);}table.append(header);
-      for(const enemy of ENEMY_ROSTER.filter(e=>e.tier===tier)){
+      for(const enemy of [...ENEMY_ROSTER,...SWARM_ENEMIES].filter(e=>e.tier===tier)){
         const row=document.createElement('tr');
         for(const [index,value] of [enemy.name+' — '+enemy.description,enemy.hp,enemy.attack,enemy.speed,'Room '+enemy.unlock].entries()){
           const td=document.createElement('td');td.textContent=value;if(index===0)td.className='enemy-name';row.append(td);
@@ -113,7 +113,7 @@ class FireDefense {
   sendPending(){this.saving=true;this.saveMessage='Saving progress…';this.updateView();window.FDEC?.save(JSON.stringify(this.pending));}
   togglePause(){if(!this.loaded||this.engine.mode!=='active'||!$('gate').hidden)return;this.paused=!this.paused;this.clearInput();this.readyMenu='';this.updateView();}
   special(){if(!this.loaded||this.paused||!$('gate').hidden||this.h>this.w||$('board').open||$('bestiary').open)return;if(this.engine.special()){this.shake=.18;this.updateHUD();}}
-  updateHUD(){if(!this.engine)return;const e=this.engine;$('room').textContent=String(e.room).padStart(2,'0')+' / 30';$('health').textContent=e.health+' / '+e.maxHealth;$('score').textContent=e.score.toLocaleString();$('credits').textContent=e.profile.credits.toLocaleString();$('floor-label').firstChild.textContent='SECTOR '+String(e.room).padStart(2,'0')+' ';const unlocked=e.profile.foam||e.profile.cannon;$('special').disabled=!unlocked||e.charges<=0||e.specialCooldown>0;$('special-name').textContent=e.profile.cannon?'WATER CANNON':'FOAM BURST';$('encounter-banner').hidden=!(e.mode==='active'&&e.encounterTimer>0&&!this.paused);$('encounter-banner').textContent=e.roomEvent||'';const st=e.stats(),owned=UPGRADES.filter(u=>e.upgrades[u.id]).map(u=>u.name+(u.max>1?' ×'+e.upgrades[u.id]:''));$('loadout').hidden=!(e.mode==='active'||e.mode==='clear');$('loadout').innerHTML='<b></b><br><span></span><br><i></i>';const lo=$('loadout');lo.querySelector('b').textContent=WEAPONS[e.weapon].name+' · '+st.damage.toFixed(1)+' dmg · '+Math.round(st.critChance*100)+'% crit';lo.querySelector('span').textContent=owned.join(' · ');lo.querySelector('i').textContent='Enemies left '+e.remaining()+(e.specialQueue.length?' · boss arrives at 50%':'');$('special-state').textContent=!unlocked?'Unlock in equipment':e.specialCooldown>0?Math.ceil(e.specialCooldown)+'s cooldown':e.charges+' charges · Space';}
+  updateHUD(){if(!this.engine)return;const e=this.engine;$('room').textContent=String(e.room).padStart(2,'0')+' / 30';$('health').textContent=e.health+' / '+e.maxHealth;$('score').textContent=e.score.toLocaleString();$('credits').textContent=e.profile.credits.toLocaleString();$('floor-label').firstChild.textContent='SECTOR '+String(e.room).padStart(2,'0')+' ';const unlocked=e.profile.foam||e.profile.cannon;$('special').disabled=!unlocked||e.charges<=0||e.specialCooldown>0;$('special-name').textContent=e.profile.cannon?'WATER CANNON':'FOAM BURST';$('encounter-banner').hidden=!(e.mode==='active'&&e.encounterTimer>0&&!this.paused);$('encounter-banner').textContent=e.roomEvent||'';const st=e.stats(),owned=UPGRADES.filter(u=>e.upgrades[u.id]).map(u=>u.name+(u.max>1?' ×'+e.upgrades[u.id]:''));$('loadout').hidden=!(e.mode==='active'||e.mode==='clear');$('loadout').innerHTML='<b></b><br><span></span><br><i></i>';const lo=$('loadout');lo.querySelector('b').textContent=WEAPONS[e.weapon].name+' · '+st.damage.toFixed(1)+' dmg · '+Math.round(st.critChance*100)+'% crit';lo.querySelector('span').textContent=owned.join(' · ');const tl=Math.ceil(e.timeLeft?e.timeLeft():0);lo.querySelector('i').textContent='Wave '+Math.floor(tl/60)+':'+String(tl%60).padStart(2,'0')+' left · '+e.enemies.length+' on field'+(e.specialQueue.length?' · boss at 2:30':'');$('special-state').textContent=!unlocked?'Unlock in equipment':e.specialCooldown>0?Math.ceil(e.specialCooldown)+'s cooldown':e.charges+' charges · Space';}
   updateView(){
     if(!$('menu'))return;
     const e=this.engine;const active=this.loaded&&e?.mode==='active'&&!this.paused;
@@ -334,7 +334,7 @@ class FireDefense {
   drawEnemy(a){
     const p=this.project(a.x,a.y),e=this.engine;
     drawFireEnemy(ctx,{x:p.x,y:p.y,unit:this.unit*(a.visualScale||1),time:this.time,id:a.id||0,charger:a.tier==='mini'||a.tier==='boss'||!!a.charger,
-      palette:a.palette,crest:a.crest,tier:a.tier,name:a.name,
+      palette:a.palette,crest:a.crest,tier:a.tier,name:a.name,shape:a.shape,kind:a.kind,
       hp:a.hp,maxHp:a.maxHp,flash:a.flash||0,
       heading:e?iso(e.hero.x-a.x,e.hero.y-a.y):{x:1,y:0},charging:!!(a.charger&&a.timer%3.2>2.2)});
   }
