@@ -9,7 +9,7 @@ export const ROOM_LIMIT = 30;
 // Pickups: hydrants spawn at random times, drop a bonus when destroyed; every kill drops a coin.
 export const HYDRANT={hp:12,radius:.4,minDelay:10,maxDelay:30,maxAlive:2};
 export const BONUS={life:12,pickRadiusPx:34,coinsBase:30,coinsPerRoom:3,bombRadius:4.5,bombDamage:6,timedSeconds:8,types:['coins','upgrade','bomb','timed']};
-export const COIN={range:1.4};   // pickup radius; whatever is left on the field is auto-collected when the wave timer ends
+export const COIN={range:3,dropChance:.25,magnetStep:1.5,magnetMax:5};   // pickup radius; whatever is left on the field is auto-collected when the wave timer ends
 // Timed waves: every wave lasts `duration` seconds. The swarm arrives progressively (slow start, heavy finish): the
 // cumulative spawn count follows (t/duration)^ramp. A mini-boss / boss is released at `specialAt` of the wave time.
 export const WAVE={duration:300,baseRate:4,perRoomRate:.4,ramp:1};
@@ -72,6 +72,7 @@ export function firstHit(a,b,p,radius) {
 }
 export class Engine {
   constructor(profile,random=Math.random) {
+    this.power=0;this.powerLevel=0;this.blueCoins=[];this.dropMisses=0;this.magnetLevel=0;this.resumeLeft=0;
     this.profile={...profile};this.random=random;this.mode='ready';this.room=1;this.cleared=0;
     this.score=0;this.time=0;this.health=6;this.maxHealth=6;this.hero={x:0,y:0};
     this.roomEvent='';this.encounterTimer=0;this.enemies=[];this.shots=[];this.fx=[];this.aim={x:1,y:0};this.moving=false;
@@ -83,22 +84,42 @@ export class Engine {
     this.hydrants=[];this.coins=[];this.bonuses=[];this.hydrantTimer=0;this.timedLeft=0;this.endTimer=null;
   }
   stats(){
-    const s=computeStats(this.weapon,this.profile,this.upgrades);
+    const s=computeStats(this.weapon,this.profile,this.upgrades);s.damage*=1.5;
     if(this.timedLeft>0){s.interval*=.5;s.projectiles+=2;}   // timed special attack: double fire rate, two extra streams
     return s;
   }
   setWeapon(key){if(!WEAPONS[key]||!['ready','defeat','victory'].includes(this.mode))return false;this.weapon=key;return true;}
+  powerCost(){return Math.min(25,[5,8,12][this.powerLevel]??(12+(this.powerLevel-2)*3));}
+  pickupRange(){return COIN.range+this.magnetLevel*COIN.magnetStep+(this.upgrades.coin_magnet||0)*1.5;}
+  magnetPrice(){return 40*(this.magnetLevel+1);}
+  buyMagnet(){
+    if(!['active','upgrade','clear'].includes(this.mode)||this.magnetLevel>=COIN.magnetMax||this.profile.credits<this.magnetPrice())return false;
+    this.profile.credits-=this.magnetPrice();this.magnetLevel++;return true;
+  }
+  openPowerUpgrade(){
+    if(this.power<this.powerCost())return false;
+    const offer=rollUpgradeOffer(this.upgrades,this.random);
+    if(!offer.length)return false;
+    this.offer=offer;this.mode='upgrade';return true;
+  }
   chooseUpgrade(id){
-    if(this.mode!=='clear'||!this.offer.includes(id))return false;
-    this.upgrades[id]=(this.upgrades[id]||0)+1;this.offer=[];return true;
+    if(!['clear','upgrade'].includes(this.mode)||!this.offer.includes(id))return false;
+    const during=this.mode==='upgrade';
+    if(during){this.power-=this.powerCost();this.powerLevel++;}
+    if(id==='emergency_recovery')this.health=Math.min(this.maxHealth,this.health+2);
+    else this.upgrades[id]=(this.upgrades[id]||0)+1;
+    this.offer=[];
+    if(during){this.mode='active';this.resumeLeft=3;}
+    return true;
   }
   newRun(){
+    this.power=0;this.powerLevel=0;this.blueCoins=[];this.dropMisses=0;this.magnetLevel=0;this.resumeLeft=0;
     this.room=1;this.cleared=0;this.score=0;this.time=0;this.health=this.maxHealth;
     this.hero={x:0,y:0};this.mode='active';this.grace=1;this.upgrades={};this.offer=[];this.spawnRoom();
   }
   spawnRoom(){
     this.enemies=[];this.shots=[];this.burstQueue=[];this.puddles=[];this.fx=[];this.cooldown=0;this.specialCooldown=0;
-    this.hydrants=[];this.coins=[];this.bonuses=[];this.endTimer=null;this.timedLeft=0;
+    this.hydrants=[];this.coins=[];this.blueCoins=[];this.bonuses=[];this.endTimer=null;this.timedLeft=0;
     this.hydrantTimer=HYDRANT.minDelay+this.random()*(HYDRANT.maxDelay-HYDRANT.minDelay);
     this.charges=2+(this.profile.foam>0?1:0)+(this.profile.cannon>0?1:0);
     const lineup=roomLineup(this.room,this.random);
@@ -162,6 +183,7 @@ export class Engine {
     this.profile.credits-=this.price(key);this.profile[key]++;return true;
   }
   damage(enemy,damage,crit=false){
+    if(enemy.hp<=0)return;
     enemy.hp-=damage;enemy.flash=.12;
     this.fx.push({x:enemy.x,y:enemy.y,type:crit?'crit':'splash',life:.28,total:.28});
     if(enemy.hp<=0){
@@ -170,6 +192,8 @@ export class Engine {
       this.score+=enemy.score??(enemy.charger?200:100);
       // The reward drops as a coin that stays on the map until the hero collects it (or the round ends).
       if(enemy.tier!=='swarm')this.coins.push({x:enemy.x,y:enemy.y,value:enemy.reward??(enemy.charger?8:5),big:enemy.tier==='boss'||enemy.tier==='mini'});
+      this.dropMisses++;
+      if(this.random()<COIN.dropChance||this.dropMisses>=5){this.blueCoins.push({x:enemy.x,y:enemy.y,value:1});this.dropMisses=0;}
       this.fx.push({x:enemy.x,y:enemy.y,type:'steam',life:.65,total:.65});
     }
   }
@@ -266,6 +290,8 @@ export class Engine {
   }
   step(dt,move={x:0,y:0}){
     if(this.mode!=='active')return null;
+    if(this.resumeLeft>0){this.resumeLeft=Math.max(0,this.resumeLeft-clamp(dt,0,.05));return null;}
+    if(this.openPowerUpgrade())return 'upgrade';
     dt=clamp(dt,0,.05);this.time+=dt;this.encounterTimer=Math.max(0,this.encounterTimer-dt);this.cooldown-=dt;this.grace-=dt;this.specialCooldown=Math.max(0,this.specialCooldown-dt);
     const length=Math.hypot(move.x,move.y),scale=length>1?1/length:1;
     this.moving=length>.01;
@@ -281,11 +307,15 @@ export class Engine {
     this.bonuses=this.bonuses.filter(b=>b.life>0);
     for(let i=this.coins.length-1;i>=0;i--){
       const k=this.coins[i];
-      if(Math.hypot(k.x-this.hero.x,k.y-this.hero.y)<=COIN.range){
+      if(Math.hypot(k.x-this.hero.x,k.y-this.hero.y)<=this.pickupRange()){
         this.profile.credits=clamp(this.profile.credits+k.value,0,1000000);this.coins.splice(i,1);
         this.fx.push({x:k.x,y:k.y,type:'splash',life:.28,total:.28});
       }
     }
+    for(let i=this.blueCoins.length-1;i>=0;i--){const k=this.blueCoins[i];
+      if(Math.hypot(k.x-this.hero.x,k.y-this.hero.y)<=this.pickupRange()){this.power+=k.value;this.blueCoins.splice(i,1);}
+    }
+    if(this.openPowerUpgrade())return 'upgrade';
     const st=this.stats();this.interval=st.interval;
     if(this.enemies.length||this.hydrants.length){
       const d2=o=>(o.x-this.hero.x)**2+(o.y-this.hero.y)**2;
@@ -376,6 +406,8 @@ export class Engine {
     this.fx=this.fx.filter(f=>f.life>0).slice(-100);
     if(this.waveTime>=WAVE.duration){
       // Timer is up: no end grace. Every coin still on the field is collected automatically, leftovers are cleared.
+      for(const k of this.blueCoins)this.power+=k.value;
+      this.blueCoins=[];
       for(const k of this.coins)this.profile.credits=clamp(this.profile.credits+k.value,0,1000000);
       this.coins=[];this.bonuses=[];this.hydrants=[];this.enemies=[];this.pending=[];this.specialQueue=[];this.timedLeft=0;
       this.cleared=this.room;this.profile.credits=clamp(this.profile.credits+25+this.room*5,0,1000000);
