@@ -233,7 +233,7 @@ class FireDefense {
     if(e)for(const k of e.coins){const q=this.project(k.x,k.y,.05),bob=Math.sin(this.time*5+k.x*3)*1.2,rr=(k.big?.2:.12)*u,lowT=e.endTimer!==null&&e.endTimer<.7&&Math.floor(this.time*10)%2;ctx.save();ctx.globalAlpha=lowT?.35:1;ctx.shadowColor='#ffd45a';ctx.shadowBlur=8;this.ellipse(q.x,q.y+bob,rr,rr*.62,'#f4b42c');this.ellipse(q.x,q.y+bob-1,rr*.8,rr*.48,'#ffd95e');this.ellipse(q.x,q.y+bob-1,rr*.35,rr*.2,'#f4b42c');ctx.restore();}
     let actors=e?[...e.enemies.map(a=>({kind:'enemy',...a})),...e.hydrants.map(a=>({kind:'hydrant',...a})),{kind:'hero',...e.hero}]:[{kind:'hero',x:1,y:-1},{kind:'enemy',x:-2,y:2,charger:false,timer:1,flash:0,hp:3,maxHp:3},{kind:'enemy',x:3,y:2,charger:true,timer:2,flash:0,hp:5,maxHp:5},{kind:'enemy',x:-3,y:0,charger:false,timer:1,flash:0,hp:3,maxHp:3}];
     actors.sort((a,b)=>(b.x+b.y)-(a.x+a.y));
-    for(const a of actors){if(a.kind==='hero')this.drawHero(a,e);else if(a.kind==='hydrant')this.drawHydrant(a);else this.drawEnemy(a);}
+    for(const a of actors){const q=this.project(a.x,a.y),margin=u*4;if(q.x<-margin||q.x>w+margin||q.y<-margin||q.y>h+margin)continue;if(a.kind==='hero')this.drawHero(a,e);else if(a.kind==='hydrant')this.drawHydrant(a);else this.drawEnemy(a);}
     if(e){
       // Frost Orbs circling the hero.
       const orbCount=e.stats().orbs;
