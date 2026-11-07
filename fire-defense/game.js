@@ -21,7 +21,7 @@ class FireDefense {
   resize(){this.w=innerWidth;this.h=innerHeight;const ratio=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(this.w*ratio);canvas.height=Math.round(this.h*ratio);ctx.setTransform(ratio,0,0,ratio,0,0);this.ratio=ratio;this.baseUnit=Math.min(this.w/19,this.h/11.6);this.unit=this.baseUnit*this.zoom;this.updateCamera(0,true);this.updateView();}
   createUpgradeHUD(){
     const power=document.createElement('div');power.id='power-meter';power.hidden=true;
-    power.innerHTML='<label id="power-label"></label><progress id="power-progress" max="5" value="0"></progress><button id="buy-magnet" type="button"></button>';
+    power.innerHTML='<label id="power-label"></label><progress id="power-progress" max="15" value="0"></progress><button id="buy-magnet" type="button"></button>';
     document.body.append(power);
     const countdown=document.createElement('div');countdown.id='resume-countdown';countdown.hidden=true;document.body.append(countdown);
   }
@@ -30,14 +30,19 @@ class FireDefense {
 
     addEventListener('keydown',e=>{if(['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)||!$('gate').hidden||$('board').open||$('bestiary').open)return;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();this.keys.add(e.key.toLowerCase());if(e.key==='Escape')this.togglePause();if(e.code==='Space'&&!e.repeat)this.special();});
     addEventListener('keyup',e=>this.keys.delete(e.key.toLowerCase()));
-    const clear=()=>{this.keys.clear();this.stick={x:0,y:0};this.pointer=null;$('stick-knob').style.transform='';};
+    const clearStick=()=>{this.stick={x:0,y:0};this.pointer=null;$('stick-knob').style.transform='';};
+    this.clearStick=clearStick;
+    const clear=()=>{this.keys.clear();clearStick();};
     this.clearInput=clear;
     addEventListener('blur',()=>{clear();if(this.engine?.mode==='active'){this.paused=true;this.updateView();}});
     document.addEventListener('visibilitychange',()=>{if(document.hidden){clear();if(this.engine?.mode==='active'){this.paused=true;this.updateView();}}});
     const zone=$('joystick-zone');
     zone.addEventListener('pointerdown',e=>{if(this.pointer!==null||this.pinchActive)return;e.preventDefault();this.pointer=e.pointerId;zone.setPointerCapture(e.pointerId);this.joystick(e);});
-    zone.addEventListener('pointermove',e=>{if(e.pointerId===this.pointer)this.joystick(e);});
-    for(const name of ['pointerup','pointercancel','lostpointercapture'])zone.addEventListener(name,e=>{if(e.pointerId===this.pointer)clear();});
+    zone.addEventListener('pointermove',e=>{
+      if(this.pointer===null&&!this.pinchActive&&e.buttons===1&&this.engine?.mode==='active'&&!this.paused){this.pointer=e.pointerId;zone.setPointerCapture(e.pointerId);}
+      if(e.pointerId===this.pointer)this.joystick(e);
+    });
+    for(const name of ['pointerup','pointercancel','lostpointercapture'])zone.addEventListener(name,e=>{if(e.pointerId===this.pointer)clearStick();});
     this.bindPinch();
     // Click or tap a bonus to activate it.
     canvas.addEventListener('pointerdown',event=>{
@@ -54,7 +59,7 @@ class FireDefense {
     $('special').onclick=()=>this.special();
     $('continue').onclick=()=>{
       if(this.saving||this.pending||!this.loaded)return;
-      if(this.engine.mode==='upgrade'||(!this.paused&&this.engine.mode==='clear'&&this.engine.offer.length))return;
+      if((['ready','defeat','victory'].includes(this.engine.mode)&&!this.engine.primaryChosen)||this.engine.mode==='upgrade'||(!this.paused&&this.engine.mode==='clear'&&this.engine.offer.length))return;
       if(this.paused){this.paused=false;}
       else if(this.engine.mode==='clear')this.engine.nextRoom();
       else this.engine.newRun();
@@ -74,7 +79,7 @@ class FireDefense {
     const distance=()=>{const p=[...this.touchPoints.values()];return p.length>=2?Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y):0;};
     window.addEventListener('pointerdown',event=>{
       if(event.pointerType!=='touch'||!this.loaded||!$('gate').hidden)return;
-      if(event.target!==canvas&&!event.target.closest('#joystick-zone'))return;
+      if(event.target!==canvas)return;
       this.touchPoints.set(event.pointerId,{x:event.clientX,y:event.clientY});
       if(this.touchPoints.size===2){this.pinchActive=true;this.clearInput();this.pinchStart={distance:distance(),zoom:this.zoom};event.preventDefault();}
     },{capture:true,passive:false});
@@ -83,7 +88,7 @@ class FireDefense {
       this.touchPoints.set(event.pointerId,{x:event.clientX,y:event.clientY});
       if(this.pinchActive&&this.touchPoints.size>=2&&this.pinchStart){event.preventDefault();this.setZoom(pinchZoom(this.pinchStart.zoom,this.pinchStart.distance,distance()));}
     },{capture:true,passive:false});
-    const finish=event=>{this.touchPoints.delete(event.pointerId);if(!this.touchPoints.size){this.pinchActive=false;this.pinchStart=null;}};
+    const finish=event=>{this.touchPoints.delete(event.pointerId);if(this.touchPoints.size<2){this.pinchActive=false;this.pinchStart=null;}};
     window.addEventListener('pointerup',finish,true);window.addEventListener('pointercancel',finish,true);
     window.addEventListener('blur',()=>{this.touchPoints.clear();this.pinchActive=false;this.pinchStart=null;});
     canvas.addEventListener('dblclick',event=>event.preventDefault());
@@ -129,7 +134,7 @@ class FireDefense {
     const magnet=$('buy-magnet');magnet.textContent='🧲 Magnet '+e.magnetLevel+'/5 · '+e.pickupRange().toFixed(1)+' range'+(e.magnetLevel<5?' · Buy '+e.magnetPrice()+' gold':' · MAX');
     magnet.disabled=this.saving||!!this.pending||e.magnetLevel>=5||e.profile.credits<e.magnetPrice()||!inRun;
     $('resume-countdown').hidden=!(e.mode==='active'&&e.resumeLeft>0&&!this.paused);$('resume-countdown').textContent=Math.ceil(e.resumeLeft);
-$('room').textContent=String(e.room).padStart(2,'0')+' / 30';$('health').textContent=e.health+' / '+e.maxHealth;$('score').textContent=e.score.toLocaleString();$('credits').textContent=e.profile.credits.toLocaleString();$('floor-label').firstChild.textContent='SECTOR '+String(e.room).padStart(2,'0')+' ';const unlocked=e.profile.foam||e.profile.cannon;$('special').disabled=!unlocked||e.charges<=0||e.specialCooldown>0;$('special-name').textContent=e.profile.cannon?'WATER CANNON':'FOAM BURST';$('encounter-banner').hidden=!(e.mode==='active'&&e.encounterTimer>0&&!this.paused);$('encounter-banner').textContent=e.roomEvent||'';const st=e.stats(),owned=UPGRADES.filter(u=>e.upgrades[u.id]).map(u=>u.name+(u.max>1?' ×'+e.upgrades[u.id]:''));$('loadout').hidden=!(e.mode==='active'||e.mode==='clear');$('loadout').innerHTML='<b></b><br><span></span><br><i></i>';const lo=$('loadout');lo.querySelector('b').textContent=WEAPONS[e.weapon].name+' · '+st.damage.toFixed(1)+' dmg · '+Math.round(st.critChance*100)+'% crit';lo.querySelector('span').textContent=owned.join(' · ');const tl=Math.ceil(e.timeLeft?e.timeLeft():0);lo.querySelector('i').textContent='Wave '+Math.floor(tl/60)+':'+String(tl%60).padStart(2,'0')+' left · '+e.enemies.length+' on field'+(e.specialQueue.length?' · boss at 2:30':'');$('special-state').textContent=!unlocked?'Unlock in equipment':e.specialCooldown>0?Math.ceil(e.specialCooldown)+'s cooldown':e.charges+' charges · Space';}
+$('room').textContent=String(e.room).padStart(2,'0')+' / 30';$('health').textContent=e.health+' / '+e.maxHealth;$('score').textContent=e.score.toLocaleString();$('credits').textContent=e.profile.credits.toLocaleString();$('floor-label').firstChild.textContent='SECTOR '+String(e.room).padStart(2,'0')+' ';const unlocked=e.profile.foam||e.profile.cannon;$('special').disabled=!unlocked||e.charges<=0||e.specialCooldown>0;$('special-name').textContent=e.profile.cannon?'WATER CANNON':'FOAM BURST';$('encounter-banner').hidden=!(e.mode==='active'&&e.encounterTimer>0&&!this.paused);$('encounter-banner').textContent=e.roomEvent||'';const st=e.stats(),owned=UPGRADES.filter(u=>e.upgrades[u.id]).map(u=>u.name+(u.max>1?' ×'+e.upgrades[u.id]:''));$('loadout').hidden=!(e.mode==='active'||e.mode==='clear');const lo=$('loadout');if(!lo.querySelector('b'))lo.innerHTML='<b></b><br><span></span><br><i></i>';lo.querySelector('b').textContent=WEAPONS[e.weapon].name+' · '+st.damage.toFixed(1)+' dmg · '+Math.round(st.critChance*100)+'% crit';lo.querySelector('span').textContent=owned.join(' · ');const tl=Math.ceil(e.timeLeft?e.timeLeft():0);lo.querySelector('i').textContent='Wave '+Math.floor(tl/60)+':'+String(tl%60).padStart(2,'0')+' left · '+e.enemies.length+' on field'+(e.specialQueue.length?' · boss at 2:30':'');$('special-state').textContent=!unlocked?'Unlock in equipment':e.specialCooldown>0?Math.ceil(e.specialCooldown)+'s cooldown':e.charges+' charges · Space';}
   updateView(){
     if(!$('menu'))return;
     const e=this.engine;const active=this.loaded&&e?.mode==='active'&&!this.paused;
@@ -138,7 +143,7 @@ $('room').textContent=String(e.room).padStart(2,'0')+' / 30';$('health').textCon
     if(!this.loaded||!e)return;
     this.updateHUD();
     const menuMode=this.paused?'pause':e.mode;
-    const labels={upgrade:['POWER BAR FULL','Choose an upgrade','Pick one free upgrade. Gameplay is paused until you choose.','Choose an upgrade below'],ready:['RESPONSE BRIEFING','Ready for response?','Clear each room with your hose. Keep moving—the water aims for you.','Start response →'],clear:['SECTOR SECURED','Room '+e.room+' cleared.','Supplies collected. Recover 1 health and prepare for the next room.','Next room →'],defeat:['RESPONSE COMPLETE','The fire won this round.','Your permanent gear and earned credits stay with you. Start a fresh run.','Try again →'],victory:['WAREHOUSE SECURED','All 30 rooms cleared.','Outstanding response. Upgrade your equipment and take on a new run.','New response →'],pause:['TAKE A BREATHER','Response paused.','Your active play clock is paused.','Resume response →']};
+    const labels={upgrade:['POWER BAR FULL','Choose an upgrade','Pick one free upgrade for this wave. Gameplay is paused until you choose.','Choose an upgrade below'],ready:['RESPONSE BRIEFING','Ready for response?','Choose your primary weapon below. Keep moving—the weapon aims for you.','Start response →'],clear:['SECTOR SECURED','Room '+e.room+' cleared.','Wave upgrades reset. Gold-purchased gear and magnets remain. Choose a fresh upgrade for the next wave.','Next room →'],defeat:['RESPONSE COMPLETE','The fire won this round.','Your permanent gear and earned credits stay with you. Start a fresh run.','Try again →'],victory:['WAREHOUSE SECURED','All 30 rooms cleared.','Outstanding response. Upgrade your equipment and take on a new run.','New response →'],pause:['TAKE A BREATHER','Response paused.','Your active play clock is paused.','Resume response →']};
     const text=labels[menuMode]||labels.ready;
     $('menu-eyebrow').textContent=text[0];$('menu-title').textContent=text[1];$('menu-description').textContent=text[2];$('continue').textContent=text[3];
     $('run-stats').textContent=e.profile.nickname+'  ·  '+e.profile.credits.toLocaleString()+' credits'+(e.cleared?'  ·  '+e.cleared+' rooms secured':'');
@@ -147,8 +152,8 @@ $('room').textContent=String(e.room).padStart(2,'0')+' / 30';$('health').textCon
     $('shop').hidden=menuMode==='pause'||menuMode==='upgrade';
     const pickWeapon=['ready','defeat','victory'].includes(menuMode),pickUpgrade=['clear','upgrade'].includes(menuMode)&&e.offer.length>0;
     $('picker').hidden=!(pickWeapon||pickUpgrade);
-    if(pickUpgrade)$('continue').disabled=true;
-    const key=menuMode+JSON.stringify(e.profile)+this.saving+!!this.pending+e.weapon+JSON.stringify(e.upgrades)+e.offer.join();
+    if(pickUpgrade||(pickWeapon&&!e.primaryChosen))$('continue').disabled=true;
+    const key=menuMode+JSON.stringify(e.profile)+this.saving+!!this.pending+e.weapon+e.primaryChosen+JSON.stringify(e.upgrades)+e.offer.join();
     if(this.readyMenu!==key){
       this.readyMenu=key;
       this.buildPicker(e,pickWeapon,pickUpgrade);
@@ -176,13 +181,13 @@ $('room').textContent=String(e.room).padStart(2,'0')+' / 30';$('health').textCon
       const b=document.createElement('button');b.textContent=label;b.disabled=!!disabled;b.onclick=onclick;c.append(b);host.append(c);
     };
     if(pickWeapon){
-      $('picker-title').textContent='CHOOSE YOUR WEAPON';
+      $('picker-title').textContent='CHOOSE YOUR PRIMARY WEAPON · REQUIRED';
       for(const k of WEAPON_KEYS){
         const w=WEAPONS[k],st=computeFor(e,k);
-        card(w.icon,w.name,[['p',w.trait],['stat','DMG '+st.damage.toFixed(2)+' · '+(1/st.interval).toFixed(1)+'/s'],['stat','RANGE '+Math.round(st.range)+' · CRIT '+Math.round(st.critChance*100)+'%']],e.weapon===k?'Equipped':'Equip',e.weapon===k,()=>{if(e.setWeapon(k)){this.readyMenu='';this.updateView();}},e.weapon===k);
+        card(w.icon,w.name,[['p',w.trait],['stat','DMG '+st.damage.toFixed(2)+' · '+(1/st.interval).toFixed(1)+'/s'],['stat','RANGE '+Math.round(st.range)+' · CRIT '+Math.round(st.critChance*100)+'%']],e.weapon===k&&e.primaryChosen?'Primary selected':'Choose primary',e.weapon===k&&e.primaryChosen,()=>{if(e.setWeapon(k)){this.readyMenu='';this.updateView();}},e.weapon===k&&e.primaryChosen);
       }
     }else if(pickUpgrade){
-      $('picker-title').textContent='CHOOSE ONE FREE UPGRADE · THIS RUN';
+      $('picker-title').textContent=e.mode==='clear'?'CHOOSE ONE FREE UPGRADE · NEXT WAVE':'CHOOSE ONE FREE UPGRADE · THIS WAVE';
       for(const id of e.offer){
         const u=UPGRADE_BY_ID[id],n=e.upgrades[id]||0;
         card(u.icon,u.name,[['p',u.description],['owned',n?'OWNED ×'+n+(u.max>1?' / '+u.max:''):(u.max>1?'MAX ×'+u.max:'ONE-TIME')]],'Take',false,()=>{if(e.chooseUpgrade(id)){this.readyMenu='';this.updateHUD();this.updateView();}},false);
@@ -194,7 +199,7 @@ $('room').textContent=String(e.room).padStart(2,'0')+' / 30';$('health').textCon
       let x=(this.keys.has('d')||this.keys.has('arrowright')?1:0)-(this.keys.has('a')||this.keys.has('arrowleft')?1:0),y=(this.keys.has('s')||this.keys.has('arrowdown')?1:0)-(this.keys.has('w')||this.keys.has('arrowup')?1:0);
       if(Math.hypot(this.stick.x,this.stick.y)>.1){x=this.stick.x;y=this.stick.y;}if(this.pinchActive){x=0;y=0;}
       const event=this.engine.step(dt,movementFromScreen(x,y));
-      if(event==='upgrade'){this.clearInput();this.readyMenu='';this.updateView();}
+      if(event==='upgrade'){this.clearStick();this.readyMenu='';this.updateView();}
       if(event==='checkpoint'){this.clearInput();this.checkpoint();this.readyMenu='';this.updateView();}
       this.updateHUD();
     }
@@ -254,8 +259,12 @@ $('room').textContent=String(e.room).padStart(2,'0')+' / 30';$('health').textCon
     for(const a of actors){const q=this.project(a.x,a.y),margin=u*4;if(q.x<-margin||q.x>w+margin||q.y<-margin||q.y>h+margin)continue;if(a.kind==='hero')this.drawHero(a,e);else if(a.kind==='hydrant')this.drawHydrant(a);else this.drawEnemy(a);}
     if(e){
       // Frost Orbs circling the hero.
-      const orbCount=e.stats().orbs;
-      if(orbCount>0)for(const orb of e.orbPositions(orbCount)){const q=this.project(orb.x,orb.y,.35);ctx.save();ctx.shadowColor='#9fe3ff';ctx.shadowBlur=10;ctx.beginPath();ctx.moveTo(q.x,q.y-9);ctx.lineTo(q.x+5.5,q.y);ctx.lineTo(q.x,q.y+9);ctx.lineTo(q.x-5.5,q.y);ctx.closePath();ctx.fillStyle='#d6f4ff';ctx.fill();ctx.lineWidth=1.5;ctx.strokeStyle='#6fc8ff';ctx.stroke();ctx.restore();}
+      for(const orb of e.orbActors()){
+        const q=this.project(orb.x,orb.y,.35);ctx.save();ctx.shadowColor=orb.color;ctx.shadowBlur=9;ctx.fillStyle=orb.color;
+        if(orb.role==='defense'){ctx.beginPath();ctx.moveTo(q.x-6,q.y-7);ctx.lineTo(q.x+6,q.y-7);ctx.lineTo(q.x+5,q.y+3);ctx.lineTo(q.x,q.y+8);ctx.lineTo(q.x-5,q.y+3);ctx.closePath();ctx.fill();}
+        else{this.ellipse(q.x,q.y,orb.role==='attack'?6:5,orb.role==='attack'?8:5,orb.color);}
+        ctx.shadowBlur=0;ctx.font='bold 9px system-ui';ctx.textAlign='center';ctx.fillStyle='#102235';ctx.fillText(orb.kind==='healing_orbs'?'+':orb.kind==='haste_orbs'?'»':orb.kind==='storm_orbs'?'ϟ':orb.kind==='frost_orbs'?'❄':'•',q.x,q.y+3);ctx.restore();
+      }
       for(const s of e.shots){
         const p=this.project(s.x,s.y,.2),tail=this.project(s.x-s.vx*.024,s.y-s.vy*.024,.2),lv=e.profile.nozzle;
         if(s.kind==='balloon'){this.ellipse(p.x,p.y+1,7.5,8.5,s.crit?'#fff3b0':'#4fb4ee');this.ellipse(p.x,p.y+1,7.5,8.5,'#ffffff22');this.ellipse(p.x-2.4,p.y-2.4,2.4,3,'#e6f8ff');this.line({x:p.x,y:p.y+9},{x:p.x+1.5,y:p.y+12},'#2d86bd',1.5);}
