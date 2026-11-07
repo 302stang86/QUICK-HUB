@@ -2,7 +2,7 @@
 // (Brave Bow / Death Scythe / Stalker Staff) and are converted so the Rapid Hose, the first
 // weapon, matches the game's existing hose: 1 damage per hit at 0.19 s between shots.
 // Only ratios are kept: damage ÷ 12, attack speed ÷ 1.2, range × 3 (the map is ~3× roomier than an Archero room).
-// Everything here lasts for one run. Nothing in this file is saved to the employee profile.
+// Free upgrades last for one wave. Free upgrades reset each wave. Nothing in this file is saved to the employee profile.
 // Tuning constants for the weapon effects.
 export const SPLASH_RADIUS=2.2,SPLASH_DAMAGE=.6;            // water balloon burst
 export const PUDDLE={radius:1.7,life:3.5,slow:.5,bossSlow:.7}; // foam puddle (speed multiplier while inside)
@@ -27,11 +27,24 @@ export const WEAPONS=Object.fromEntries(SOURCE.map(w=>[w.key,{
 }]));
 export const WEAPON_KEYS=SOURCE.map(w=>w.key);
 // Modifier names follow the reference table. `max` caps how many times one upgrade can be taken.
+export const ORB_STYLES={
+  frost_orbs:{name:'Frost',color:'#a6e6ff',role:'attack',damage:.7,cooldown:.6},
+  flame_orbs:{name:'Flame',color:'#ff995c',role:'attack',damage:1.5,cooldown:.8},
+  storm_orbs:{name:'Storm',color:'#d3adff',role:'attack',damage:.8,cooldown:.9},
+  shield_orbs:{name:'Shield',color:'#70afff',role:'defense'},
+  healing_orbs:{name:'Healing',color:'#75efab',role:'support'},
+  haste_orbs:{name:'Haste',color:'#ffe278',role:'support'}
+};
 export const UPGRADES=[
+  {id:'flame_orbs',name:'Flame Orbs',icon:'🔥',max:3,description:'High contact damage: 1.5 damage per orb hit, every 0.8s. No slowing.',modifiers:{}},
+  {id:'storm_orbs',name:'Storm Orbs',icon:'⚡',max:3,description:'0.8 contact damage; arcs to one nearby enemy for half damage. 0.9s cooldown.',modifiers:{}},
+  {id:'shield_orbs',name:'Shield Orbs',icon:'◈',max:2,description:'Reduce contact damage by 15% per orb, up to 30%.',modifiers:{}},
+  {id:'healing_orbs',name:'Healing Orbs',icon:'✚',max:2,description:'Each orb restores 0.5 health every 20 seconds of active play.',modifiers:{}},
+  {id:'haste_orbs',name:'Haste Orbs',icon:'»',max:2,description:'+8% movement and firing speed per orb, up to 16%.',modifiers:{}},
   {id:'pressure_boost',name:'Pressure Boost',icon:'↑',max:12,description:'+25% weapon damage.',modifiers:{damage_multiplier:1.25}},
   {id:'long_reach',name:'Long Reach',icon:'↗',max:4,description:'+15% weapon range.',modifiers:{range_multiplier:1.15}},
   {id:'knockback',name:'Knockback',icon:'➜',max:3,description:'Push enemies farther away with each hit.',modifiers:{}},
-  {id:'coin_magnet',name:'Coin Magnet',icon:'🧲',max:4,description:'+1.5 coin pickup range for blue and gold coins this run.',modifiers:{}},
+  {id:'coin_magnet',name:'Coin Magnet',icon:'🧲',max:4,description:'+1.5 coin pickup range for blue and gold coins this wave.',modifiers:{}},
   {id:'emergency_recovery',name:'Emergency Recovery',icon:'✚',max:1,description:'Restore 2 health immediately. Can be chosen again later.',modifiers:{}},
   {id:'front_stream',name:'Extra Stream +1',icon:'⫴',max:3,description:'Fire an additional stream. Streams fan out in a spread.',modifiers:{projectile_count_add:1,damage_multiplier:.85}},
   {id:'multi_burst',name:'Multi-Burst',icon:'⁝',max:2,description:'Each trigger pull fires an extra stream right behind the first.',modifiers:{burst_count_add:1,attack_speed_multiplier:.85,damage_multiplier:.9}},
