@@ -44,7 +44,7 @@
     {name:'Fire Alarm Proposals',cat:'Quoting', access:'Manager only', page:'faquoting',      url:'fire-alarm-quoting.html', color:'#d12f2f', icon:'bell', desc:'Fire alarm ITM quoting, inspection scope, proposals, and deficiency repair quotes.'},
     {name:'Weekly Time Sheet',       cat:'Team',    access:'Admin only · pending release', page:'timesheet', url:'timesheet.html', color:'#6d3bb5', icon:'clock', desc:'Interactive weekly time sheet for technicians. Locked until released by an administrator.'},
     {name:'SwitchBack TD',          cat:'Break',   access:'Everyone',     page:'bathroom',       url:'switchback/index.html', color:'#b0306a', icon:'tower', desc:'SwitchBack Defense — a quick tower defense game. Beat the waves and climb the leaderboard.'},
-    {name:'Fire Defense', cat:'Break', access:'Approved employees', page:'bathroom', url:'fire-defense/index.html', color:'#C1121C', icon:'firefighter', desc:'Warehouse Response — battle fire creatures, upgrade your firefighting gear, and climb the employee leaderboard.'},
+    {name:'Wet Pipe Dreams', cat:'Break', access:'Approved employees', page:'bathroom', url:'fire-defense/index.html', color:'#C1121C', icon:'firefighter', desc:'Red Tag Rampage — battle fire creatures, upgrade your firefighting gear, and climb the employee leaderboard.'},
     {name:'Administration',          cat:'Admin',   access:'Admin & managers', page:'administration', url:'administration.html', color:'#c08a1e', icon:'admin', desc:'Quote files for managers; full management tools for admins.'},
     {name:'Help',                    cat:'Help',    access:'Everyone',     page:'help',           url:'help.html', color:'#5b6570', icon:'hammer', desc:'Report a bug with a photo, and find quick help on using Quick Hub.'}
   ];
