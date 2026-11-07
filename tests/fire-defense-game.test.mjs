@@ -90,3 +90,15 @@ test('swarm raiders drop no coins and killing one does not count toward regular 
   e.spawnRaid(false);const s=e.enemies[0];const reg=e.defeatedRegular;e.damage(s,999);
   assert.equal(e.coins.length,0);assert.equal(e.defeatedRegular,reg);assert.ok(e.score>=15);
 });
+
+test('regression: an empty map with only a hydrant mid-wave does not crash the step loop',()=>{
+  const e=create();e.newRun();e.enemies=[];e.pending=[];e.specialQueue=[];e.hydrants=[{x:2,y:0,hp:12,maxHp:12,flash:0,id:99}];
+  for(let i=0;i<40;i++)e.step(.05,{x:1,y:0});
+  assert.equal(e.mode,'active');
+  e.hydrants=[];for(let i=0;i<40;i++)e.step(.05,{x:0,y:1});assert.equal(e.mode,'active');
+});
+test('long timed waves with movement run to completion in every room band',()=>{
+  let seed=5;const rng=()=>((seed=(1664525*seed+1013904223)>>>0)/2**32);
+  for(const room of [1,6,13,30]){const e=new Engine(blankProfile('Firefighter'),rng);e.newRun();e.room=room;e.spawnRoom();e.health=e.maxHealth=1e9;
+    for(let i=0;i<6100&&e.mode==='active';i++)e.step(.05,{x:Math.sin(i/40),y:Math.cos(i/55)});assert.notEqual(e.mode,'active','room '+room);}
+});
