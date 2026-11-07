@@ -1,5 +1,5 @@
 import {roomLineup,swarmPool} from './enemy-roster.mjs';
-import {WEAPONS,UPGRADE_BY_ID,computeStats,rollUpgradeOffer,SPLASH_DAMAGE,PUDDLE,CHAIN,SPREAD_DEG,ORBIT} from './weapons.mjs';
+import {WEAPONS,UPGRADE_BY_ID,computeStats,rollUpgradeOffer,SPLASH_DAMAGE,PUDDLE,CHAIN,SPREAD_DEG,ORBIT,ORB_STYLES} from './weapons.mjs';
 export const ROOM_LIMIT = 30;
 // Round arena. The previous 24 × 18 rectangle was 432 units²; this disc is five times that
 // area (2,160 units², about 52.4 units across). width/height are the diameter, kept for callers
@@ -78,18 +78,18 @@ export class Engine {
     this.roomEvent='';this.encounterTimer=0;this.enemies=[];this.shots=[];this.fx=[];this.aim={x:1,y:0};this.moving=false;
     this.cooldown=0;this.specialCooldown=0;this.grace=0;this.charges=0;this.id=0;
     // Per-run loadout (never saved): chosen weapon, upgrade stacks, and the pick offered after a cleared room.
-    this.weapon='hose';this.upgrades={};this.offer=[];this.burstQueue=[];this.interval=.19;
+    this.primaryChosen=false;this.healClock=0;this.weapon='hose';this.upgrades={};this.offer=[];this.burstQueue=[];this.interval=.19;
     this.pending=[];this.specialQueue=[];this.totalRegular=0;this.defeatedRegular=0;this.waveTime=0;this.waveTotal=0;this.spawned=0;this.nextRaid=RAID.first;this.finaleDone=false;
     this.puddles=[];this.orbAngle=0;
     this.hydrants=[];this.coins=[];this.bonuses=[];this.hydrantTimer=0;this.timedLeft=0;this.endTimer=null;
   }
   stats(){
-    const s=computeStats(this.weapon,this.profile,this.upgrades);s.damage*=1.5;
+    const s=computeStats(this.weapon,this.profile,this.upgrades);s.damage*=1.5;s.interval/=1+.08*Math.min(2,this.upgrades.haste_orbs||0);
     if(this.timedLeft>0){s.interval*=.5;s.projectiles+=2;}   // timed special attack: double fire rate, two extra streams
     return s;
   }
-  setWeapon(key){if(!WEAPONS[key]||!['ready','defeat','victory'].includes(this.mode))return false;this.weapon=key;return true;}
-  powerCost(){return Math.min(25,[5,8,12][this.powerLevel]??(12+(this.powerLevel-2)*3));}
+  setWeapon(key){if(!WEAPONS[key]||!['ready','defeat','victory'].includes(this.mode))return false;this.weapon=key;this.primaryChosen=true;return true;}
+  powerCost(){return 3*Math.min(25,[5,8,12][this.powerLevel]??(12+(this.powerLevel-2)*3));}
   pickupRange(){return COIN.range+this.magnetLevel*COIN.magnetStep+(this.upgrades.coin_magnet||0)*1.5;}
   magnetPrice(){return 40*(this.magnetLevel+1);}
   buyMagnet(){
@@ -114,7 +114,7 @@ export class Engine {
   }
   newRun(){
     this.power=0;this.powerLevel=0;this.blueCoins=[];this.dropMisses=0;this.magnetLevel=0;this.resumeLeft=0;
-    this.room=1;this.cleared=0;this.score=0;this.time=0;this.health=this.maxHealth;
+    this.healClock=0;this.room=1;this.cleared=0;this.score=0;this.time=0;this.health=this.maxHealth;
     this.hero={x:0,y:0};this.mode='active';this.grace=1;this.upgrades={};this.offer=[];this.spawnRoom();
   }
   spawnRoom(){
@@ -227,18 +227,35 @@ export class Engine {
     for(let i=0;i<count;i++){const a=this.orbAngle+i*Math.PI*2/count;out.push({x:this.hero.x+Math.cos(a)*ORBIT.radius,y:this.hero.y+Math.sin(a)*ORBIT.radius});}
     return out;
   }
-  /** Frost Orbs circle the hero; an enemy they touch takes damage and is slowed. */
+  orbActors(){
+    const items=[];
+    for(const [kind,spec] of Object.entries(ORB_STYLES)){
+      const n=Math.min(UPGRADE_BY_ID[kind].max,this.upgrades[kind]||0);
+      for(let i=0;i<n;i++)items.push({kind,...spec});
+    }
+    return items.map((o,i)=>{const a=this.orbAngle+i*Math.PI*2/items.length;return {...o,x:this.hero.x+Math.cos(a)*ORBIT.radius,y:this.hero.y+Math.sin(a)*ORBIT.radius};});
+  }
   updateOrbitals(st,dt){
-    if(!(st.orbs>0))return;
+    const healing=Math.min(2,this.upgrades.healing_orbs||0);
+    if(healing){this.healClock+=dt;if(this.healClock>=20){this.healClock-=20;this.health=Math.min(this.maxHealth,Math.round((this.health+.5*healing)*100)/100);}}
     this.orbAngle=(this.orbAngle+ORBIT.speed*dt)%(Math.PI*2);
-    const orbs=this.orbPositions(st.orbs);
+    const orbs=this.orbActors().filter(o=>o.role==='attack'),mult=1+(this.profile.nozzle||0)*.35;
+    if(!orbs.length)return;
     for(const e of [...this.enemies]){
-      if((e.orbCd||0)>this.time)continue;
-      const r=(e.radius??(e.charger?.25:.18))+ORBIT.hitRadius;
-      if(!orbs.some(o=>(o.x-e.x)**2+(o.y-e.y)**2<r*r))continue;
-      e.orbCd=this.time+ORBIT.cooldown;
-      e.slowT=ORBIT.slowTime;e.slowF=e.tier==='boss'?ORBIT.bossSlow:ORBIT.slow;
-      this.damage(e,st.orbDamage,false);
+      for(const kind of new Set(orbs.map(o=>o.kind))){
+        if(e.hp<=0)break;
+        if((e.orbCooldowns?.[kind]||0)>this.time)continue;
+        const r=(e.radius??.18)+ORBIT.hitRadius;
+        const orb=orbs.find(o=>o.kind===kind&&(o.x-e.x)**2+(o.y-e.y)**2<r*r);if(!orb)continue;
+        (e.orbCooldowns??={})[kind]=this.time+orb.cooldown;
+        if(kind==='frost_orbs'){e.slowT=ORBIT.slowTime;e.slowF=e.tier==='boss'?ORBIT.bossSlow:ORBIT.slow;}
+        const origin={x:e.x,y:e.y};this.damage(e,orb.damage*mult);
+        if(kind==='storm_orbs'){
+          let target=null,best=3*3;
+          for(const other of this.enemies){if(other===e)continue;const d=(other.x-origin.x)**2+(other.y-origin.y)**2;if(d<best){best=d;target=other;}}
+          if(target){this.damage(target,orb.damage*mult*.5);this.fx.push({...origin,type:'burst',radius:1,life:.15,total:.15});}
+        }
+      }
     }
   }
   spawnHydrant(){
@@ -295,7 +312,7 @@ export class Engine {
     dt=clamp(dt,0,.05);this.time+=dt;this.encounterTimer=Math.max(0,this.encounterTimer-dt);this.cooldown-=dt;this.grace-=dt;this.specialCooldown=Math.max(0,this.specialCooldown-dt);
     const length=Math.hypot(move.x,move.y),scale=length>1?1/length:1;
     this.moving=length>.01;
-    this.hero.x+=move.x*scale*3.6*SPEED.hero*dt;this.hero.y+=move.y*scale*3.6*SPEED.hero*dt;clampToMap(this.hero,HERO_PAD);
+    this.hero.x+=move.x*scale*3.6*SPEED.hero*(1+.08*Math.min(2,this.upgrades.haste_orbs||0))*dt;this.hero.y+=move.y*scale*3.6*SPEED.hero*(1+.08*Math.min(2,this.upgrades.haste_orbs||0))*dt;clampToMap(this.hero,HERO_PAD);
     this.advanceSpawns(dt);
     this.timedLeft=Math.max(0,this.timedLeft-dt);
     if(this.endTimer===null){
@@ -397,7 +414,7 @@ export class Engine {
       if(e.kt>0){e.x+=e.kvx*dt;e.y+=e.kvy*dt;e.kt-=dt;}
       clampToMap(e,ENEMY_PAD);
       if(this.grace<=0&&Math.hypot(dx,dy)<(e.radius??(e.charger?.25:.18))+HERO_RADIUS){
-        this.health=Math.max(0,Math.round((this.health-(e.attack??1))*100)/100);this.grace=1.1;
+        this.health=Math.max(0,Math.round((this.health-(e.attack??1)*(1-.15*Math.min(2,this.upgrades.shield_orbs||0)))*100)/100);this.grace=1.1;
         this.fx.push({...this.hero,type:'hurt',life:.3,total:.3});
         if(this.health<=0){this.mode='defeat';return'checkpoint';}
       }
@@ -410,8 +427,9 @@ export class Engine {
       this.blueCoins=[];
       for(const k of this.coins)this.profile.credits=clamp(this.profile.credits+k.value,0,1000000);
       this.coins=[];this.bonuses=[];this.hydrants=[];this.enemies=[];this.pending=[];this.specialQueue=[];this.timedLeft=0;
+      this.upgrades={};this.power=0;this.powerLevel=0;this.dropMisses=0;this.healClock=0;
       this.cleared=this.room;this.profile.credits=clamp(this.profile.credits+25+this.room*5,0,1000000);
-      this.health=Math.min(this.maxHealth,this.health+1);this.mode=this.room>=ROOM_LIMIT?'victory':'clear';
+      this.health=Math.min(this.maxHealth,this.health+1);this.mode=this.room>=ROOM_LIMIT?'victory':'clear';this.primaryChosen=false;
       this.offer=this.mode==='clear'?rollUpgradeOffer(this.upgrades,this.random):[];
       this.shots=[];this.burstQueue=[];return'checkpoint';
     }
