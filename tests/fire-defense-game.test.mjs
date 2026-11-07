@@ -156,11 +156,11 @@ test('blue drops include swarm kills, guarantee fifth kill, and cannot duplicate
 });
 test('gold and blue coins collect at expanded range; power pauses all simulation until selection and countdown',()=>{
   const e=create();e.newRun();e.enemies=[];e.pending=[];e.specialQueue=[];
-  assert.equal(e.pickupRange(),3);e.coins=[{x:2.8,y:0,value:7}];e.blueCoins=[{x:2.8,y:0,value:8}];
-  assert.equal(e.step(.01),'upgrade');assert.equal(e.profile.credits,7);assert.equal(e.power,8);assert.equal(e.offer.length,3);
+  assert.equal(e.pickupRange(),3);e.coins=[{x:2.8,y:0,value:7}];e.blueCoins=[{x:2.8,y:0,value:18}];
+  assert.equal(e.step(.01),'upgrade');assert.equal(e.profile.credits,7);assert.equal(e.power,18);assert.equal(e.offer.length,3);
   const time=e.time,wave=e.waveTime,hero={...e.hero};e.step(.05,{x:1,y:0});assert.equal(e.time,time);assert.equal(e.waveTime,wave);assert.deepEqual(e.hero,hero);
   assert.equal(e.chooseUpgrade('invalid'),false);assert.equal(e.chooseUpgrade(e.offer[0]),true);
-  assert.equal(e.power,3);assert.equal(e.powerCost(),8);assert.equal(e.resumeLeft,3);
+  assert.equal(e.power,3);assert.equal(e.powerCost(),24);assert.equal(e.resumeLeft,3);
   for(let i=0;i<60;i++)e.step(.05,{x:1,y:0});assert.equal(e.waveTime,wave);assert.deepEqual(e.hero,hero);
   for(let i=0;i<3;i++)e.step(.05);assert.ok(e.waveTime>wave);
 });
@@ -172,23 +172,24 @@ test('gold magnet purchases increase both pickup ranges, enforce price and cap, 
   e.mode='clear';e.nextRoom();assert.equal(e.magnetLevel,5);assert.equal(e.upgrades.coin_magnet,2);
   e.newRun();assert.equal(e.magnetLevel,0);assert.equal(e.pickupRange(),COIN.range);
 });
-test('power costs cap at 25 and recovery heals without losing excess blue power',()=>{
+test('power costs cap at 75 and recovery heals without losing excess blue power',()=>{
   const e=create();e.newRun();e.power=100;e.health=2;e.mode='upgrade';e.offer=['emergency_recovery'];
-  assert.equal(e.chooseUpgrade('emergency_recovery'),true);assert.equal(e.health,4);assert.equal(e.power,95);
-  e.powerLevel=100;assert.equal(e.powerCost(),25);
+  assert.equal(e.chooseUpgrade('emergency_recovery'),true);assert.equal(e.health,4);assert.equal(e.power,85);
+  e.powerLevel=100;assert.equal(e.powerCost(),75);
   assert.equal(e.stats().damage,computeStats(e.weapon,e.profile,{}).damage*1.5);
 });
 
 test('game initializes upgrade HUD before first resize and can load a saved profile',async()=>{
   const fs=await import('node:fs/promises');
   const markup=await fs.readFile(new URL('../fire-defense/index.html',import.meta.url),'utf8');
-  const nodes=new Map(),noop=()=>{};
+  const nodes=new Map(),noop=()=>{},events=new Map();
+  const listen=(key,fn)=>events.set(key,fn);
   const context=new Proxy({}, {get:()=>noop});
-  function element(){return {hidden:false,style:{},firstChild:{},addEventListener:noop,getContext:()=>context,querySelector:()=>({}),replaceChildren:noop,append:noop,focus:noop,
+  function element(){return {hidden:false,style:{},firstChild:{},addEventListener(name,fn){this.listeners??={};this.listeners[name]=fn;},setPointerCapture:noop,getBoundingClientRect:()=>({left:0,top:0,width:100,height:100}),getContext:()=>context,querySelector:()=>({}),replaceChildren:noop,append:noop,focus:noop,
     set innerHTML(value){for(const match of value.matchAll(/id="([^"]+)"/g))nodes.set(match[1],element());}};}
   for(const match of markup.matchAll(/id="([^"]+)"/g))nodes.set(match[1],element());
   const doc={getElementById:id=>nodes.get(id)||null,createElement:element,addEventListener:noop,body:{append(node){nodes.set(node.id,node);}}};
-  const globals={document:doc,window:{addEventListener:noop},addEventListener:noop,innerWidth:1200,innerHeight:700,devicePixelRatio:1,Image:class {},requestAnimationFrame:noop};
+  const globals={document:doc,window:{addEventListener:(name,fn)=>listen('window:'+name,fn)},addEventListener:(name,fn)=>listen(name,fn),innerWidth:1200,innerHeight:700,devicePixelRatio:1,Image:class {},requestAnimationFrame:noop};
   const previous=new Map(Object.keys(globals).map(k=>[k,Object.getOwnPropertyDescriptor(globalThis,k)]));
   try{
     for(const [k,v] of Object.entries(globals))Object.defineProperty(globalThis,k,{value:v,configurable:true,writable:true});
@@ -196,6 +197,42 @@ test('game initializes upgrade HUD before first resize and can load a saved prof
     assert.ok(nodes.has('power-meter'));assert.ok(nodes.has('resume-countdown'));
     game.loadProfile({...blankProfile('SavedPlayer'),credits:321,nozzle:2});
     assert.equal(game.loaded,true);assert.equal(game.engine.profile.nickname,'SavedPlayer');assert.equal(game.engine.profile.credits,321);
+    assert.equal(nodes.get('continue').disabled,true);
+    assert.equal(game.engine.setWeapon('foam'),true);game.updateView();assert.equal(nodes.get('continue').disabled,false);
+    game.engine.newRun();nodes.get('gate').hidden=true;
+    const canvas=nodes.get('canvas'),zone=nodes.get('joystick-zone');
+    const touch=(id,target=canvas)=>({pointerType:'touch',pointerId:id,target,clientX:40,clientY:40,preventDefault:noop});
+    events.get('window:pointerdown')(touch(1,zone));assert.equal(game.touchPoints.size,0);
+    events.get('window:pointerdown')(touch(2));events.get('window:pointerdown')(touch(3));assert.equal(game.pinchActive,true);
+    events.get('window:pointerup')(touch(3));assert.equal(game.pinchActive,false);
+    game.pointer=null;zone.listeners.pointermove({...touch(4,zone),buttons:1,clientX:90,clientY:50});assert.equal(game.pointer,4);assert.ok(game.stick.x>0);
+    game.keys.add('d');zone.listeners.pointercancel(touch(4,zone));assert.equal(game.pointer,null);assert.equal(game.keys.has('d'),true);
     game.block('Signed out');assert.equal(game.loaded,false);
   }finally{for(const [k,d] of previous){if(d)Object.defineProperty(globalThis,k,d);else delete globalThis[k];}}
+});
+
+test('wave end clears free upgrades and blue progress while gold gear, magnet and primary weapon carry',()=>{
+  const e=create();e.setWeapon('balloon');e.profile.nozzle=2;e.profile.foam=1;e.profile.credits=100;e.newRun();e.buyMagnet();
+  e.upgrades={pressure_boost:3,shield_orbs:2,healing_orbs:1};e.power=14;e.powerLevel=2;e.enemies=[];
+  closeRoom(e);assert.deepEqual(e.upgrades,{});assert.equal(e.power,0);assert.equal(e.powerCost(),15);assert.equal(e.magnetLevel,1);assert.equal(e.profile.nozzle,2);assert.equal(e.weapon,'balloon');
+  const pick=e.offer.find(x=>x!=='emergency_recovery')||e.offer[0];e.chooseUpgrade(pick);const upcoming={...e.upgrades};e.nextRoom();assert.deepEqual(e.upgrades,upcoming);assert.equal(e.weapon,'balloon');
+});
+test('attack orbs have distinct damage, slowing and chain effects without repeated hits inside cooldown',()=>{
+  for(const kind of ['frost_orbs','flame_orbs','storm_orbs']){
+    const e=create();e.newRun();e.enemies=[];e.upgrades={[kind]:1};
+    const target={...BASE_ENEMIES[0],x:2.3,y:0,hp:100,maxHp:100},near={...BASE_ENEMIES[0],x:3.5,y:0,hp:100,maxHp:100};e.enemies=[target,near];
+    e.updateOrbitals(e.stats(),0);assert.ok(target.hp<100);
+    assert.equal(!!target.slowT,kind==='frost_orbs');assert.equal(near.hp<100,kind==='storm_orbs');
+    const hp=target.hp;e.updateOrbitals(e.stats(),0);assert.equal(target.hp,hp);
+    if(kind==='flame_orbs')assert.equal(target.hp,98.5);
+  }
+});
+test('defensive and support orbs have capped mitigation, timed healing and limited haste',()=>{
+  const e=create();e.newRun();e.cooldown=1e6;e.grace=0;e.upgrades={shield_orbs:2};
+  e.enemies=[{x:0,y:0,hp:1e6,maxHp:1e6,speed:0,attack:2,timer:0,flash:0}];e.step(.01);assert.equal(e.health,4.6);
+  e.enemies=[];e.upgrades={healing_orbs:2};e.health=3;
+  for(let i=0;i<401;i++)e.updateOrbitals(e.stats(),.05);assert.equal(e.health,4);
+  e.upgrades={haste_orbs:2};const base=computeStats(e.weapon,e.profile,{});assert.ok(Math.abs(e.stats().interval-base.interval/1.16)<1e-10);
+  const x=e.hero.x;e.step(.05,{x:1,y:0});assert.ok(Math.abs(e.hero.x-x-3.6*SPEED.hero*1.16*.05)<1e-10);
+  e.upgrades={frost_orbs:4,flame_orbs:3,storm_orbs:3,shield_orbs:2,healing_orbs:2,haste_orbs:2};assert.equal(e.orbActors().length,16);assert.equal(new Set(e.orbActors().map(x=>x.color)).size,6);
 });
