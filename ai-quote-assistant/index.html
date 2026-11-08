@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <base href="../"><meta name="theme-color" content="#102b4e">
+  <meta name="fdec-page-title" content="AI Quote Assistant">
+  <title>AI Quote Assistant | Fire Defense</title>
+  <link rel="icon" href="icon-192.png"><link rel="stylesheet" href="ai-quote-assistant/style.css">
+  <script defer src="fdec-header.js"></script>
+  <script defer src="ai-quote-assistant/config.js"></script>
+</head>
+<body>
+<nav class="topnav no-print" aria-label="Page navigation"><a href="index.html">← Quick Hub</a><span>FDEC / QUOTING</span><a href="quoting.html">Quote &amp; Verbiage Suite ↗</a></nav>
+<main id="workspace" hidden>
+  <header class="hero no-print"><div><span class="eyebrow">FROM FIELD NOTES TO FIRST DRAFT</span><h1>AI Quote Assistant<span class="spark">✦</span></h1><p>Bring the findings. Build the scope. Review every detail.</p></div><span class="pill" id="connection">Checking AI connection…</span></header>
+  <div class="steps no-print" aria-label="Workflow"><span><b>01</b> Add reports &amp; notes</span><span><b>02</b> Review the draft</span><span><b>03</b> Send to your quote</span></div>
+  <p id="notice" class="notice no-print" role="status" aria-live="polite">Checking your account…</p>
+  <div class="layout no-print">
+    <aside class="sources">
+      <section class="panel"><div class="panel-head"><div><span class="eyebrow">01 / SOURCE MATERIAL</span><h2>Start with the job</h2></div><span class="tiny-tag">MANAGER / ADMIN</span></div>
+        <fieldset id="source-fields">
+          <label>Quote type<select id="quote-type"><option value="repair">Sprinkler repairs / deficiencies</option><option value="annual">Annual inspection &amp; testing</option><option value="install">Sprinkler installation / alterations</option><option value="backflow">Backflow services</option><option value="fire-alarm">Fire alarm deficiencies</option></select></label>
+          <details class="job-details"><summary>Known job details <small>Optional — improves matching</small></summary><div id="input-job" class="fields"></div></details>
+          <label class="drop" id="drop-zone" for="pdfs"><span class="upload-icon" aria-hidden="true">↥</span><strong>Drop inspection reports here</strong><span>or tap to choose PDFs</span><small>Up to 5 PDFs · 8 MB each · 12 MB combined</small><input id="pdfs" type="file" accept=".pdf,application/pdf" multiple></label>
+          <ul id="files" class="file-list" aria-label="Attached reports"></ul>
+          <label for="tech-notes">Technician comments &amp; reported deficiencies<textarea id="tech-notes" rows="8" maxlength="40000" placeholder="Paste the technician’s findings, system numbers, locations, equipment details, and any requested work…"></textarea></label>
+          <p class="helper">Documents are sent for AI processing only when you click Analyze. Attach reports for one job at a time.</p>
+          <label class="check consent"><input type="checkbox" id="consent">Send these job notes and reports for AI analysis.</label>
+        </fieldset>
+        <div class="source-actions"><button class="primary" id="analyze" disabled>✦ Analyze &amp; draft scope</button><button id="manual">Prepare a manual draft</button></div>
+        <div class="busy" id="busy" hidden><span class="spinner"></span><span>Reading reports and preparing your draft…</span><button id="cancel" class="text-button">Cancel</button></div>
+      </section>
+      <details class="panel setup"><summary>Connection &amp; setup <span id="setup-state">Checking</span></summary><p id="setup-message">Checking the secure AI service.</p><button id="recheck">Check connection</button><a href="https://github.com/302stang86/QUICK-HUB/blob/main/ai-quote-assistant/SETUP.md" target="_blank" rel="noopener">Administrator setup guide ↗</a><p class="helper">Your OpenAI API key belongs in the secure backend. Never enter it on this page.</p></details>
+      <section class="panel draft-tools"><h3>Your draft</h3><p class="helper">Save on this device or download a draft to continue later. PDF attachments are excluded.</p><div class="button-row"><button id="save-local">Save on device</button><button id="load-local">Load saved</button><button id="download">Download draft</button><label class="button" for="load-file">Open draft<input id="load-file" type="file" accept=".fdecai,.json,application/json" hidden></label><button id="clear" class="text-button danger">Clear workspace</button></div></section>
+    </aside>
+    <section class="review panel" aria-labelledby="review-heading">
+      <div class="panel-head"><div><span class="eyebrow">02 / REVIEW &amp; REFINE</span><h2 id="review-heading">Your quote starts here</h2></div><span class="tiny-tag" id="draft-mode">NO DRAFT YET</span></div>
+      <div id="empty" class="empty"><div class="empty-icon" aria-hidden="true">✦</div><h3>A clearer path from report to quote.</h3><p>Add the technician’s findings and inspection reports. The assistant will organize the work, draft the scope, and flag details to confirm.</p><div class="empty-features"><span>Source references</span><span>Editable scope</span><span>FDEC verbiage</span></div><p class="helper">You review the scope and add pricing in your quote tools.</p></div>
+      <div id="draft-editor" hidden>
+        <p class="review-note">Review against the original report before using the draft. Suggested clauses stay unselected until you choose them.</p>
+        <details open><summary>Customer &amp; job information</summary><div id="review-job" class="fields grid2"></div><div id="job-sources"></div></details>
+        <details open><summary>Details to confirm <span id="question-count" class="count">0</span></summary><div id="questions"></div><div id="conflicts"></div><label>Internal summary<textarea id="summary" rows="2" maxlength="4000"></textarea></label></details>
+        <label>Customer introduction<textarea id="introduction" rows="3" maxlength="4000"></textarea></label>
+        <div class="section-heading"><h3>Scope of work <span id="scope-count" class="count">0</span></h3><button id="add-item">+ Add item</button></div><div id="items"></div>
+        <div class="section-heading"><h3>Suggested FDEC verbiage</h3><button id="add-clause">+ Add clause</button></div><div id="clauses"></div>
+        <details><summary>Preview selected customer wording</summary><pre id="preview"></pre></details>
+        <div class="finish"><span class="eyebrow">03 / CONTINUE TO QUOTE</span><label class="check"><input type="checkbox" id="reviewed">I reviewed the selected scope, quantities, and wording against the source information.</label><div class="button-row"><button id="transfer" class="primary">Send selected items to quote →</button><button id="copy">Copy selected wording</button><button id="print">Print / Save PDF</button></div><p class="helper">The quote tool will ask before applying your draft. Existing pricing and labor stay under your control.</p></div>
+      </div>
+    </section>
+  </div>
+</main>
+<pre id="print-document"></pre>
+<script type="module" src="fdec-auth.js" data-page="quoting"></script>
+<script type="module" src="ai-quote-assistant/app.mjs"></script>
+</body></html>

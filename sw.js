@@ -13,9 +13,15 @@
      - Everything else (Firestore API, etc.): straight to network — Firestore's
        own offline mode handles those when there is no signal.
 */
-const CACHE = 'fdec-quickhub-v136-remove-retired-game';
+const CACHE = 'fdec-quickhub-v137-ai-quote-assistant';
 
 const CORE = [
+  "ai-quote-assistant/index.html",
+  "ai-quote-assistant/style.css",
+  "ai-quote-assistant/app.mjs",
+  "ai-quote-assistant/config.js",
+  "ai-quote-assistant/transfer.mjs",
+  "ai-quote-assistant/functions/core.mjs",
   "troubleshooting-data.js",
   "troubleshooting-ui.js",
   "gem-a6.pdf",
@@ -174,3 +180,4 @@ async function cacheFirst(req) {
     return cached || new Response('', { status: 504 });
   }
 }
+

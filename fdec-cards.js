@@ -5,6 +5,7 @@
 (function(){
   "use strict";
   var ICONS = {
+    aiquote:'<path d="M14 2H5a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7M14 2v6h6M7 12h5M7 16h7"/><path d="m19 2 1 3 3 1-3 1-1 3-1-3-3-1 3-1z"/>',
     book:'<path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>',
     gearwrench:'<g transform="translate(11.2 -1.2) scale(0.5)"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></g><g transform="translate(-1.5 4) scale(0.72)"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></g>',
     megaphone:'<path d="m3 11 15-5v12L3 15v-4z"/><path d="M18 8a3 3 0 0 1 0 6"/><path d="M7 15.5V19a1 1 0 0 0 1 1h1.5a1 1 0 0 0 1-1v-2.5"/>',
@@ -39,6 +40,7 @@
     {name:'Tech Cards', cat:'Tech', access:'', page:'home', anyOf:['inventory','fleet','timeoff','oncall'], url:'tech-cards.html', color:'#2b4a80', icon:'techcards', desc:'Personal inventory, fleet service, time-off requests, and the on-call rotation.'},
     {name:'Local Dispatch Numbers',  cat:'Field',   access:'',             page:'dispatch',       url:'fire-dispatch-directory.html', color:'#6d3bb5', icon:'pin', desc:'Fire department dispatch numbers by city — searchable, tap to call.'},
     {name:'Fleet Service Records',   cat:'Management', access:'', page:'fleet', url:'fleet-requests.html', color:'#2c6950', icon:'clipboard-check', desc:'Review assigned fleet requests, update status, and print service reports.', roles:['manager','admin']},
+    {name:'AI Quote Assistant', cat:'Quoting', access:'Managers & admins', page:'quoting', url:'ai-quote-assistant/index.html', color:'#1764a5', icon:'aiquote', roles:['manager','admin'], desc:'Turn technician notes and inspection PDFs into an editable quote scope. Review findings, select FDEC wording, and send to your quote.'},
     {name:'Quoting & Proposal Suite',cat:'Quoting', access:'Manager only', page:'quoting',        url:'quoting.html', color:'#1565c0', icon:'quote', desc:'Sprinkler ITM quoting and proposal verbiage.'},
     {name:'Fire Alarm Proposals',cat:'Quoting', access:'Manager only', page:'faquoting',      url:'fire-alarm-quoting.html', color:'#d12f2f', icon:'bell', desc:'Fire alarm ITM quoting, inspection scope, proposals, and deficiency repair quotes.'},
     {name:'Weekly Time Sheet',       cat:'Team',    access:'Admin only · pending release', page:'timesheet', url:'timesheet.html', color:'#6d3bb5', icon:'clock', desc:'Interactive weekly time sheet for technicians. Locked until released by an administrator.'},
@@ -111,3 +113,4 @@
 
   window.FDEC_CARDS = { ICONS: ICONS, LINKS: LINKS, GROUPS: { fieldtools: FIELD_TOOLS, techcards: TECH_CARDS }, render: render };
 })();
+

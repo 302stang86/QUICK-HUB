@@ -1,0 +1,799 @@
+{
+  "repair": {
+    "scope": [
+      {
+        "text": "Perform the 5-year internal pipe inspection on one (1) wet fire sprinkler riser.",
+        "subs": [
+          "Provide a written internal condition assessment report."
+        ]
+      },
+      {
+        "text": "Perform the 5-year internal pipe inspection on one (1) antifreeze fire sprinkler riser.",
+        "subs": [
+          "Replace existing non-UL-listed antifreeze solution with FeezeMaster antifreeze solution."
+        ]
+      },
+      {
+        "text": "Perform the 5-year internal pipe inspection on one (1) pre-action fire sprinkler riser.",
+        "subs": [
+          "Flush the system if obstructing foreign material is found, on a time-and-materials basis."
+        ]
+      },
+      {
+        "text": "Perform the 5-year internal pipe inspection on one (1) dry fire sprinkler riser.",
+        "subs": [
+          "Flush the system if obstructing foreign material is found, on a time-and-material basis.",
+          "Provide a written internal condition assessment report."
+        ]
+      },
+      {
+        "text": "Perform the 5-year internal pipe inspection per NFPA 25 the following:",
+        "subs": [
+          "One (1) wet sprinkler system.",
+          "One (1) dry sprinkler system.",
+          "One (1) antifreeze sprinkler system.",
+          "One (1) preaction sprinkler system.",
+          "One (1) deluge sprinkler system."
+        ]
+      },
+      "Perform the 5-Year Internal Inspection of the fire department connection (FDC) check valve.",
+      {
+        "text": "Perform the 5-Year Hydrostatic Test on the FDC pipe between the fire department connection and the FDC check valve.",
+        "subs": [
+          "Include replacing the automatic ball drip.",
+          "Includes replacing FDC breakaway caps.",
+          "Includes replacing fittings removed for testing purposes with new."
+        ]
+      },
+      {
+        "text": "Perform the Dry Valve 3-Year Full Trip testing.",
+        "subs": [
+          "Perform dry system flushing."
+        ]
+      },
+      "Return 2–4 weeks later to drain any residual water from the drum drip and low-point drains.",
+      "Furnish and install one (1) new system pressure gauge(s) and associated 3-way valves.",
+      {
+        "text": "Install the proper sprinklers, wrench, and equipment list in the spare head cabinet.",
+        "subs": [
+          "Any non-stock sprinklers identified during this work will be quoted separately. These are sprinklers outside our standard inventory — specialty models, discontinued or obsolete models, or non-standard finishes, temperature ratings, or K-factors — that require special order from the manufacturer."
+        ]
+      },
+      "Survey to install the proper sprinklers, wrench, and equipment list in the spare head cabinet.",
+      {
+        "text": "Replace approximately ( ) painted sprinklers.",
+        "subs": [
+          "Any painted, corroded or sprinklers identified as unable to be cleaned during these repairs while using a lift will be quoted separately. These conditions may not have been visible from floor level during the annual inspection."
+        ]
+      },
+      "Replace approximately ( ) missing escutcheons.",
+      "Replace approximately ( ) missing painted concealed sprinkler cover plates.",
+      {
+        "text": "Install the proper missing system signage.",
+        "subs": [
+          "Includes Control Valve signage.",
+          "Includes Main Drain signage.",
+          "Includes Inspector's Test Valve signage.",
+          "Includes Auxiliary Drain signage.",
+          "Includes Drum Drip Valve signage.",
+          "Includes System and Riser information signage.",
+          "Includes System and Riser identification signage."
+        ]
+      },
+      {
+        "text": "Perform 10-Year sample testing on four (4) dry barrel sprinklers, including replacement of the four (4) sample sprinklers with new sprinklers, per NFPA 25 (2017 Edition), Sections 5.3.1.1.1.6 and 5.3.1.2. Per Section 5.3.1.3: where one sprinkler within a representative sample fails to meet the test requirement, all sprinklers within the area represented by that sample shall be replaced.",
+        "subs": [
+          "Zone 1- Area.",
+          "Zone 2- Area.",
+          "Zone 3- Area.",
+          "Zone 4- Area."
+        ]
+      },
+      "Replace ( ) dry barrel sprinklers in lieu of 10-Year sample testing, per NFPA 25 (2017 Edition), Sections 5.3.1.1.1.6 and 5.3.1.2. Replacement is more cost-effective than testing.",
+      {
+        "text": "Perform 20-Year sample testing on four (4) quick-response sprinklers, including replacement of the four (4) sample sprinklers with new sprinklers, per NFPA 25 (2017 Edition), Sections 5.3.1.1.1.3 and 5.3.1.2. Per Section 5.3.1.3: where one sprinkler within a representative sample fails to meet the test requirement, all sprinklers within the area represented by that sample shall be replaced.",
+        "subs": [
+          "Zone 1- Area.",
+          "Zone 2- Area.",
+          "Zone 3- Area.",
+          "Zone 4- Area."
+        ]
+      },
+      "Replace approximately one (1) quick-response sprinkler in lieu of performing the 20-Year sample testing, per NFPA 25 (2017 Edition), Sections 5.3.1.1.1.3 and 5.3.1.2. Replacement is more cost-effective than testing.",
+      {
+        "text": "Perform the 50-Year sample testing on four (4) 50-year-old sprinklers, including replacement of the four (4) sample sprinklers with new sprinklers, per NFPA 25 (2017 Edition), Sections 5.3.1.1.1 and 5.3.1.2. Per Section 5.3.1.3: where one sprinkler within a representative sample fails to meet the test requirement, all sprinklers within the area represented by that sample shall be replaced.",
+        "subs": [
+          "Zone 1- Area.",
+          "Zone 2- Area.",
+          "Zone 3- Area.",
+          "Zone 4- Area."
+        ]
+      },
+      "Install an Inspector's Test Valve (ITV) on the system — none currently installed — per NFPA 13 (2010 Edition), Section 8.17.4.2.1.",
+      {
+        "text": "Remove and replace the existing failing waterflow switch with a new waterflow switch.",
+        "subs": [
+          "Includes wiring of the new waterflow switch.",
+          "Includes adjusting the time delay between 60-90 seconds for activation.",
+          "Includes testing the proper activation of the new waterflow switch. (Alarms will activate)"
+        ]
+      },
+      {
+        "text": "Clean and survey lightly loaded sprinklers throughout.",
+        "subs": [
+          "Any painted, corroded or sprinklers identified as unable to be cleaned during these repairs while using a lift will be quoted separately. These conditions may not have been visible from floor level during the annual inspection."
+        ]
+      },
+      {
+        "text": "Complete an internal video inspection of the underground lead-in piping.",
+        "subs": [
+          "Perform a video pipe inspection of the underground fire service main, run from the base of the riser to the city main control valve, to determine whether the piping has been compromised, damaged, or obstructed by foreign objects, debris accumulation, or a partially closed valve along the full length of the run. If the findings require further action, a separate proposal will be issued for the necessary repairs."
+        ]
+      }
+    ],
+    "notes": [
+      "When replacing sprinklers in drywall or decorative ceilings, access holes may need to be cut in the ceiling. Patching of any access holes is the customer's responsibility and is not included in this quotation.",
+      "The location of the FDC check valve is not currently known. It will be serviced if accessible. If it is not accessible, it will not be serviced unless access can be arranged.",
+      "The customer is responsible for maintaining a Fire Watch while the fire sprinkler system is shut down.",
+      "The customer must clear the Riser Room prior to the start of work.",
+      "This price is based on the customer providing a scissor or boom lift at no cost. The lift must be dedicated to our crew continuously from 8:00 a.m. to 4:30 p.m.",
+      "Wiring of the control valve supervisory switches is to be performed by the customer's alarm contractor and is not included in this quotation.",
+      "This price is based on the customer providing a licensed electrician to wire the new pump and controller. Electrical work is not included in this quotation.",
+      "This price is based on the customer providing a licensed electrician to wire the new air compressor. Electrical work is not included in this quotation.",
+      "The FDC Hydrostatic Test may only be performed when the outside temperature is consistently above 40°F and will be scheduled accordingly.",
+      "This work has been quoted as subcontracted to Guardian Automatic Sprinkler Corporation under the direct supervision of Fire Defense Equipment Co.",
+      "This work requires a city water supply shutdown to the fire protection system. Depending on the configuration of the service, this may also interrupt the building's domestic water supply for the duration of the work. Anticipate a four (4) to six (6) hour shutdown window.",
+      "A down payment of $____________ is required prior to scheduling or commencing work.",
+      "Due to fluctuating material costs and delivery lead times, materials will be ordered upon approval of this quotation and invoiced upon receipt.",
+      "This work includes surveys and investigations that may prompt additional proposals based on the findings."
+    ],
+    "quals": [
+      "Unless otherwise noted, all work will be performed during normal business hours (Monday–Friday, 7:00 a.m. to 5:00 p.m.), excluding holidays.",
+      "This quotation is not a design review to determine whether the building or equipment is properly protected or whether the system was installed correctly. If verification of proper protection or installation is required, a complete building and system survey can be performed at an additional cost.",
+      "During hydrostatic testing, Fire Defense Equipment Co. is not responsible for any damages resulting from leaking or burst pipe or fittings on existing system components. Any required repair or replacement will be invoiced at additional cost.",
+      "Existing fittings must be disassembled to perform the 5-year internal pipe inspection. Fire Defense Equipment Co. is not responsible for, and this quotation does not include, replacement of existing pipe or fittings that leak following reassembly due to age or condition.",
+      "During the underground pipe investigation, Fire Defense Equipment Co. is not responsible for any damage, leaks, or burst pipe or fittings found on existing underground system components. Any required repair or replacement will be quoted separately."
+    ],
+    "resp": [
+      "Ensuring all areas of fire protection work are accessible and clear of stock, furniture, or any materials that may hinder installation",
+      "Providing timely access to all locked rooms, if applicable",
+      "Ensuring the proper operation of the building's fire alarm system and contacting the fire alarm monitoring company and fire department, if applicable",
+      "Mitigating any safety hazards caused by drained system water that may freeze on walkways or parking lots during freezing weather conditions"
+    ],
+    "incexc": [
+      {
+        "text": "Labor",
+        "mode": "inc"
+      },
+      {
+        "text": "Materials",
+        "mode": "inc"
+      },
+      {
+        "text": "Clean-environment draining procedures",
+        "mode": "inc"
+      },
+      {
+        "text": "Fabrication and installation",
+        "mode": "inc"
+      },
+      {
+        "text": "Freight and cartage of equipment and materials to the site",
+        "mode": "inc"
+      },
+      {
+        "text": "Overtime labor, second-shift premium, or prevailing wage rates",
+        "mode": "exc"
+      },
+      {
+        "text": "Any other labor or materials not listed above",
+        "mode": "exc"
+      },
+      {
+        "text": "Fire Watch",
+        "mode": "exc"
+      },
+      {
+        "text": "Repair or replacement of any materials that fail 5-Year internal testing or investigation",
+        "mode": "exc"
+      },
+      {
+        "text": "Painting or pipe identification",
+        "mode": "exc"
+      },
+      {
+        "text": "Cutting, repairing, replacing, fireproofing, or painting any ceiling or wall materials",
+        "mode": "exc"
+      },
+      {
+        "text": "Fire alarm system testing, repair, or materials",
+        "mode": "exc"
+      },
+      {
+        "text": "Electrical materials or labor",
+        "mode": "exc"
+      },
+      {
+        "text": "Wiring of supervisory switches",
+        "mode": "exc"
+      },
+      {
+        "text": "Annual backflow preventer testing",
+        "mode": "exc"
+      },
+      {
+        "text": "Submittal drawings",
+        "mode": "exc"
+      },
+      {
+        "text": "Plan review and permit fees (cost plus 10%), if required",
+        "mode": "exc"
+      },
+      {
+        "text": "Pressure testing",
+        "mode": "exc"
+      },
+      {
+        "text": "Scaffolding",
+        "mode": "exc"
+      },
+      {
+        "text": "Scissor or boom lift",
+        "mode": "exc"
+      },
+      {
+        "text": "System design",
+        "mode": "exc"
+      },
+      {
+        "text": "Michigan sales tax",
+        "mode": "exc"
+      }
+    ]
+  },
+  "annual": {
+    "scope": [
+      {
+        "text": "Perform the Annual Inspection and Testing on one (1) wet pipe fire sprinkler system.",
+        "subs": [
+          "Including one (1) wall post indicator valve (PIV).",
+          "Including two (2) control valve supervisory switches.",
+          "Including three (3) waterflow switches.",
+          "Including one (1) elevator control valve.",
+          "Including four (4) sectional valves."
+        ]
+      },
+      "Perform the Annual Inspection and Testing on one (1) yard post indicator valve (PIV).",
+      "Perform the Annual Inspection and Testing on one (1) dry pipe fire sprinkler system.",
+      "Perform the Annual Inspection and Testing on one (1) antifreeze fire suppression system.",
+      "Perform the Annual Inspection and Testing on one (1) pre-action fire suppression system.",
+      "Perform the Annual Inspection and Testing on one (1) dry standpipe system.",
+      "Perform the Annual Testing on two (2) fire system backflow preventers.",
+      "Perform the Annual Inspection and Testing on one (1) fire pump.",
+      "Perform the Annual Inspection and Testing on one (1) electric fire pump drive motor.",
+      "Perform the Annual Inspection, Testing, and Maintenance on one (1) diesel fire pump drive engine.",
+      "Perform the Annual Inspection on ( ) portable fire extinguishers.",
+      "Perform the Annual 90-Minute Illuminated Emergency Light Testing on ( ) units."
+    ],
+    "notes": [
+      "If the building is equipped with a fire alarm system, testing the sprinkler system will activate it. The customer must have any required reset codes available prior to the start of work.",
+      "If the fire alarm is connected to a central station monitoring company, the customer must contact the monitoring company in advance to place the system on TEST to prevent a false dispatch to the fire department.",
+      "Dry pipe systems are tested between May and September only."
+    ],
+    "quals": [
+      "Unless otherwise noted, all work will be performed during normal business hours (Monday–Friday, 8:00 a.m. to 4:30 p.m.), excluding holidays.",
+      "This quotation is not a survey to determine whether the building is properly protected or whether the system was correctly installed. It is solely a test of the components listed above and a visual inspection of sprinkler head condition. If verification of compliance regarding proper protection or installation is required, a complete building and system survey must be conducted at an additional cost.",
+      "Fire Defense Equipment Co. is not responsible for water damage caused by a clogged or overflowing drain.",
+      "Fire Defense Equipment Co. is not responsible for replacing equipment that fails during testing due to abuse, misuse, or normal wear and tear."
+    ],
+    "resp": [
+      "Ensuring all areas around the sprinkler risers and fire protection equipment are accessible and clear of stock, furniture, or any materials that may hinder work.",
+      "Providing timely access to all locked rooms.",
+      "Ensuring the proper operation of the building's fire alarm system and contacting the fire alarm monitoring company and fire department, if applicable.",
+      "Mitigating any safety hazards caused by drained system water that may freeze on walkways or parking lots during freezing weather conditions.",
+      "NFPA 25 requires weekly, monthly, quarterly, and semi-annual inspections and maintenance. These are not included in this quotation."
+    ],
+    "incexc": [
+      {
+        "text": "Main drain test",
+        "mode": "inc"
+      },
+      {
+        "text": "Testing of all supervisory switches",
+        "mode": "inc"
+      },
+      {
+        "text": "Testing of all waterflow alarm devices",
+        "mode": "inc"
+      },
+      {
+        "text": "Full exercise of all control valves",
+        "mode": "inc"
+      },
+      {
+        "text": "Exercise and lubrication of all OS&Y control valves",
+        "mode": "inc"
+      },
+      {
+        "text": "Exercise and lubrication of all wall and yard PIV control valves",
+        "mode": "inc"
+      },
+      {
+        "text": "Inspection, exercise, and lubrication of the fire department connection",
+        "mode": "inc"
+      },
+      {
+        "text": "Inspection, exercise, and lubrication of all pit valves",
+        "mode": "inc"
+      },
+      {
+        "text": "Testing of the dry valve low air pressure alarm",
+        "mode": "inc"
+      },
+      {
+        "text": "Full trip test of the dry valve",
+        "mode": "inc"
+      },
+      {
+        "text": "Internal inspection and cleanout of the dry valve",
+        "mode": "inc"
+      },
+      {
+        "text": "Opening and draining of all dry system drum drips and drains",
+        "mode": "inc"
+      },
+      {
+        "text": "Annual dry system air compressor testing",
+        "mode": "inc"
+      },
+      {
+        "text": "Annual pre-action releasing panel inspection and testing",
+        "mode": "inc"
+      },
+      {
+        "text": "Annual antifreeze sample testing",
+        "mode": "inc"
+      },
+      {
+        "text": "Floor-level visual inspection of sprinkler head condition (common areas only, per customer direction, and only in areas to which access is granted)",
+        "mode": "inc"
+      },
+      {
+        "text": "Written report of visible system condition and test results for all fire sprinkler systems",
+        "mode": "inc"
+      },
+      {
+        "text": "Annual fire pump visual inspection and performance testing",
+        "mode": "inc"
+      },
+      {
+        "text": "Annual electric motor visual inspection and performance testing",
+        "mode": "inc"
+      },
+      {
+        "text": "Annual diesel engine visual inspection, performance testing, and maintenance",
+        "mode": "inc"
+      },
+      {
+        "text": "Written report of visible condition and test results for the fire pump and drives",
+        "mode": "inc"
+      },
+      {
+        "text": "IROL (Inspection Report On-Line) reporting, as required by the local fire department",
+        "mode": "inc"
+      },
+      {
+        "text": "Annual backflow preventer testing",
+        "mode": "exc"
+      },
+      {
+        "text": "Annual fire pump testing",
+        "mode": "exc"
+      },
+      {
+        "text": "Annual fire alarm system testing",
+        "mode": "exc"
+      },
+      {
+        "text": "Annual standpipe inspection, testing, and maintenance — excluded per customer request",
+        "mode": "exc"
+      },
+      {
+        "text": "Annual dry pipe system inspection, testing, and maintenance",
+        "mode": "exc"
+      },
+      {
+        "text": "Annual pre-action system inspection, testing, and maintenance",
+        "mode": "exc"
+      },
+      {
+        "text": "Annual antifreeze system inspection, testing, and maintenance",
+        "mode": "exc"
+      },
+      {
+        "text": "Inspection, exercise, and lubrication of pit valves",
+        "mode": "exc"
+      },
+      {
+        "text": "Annual private fire hydrant inspection and testing",
+        "mode": "exc"
+      },
+      {
+        "text": "Annual fire extinguisher maintenance",
+        "mode": "exc"
+      },
+      {
+        "text": "Annual emergency light testing",
+        "mode": "exc"
+      },
+      {
+        "text": "Fire extinguisher recharging, 6-year maintenance, and hydrotesting",
+        "mode": "exc"
+      },
+      {
+        "text": "NFPA 25 required weekly, monthly, quarterly, and semi-annual inspections and maintenance",
+        "mode": "exc"
+      },
+      {
+        "text": "Labor or materials required to bring a non-compliant system into compliance",
+        "mode": "exc"
+      },
+      {
+        "text": "Any other labor or materials not listed above",
+        "mode": "exc"
+      }
+    ]
+  },
+  "install": {
+    "scope": [
+      "Provide all labor, materials, equipment, supervision, and permits required to furnish and install a complete wet pipe fire sprinkler system at the subject location in accordance with NFPA 13 and all applicable local codes and authority having jurisdiction (AHJ) requirements.",
+      "Perform site evaluation and verification of existing building conditions.",
+      "Prepare hydraulic calculations and system design drawings.",
+      "Submit shop drawings, product data, and calculations for review and approval by the AHJ prior to installation.",
+      "Provide as-built drawings.",
+      "Provide basic training to the owner's personnel on the operation of system valves and general maintenance requirements."
+    ],
+    "notes": [
+      "The system shall be designed in accordance with the requirements of NFPA 13. Attainment of the required density is based upon adequate city water supply being available.",
+      "This work has been quoted as subcontracted to Guardian Automatic Sprinkler Corporation under the direct supervision of Fire Defense Equipment Co.",
+      "A down payment of $____________ is required prior to scheduling or commencing work.",
+      "Due to fluctuating costs and delivery times, we will order the materials when this work is approved and invoice them when received."
+    ],
+    "quals": [
+      "Unless otherwise noted, all work will be performed during normal business hours (Monday–Friday, 7:00 a.m. to 5:00 p.m.), excluding holidays.",
+      "During hydrostatic testing, Fire Defense Equipment Co. is not responsible for any damages resulting from leaking or burst pipe or fittings on existing system components. Any required repair or replacement will be invoiced at additional cost."
+    ],
+    "resp": [
+      "Ensuring all areas of fire protection work are accessible and clear of stock, furniture, or any materials that may hinder installation",
+      "Providing timely access to all locked rooms, if applicable",
+      "Ensuring the proper operation of the building's fire alarm system and contacting the fire alarm monitoring company and fire department, if applicable",
+      "Mitigating any safety hazards caused by drained system water that may freeze on walkways or parking lots during freezing weather conditions"
+    ],
+    "incexc": [
+      {
+        "text": "Brass upright and chrome pendant sprinkler heads",
+        "mode": "inc"
+      },
+      {
+        "text": "Black steel pipe, fittings, and hangers",
+        "mode": "inc"
+      },
+      {
+        "text": "One (1) double-check detector assembly backflow preventer",
+        "mode": "inc"
+      },
+      {
+        "text": "Backflow testing",
+        "mode": "inc"
+      },
+      {
+        "text": "Two (2) control valves with supervisory switches (wiring by others)",
+        "mode": "inc"
+      },
+      {
+        "text": "One (1) fire department connection on building exterior — (CITY) standard specification",
+        "mode": "inc"
+      },
+      {
+        "text": "One (1) water flow switch (wiring by others)",
+        "mode": "inc"
+      },
+      {
+        "text": "Spare sprinkler cabinet with spare sprinkler heads and wrench",
+        "mode": "inc"
+      },
+      {
+        "text": "Water flow test as necessary to complete hydraulic calculations",
+        "mode": "inc"
+      },
+      {
+        "text": "Design drawings for review by (City) Fire Department",
+        "mode": "inc"
+      },
+      {
+        "text": "Fabrication and installation",
+        "mode": "inc"
+      },
+      {
+        "text": "Freight and cartage of equipment and materials to the site",
+        "mode": "inc"
+      },
+      {
+        "text": "Pressure testing per NFPA 13",
+        "mode": "inc"
+      },
+      {
+        "text": "(City) fire suppression permit and fees",
+        "mode": "inc"
+      },
+      {
+        "text": "Premium time labor",
+        "mode": "exc"
+      },
+      {
+        "text": "Electrical wiring or fire alarm systems",
+        "mode": "exc"
+      },
+      {
+        "text": "Painting or pipe identification",
+        "mode": "exc"
+      },
+      {
+        "text": "Fire hose racks, reels, or fire extinguishers",
+        "mode": "exc"
+      },
+      {
+        "text": "Fire suppression system modifications other than those specified in this quotation",
+        "mode": "exc"
+      },
+      {
+        "text": "Adequate water supply, hydrants, or underground work",
+        "mode": "exc"
+      },
+      {
+        "text": "Interior dry sprinklers, antifreeze systems, or dry pipe systems",
+        "mode": "exc"
+      },
+      {
+        "text": "Fire protection in concealed spaces or on the building exterior",
+        "mode": "exc"
+      },
+      {
+        "text": "Knox Box or Knox FDC caps",
+        "mode": "exc"
+      },
+      {
+        "text": "Relocation of storage — some items may need to be moved prior to installation",
+        "mode": "exc"
+      },
+      {
+        "text": "Tanks, pumps, controllers, or standpipes",
+        "mode": "exc"
+      },
+      {
+        "text": "Dumpster or cleaning fees",
+        "mode": "exc"
+      },
+      {
+        "text": "Adequate heat to prevent damage to the wet system",
+        "mode": "exc"
+      }
+    ]
+  },
+  "backflow": {
+    "scope": [
+      {
+        "text": "Prepare and submit shop drawings and manufacturer submittal data for the new backflow assembly to the ____________ for plan review and approval prior to the start of work.",
+        "subs": [
+          "Includes manufacturer flow rate charts and hydraulic data for the proposed assembly.",
+          "Includes a hydraulic analysis to confirm the new assembly does not reduce available pressure below the system demand."
+        ]
+      },
+      "Obtain all permits required by the ____________ for this work.",
+      {
+        "text": "Coordinate with the ____________ Water Department to schedule the water supply shutdown.",
+        "subs": [
+          "Confirm whether the city-side control valve serves the fire protection system only or is shared with the domestic water supply.",
+          "Includes a preliminary on-site meeting with the Water Department prior to scheduling the work."
+        ]
+      },
+      "Conduct a main drain test prior to the start of work. Record and document static and residual pressure readings at the base of the riser.",
+      "Contact the fire alarm monitoring company to place the fire alarm system in test mode prior to the shutdown. Restore the system to normal operation and notify the monitoring company upon completion of each work day.",
+      {
+        "text": "Remove the existing ( )\" backflow assembly, including all associated pipe, fittings, and supports.",
+        "subs": [
+          "Includes removal and disposal of the existing assembly.",
+          "The existing assembly shall remain on site and become the property and responsibility of the customer. Fire Defense Equipment Co. assumes no responsibility for the storage, condition, disposal, or future use of this equipment."
+        ]
+      },
+      {
+        "text": "Remove the existing ( )\" OS&Y city-side control valve and ( ) existing single check valve devices, including all associated pipe, fittings, and supports.",
+        "subs": [
+          "Includes removal and disposal of the existing valves and devices."
+        ]
+      },
+      {
+        "text": "Shut down and drain all water-filled piping downstream of the existing backflow assembly secondary OS&Y control valve.",
+        "subs": [
+          "Includes controlled draining procedures to protect the surrounding work area."
+        ]
+      },
+      {
+        "text": "Furnish and install one (1) new ( )\" stainless steel Double Check Valve Assembly (DCVA), listed and approved for fire protection service, together with all associated pipe, fittings, supports, and transition components required to complete the installation.",
+        "subs": [
+          "Includes dielectric unions at all dissimilar metal connections."
+        ]
+      },
+      {
+        "text": "Furnish and install one (1) new ( )\" stainless steel Double Check Backflow Detector Assembly (DCDA) with integral bypass meter, listed and approved for fire protection service, together with all associated pipe, fittings, supports, and transition components required to complete the installation.",
+        "subs": [
+          "Includes dielectric unions at all dissimilar metal connections."
+        ]
+      },
+      "Furnish and install one (1) new ( )\" Reduced Pressure Zone Assembly (RPZ), listed and approved for fire protection service, together with all associated pipe, fittings, supports, and transition components required to complete the installation.",
+      "Furnish and install one (1) new ( )\" Reduced Pressure Detector Assembly (RPDA) with integral bypass meter, listed and approved for fire protection service, together with all associated pipe, fittings, supports, and transition components required to complete the installation.",
+      "Furnish and install new OS&Y control valves with supervisory tamper switches on the inlet and outlet of the new assembly.",
+      "Rewire the existing supervisory tamper switches to the new OS&Y control valves and verify proper signal transmission to the fire alarm control panel (FACP).",
+      {
+        "text": "Rework the fire sprinkler system manifold, including all associated pipe and fittings required to accommodate the new assembly.",
+        "subs": [
+          "Includes all pipe, fittings, and associated hardware required to connect the new backflow assembly to the wet fire sprinkler system riser piping.",
+          "Includes all pipe, fittings, and associated hardware required to connect the new backflow assembly to the dry fire sprinkler system dry valve inlet flange.",
+          "Includes all pipe, fittings, and associated hardware required to connect the new backflow assembly to the existing fire department connection (FDC) piping.",
+          "Includes replacing the existing FDC check valve.",
+          "Includes one (1) manifold low point auxiliary drain."
+        ]
+      },
+      "Furnish and install all floor-mounted pipe supports and stanchions required for the new manifold assembly.",
+      "Furnish and install one (1) ( )\" blind flange on the existing water supply tee.",
+      "Flush the underground fire service main per NFPA 24 prior to placing the new assembly in service.",
+      "Hydrostatically test all new and reworked piping at 200 PSI for two (2) hours, or at 50 PSI above static pressure where static pressure exceeds 150 PSI, in accordance with NFPA 13.",
+      {
+        "text": "Perform backflow assembly certification testing upon completion of the installation.",
+        "subs": [
+          "Furnish the completed test report to the owner and the ____________ Water Department.",
+          "Backflow assembly certification testing is subcontracted to ____________ under the direct supervision of Fire Defense Equipment Co."
+        ]
+      },
+      "Conduct a main drain test following completion of the work and document the results for comparison against the pre-work readings.",
+      "Coordinate and attend the ____________ final inspection.",
+      {
+        "text": "Upon completion of draining the pit, operate the control valves to determine whether they serve the fire protection system piping.",
+        "subs": [
+          "If the findings require further action, a separate proposal will be issued for the necessary repairs."
+        ]
+      }
+    ],
+    "notes": [
+      "This work requires a city water supply shutdown to the fire protection system. Depending on the configuration of the service, this may also interrupt the building's domestic water supply for the duration of the work. Anticipate a four (4) to six (6) hour shutdown window.",
+      "The customer/building owner is responsible for maintaining a fire watch while the fire sprinkler system is shut down.",
+      "The customer is responsible for providing a safe and secure location for the equipment and materials required to complete this work. The area must be adequate in size to prep and stage materials.",
+      "The customer must ensure the riser room is cleared and accessible prior to the start of work.",
+      "Plan review, permit, and inspection fees are included up to $____________. The final invoice will reflect actual fees plus ten percent (10%), with any amount exceeding $____________ billed directly to the customer.",
+      "Plan review, permit, and inspection fees are not included in this proposal and are the responsibility of the customer.",
+      "Please allow two (2) to four (4) weeks following proposal approval and receipt of the down payment for plan review approval and material procurement.",
+      "A down payment of $____________ is required prior to scheduling or commencing work.",
+      "Due to fluctuating material costs and delivery lead times, materials will be ordered upon approval of this quotation and invoiced upon receipt.",
+      "This quote is based on the customer furnishing all excavation and hand digging required for this work.",
+      "The customer is responsible for draining the pit of all standing water and ensuring safe working conditions prior to the scheduled start of work. If the pit is not adequately drained or safe working conditions are not met upon arrival, a minimum of four (4) hours per technician will be billed and the work will be rescheduled.",
+      "Per Occupational Safety and Health Administration (OSHA) guidelines, if the pit becomes unsafe at any time, work will stop until safe conditions are restored. Any additional labor costs resulting from a stop-work order will be the customer's responsibility.",
+      "This proposal is based on completing the work during normal business hours, provided the city-side control valve is dedicated to the fire sprinkler system. If overnight work is required at the customer's request, an additional $____________ will be added to the final invoice.",
+      "This proposal includes subcontracted labor under the direct supervision of Fire Defense Equipment Co.",
+      "This work includes surveys and investigations that may prompt additional proposals based on the findings."
+    ],
+    "quals": [
+      "Unless otherwise noted, all work will be performed during normal business hours (Monday–Friday, 7:00 a.m. to 5:00 p.m.), excluding holidays.",
+      "This quotation is not a design review to determine whether the building or equipment is properly protected or whether the system was installed correctly. If verification of proper protection or installation is required, a complete building and system survey can be performed at an additional cost.",
+      "During hydrostatic testing, Fire Defense Equipment Co. is not responsible for any damages resulting from leaking or burst pipe or fittings on existing system components. Any required repair or replacement will be invoiced at additional cost.",
+      "Fire Defense Equipment Co. is not responsible for any damage, leaks, or burst pipe or fittings found on existing underground system components. Any required repair or replacement will be quoted separately.",
+      "This proposal is based on the water authority approving the proposed assembly type as submitted. If the water authority requires a different assembly type, a revised proposal will be issued."
+    ],
+    "resp": [
+      "Ensuring all areas of fire protection work are accessible and clear of stock, furniture, or any materials that may hinder installation",
+      "Providing timely access to all locked rooms, where applicable",
+      "Providing an authorized representative on site for the duration of the proposed work",
+      "Maintaining a fire watch while the fire sprinkler system is out of service",
+      "Ensuring the building fire alarm system is in proper operating condition prior to the start of work",
+      "Providing fire alarm monitoring account information and authorization required to place the system in test mode",
+      "Notifying building occupants and the local fire department of the scheduled system impairment",
+      "Mitigating any safety hazards caused by drained system water that may freeze on walkways or parking lots during freezing weather conditions"
+    ],
+    "incexc": [
+      {
+        "text": "Labor",
+        "mode": "inc"
+      },
+      {
+        "text": "Materials",
+        "mode": "inc"
+      },
+      {
+        "text": "Controlled draining procedures to protect the surrounding work area",
+        "mode": "inc"
+      },
+      {
+        "text": "Fabrication and installation",
+        "mode": "inc"
+      },
+      {
+        "text": "Freight and cartage of equipment and materials to the site",
+        "mode": "inc"
+      },
+      {
+        "text": "Wiring of supervisory tamper switches",
+        "mode": "inc"
+      },
+      {
+        "text": "Backflow assembly certification testing",
+        "mode": "inc"
+      },
+      {
+        "text": "Plan review and permit fees, up to the allowance stated in the Notes",
+        "mode": "inc"
+      },
+      {
+        "text": "Hydrostatic testing",
+        "mode": "inc"
+      },
+      {
+        "text": "Overtime labor, second-shift premium, or prevailing wage rates",
+        "mode": "exc"
+      },
+      {
+        "text": "Any labor or materials not expressly listed above",
+        "mode": "exc"
+      },
+      {
+        "text": "Fire Watch",
+        "mode": "exc"
+      },
+      {
+        "text": "Excavation, dewatering, vault or pit access, and confined space entry",
+        "mode": "exc"
+      },
+      {
+        "text": "Cutting, patching, repairing, replacing, fireproofing, or painting of any ceiling or wall materials",
+        "mode": "exc"
+      },
+      {
+        "text": "Engineered submittal drawings and hydraulic calculations",
+        "mode": "exc"
+      },
+      {
+        "text": "Electrical materials or labor",
+        "mode": "exc"
+      },
+      {
+        "text": "Fire alarm system testing, repair, or materials",
+        "mode": "exc"
+      },
+      {
+        "text": "Scaffolding",
+        "mode": "exc"
+      },
+      {
+        "text": "Scissor or boom lift",
+        "mode": "exc"
+      },
+      {
+        "text": "System design",
+        "mode": "exc"
+      },
+      {
+        "text": "Annual backflow preventer testing",
+        "mode": "exc"
+      },
+      {
+        "text": "Michigan sales tax",
+        "mode": "exc"
+      }
+    ]
+  },
+  "fire-alarm": {
+    "scope": [],
+    "notes": [],
+    "quals": [],
+    "resp": [],
+    "incexc": []
+  }
+}

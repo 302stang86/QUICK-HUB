@@ -1086,6 +1086,10 @@ function genDef(){
   Q.push("");
   Q.push("Repair total: "+money(total));
   if(unpriced)Q.push("Note: "+unpriced+" item(s) have no price entered and are not included in the total.");
+  if(Array.isArray(state.aiQuoteClauses)&&state.aiQuoteClauses.length){
+    L.push('','ADDITIONAL REVIEWED WORDING');
+    state.aiQuoteClauses.forEach(function(c){L.push((c.section==='incexc'?(c.mode==='exc'?'Excluded: ':'Included: '):'')+c.text);});
+  }
   $("defOut").textContent=L.join("\n");
   $("repOut").textContent=Q.join("\n");
 }
@@ -1195,6 +1199,27 @@ document.addEventListener("focusin",function(e){
   if(el&&el.tagName==="INPUT"&&el.type==="number"){setTimeout(function(){try{el.select();}catch(_){}},0);}
 });
 
+// Called only by the authenticated, reviewed AI draft transfer workflow.
+window.fdecApplyAIAlarm = async function(draft){
+  if(!window.FDECAuth || !window.FDECAuth.user || !window.FDECAuth.canOpen('quoting')) throw Error('Manager sign-in required.');
+  sessionStorage.setItem('fdec_ai_alarm_backup_'+window.FDECAuth.user.uid, JSON.stringify(state));
+  pushUndo('AI draft applied.');
+  var j=draft.job;
+  if(j.customer)state.job.cust=j.customer;
+  if(j.site)state.job.site=j.site;
+  if(j.address)state.job.addr=j.address;
+  if(j.contact||j.email||j.phone)state.job.contact=[j.contact,j.email,j.phone].filter(Boolean).join(' · ');
+  if(j.system)state.job.sys=j.system;
+  if(j.quoteNumber)state.job.quote=j.quoteNumber;
+  draft.deficiencies.forEach(function(x){
+    if(!state.defs.some(function(d){return d.action===x.scope && d.loc===x.location;}))
+      state.defs.push({comp:x.component,loc:x.location,cond:x.condition,cat:DEF_CATALOG.length-1,action:x.scope,qty:x.quantity,price:0});
+  });
+  state.aiQuoteClauses=draft.clauses;
+  save();renderAll();genDef();
+  var tab=document.querySelector('[data-tab="deficiency"]');if(tab)tab.click();
+};
+
 function renderAll(){
   buildTable();bindJob();fillCharges();fillScopeProp();renderDefs();compute();
 }
@@ -1300,5 +1325,7 @@ import { getFirestore, doc, getDoc, setDoc, addDoc, deleteDoc, collection, serve
   start();
 })();
 </script>
+<script type="module" src="ai-quote-assistant/transfer.mjs"></script>
 </body>
 </html>
+
