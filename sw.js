@@ -13,7 +13,7 @@
      - Everything else (Firestore API, etc.): straight to network — Firestore's
        own offline mode handles those when there is no signal.
 */
-const CACHE = 'fdec-quickhub-v135-login-startup-fix';
+const CACHE = 'fdec-quickhub-v136-remove-retired-game';
 
 const CORE = [
   "troubleshooting-data.js",
@@ -42,22 +42,6 @@ const CORE = [
   "victaulic-768n.jpg",
 
   'switchback/index.html',
-  'fire-defense/index.html',
-  'fire-defense/style.css',
-  'fire-defense/game.js',
-  'fire-defense/rookie-wobble.mjs',
-  'fire-defense/enemy-art.mjs',
-  'fire-defense/assets/rookie-spray.webp',
-  'fire-defense/assets/rookie-run.webp',
-  'fire-defense/assets/rookie-victory.webp',
-  'fire-defense/game-core.mjs',
-  'fire-defense/weapons.mjs',
-  'fire-defense/enemy-roster.mjs',
-  'fire-defense/viewport.mjs',
-  'fire-defense/game-model.mjs',
-  'fire-defense/access-policy.mjs',
-  'fire-defense/firebase-bridge.js',
-  'fire-defense/firebase-config.js',
 
   'fdec-industrial-header-option1.png',
   './',
