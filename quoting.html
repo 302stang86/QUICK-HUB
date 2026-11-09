@@ -1492,17 +1492,18 @@ function addMpRow(d){
 const MATERIAL_CATALOG = [
   {name:"Pipe & Strut", subs:[
     {name:"Schedule 10 Pipe", items:[
-      {name:"4\" Schedule 10 Pipe"},
-      {name:"3\" Schedule 10 Pipe"},
-      {name:"2-1/2\" Schedule 10 Pipe"},
-      {name:"2\" Schedule 10 Pipe"},
-      {name:"1-1/2\" Schedule 10 Pipe"},
-      {name:"1-1/4\" Schedule 10 Pipe"},
+      {name:"4\" Schedule 10 Pipe", cost:"9.96"},
+      {name:"3\" Schedule 10 Pipe", cost:"7.49"},
+      {name:"2-1/2\" Schedule 10 Pipe", cost:"6.13"},
+      {name:"2\" Schedule 10 Pipe", cost:"4.59"},
+      {name:"1-1/2\" Schedule 10 Pipe", cost:"3.74"},
+      {name:"1-1/4\" Schedule 10 Pipe", cost:"3.33"},
     ]},
     {name:"Schedule 40 Pipe", items:[
-      {name:"4\" Schedule 40 Pipe"},
-      {name:"2\" Schedule 40 Pipe"},
-      {name:"1\" Schedule 40 Pipe"},
+      {name:"4\" Schedule 40 Pipe", cost:"17.33"},
+      {name:"2\" Schedule 40 Pipe", cost:"8.63"},
+      {name:"1\" Schedule 40 Pipe", cost:"4.13"},
+      {name:"4\" x 36\" GxP TOE", cost:"96"},
     ]},
     {name:"Strut Channel", items:[
       {name:"1-5/8\" Slotted Strut Channel"},
@@ -1520,6 +1521,10 @@ const MATERIAL_CATALOG = [
       {name:"1-1/2\" Grooved Coupling", cost:"5.41"},
       {name:"1-1/4\" Grooved Coupling", cost:"5.08"},
     ]},
+    {name:"Reducing Couplings", items:[
+      {name:"4\" x 2\" Grooved Reducing coupling", cost:"22.48"},
+      {name:""},
+    ]},
   ]},
   {name:"Grooved Fittings", subs:[
     {name:"Elbows", items:[
@@ -1531,54 +1536,73 @@ const MATERIAL_CATALOG = [
       {name:"2\" Cap", cost:"3.65"},
     ]},
     {name:"Drain Fittings", items:[
-      {name:"4\" Grooved Drain 90° Elbow", cost:"22.01"},
-      {name:"2\" Grooved Drain 90° Elbow", cost:"9.13"},
+      {name:"4\" Grooved Drain 90° Elbow", cost:"27.98"},
+      {name:"2-1/2\" Grooved Drain 90", cost:"14.59"},
+      {name:"2\" Grooved Drain 90° Elbow", cost:"12.06"},
       {name:"2\"  GxG Flex Drain Kit", cost:"111.77"},
+    ]},
+    {name:"Tees and Other", items:[
+      {name:"1-1/4\" Grooved Tee", cost:"6.24"},
+      {name:"1-1/2\" Grooved Tee", cost:"7.15"},
+      {name:"2\" Grooved Tee", cost:"10.84"},
+      {name:"4\" Grooved Tee", cost:"28.30"},
+    ]},
+    {name:"Grooved Reducer", items:[
+      {name:"4\" x 2-1/2\" Grooved Concentric Reducer", cost:"16.28"},
+      {name:""},
+      {name:""},
     ]},
   ]},
   {name:"Mechanical Tees / TeeLocks", subs:[
     {name:"6\" Run", items:[
-      {name:"6\" x 2\" Mechanical Tee", cost:"19.95"},
+      {name:"6\" x 2\" Mechanical Tee", cost:"23.95"},
     ]},
     {name:"4\" Run", items:[
-      {name:"4\" x 2\" Mechanical Tee", cost:"13.19"},
-      {name:"4\" x 1\" Mechanical Tee", cost:"11.33"},
+      {name:"4\" x 2\" Mechanical Tee", cost:"17.19"},
+      {name:"4\" x 1\" Mechanical Tee", cost:"15.33"},
     ]},
     {name:"2\" Run", items:[
-      {name:"2\" x 1\" Mechanical Tee"},
-      {name:"2\" x 3/4\" Mechanical Tee"},
-      {name:"2\" x 1/2\" Mechanical Tee"},
+      {name:"2\" x 1\" Mechanical Tee", cost:"10.05"},
+      {name:"2\" x 3/4\" Mechanical Tee", cost:"10.05"},
+      {name:"2\" x 1/2\" Mechanical Tee", cost:"10.05"},
     ]},
     {name:"1-1/2\" Run", items:[
-      {name:"1-1/2\" x 1\" Mechanical Tee"},
-      {name:"1-1/2\" x 3/4\" Mechanical Tee"},
-      {name:"1-1/2\" x 1/2\" Mechanical Tee"},
+      {name:"1-1/2\" x 1\" Mechanical Tee", cost:"9.05"},
+      {name:"1-1/2\" x 3/4\" Mechanical Tee", cost:"9.05"},
+      {name:"1-1/2\" x 1/2\" Mechanical Tee", cost:"9.05"},
     ]},
     {name:"1-1/4\" Run", items:[
-      {name:"1-1/4\" x 1\" Mechanical Tee"},
-      {name:"1-1/4\" x 3/4\" Mechanical Tee"},
-      {name:"1-1/4\" x 1/2\" Mechanical Tee"},
+      {name:"1-1/4\" x 1\" Mechanical Tee", cost:"9.05"},
+      {name:"1-1/4\" x 3/4\" Mechanical Tee", cost:"9.05"},
+      {name:"1-1/4\" x 1/2\" Mechanical Tee", cost:"9.05"},
     ]},
   ]},
   {name:"Flanges", subs:[
     {name:"Flange Adapters", items:[
       {name:"6\" Grooved Flange Adapter", cost:"35.35"},
       {name:"4\" Grooved Flange Adapter", cost:"25.23"},
-      {name:"4\" Grooved Flange Adapter W/NBG", cost:"69.63"},
+      {name:"4\" Grooved Flange Adapter W/NBG Kit", cost:"69.63"},
+      {name:"3\" Flange Adapter", cost:"26.34"},
+      {name:"2-1/2\" Flange Adapter", cost:"22.59"},
     ]},
     {name:"Bolt, Nut & Gasket Kits", items:[
       {name:"6\" Flange Bolt, Nut, and Gasket Kit", cost:"23.35"},
       {name:"4\" Flange Bolt, Nut, and Gasket Kit", cost:"16.14"},
+      {name:"3\" Flange Bolt, Nut, and Gasket Kit", cost:"11.53"},
+      {name:"2-1/2\" Flange Bolt, Nut, and Gasket Kit", cost:"11.15"},
     ]},
   ]},
   {name:"Valves", subs:[
     {name:"Check Valves", items:[
       {name:"4\" Grooved Check Valve Argco", cost:"124.44"},
       {name:"4\" Grooved Check Valve Tyco", cost:"299.79"},
+      {name:"2-1/2\" Grooved check valve", cost:"81.79"},
       {name:"1/2\" Threaded Check Valve", cost:"14.24"},
       {name:"3/4\" Threaded Check Valve", cost:"17.42"},
       {name:"1\" Threaded Check Valve", cost:"21.77"},
       {name:"2\" Threaded Check Valve", cost:"66.55"},
+      {name:""},
+      {name:""},
     ]},
     {name:"Control & Drain Valves", items:[
       {name:"4\" BVG W/Tamper", cost:"168.86"},
@@ -1588,6 +1612,9 @@ const MATERIAL_CATALOG = [
     {name:"Test & Drain Valves", items:[
       {name:"1\" Test and Drain", cost:"94.48"},
       {name:"1\" Test and Drain Angle"},
+      {name:"1\" Sight glass K=5.6 ", cost:"33.27"},
+      {name:"1\" Sight glass K=8.0"},
+      {name:"1\" Sight Glass Full Port", cost:"33.27"},
     ]},
     {name:"Ball Valves", items:[
       {name:"1\" FP Ball Valve", cost:"24.99"},
@@ -1624,11 +1651,19 @@ const MATERIAL_CATALOG = [
     {name:"Ball Drip & Signage", items:[
       {name:"1/2\" Automatic Ball Drip", cost:"20.17"},
       {name:"4\" Red Aluminum Round FDC Sign", cost:"12"},
+      {name:"Large Reflective FDC sign", cost:"42.00"},
     ]},
   ]},
   {name:"Sprinklers & Head Accessories", subs:[
     {name:"Sprinklers", items:[
       {name:"Misc Sprinkler", cost:"9.00"},
+      {name:"TY3151 1/2\" brass upright 155 SR", cost:"7.13"},
+      {name:"TY3151 1/2\" brass upright 200 SR", cost:"7.13"},
+      {name:"TY3151 1/2\" brass upright 286 SR", cost:"7.13"},
+      {name:"TY3231 1/2\" chrome pendant 155 QR", cost:"7.52"},
+      {name:"TY3251 1/2\" chrome pendant 200 SR", cost:"7.52"},
+      {name:"TY5237 3/4\" chrome pendant 155 EC-11", cost:"27.84"},
+      {name:""},
     ]},
     {name:"Escutcheons & Cover Plates", items:[
       {name:"Misc Escutcheon", cost:"5"},
@@ -1651,6 +1686,19 @@ const MATERIAL_CATALOG = [
       {name:"3/4\" x 3/4\" Brass Nipple Extension", cost:"6.62"},
       {name:"3/4\" x 3/4\" Brass Nipple Extension", cost:"7.56"},
     ]},
+    {name:"Dry Barrel Sprinklers", items:[
+      {name:"DS-1 12\" chrome 155 SR Deep ESC", cost:"117.31"},
+      {name:"DS-1 12\" chrome 155 QR Deep ESC"},
+      {name:"DS-2"},
+      {name:"VK154 12\" white 155 SR  07740UMB/W12", cost:"112.03"},
+      {name:"VK154 12\" white 200 SR  07740UME/W12", cost:"112.03"},
+      {name:"VK154 12\" chrome 155 SR  07740UFB12", cost:"121"},
+      {name:"VK154 12\" chrome 200 SR  07740UFE12", cost:"121"},
+      {name:"VK176 12\" white 155 QR 08383UMB/W12", cost:"122.22"},
+      {name:"VK176 12\" white 200 QR 08383UME/W12", cost:"122.22"},
+      {name:"VK176 12\" Chrome 155 QR 08383UFB12", cost:"131.93"},
+      {name:"VK176 12\" Chrome 200 QR 08383UFE12", cost:"122.22"},
+    ]},
   ]},
   {name:"Gauges", subs:[
     {name:"System Pressure Gauges", items:[
@@ -1672,6 +1720,7 @@ const MATERIAL_CATALOG = [
       {name:"OS&Y -2 tamper switch", cost:"179.00"},
       {name:"Loop-style tamper switch", cost:"216.18"},
       {name:"Low air pressure witch potter PS-40", cost:"112"},
+      {name:"PIV supervisory switch 3027631", cost:"106.38"},
     ]},
     {name:"Bells, Horns & Strobes", items:[
       {name:"6 ELEC BELL 120VAC IMPORT &  BBK-1", cost:"75"},
@@ -1705,6 +1754,23 @@ const MATERIAL_CATALOG = [
       {name:"3/8\" Lock Washer", cost:".09"},
       {name:"3/8\" Toggle Wing", cost:".98"},
     ]},
+    {name:"Riser Clamps and Hardware", items:[
+      {name:"2\" Riser Clamp", cost:"7.31"},
+      {name:"4\" Riser Clamp", cost:"12.30"},
+      {name:"4\" x 18\" Floor Pipe Stand", cost:"72.78"},
+    ]},
+    {name:"Beam Clamps", items:[
+      {name:"3/8\" Top Mount Beam Clamp", cost:"1.79"},
+    ]},
+    {name:"Swivel Hanger Rings", items:[
+      {name:"4\" Teardrop Swivel Hanger Ring", cost:"2.28"},
+      {name:"3\" Teardrop Swivel Hanger Ring", cost:"2.01"},
+      {name:"2-1/2\" Teardrop Swivel Hanger Ring", cost:"1.9"},
+      {name:"2\" Teardrop Swivel Hanger Ring", cost:"1.59"},
+      {name:"1-1/2\" Teardrop Swivel Hanger Ring", cost:"1.54"},
+      {name:"1-1/4\" Teardrop Swivel Hanger Ring", cost:"1.49"},
+      {name:"1\" Teardrop Swivel Hanger Ring", cost:"1.48"},
+    ]},
   ]},
   {name:"5-Year Common", subs:[
     {name:"Wet and Dry", items:[
@@ -1726,6 +1792,8 @@ const MATERIAL_CATALOG = [
       {name:"5/8 HD Hex Nuts Each", cost:".60"},
       {name:"4\" NBG Kit", cost:"16.14"},
       {name:"4\" Grooved Flange Adapter", cost:"25.23"},
+      {name:"MISC MATERIAL", cost:"100"},
+      {name:"1\" plastic wall plate", cost:"1.00"},
     ]},
   ]},
   {name:"Threaded Fittings", subs:[
@@ -1738,20 +1806,89 @@ const MATERIAL_CATALOG = [
       {name:"1\" x 3/4\" RC Coupling", cost:"9.92"},
       {name:"1\" x 1/2\" RC Coupling", cost:"7.19"},
       {name:"1\" plug", cost:"3.15"},
+      {name:"1\" x 1\" x 1/2\" Tee", cost:"5.36"},
+      {name:"1\" x 1\" x 3/4\" Tee"},
+      {name:"1\" x 3/4\" RC 90", cost:"5.81"},
+      {name:"1\" x 1/2\" RC 90", cost:"6.27"},
     ]},
     {name:"Bushings", items:[
-      {name:"1\" x 3/4\" Galvanized Bushing"},
-      {name:"1\" x 1/2\" Galvanized Bushing"},
-      {name:"1\" x 1/4\" Galvanized Bushing"},
+      {name:"1\" x 3/4\" Galvanized Bushing", cost:"3.36"},
+      {name:"1\" x 1/2\" Galvanized Bushing", cost:"3.36"},
+      {name:"1\" x 1/4\" Galvanized Bushing", cost:"3.36"},
       {name:"3/4\" x 1/2\" Galvanized Bushing", cost:"1.92"},
       {name:"3/4\" x 1/4\" Galvanized Bushing", cost:"1.92"},
       {name:"1/2\" x 1/4\" Galvanized Bushing", cost:"1.18"},
+      {name:"2\" x 1\" black bushing - 3031487", cost:"19.52"},
     ]},
     {name:"Nipples", items:[
       {name:"1\" x 12\" Nipple", cost:"14.10"},
       {name:"1-1/4\" x 12\" Nipple", cost:"17.93"},
       {name:"1-1/2\" x 12\" Nipple", cost:"20.38"},
       {name:"2\" x 12\" Nipple", cost:"29.08"},
+    ]},
+  ]},
+  {name:"Backflow Assembly", subs:[
+    {name:"Viking Backflow", items:[
+      {name:"4 DBL DET ASSY W/OS&Y SS - 350ASTDAOSY-0400", cost:"2918.37"},
+      {name:"4\" DBL DET ASSY W/OS&Y - GXG - 350ASTDAOSYG-0400", cost:"3065.28"},
+      {name:"6 DBL DET ASSY W/OS&Y SS -  350ASTDAOSY-0600", cost:"4324.54"},
+      {name:"6\" DBL DET ASSY W/OS&Y - GXG - 350ASTDAOSYG-0600", cost:"4539.94"},
+      {name:"1-1/4\" REDUCED PRESSURE BACKFLOW PREVENTER W/ VALVES - 975XL2-0125", cost:"817.36"},
+      {name:""},
+    ]},
+  ]},
+  {name:"Antifreeze and Materials", subs:[
+    {name:"Antifreeze", items:[
+      {name:"5g FreezeMaster Antifreeze"},
+      {name:"55g FreezeMaster Antifreeze"},
+    ]},
+    {name:"Material", items:[
+      {name:"Expansion tank PLT-5-M1", cost:"257.00"},
+      {name:"Expansion tank PLT-12-M1 (Price not verified)", cost:"361"},
+      {name:"Expansion tank PLT-20-M1 (Price not verified)", cost:"709"},
+    ]},
+  ]},
+  {name:"CPVC Viking", subs:[
+    {name:"CPVC Pipe per ft", items:[
+      {name:"1\" VPVC ", cost:"1.05"},
+      {name:"1-1/4\" CPVC", cost:"1.92"},
+      {name:"1-1/2\" CPVC", cost:"2.64"},
+      {name:"2\" CPVC", cost:"3.97"},
+    ]},
+    {name:"CPVC  Basic Fittings", items:[
+      {name:"1\" CPVC 90", cost:"2.41"},
+      {name:"1\" CPVC 45", cost:"1.98"},
+      {name:"1\" CPVC Coupling", cost:"1.46"},
+      {name:"1\" CPVC Tee", cost:"2.99"},
+      {name:"1\" CPVC Union", cost:"8.96"},
+      {name:"1\" CPVC Cross Tee", cost:"3.41"},
+      {name:"1-1/4\" CPVC 90", cost:"3.69"},
+      {name:"1-1/4\" CPVC 45", cost:"4.28"},
+      {name:"1-1/4\" CPVC Coupling", cost:"2.37"},
+      {name:"1-1/4\" CPVC Tee", cost:"4.82"},
+      {name:"1-1/2\" CPVC 90", cost:"4.62"},
+      {name:"1-1/2\" CPVC 45", cost:"4.12"},
+      {name:"1-1/2\" CPVC Coupling", cost:"3.41"},
+      {name:"1-1/2\" CPVC Tee", cost:"7.04"},
+      {name:"1\" CPVC Cap", cost:"1.07"},
+      {name:"1-1/4\" CPVC Cap", cost:"1.72"},
+      {name:"1-1/2\" CPVC Cap", cost:"2.37"},
+      {name:"2\" CPVC Cap", cost:"3.59"},
+      {name:""},
+      {name:""},
+    ]},
+    {name:"CPVC Head Adapters ", items:[
+      {name:"1\" x 3/4\" CPVC 90 head adapter", cost:"7.11"},
+      {name:"1\" x 1/2\" CPVC 90 head adapter", cost:"5.38"},
+      {name:"1\" x 1/2\" CPVC Tee head adapter", cost:"5.45"},
+      {name:"1\" x 1/2\" CPVC Spigot F x F-NPT", cost:"4.3"},
+    ]},
+    {name:"CPVC Other", items:[
+      {name:"1\" CPVC M-NPT x F spigot Adapter", cost:"13.19"},
+      {name:"1\" CPC F-NPT x F Socket adapter", cost:"14.76"},
+      {name:"1\" Standoff hanger", cost:"1.4"},
+      {name:"1pt blazemaster CPVC Cement", cost:"25.60"},
+      {name:""},
     ]},
   ]},
 ];
@@ -2239,7 +2376,16 @@ function saveMasterCatalog(){
   if(window.parent && window.parent!==window){ window.parent.postMessage({ fdec:true, type:'save-master-catalog', data: masterCatalogItems() }, '*'); matMasterToast('Saving the master price list\u2026'); }
   else matMasterToast('Master price list needs the hub shell — open this from Quick Hub.', true);
 }
-function resetMasterCatalog(){
+const RESET_PW_HASH = 'e6667fbd2351947238785d8f47c98572d00dc1c024d37b5698558afcd7048eaf';
+async function resetMasterCatalog(){
+  const pw = prompt('Enter the password to restore the master price list to the built-in defaults:');
+  if(pw === null) return;
+  let ok = false;
+  try{
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+    ok = Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('') === RESET_PW_HASH;
+  }catch(_){ matMasterToast('Password check is unavailable in this browser.', true); return; }
+  if(!ok){ matMasterToast('Incorrect password. The master price list was not changed.', true); return; }
   if(!confirm('Reset the master price list back to the built-in defaults for all new quotes?\n\nThis does not change the quote you are working on now.')) return;
   if(window.parent && window.parent!==window){ window.parent.postMessage({ fdec:true, type:'reset-master-catalog' }, '*'); }
 }
