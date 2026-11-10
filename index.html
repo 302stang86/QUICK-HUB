@@ -146,23 +146,41 @@
   a.hublink .haccess.everyone{background:#e7f4ec;color:var(--good)}
   a.hublink .haccess.manager{background:#fff3df;color:var(--warn)}
 
-  /* Clear raised-glass card look (color fades in from the left edge) */
+  /* Floating glass: retain each card's identifying --cc hue at half tint. */
   a.hublink{
-    background:linear-gradient(90deg,color-mix(in srgb,var(--cc,#5b6570) 62%,transparent) 0%,color-mix(in srgb,var(--cc,#5b6570) 28%,transparent) 28%,color-mix(in srgb,var(--cc,#5b6570) 7%,transparent) 62%,rgba(255,255,255,.04) 100%),linear-gradient(155deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,.035) 48%,rgba(255,255,255,.075) 100%);border:0;border-radius:22px;padding:18px 18px 18px 22px;
-    backdrop-filter:blur(2px) saturate(140%) brightness(1.08);-webkit-backdrop-filter:blur(2px) saturate(140%) brightness(1.08);
-    box-shadow:inset 0 1.5px 0 rgba(255,255,255,.85),inset 1.5px 0 0 rgba(255,255,255,.45),inset 0 0 0 1px rgba(255,255,255,.16),inset 0 -3px 5px rgba(0,0,0,.28),inset -2px 0 4px rgba(0,0,0,.18),inset 6px 6px 14px rgba(255,255,255,.10),0 2px 3px rgba(0,0,0,.4),0 14px 26px rgba(0,0,0,.45);transition:transform .25s ease,box-shadow .25s ease;
+    --glass-shadow:inset 0 1px 0 rgba(255,255,255,.72),inset 1px 0 0 rgba(255,255,255,.32),inset 0 0 0 1px rgba(255,255,255,.14),inset 0 -1px 0 rgba(0,0,0,.3),0 8px 12px -7px rgba(0,0,0,.55),0 18px 30px -8px rgba(0,0,0,.5);
+    background:linear-gradient(90deg,color-mix(in srgb,var(--cc,#5b6570) 31%,transparent) 0%,color-mix(in srgb,var(--cc,#5b6570) 14%,transparent) 28%,color-mix(in srgb,var(--cc,#5b6570) 3.5%,transparent) 62%,rgba(255,255,255,.02) 100%),linear-gradient(155deg,rgba(255,255,255,.09) 0%,rgba(15,19,26,.12) 48%,rgba(255,255,255,.035) 100%);
+    border:0;border-radius:22px;padding:18px 18px 18px 22px;
+    backdrop-filter:blur(3px) saturate(100%);-webkit-backdrop-filter:blur(3px) saturate(100%);
+    box-shadow:var(--glass-shadow);transition:transform .25s ease,box-shadow .25s ease;
   }
-  a.hublink:hover{transform:translateY(-4px);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.95),inset 1.5px 0 0 rgba(255,255,255,.55),inset 0 0 0 1px rgba(255,255,255,.2),inset 0 -3px 5px rgba(0,0,0,.28),inset -2px 0 4px rgba(0,0,0,.18),inset 6px 6px 14px rgba(255,255,255,.12),0 4px 6px rgba(0,0,0,.4),0 22px 36px rgba(0,0,0,.5)}
+  a.hublink:hover{
+    transform:translateY(-4px);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.85),inset 1px 0 0 rgba(255,255,255,.4),inset 0 0 0 1px rgba(255,255,255,.2),inset 0 -1px 0 rgba(0,0,0,.3),0 12px 18px -8px rgba(0,0,0,.55),0 25px 38px -9px rgba(0,0,0,.55);
+  }
   a.hublink:active{transform:translateY(1px)}
-  a.hublink::after{content:"";position:absolute;left:4%;right:4%;top:3px;height:36%;border-radius:18px 18px 40px 40px/18px 18px 22px 22px;background:linear-gradient(180deg,rgba(255,255,255,.26),rgba(255,255,255,0));pointer-events:none}
+  a.hublink::after{
+    content:"";position:absolute;left:1px;right:1px;top:1px;height:30%;border-radius:22px 22px 50% 50%;
+    background:radial-gradient(ellipse at 18% 0%,rgba(255,255,255,.17),rgba(255,255,255,.035) 48%,transparent 74%);pointer-events:none;
+  }
   a.hublink .hubicon{z-index:1}
   a.hublink .hbody{position:relative;z-index:1}
-  a.hublink .hname{color:#fff;text-transform:uppercase;letter-spacing:.8px;font-weight:900;text-shadow:0 .5px 0 #e0e0e0,0 1px 0 #ccc,0 1.5px 2px rgba(0,0,0,.5);font-family:'Arial Black',Arial,sans-serif;font-size:15px}
-  a.hublink .hdesc{color:rgba(255,255,255,.94);text-shadow:0 1px 2px rgba(0,0,0,.55)}
-  a.hublink .hbody .htop .hcat{color:#fff;text-transform:uppercase;letter-spacing:.8px;font-weight:900;text-shadow:0 .5px 0 #e0e0e0,0 1px 0 #ccc,0 1.5px 2px rgba(0,0,0,.5);background:linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,.08));box-shadow:inset 0 1px 0 rgba(255,255,255,.7),inset 0 -1px 2px rgba(0,0,0,.25),0 1px 2px rgba(0,0,0,.3);font-size:10px;font-family:'Arial Black',Arial,sans-serif}
-  a.hublink .hbody .haccess{color:#fff;text-transform:uppercase;letter-spacing:.8px;font-weight:900;text-shadow:0 .5px 0 #e0e0e0,0 1px 0 #ccc,0 1.5px 2px rgba(0,0,0,.5);background:linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,.08));box-shadow:inset 0 1px 0 rgba(255,255,255,.7),inset 0 -1px 2px rgba(0,0,0,.25),0 1px 2px rgba(0,0,0,.3);font-size:10px;letter-spacing:.6px;font-family:'Arial Black',Arial,sans-serif}
+  a.hublink .hname{
+    color:#fff;text-transform:uppercase;letter-spacing:.6px;font-weight:750;
+    text-shadow:-1px 1px 0 rgba(0,0,0,.85);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:15px;
+  }
+  a.hublink .hdesc{color:#fff;text-shadow:-1px 1px 0 rgba(0,0,0,.8)}
+  a.hublink .hbody .htop .hcat,
+  a.hublink .hbody .haccess{
+    color:#fff;text-transform:uppercase;letter-spacing:.6px;font-weight:700;
+    text-shadow:-1px 1px 0 rgba(0,0,0,.85);
+    background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,.04));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.45),inset 0 -1px 0 rgba(0,0,0,.2),0 2px 4px rgba(0,0,0,.25);
+    font-size:10px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
   a.hublink.unset .hname::after{color:#ffd27a}
-  a.hublink.unset:hover{transform:none;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.85),inset 1.5px 0 0 rgba(255,255,255,.45),inset 0 0 0 1px rgba(255,255,255,.16),inset 0 -3px 5px rgba(0,0,0,.28),inset -2px 0 4px rgba(0,0,0,.18),inset 6px 6px 14px rgba(255,255,255,.10),0 2px 3px rgba(0,0,0,.4),0 14px 26px rgba(0,0,0,.45)}
+  a.hublink.unset:hover{transform:none;box-shadow:var(--glass-shadow)}
 
   /* Featured document link */
   a.doclink{
