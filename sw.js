@@ -13,7 +13,7 @@
      - Everything else (Firestore API, etc.): straight to network — Firestore's
        own offline mode handles those when there is no signal.
 */
-const CACHE = 'fdec-quickhub-v139-timesheet-restore';
+const CACHE = 'fdec-quickhub-v140-blueprint-glass-refresh';
 
 const CORE = [
   "troubleshooting-data.js",
@@ -82,6 +82,9 @@ const CORE = [
   'fdec-fleet-integration.js',
   'fleet-vehicles.js',
   'fdec-bg.css',
+  'fdec-buttons.css',
+  'fdec-background.css',
+  'quick-hub-blueprint.webp',
   'fdec-auth.js',
   'fdec-identity.js',
   'fdec-offline.js',
@@ -105,7 +108,7 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil((async () => {
     const keys = await caches.keys();
-    await Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)));
+    await Promise.all(keys.filter((k) => k.startsWith('fdec-quickhub-') && k !== CACHE).map((k) => caches.delete(k)));
     await self.clients.claim();
   })());
 });
@@ -141,7 +144,8 @@ self.addEventListener('fetch', (e) => {
 async function networkFirst(req) {
   const c = await caches.open(CACHE);
   try {
-    const res = await fetch(req);
+    // Revalidate the HTTP cache too, so a normal visit gets the current release.
+    const res = await fetch(req, { cache: 'no-cache' });
     if (res && res.ok) c.put(req, res.clone());
     return res;
   } catch (_) {
