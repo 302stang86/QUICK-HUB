@@ -1,0 +1,40 @@
+/* Shared floating glass controls. Appearance only; keep page layout and actions. */
+@media screen {
+html body :is(button,input[type="button"],input[type="submit"],input[type="reset"],a.btn,a.button,a[role="button"],.fdec-ubar-actions a,a.home,a.hubback,a.primary,a.secondary) {
+  --button-glass-tone:rgba(28,47,73,.82);
+  color:#fff !important;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif !important;
+  font-weight:700 !important;
+  text-shadow:-1px 1px 0 rgba(0,0,0,.85) !important;
+  letter-spacing:.025em !important;
+  background:linear-gradient(155deg,rgba(255,255,255,.18),rgba(255,255,255,.025) 48%,rgba(255,255,255,.06)),var(--button-glass-tone) !important;
+  border:1px solid rgba(255,255,255,.28) !important;
+  border-top-color:rgba(255,255,255,.65) !important;
+  border-radius:11px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.25),inset 0 -1px 0 rgba(0,0,0,.25),0 4px 7px -3px rgba(0,0,0,.5),0 9px 16px -7px rgba(0,0,0,.45) !important;
+  backdrop-filter:blur(3px) saturate(100%) !important;
+  -webkit-backdrop-filter:blur(3px) saturate(100%) !important;
+}
+html body :is(button,input[type="button"],input[type="submit"],input[type="reset"],a.btn,a.button,a[role="button"],.fdec-ubar-actions a,a.home,a.hubback,a.primary,a.secondary):is(.primary,.btn-primary,.btn-navy,.go,.send,.btn-save,.ad-approve,.ok) {
+  --button-glass-tone:rgba(18,66,105,.86);
+}
+html body :is(button,input[type="button"],input[type="submit"],input[type="reset"],a.btn,a.button,a[role="button"],.fdec-ubar-actions a,a.home,a.hubback,a.primary,a.secondary):is(.danger,.del,.delete,.remove,.btn-reset,.btn-cancel,.red,.warn,.ad-del,.ad-deny,.cat-del,.subcat-del,.tool-del,.mu-del,.wd-del) {
+  --button-glass-tone:rgba(122,27,38,.88);
+}
+html body :is(button,input[type="button"],input[type="submit"],input[type="reset"],a.btn,a.button,a[role="button"],.fdec-ubar-actions a,a.home,a.hubback,a.primary,a.secondary):is(.active,.selected,[aria-selected="true"],[aria-pressed="true"]) {
+  --button-glass-tone:rgba(135,23,39,.88);
+  border-color:rgba(255,255,255,.7) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -3px 0 rgba(255,255,255,.55),0 7px 14px -5px rgba(0,0,0,.55) !important;
+}
+@media (hover:hover) {
+  html body :is(button,input[type="button"],input[type="submit"],input[type="reset"],a.btn,a.button,a[role="button"],.fdec-ubar-actions a,a.home,a.hubback,a.primary,a.secondary):hover:not(:disabled):not([aria-disabled="true"]) {
+    border-color:rgba(255,255,255,.8) !important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.45),inset 0 0 12px rgba(255,255,255,.08),0 11px 20px -6px rgba(0,0,0,.6) !important;
+  }
+}
+html body :is(button,input[type="button"],input[type="submit"],input[type="reset"],a.btn,a.button,a[role="button"],.fdec-ubar-actions a,a.home,a.hubback,a.primary,a.secondary):focus-visible {outline:2px solid #8fd5ff !important;outline-offset:3px !important;}
+html body :is(button,input[type="button"],input[type="submit"],input[type="reset"],a.btn,a.button,a[role="button"],.fdec-ubar-actions a,a.home,a.hubback,a.primary,a.secondary):active:not(:disabled) {box-shadow:inset 0 2px 5px rgba(0,0,0,.4),0 2px 5px rgba(0,0,0,.3) !important;}
+html body :is(button,input[type="button"],input[type="submit"],input[type="reset"],a.btn,a.button,a[role="button"],.fdec-ubar-actions a,a.home,a.hubback,a.primary,a.secondary):is(:disabled,[aria-disabled="true"]) {opacity:.48 !important;cursor:not-allowed !important;box-shadow:inset 0 1px 0 rgba(255,255,255,.18) !important;}
+/* Inherit crisp typography inside controls with nested labels. */
+html body :is(button,input[type="button"],input[type="submit"],input[type="reset"],a.btn,a.button,a[role="button"],.fdec-ubar-actions a,a.home,a.hubback,a.primary,a.secondary) :is(span,strong,b) {font-family:inherit !important;font-weight:inherit !important;text-shadow:inherit !important;}
+}
