@@ -10,7 +10,7 @@
     var glass = document.createElement('link');
     glass.rel = 'stylesheet';
     glass.dataset.fdecButtons = 'true';
-    glass.href = new URL('fdec-buttons.css?v=1', document.currentScript.src).href;
+    glass.href = new URL('fdec-buttons.css?v=2', document.currentScript.src).href;
     (document.head || document.documentElement).appendChild(glass);
   }
 

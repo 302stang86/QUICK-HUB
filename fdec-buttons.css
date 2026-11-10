@@ -1,3 +1,4 @@
+@import url("fdec-background.css?v=1");
 /* Shared floating glass controls. Appearance only; keep page layout and actions. */
 @media screen {
 html body :is(button,input[type="button"],input[type="submit"],input[type="reset"],a.btn,a.button,a[role="button"],.fdec-ubar-actions a,a.home,a.hubback,a.primary,a.secondary) {

@@ -1,0 +1,17 @@
+/* One blueprint background for every Quick Hub page; banners and print layouts are untouched. */
+@media screen {
+  html body, html body .bg-layer {
+    background-color:#101c2a !important;
+    background-image:linear-gradient(rgba(12,18,28,.12),rgba(12,18,28,.22)),url("quick-hub-blueprint.webp") !important;
+    background-position:left top !important;
+    background-size:cover !important;
+    background-repeat:no-repeat !important;
+  }
+  html body {background-attachment:fixed !important;}
+  @media(min-width:1100px){
+    html body,html body .bg-layer {background-size:max(108vw,192vh) auto !important;}
+  }
+  @media(max-width:680px){
+    html body,html body .bg-layer {background-position:24% top !important;}
+  }
+}
