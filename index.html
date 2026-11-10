@@ -33,9 +33,9 @@
   .hubutil{display:flex;justify-content:flex-end;align-items:center;gap:10px;background:#0d1829;
     padding:6px max(14px,env(safe-area-inset-right)) 6px 14px}
   .hubutil #whoami{font-weight:600;color:#fff;font-size:13px}
-  .hubutil button{appearance:none;border:1px solid #4A545E;background:transparent;color:#fff;border-radius:7px;
-    padding:5px 11px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}
-  .hubutil button:hover{background:rgba(255,255,255,.1)}
+  .hubutil button{appearance:none;border:0;color:#fff;text-transform:uppercase;letter-spacing:.6px;font-weight:900;font-family:'Arial Black',Arial,sans-serif;text-shadow:0 .5px 0 #e0e0e0,0 1px 0 #ccc,0 1.5px 2px rgba(0,0,0,.5);border-radius:11px;padding:8px 14px;font-size:11px;cursor:pointer;background:linear-gradient(180deg,rgba(255,255,255,.28) 0%,rgba(255,255,255,.07) 52%,rgba(255,255,255,.15) 100%);backdrop-filter:blur(2px) saturate(140%);-webkit-backdrop-filter:blur(2px) saturate(140%);box-shadow:inset 0 1.2px 0 rgba(255,255,255,.85),inset 1px 0 0 rgba(255,255,255,.4),inset 0 0 0 1px rgba(255,255,255,.15),inset 0 -2px 3px rgba(0,0,0,.3),0 2px 3px rgba(0,0,0,.4),0 6px 12px rgba(0,0,0,.35);transition:transform .2s ease,box-shadow .2s ease}
+  .hubutil button:hover{transform:translateY(-2px);box-shadow:inset 0 1.2px 0 rgba(255,255,255,.95),inset 1px 0 0 rgba(255,255,255,.5),inset 0 0 0 1px rgba(255,255,255,.2),inset 0 -2px 3px rgba(0,0,0,.3),0 3px 4px rgba(0,0,0,.4),0 10px 16px rgba(0,0,0,.4)}
+  .hubutil button:active{transform:translateY(1px)}
   .mark{
     width:46px;height:46px;flex:0 0 46px;border-radius:9px;background:var(--fdec-red);
     display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;
@@ -46,14 +46,11 @@
   .brandtext .sub strong{color:#fff;font-weight:600}
 
   /* Tabs */
-  nav.tabs{max-width:1100px;margin:16px auto 0;display:flex;gap:2px;overflow-x:auto}
-  nav.tabs button{
-    appearance:none;border:0;background:transparent;color:#c3cbd4;cursor:pointer;
-    padding:13px 16px;font-size:14.5px;font-weight:600;white-space:nowrap;
-    border-bottom:3px solid transparent;transition:.15s;font-family:inherit;
-  }
-  nav.tabs button:hover{color:#fff}
-  nav.tabs button.active{color:#fff;border-bottom-color:var(--fdec-red)}
+  nav.tabs{max-width:1100px;margin:12px auto 0;display:flex;gap:10px;overflow-x:auto;padding:6px 8px 14px}
+  nav.tabs button{appearance:none;border:0;cursor:pointer;color:#fff;text-transform:uppercase;letter-spacing:.6px;font-weight:900;font-family:'Arial Black',Arial,sans-serif;text-shadow:0 .5px 0 #e0e0e0,0 1px 0 #ccc,0 1.5px 2px rgba(0,0,0,.5);font-size:12px;padding:11px 20px;white-space:nowrap;border-radius:13px;background:linear-gradient(180deg,rgba(255,255,255,.28) 0%,rgba(255,255,255,.07) 52%,rgba(255,255,255,.15) 100%);backdrop-filter:blur(2px) saturate(140%);-webkit-backdrop-filter:blur(2px) saturate(140%);box-shadow:inset 0 1.2px 0 rgba(255,255,255,.85),inset 1px 0 0 rgba(255,255,255,.4),inset 0 0 0 1px rgba(255,255,255,.15),inset 0 -2px 3px rgba(0,0,0,.3),0 2px 3px rgba(0,0,0,.4),0 6px 12px rgba(0,0,0,.35);transition:transform .2s ease,box-shadow .2s ease}
+  nav.tabs button:hover{transform:translateY(-2px);box-shadow:inset 0 1.2px 0 rgba(255,255,255,.95),inset 1px 0 0 rgba(255,255,255,.5),inset 0 0 0 1px rgba(255,255,255,.2),inset 0 -2px 3px rgba(0,0,0,.3),0 3px 4px rgba(0,0,0,.4),0 10px 16px rgba(0,0,0,.4)}
+  nav.tabs button:active{transform:translateY(1px)}
+  nav.tabs button.active{background:linear-gradient(180deg,rgba(255,150,150,.45) 0%,rgba(193,18,28,.55) 52%,rgba(193,18,28,.7) 100%);box-shadow:inset 0 1.2px 0 rgba(255,255,255,.9),inset 1px 0 0 rgba(255,255,255,.45),inset 0 0 0 1px rgba(255,255,255,.22),inset 0 -3px 6px rgba(90,0,6,.5),0 0 14px rgba(193,18,28,.55),0 6px 12px rgba(0,0,0,.4)}
 
   /* Layout */
   main{max-width:1100px;margin:0 auto;padding:22px 18px 70px}
