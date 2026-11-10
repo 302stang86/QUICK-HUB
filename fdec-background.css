@@ -23,3 +23,44 @@
     -webkit-backdrop-filter:blur(5px) saturate(100%) !important;
   }
 }
+
+/* Canonical main-hub glass material, shared by hub/group/admin cards. */
+@media screen {
+  /* Floating glass: retain each card's identifying --cc hue at half tint. */
+  html body :is(a.hublink,.adm-card){
+    --glass-shadow:inset 0 1px 0 rgba(255,255,255,.72),inset 1px 0 0 rgba(255,255,255,.32),inset 0 0 0 1px rgba(255,255,255,.14),inset 0 -1px 0 rgba(0,0,0,.3),0 8px 12px -7px rgba(0,0,0,.55),0 18px 30px -8px rgba(0,0,0,.5) !important;
+    background:linear-gradient(90deg,color-mix(in srgb,var(--cc,#5b6570) 31%,transparent) 0%,color-mix(in srgb,var(--cc,#5b6570) 14%,transparent) 28%,color-mix(in srgb,var(--cc,#5b6570) 3.5%,transparent) 62%,rgba(255,255,255,.02) 100%),linear-gradient(155deg,rgba(255,255,255,.09) 0%,rgba(15,19,26,.12) 48%,rgba(255,255,255,.035) 100%) !important;
+    border:0 !important;border-radius:22px !important;padding:18px 18px 18px 22px !important;
+    backdrop-filter:blur(5px) saturate(100%) !important;-webkit-backdrop-filter:blur(5px) saturate(100%) !important;
+    box-shadow:var(--glass-shadow) !important;transition:transform .25s ease,box-shadow .25s ease !important;
+  }
+  html body :is(a.hublink,.adm-card):hover{
+    transform:translateY(-4px) !important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.85),inset 1px 0 0 rgba(255,255,255,.4),inset 0 0 0 1px rgba(255,255,255,.2),inset 0 -1px 0 rgba(0,0,0,.3),0 12px 18px -8px rgba(0,0,0,.55),0 25px 38px -9px rgba(0,0,0,.55) !important;
+  }
+  html body :is(a.hublink,.adm-card):active{transform:translateY(1px) !important}
+  html body :is(a.hublink,.adm-card)::after{
+    content:"" !important;position:absolute !important;left:1px !important;right:1px !important;top:1px !important;height:30% !important;border-radius:22px 22px 50% 50% !important;
+    background:radial-gradient(ellipse at 18% 0%,rgba(255,255,255,.17),rgba(255,255,255,.035) 48%,transparent 74%) !important;pointer-events:none !important;
+  }
+  html body :is(a.hublink,.adm-card) :is(.hubicon,.adm-ic){z-index:1 !important}
+  html body :is(a.hublink,.adm-card) :is(.hbody,.adm-body){position:relative !important;z-index:1 !important}
+  html body :is(a.hublink,.adm-card) :is(.hname,.adm-body b){
+    color:#fff !important;text-transform:uppercase !important;letter-spacing:.6px !important;font-weight:750 !important;
+    text-shadow:-1px 1px 0 rgba(0,0,0,.85) !important;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif !important;font-size:15px !important;
+  }
+  html body :is(a.hublink,.adm-card) :is(.hdesc,.adm-body small){color:#fff !important;text-shadow:-1px 1px 0 rgba(0,0,0,.8) !important}
+  html body :is(a.hublink,.adm-card) :is(.hbody,.adm-body) .htop .hcat,
+  html body :is(a.hublink,.adm-card) :is(.hbody,.adm-body) .haccess{
+    color:#fff !important;text-transform:uppercase !important;letter-spacing:.6px !important;font-weight:700 !important;
+    text-shadow:-1px 1px 0 rgba(0,0,0,.85) !important;
+    background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,.04)) !important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.45),inset 0 -1px 0 rgba(0,0,0,.2),0 2px 4px rgba(0,0,0,.25) !important;
+    font-size:10px !important;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif !important;
+  }
+  html body :is(a.hublink,.adm-card).unset :is(.hname,.adm-body b)::after{color:#ffd27a !important}
+  html body :is(a.hublink,.adm-card).unset:hover{transform:none !important;box-shadow:var(--glass-shadow) !important}
+
+
+}
