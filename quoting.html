@@ -532,7 +532,17 @@ body{display:flex !important; flex-direction:column; min-height:0; overflow:hidd
   .mat-item input.mi-name{width:100%; border:1px solid transparent; background:transparent; border-radius:4px; padding:6px; font-size:15px}
   .mat-item input.mi-name:hover{border-color:var(--line); background:#fff}
   .mat-item input.mi-name:focus{border-color:var(--red); background:#fff; outline:none}
-  .mat-item.filled td{background:#eef7ef}
+  .mat-item td:first-child{position:relative}
+  .mat-item input.mi-name.mi-expanded{position:absolute; left:6px; top:3px; z-index:30; width:auto; box-shadow:0 4px 14px rgba(0,0,0,.22); box-sizing:border-box}
+  /* Row banding: three light shades (blue, green, purple) repeat down every list, including rows added later. */
+  .mat-sub-body tbody > tr.mat-item:nth-child(3n+1) > td{background:#e8f1fb}
+  .mat-sub-body tbody > tr.mat-item:nth-child(3n+2) > td{background:#e6f5ea}
+  .mat-sub-body tbody > tr.mat-item:nth-child(3n+3) > td{background:#f0eaf9}
+  .mat-sub-body tbody > tr.mat-item.filled > td{background:#cfe9d4}
+  .mat-sub-body tbody > tr.mat-item.filled > td:first-child{box-shadow:inset 4px 0 0 var(--good)}
+  .mat-item input.mi-qty{width:58px; padding:9px 6px}
+  .mat-sub-body th:nth-child(3), .mat-sub-body td:nth-child(3){width:72px}
+  .mat-nav .mn-name{font-weight:700}
   .mat-item .mat-del{background:none; border:none; color:#c7ccd3; cursor:pointer; font-size:15px; line-height:1; padding:2px 6px}
   .mat-item .mat-del:hover{color:var(--red)}
   .mat-addbtn{
@@ -1906,8 +1916,45 @@ function buildMaterialCatalog(data){
   (data || MATERIAL_CATALOG).forEach(cat => host.appendChild(renderMatCategory(cat)));
   // Re-apply the current lock state to the freshly-rendered name inputs.
   syncMatLock(!host.classList.contains('structure-locked'));
+  matPinFavorites();
+  host.querySelectorAll('.mat-sub-body tbody').forEach(matSortBody);
   buildMatNav();
 }
+
+/* Pin the 5-Year Common (favorites) category to the top of the list. */
+function matPinFavorites(){
+  const host = $('materialCatalog'); if (!host) return;
+  const fav = [...host.querySelectorAll('.mat-cat')].find(c => /^\s*5-year common/i.test((c.querySelector('.cat-name') || {}).value || ''));
+  if (fav && host.firstElementChild !== fav) host.insertBefore(fav, host.firstElementChild);
+}
+
+/* Automatic ordering: items sort by their first listed size (smallest to largest), then by name.
+   Items with no size follow, then blank rows. Runs on every build and whenever an item name changes. */
+function matSizeKey(name){
+  const m = /(?<![\d.\/])(?:(\d{1,2})[\s-]+)?(\d{1,2})\/(\d{1,2})\s*["\u201d]|(?<![\d.\/])(\d{1,2}(?:\.\d+)?)\s*["\u201d]/.exec(name || '');
+  if (!m) return null;
+  return m[4] != null ? parseFloat(m[4]) : (m[1] ? parseInt(m[1],10) : 0) + parseInt(m[2],10) / parseInt(m[3],10);
+}
+function matSortBody(tb){
+  const rows = [...tb.querySelectorAll(':scope > tr.mat-item')];
+  const info = rows.map((tr, i) => {
+    const name = ((tr.querySelector('.mi-name') || {}).value || '').trim();
+    return { tr, i, name, size: matSizeKey(name) };
+  });
+  const rank = o => o.name === '' ? 2 : (o.size == null ? 1 : 0);
+  info.sort((a, b) => rank(a) - rank(b) ||
+    (rank(a) === 0 && a.size !== b.size ? a.size - b.size : 0) ||
+    a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }) || a.i - b.i);
+  const before = rows.map(r => r);
+  if (info.every((o, k) => o.tr === before[k])) return;
+  info.forEach(o => tb.appendChild(o.tr));
+}
+document.addEventListener('change', function(e){
+  const inp = e.target;
+  if (inp && inp.matches && inp.matches('#materialCatalog input.mi-name')){
+    const tb = inp.closest('tbody'); if (tb) matSortBody(tb);
+  }
+});
 
 /* Build the left-hand category rail for the two-pane layout, and show the
    first category. Called after any structural change (build, add, delete). */
@@ -2063,6 +2110,49 @@ function matItemRow(it){
   tr.querySelector('.mat-del').addEventListener('click', () => { tr.remove(); recalc(); });
   return tr;
 }
+
+/* Show the full item name: when a name is wider than its box, hovering shows it as a tooltip
+   and clicking into it widens the box over the neighbouring columns while editing. */
+(function(){
+  function fit(inp){
+    const td = inp.parentElement;
+    if(!td) return;
+    td.style.height = td.offsetHeight + 'px';
+    inp.classList.add('mi-expanded');
+    const cap = (td.closest('.mat-sub-body') || document.body).getBoundingClientRect().right - td.getBoundingClientRect().left - 14;
+    inp.style.width = Math.max(td.clientWidth - 12, Math.min(inp.scrollWidth + 16, cap)) + 'px';
+  }
+  function unfit(inp){
+    inp.classList.remove('mi-expanded'); inp.style.width = '';
+    if(inp.parentElement) inp.parentElement.style.height = '';
+  }
+  // Quantities hold at most four digits.
+  document.addEventListener('input', function(e){
+    const q = e.target;
+    if(q && q.matches && q.matches('input.mi-qty')){
+      const digits = String(q.value).replace(/\D/g,'');
+      if(digits.length > 4 || digits !== q.value){ q.value = digits.slice(0,4); }
+    }
+  });
+  document.addEventListener('focusin', function(e){
+    const inp = e.target;
+    if(inp && inp.matches && inp.matches('input.mi-name') && inp.scrollWidth > inp.clientWidth) fit(inp);
+  });
+  document.addEventListener('input', function(e){
+    const inp = e.target;
+    if(inp && inp.matches && inp.matches('input.mi-name') && document.activeElement === inp){
+      unfit(inp); fit(inp);
+    }
+  });
+  document.addEventListener('focusout', function(e){
+    const inp = e.target;
+    if(inp && inp.matches && inp.matches('input.mi-name')){ unfit(inp); inp.title = inp.value; }
+  });
+  document.addEventListener('mouseover', function(e){
+    const inp = e.target;
+    if(inp && inp.matches && inp.matches('input.mi-name')) inp.title = inp.scrollWidth > inp.clientWidth ? inp.value : '';
+  });
+})();
 
 function addMatCategory(){
   const host = $('materialCatalog');
