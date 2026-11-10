@@ -52,20 +52,20 @@
   }
   .suitebar button:hover{color:#fff}
   .suitebar button.active{color:#fff; border-bottom-color:var(--red)}
-  .suitebar button.export{
-    align-self:center; margin:0 4px 0 18px; padding:8px 16px;
-    border:1px solid #8fd2d9; border-bottom:1px solid #8fd2d9;
-    border-radius:6px; background:#d6f0f3; color:#0d5b64;
+  .suitebar button.export, .suitebar button.draft, .suitebar button.startnew{
+    align-self:center; margin:0 3px; padding:8px 15px;
+    border-radius:6px; border:1px solid transparent; font-weight:700;
     text-transform:none; letter-spacing:.02em; font-size:12.5px;
   }
-  .suitebar button.export:hover{background:#c2e9ee; color:#0d5b64; border-color:#6fc4cd}
+  .suitebar button.export{margin:0 4px 0 18px; background:#2e9e5b; border-color:#1f7a42; color:#fff}
+  .suitebar button.export:hover{background:#27884e; color:#fff; border-color:#17603a}
   .suitebar button.export:disabled{opacity:.6; cursor:default}
-  .suitebar button.draft{
-    align-self:center; margin:0 3px; padding:8px 14px;
-    border:1px solid #26407a; border-radius:6px; background:#eef5fb; color:#12245c;
-    text-transform:none; letter-spacing:.02em; font-size:12.5px;
-  }
-  .suitebar button.draft:hover{background:#d1e8fc; color:#010039; border-color:#3281b9}
+  .suitebar button.draft.save{background:#f2c230; border-color:#c99a10; color:#3d2f00}
+  .suitebar button.draft.save:hover{background:#e6b41f; color:#2a2000; border-color:#a67c05}
+  .suitebar button.draft.load{background:#2f6fd0; border-color:#1f4f9e; color:#fff}
+  .suitebar button.draft.load:hover{background:#2660b8; color:#fff; border-color:#183f7e}
+  .suitebar button.startnew{background:#c1121c; border-color:#8f0d15; color:#fff}
+  .suitebar button.startnew:hover{background:#a30f18; color:#fff; border-color:#6e0a10}
   .autosave-note{
     align-self:center; margin-left:10px; font-size:11.5px; color:#9fb8d6;
     white-space:nowrap; transition:opacity .4s; font-style:italic;
@@ -162,7 +162,7 @@
       min-height:40px; padding:0 16px;
       margin-bottom:0; border-bottom-width:3px;
     }
-    .suitebar button.export, .suitebar button.signout{
+    .suitebar button.export, .suitebar button.signout, .suitebar button.draft, .suitebar button.startnew{
       align-self:auto; margin:0 2px; min-height:40px;
     }
   }
@@ -221,8 +221,9 @@ body{display:flex !important; flex-direction:column; min-height:0; overflow:hidd
     <button id="tab-install" type="button" onclick="showView('install')">New Install</button>
     <button id="tab-backflow" type="button" onclick="showView('backflow')">Backflow</button>
     <button id="btn-export" class="export" type="button" onclick="exportFullPackage()" title="Combined PDF of selected pages, plus the Word proposal">Export Full Package</button>
-    <button id="btn-savedraft" class="draft" type="button" onclick="saveSuiteDraft()" title="Save all pages as one draft file">Save Draft</button>
-    <button id="btn-loaddraft" class="draft" type="button" onclick="document.getElementById('suiteDraftFile').click()" title="Load a saved suite draft">Load Draft</button>
+    <button id="btn-savedraft" class="draft save" type="button" onclick="saveSuiteDraft()" title="Save all pages as one draft file">Save Draft</button>
+    <button id="btn-loaddraft" class="draft load" type="button" onclick="document.getElementById('suiteDraftFile').click()" title="Load a saved suite draft">Load Draft</button>
+    <button id="btn-startnew" class="startnew" type="button" onclick="startNewQuote()" title="Clear every page and start a brand new quote">Start New</button>
     <input type="file" id="suiteDraftFile" accept=".json,.fdecsuite,application/json" style="display:none" onchange="loadSuiteDraftFile(this)">
     <label id="closeWarnToggle" class="closewarn-toggle" title="Warn me before closing if there are unsaved changes">
       <input type="checkbox" id="closeWarnChk" checked onchange="_closeWarnEnabled = this.checked">
@@ -3998,7 +3999,7 @@ const LIBRARY = {
         "Perform dry system flushing."
       ] },
     "Return 2–4 weeks later to drain any residual water from the drum drip and low-point drains.",
-    "Furnish and install one (1) new system pressure gauge(s) and associated 3-way valves.",
+    "Replace one (1) system pressure gauge(s) and associated 3-way valves.",
     { text: "Install the proper sprinklers, wrench, and equipment list in the spare head cabinet.",
       subs: [
         "Any non-stock sprinklers identified during this work will be quoted separately. These are sprinklers outside our standard inventory — specialty models, discontinued or obsolete models, or non-standard finishes, temperature ratings, or K-factors — that require special order from the manufacturer."
@@ -5064,6 +5065,46 @@ if (_btnSave) _btnSave.addEventListener("click", () => {
     if (!d || d.fdec !== true || d.type !== "downpayment") return;
     const display = d.display || ("$" + Number(d.value || 0).toFixed(2));
     fillDownPayment(display);
+  });
+})();
+
+/* ------------------------------------------------------------
+   Down payment mirror: the amount typed in the Notes down payment
+   line is copied into the Billing & Payment Terms down payment
+   line, so it shows in both places and only has to be entered once.
+   ------------------------------------------------------------ */
+(function(){
+  const DP = /(A down payment of\s+)(\$[\d,]+(?:\.\d{1,2})?|\$?_+)(\s+is required)/i;
+  function mirrorDownPayment(){
+    try{
+      if (typeof state === "undefined" || !state.notes || !state.billing) return;
+      let amt = null;
+      for (const n of state.notes){
+        const m = DP.exec(n.text || "");
+        if (m && /\d/.test(m[2])){ amt = m[2]; break; }
+      }
+      if (!amt) return;
+      let touched = false;
+      state.billing.forEach(b => {
+        const m = DP.exec(b.text || "");
+        if (m && m[2] !== amt){ b.text = b.text.replace(DP, (x, pre, a, post) => pre + amt + post); touched = true; }
+      });
+      if (touched) render("billing");
+    }catch(ex){ console.error(ex); }
+  }
+  const _render = render;
+  render = function(key){
+    const r = _render.apply(this, arguments);
+    if (key === "notes" || key === "billing") mirrorDownPayment();
+    return r;
+  };
+  document.addEventListener("input", function(e){
+    const t = e.target;
+    if (t && t.closest && t.closest("#list-notes")) mirrorDownPayment();
+  });
+  document.addEventListener("change", function(e){
+    const t = e.target;
+    if (t && t.closest && t.closest("#list-notes")) mirrorDownPayment();
   });
 })();
 <\/script>
@@ -6556,6 +6597,46 @@ if (_btnSave) _btnSave.addEventListener("click", () => {
     fillDownPayment(display);
   });
 })();
+
+/* ------------------------------------------------------------
+   Down payment mirror: the amount typed in the Notes down payment
+   line is copied into the Billing & Payment Terms down payment
+   line, so it shows in both places and only has to be entered once.
+   ------------------------------------------------------------ */
+(function(){
+  const DP = /(A down payment of\s+)(\$[\d,]+(?:\.\d{1,2})?|\$?_+)(\s+is required)/i;
+  function mirrorDownPayment(){
+    try{
+      if (typeof state === "undefined" || !state.notes || !state.billing) return;
+      let amt = null;
+      for (const n of state.notes){
+        const m = DP.exec(n.text || "");
+        if (m && /\d/.test(m[2])){ amt = m[2]; break; }
+      }
+      if (!amt) return;
+      let touched = false;
+      state.billing.forEach(b => {
+        const m = DP.exec(b.text || "");
+        if (m && m[2] !== amt){ b.text = b.text.replace(DP, (x, pre, a, post) => pre + amt + post); touched = true; }
+      });
+      if (touched) render("billing");
+    }catch(ex){ console.error(ex); }
+  }
+  const _render = render;
+  render = function(key){
+    const r = _render.apply(this, arguments);
+    if (key === "notes" || key === "billing") mirrorDownPayment();
+    return r;
+  };
+  document.addEventListener("input", function(e){
+    const t = e.target;
+    if (t && t.closest && t.closest("#list-notes")) mirrorDownPayment();
+  });
+  document.addEventListener("change", function(e){
+    const t = e.target;
+    if (t && t.closest && t.closest("#list-notes")) mirrorDownPayment();
+  });
+})();
 <\/script>
 
 
@@ -8019,6 +8100,46 @@ if (_btnSave) _btnSave.addEventListener("click", () => {
     if (!d || d.fdec !== true || d.type !== "downpayment") return;
     const display = d.display || ("$" + Number(d.value || 0).toFixed(2));
     fillDownPayment(display);
+  });
+})();
+
+/* ------------------------------------------------------------
+   Down payment mirror: the amount typed in the Notes down payment
+   line is copied into the Billing & Payment Terms down payment
+   line, so it shows in both places and only has to be entered once.
+   ------------------------------------------------------------ */
+(function(){
+  const DP = /(A down payment of\s+)(\$[\d,]+(?:\.\d{1,2})?|\$?_+)(\s+is required)/i;
+  function mirrorDownPayment(){
+    try{
+      if (typeof state === "undefined" || !state.notes || !state.billing) return;
+      let amt = null;
+      for (const n of state.notes){
+        const m = DP.exec(n.text || "");
+        if (m && /\d/.test(m[2])){ amt = m[2]; break; }
+      }
+      if (!amt) return;
+      let touched = false;
+      state.billing.forEach(b => {
+        const m = DP.exec(b.text || "");
+        if (m && m[2] !== amt){ b.text = b.text.replace(DP, (x, pre, a, post) => pre + amt + post); touched = true; }
+      });
+      if (touched) render("billing");
+    }catch(ex){ console.error(ex); }
+  }
+  const _render = render;
+  render = function(key){
+    const r = _render.apply(this, arguments);
+    if (key === "notes" || key === "billing") mirrorDownPayment();
+    return r;
+  };
+  document.addEventListener("input", function(e){
+    const t = e.target;
+    if (t && t.closest && t.closest("#list-notes")) mirrorDownPayment();
+  });
+  document.addEventListener("change", function(e){
+    const t = e.target;
+    if (t && t.closest && t.closest("#list-notes")) mirrorDownPayment();
   });
 })();
 <\/script>
@@ -9568,6 +9689,46 @@ if (_btnSave) _btnSave.addEventListener("click", () => {
     fillDownPayment(display);
   });
 })();
+
+/* ------------------------------------------------------------
+   Down payment mirror: the amount typed in the Notes down payment
+   line is copied into the Billing & Payment Terms down payment
+   line, so it shows in both places and only has to be entered once.
+   ------------------------------------------------------------ */
+(function(){
+  const DP = /(A down payment of\s+)(\$[\d,]+(?:\.\d{1,2})?|\$?_+)(\s+is required)/i;
+  function mirrorDownPayment(){
+    try{
+      if (typeof state === "undefined" || !state.notes || !state.billing) return;
+      let amt = null;
+      for (const n of state.notes){
+        const m = DP.exec(n.text || "");
+        if (m && /\d/.test(m[2])){ amt = m[2]; break; }
+      }
+      if (!amt) return;
+      let touched = false;
+      state.billing.forEach(b => {
+        const m = DP.exec(b.text || "");
+        if (m && m[2] !== amt){ b.text = b.text.replace(DP, (x, pre, a, post) => pre + amt + post); touched = true; }
+      });
+      if (touched) render("billing");
+    }catch(ex){ console.error(ex); }
+  }
+  const _render = render;
+  render = function(key){
+    const r = _render.apply(this, arguments);
+    if (key === "notes" || key === "billing") mirrorDownPayment();
+    return r;
+  };
+  document.addEventListener("input", function(e){
+    const t = e.target;
+    if (t && t.closest && t.closest("#list-notes")) mirrorDownPayment();
+  });
+  document.addEventListener("change", function(e){
+    const t = e.target;
+    if (t && t.closest && t.closest("#list-notes")) mirrorDownPayment();
+  });
+})();
 <\/script>
 
 
@@ -10164,6 +10325,26 @@ function loadSuiteDraftFile(input){
     alert('Suite draft loaded' + (when ? ' (saved ' + when + ')' : '') + '. All pages have been restored.');
   };
   reader.readAsText(file);
+}
+
+/* Start New: after the user confirms, clear every page of the quoting book and
+   begin a fresh quote. Each page is reloaded from its pristine source, so every
+   field on every page returns to its default. */
+function startNewQuote(){
+  if (!confirm('Start a new quote?\n\nThis clears every field on every page of the quoting book. Anything you have not saved with Save Draft will be lost.\n\nSelect OK to start a new quote, or Cancel to keep working.')) return;
+  try { localStorage.removeItem(AUTOSAVE_KEY); } catch(_){}
+  try { localStorage.removeItem('fdec_edit_quotefile'); } catch(_){}
+  _autosaveState = null;
+  clearTimeout(_autosaveWriteTimer);
+  window.__fdecEditQF = null;
+  var qb = document.getElementById('qfEditBar'); if (qb && qb.parentNode) qb.parentNode.removeChild(qb);
+  var rb = document.getElementById('restoreBanner'); if (rb) rb.style.display = 'none';
+  _loadGraceUntil = Date.now() + 4000;
+  markClean();
+  loadApps();
+  try { showView('quote'); } catch(_){}
+  var note = document.getElementById('autosaveNote');
+  if (note){ note.textContent = 'New quote started'; note.style.opacity = '1'; setTimeout(function(){ note.style.opacity = '0'; }, 2500); }
 }
 
 /* Edit handoff: Administration stores a saved quote here and opens this page to
