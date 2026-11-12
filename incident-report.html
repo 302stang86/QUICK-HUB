@@ -23,12 +23,13 @@
     color: var(--text);
     line-height: 1.5;
     margin: 0;
-    padding: 24px 16px;
+    padding: 0;           /* header and banner run edge to edge like the hub */
   }
 
   .sheet {
     max-width: 720px;
-    margin: 0 auto;
+    width: calc(100% - 32px);
+    margin: 24px auto;
     background: #ffffff;
     border-radius: 8px;
     overflow: hidden;
@@ -191,14 +192,33 @@ body>*{position:relative;z-index:1;}
 <script defer src="fdec-header.js?v=88-industrial"></script>
   <style>
   /* Full-bleed the universal banner + actions past the body's page padding (24px 16px) */
-  .fdec-ubar{ width:calc(100% + 32px) !important; margin:-24px -16px 0; }
-  .fdec-ubar-actions{ width:calc(100% + 32px) !important; margin:0 -16px 20px; }
   </style>
+<style>
+  /* Hub tab bar, same as the Quick Hub main page */
+  header.hubtabs{background:#12213c;color:#fff;padding:0;position:relative;z-index:1}
+  nav.tabs{max-width:1100px;margin:12px auto 0;display:flex;gap:10px;overflow-x:auto;padding:6px 8px 14px}
+  nav.tabs button{appearance:none;border:0;cursor:pointer;color:#fff;text-transform:uppercase;letter-spacing:.6px;font-weight:900;font-family:'Arial Black',Arial,sans-serif;text-shadow:0 .5px 0 #e0e0e0,0 1px 0 #ccc,0 1.5px 2px rgba(0,0,0,.5);font-size:12px;padding:11px 20px;white-space:nowrap;border-radius:13px;background:linear-gradient(180deg,rgba(255,255,255,.28) 0%,rgba(255,255,255,.07) 52%,rgba(255,255,255,.15) 100%);backdrop-filter:blur(2px) saturate(140%);-webkit-backdrop-filter:blur(2px) saturate(140%);box-shadow:inset 0 1.2px 0 rgba(255,255,255,.85),inset 1px 0 0 rgba(255,255,255,.4),inset 0 0 0 1px rgba(255,255,255,.15),inset 0 -2px 3px rgba(0,0,0,.3),0 2px 3px rgba(0,0,0,.4),0 6px 12px rgba(0,0,0,.35);transition:transform .2s ease,box-shadow .2s ease}
+  nav.tabs button:hover{transform:translateY(-2px);box-shadow:inset 0 1.2px 0 rgba(255,255,255,.95),inset 1px 0 0 rgba(255,255,255,.5),inset 0 0 0 1px rgba(255,255,255,.2),inset 0 -2px 3px rgba(0,0,0,.3),0 3px 4px rgba(0,0,0,.4),0 10px 16px rgba(0,0,0,.4)}
+  nav.tabs button:active{transform:translateY(1px)}
+  nav.tabs button.active{background:linear-gradient(180deg,rgba(255,150,150,.45) 0%,rgba(193,18,28,.55) 52%,rgba(193,18,28,.7) 100%);box-shadow:inset 0 1.2px 0 rgba(255,255,255,.9),inset 1px 0 0 rgba(255,255,255,.45),inset 0 0 0 1px rgba(255,255,255,.22),inset 0 -3px 6px rgba(90,0,6,.5),0 0 14px rgba(193,18,28,.55),0 6px 12px rgba(0,0,0,.4)}
+
+  @media print{header.hubtabs{display:none !important}}
+</style>
 </head>
 <body>
 <div class="bg-layer" aria-hidden="true"></div>
 <a id="hubLink" href="index.html">&larr; Hub</a>
 
+
+<header class="hubtabs no-print">
+  <nav class="tabs" id="tabs">
+    <button type="button" data-go="index.html#home">Home</button>
+    <button type="button" data-go="index.html#sop">SOP</button>
+    <button type="button" data-go="index.html#confined">Confined Space Permitting</button>
+    <button type="button" data-go="index.html#lifts">Scissor &amp; Boom Lift</button>
+    <button type="button" class="active" aria-current="page">Incident Reporting</button>
+  </nav>
+</header>
 
 <div class="sheet">
   <div class="masthead">
@@ -352,5 +372,10 @@ body>*{position:relative;z-index:1;}
 </script>
 
 <script type="module" src="fdec-auth.js" data-page="incident"></script>
+<script>
+document.querySelectorAll('#tabs button[data-go]').forEach(function(b){
+  b.addEventListener('click',function(){ window.location.href = b.getAttribute('data-go'); });
+});
+</script>
 </body>
 </html>

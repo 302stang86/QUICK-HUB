@@ -902,6 +902,14 @@ document.addEventListener('click', function(e){
     });
   });
 
+  // Open the tab named in the address (index.html#sop) so other pages can link to it.
+  (function(){
+    var name = (window.location.hash || '').slice(1);
+    if(!name) return;
+    var b = document.querySelector('#tabs button[data-tab="'+name+'"]');
+    if(b) b.click();
+  })();
+
   // ---------- SOP search ----------
   var search = document.getElementById('sopSearch');
   var none = document.getElementById('sopNone');
