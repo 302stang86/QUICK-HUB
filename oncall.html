@@ -384,11 +384,14 @@ body>*{position:relative;z-index:1;}
       <h2>How the rotation works</h2>
       <div class="body">
         <ul class="notes">
-          <li><strong>First Up</strong> is the primary on-call technician. <strong>Second Up</strong> is the backup if First Up is unavailable.</li>
-          <li>For vacation or personal time, note it and reassign that week's dropdowns. Keep two different techs per week; a duplicate is flagged red.</li>
+          <li><strong>First Up</strong> is the primary on-call technician. <strong>Second Up</strong> is the backup if First Up is unavailable. Each on-call week runs Sunday through Saturday.</li>
+          <li>Two (2) different technicians are on call each week. Managers are never placed in the rotation.</li>
+          <li>With four (4) or more technicians, nobody is on call two (2) weeks in a row in either role, so each technician gets at least one (1) full week off between turns. With five (5) technicians that is usually one (1) or two (2) weeks off.</li>
+          <li>Each technician carries about the same number of on-call weeks, and holiday weeks are shared as evenly as the rotation allows.</li>
+          <li>For vacation or personal time, add a note and reassign that week's dropdowns. A week is flagged red when the same technician holds both roles or is on call two (2) weeks in a row.</li>
           <li>The current week is highlighted in green. Pick a date from the calendar to outline that week in dark red.</li>
           <li>Weeks containing a U.S. federal holiday are marked with a ★ and the holiday name so techs can plan ahead.</li>
-          <li>The rotation runs continuously from 2026 into 2027, advancing one technician each week.</li>
+          <li>The rotation runs continuously from September 13, 2026 through December 31, 2027. Only admins and managers can edit; the schedule shown is the same on every device.</li>
           <li>Refer to Fire Defense Equipment Co. policies regarding holiday pay, holiday paid days off, and which holidays are included.</li>
         </ul>
       </div>
@@ -402,7 +405,7 @@ body>*{position:relative;z-index:1;}
           <input id="newTech" type="text" placeholder="Add technician name…" aria-label="New technician name">
           <button id="addTech" type="button">Add</button>
         </div>
-        <p class="rosterhint">Roster changes apply to upcoming weeks only. Past and current weeks keep their assignments. Any two techs may share a week as First Up and Second Up. Second Up is never First Up the following week. Managers are listed for reference only and are never placed in the rotation.</p>
+        <p class="rosterhint">Roster changes apply to upcoming weeks only. Past and current weeks keep their assignments. Upcoming weeks are respaced automatically when the roster changes, and techs are not placed on call two (2) weeks in a row where the roster allows it. Managers are listed for reference only and are never placed in the rotation.</p>
       </div>
     </section>
 
