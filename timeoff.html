@@ -269,6 +269,7 @@ body>*{position:relative;z-index:1;}
 <meta name="fdec-page-title" content="Time-Off Requests">
 <meta name="fdec-hide" content="header.bar .mark">
 <script defer src="fdec-header.js?v=88-industrial"></script>
+<script defer src="fdec-alert-sound.js?v=1"></script>
 </head>
 <body>
 <div class="bg-layer" aria-hidden="true"></div>
@@ -618,6 +619,8 @@ function startFeeds(){
         .sort((a,b) => (b.startDate || "").localeCompare(a.startDate || ""));
       buildTabs();
       render();
+      // One chime when a new request is sent to this manager; clears when handled.
+      try{ if(isMgr && window.FDECAlerts){ window.FDECAlerts.signal('timeoff', myRequests.filter(r => r.status === 'pending' && addressedToMe(r)).length); } }catch(e){}
     },
     e => toast("Could not load requests: " + e.message, 5000)
   ));
