@@ -282,7 +282,8 @@ body>*{position:relative;z-index:1;}
     <button id="balBtn" type="button">Rebalance holidays</button>
     <button id="resetBtn" class="danger" type="button">Reset everything</button>
     <span class="spacer"></span>
-    <span class="hint" id="modeHint">View-only. Click “Admin” to unlock editing.</span>
+    <span class="hint" id="syncNote" style="font-weight:700"></span>
+    <span class="hint" id="modeHint">View-only. Admins and managers can click “Admin” to unlock editing.</span>
   </div>
 
   <div class="yearbar">
@@ -492,11 +493,24 @@ body>*{position:relative;z-index:1;}
     }
     return c;
   }
+  // With four (4) or more techs, nobody is on call two weeks running in either
+  // role, so every tech gets at least one (1) full week off between turns.
+  // Smaller rosters cannot do that, so they keep the older, looser rules.
+  var spreadOn = true;
+  function setSpread(roster){ spreadOn = techsOnly(roster).length >= 4; }
+  function sharesTech(x,y){
+    return x.first===y.first || x.first===y.second || x.second===y.first || x.second===y.second;
+  }
   function weekOk(assign,i){
     var a=assign[i];
     if(!a) return true;
     if(a.first===a.second) return false;            // one tech cannot hold both roles
     var p=assign[i-1], nx=assign[i+1];
+    if(spreadOn){
+      if(p  && sharesTech(p,a))  return false;
+      if(nx && sharesTech(nx,a)) return false;
+      return true;
+    }
     // nobody repeats the same role on back-to-back weeks
     if(p  && (p.first===a.first  || p.second===a.second))  return false;
     if(nx && (nx.first===a.first || nx.second===a.second)) return false;
@@ -511,9 +525,7 @@ body>*{position:relative;z-index:1;}
   function repairAdjacency(assign, startIdx){
     var fixed=0;
     for(var i=Math.max(startIdx,1);i<assign.length;i++){
-      if(assign[i].first!==assign[i-1].first
-      && assign[i].second!==assign[i-1].second
-      && assign[i].first!==assign[i-1].second) continue;
+      if(weekOk(assign,i)) continue;
       for(var j=startIdx;j<assign.length;j++){
         if(j===i || j===i-1 || j===i+1) continue;
         var a=assign[i], b=assign[j];
@@ -553,29 +565,114 @@ body>*{position:relative;z-index:1;}
     return v.reduce(function(a,x){ return a + (x-mean)*(x-mean); },0);
   }
 
-  // Local search. Trades whole weeks at random, keeping any trade that leaves
-  // the holiday load no more lopsided than before. Accepting sideways trades is
-  // what lets it work around the pairing rules a strict greedy pass gets stuck
-  // on. Stops as soon as the spread is one (1) week or less.
-  function balanceHolidays(assign, roster, startIdx){
+  // How uneven the gaps between each tech's on-call weeks are. Two (2) roles per
+  // week means a tech is on about every (techs / 2) weeks; gaps near that are best.
+  function spacingScore(assign, roster){
+    var n=techsOnly(roster).length; if(n<2) return 0;
+    var ideal=n/2, last={}, sc=0;
+    for(var i=0;i<assign.length;i++){
+      [assign[i].first, assign[i].second].forEach(function(t){
+        if(last[t]!==undefined){ var d=i-last[t]-ideal; sc+=d*d; }
+        last[t]=i;
+      });
+    }
+    return sc;
+  }
+
+  // Local search. Trades whole weeks at random and keeps a trade only when the
+  // combined cost (holiday fairness first, then even spacing) does not get worse.
+  // Seeded, so every browser builds the same result from the same roster.
+  function balanceOnce(assign, roster, startIdx, seedAdd){
+    setSpread(roster);
     var techs = techsOnly(roster);
     if(techs.length < 3) return 0;
-    var rnd = mulberry32(seedOf(techs));
-    var cur = holidayScore(assign, roster), moves = 0, N = assign.length;
+    var rnd = mulberry32((seedOf(techs)+seedAdd*7919)>>>0);
+    function cost(){ return holidayScore(assign, roster)*100 + spacingScore(assign, roster); }
+    var cur = cost(), moves = 0, N = assign.length;
     for(var it=0; it<6000; it++){
-      if(holidaySpread(assign, roster) <= 1) break;
       var i = startIdx + Math.floor(rnd()*(N-startIdx));
       var j = startIdx + Math.floor(rnd()*(N-startIdx));
       if(i===j || i>=N || j>=N) continue;
       var x = assign[i], y = assign[j];
-      assign[i] = { first:y.first, second:y.second, note:x.note };
-      assign[j] = { first:x.first, second:x.second, note:y.note };
+      var mode = rnd();
+      if(mode < 0.3){
+        // trade only the First Up roles of the two weeks (holiday load moves, pairs change)
+        assign[i] = { first:y.first, second:x.second, note:x.note };
+        assign[j] = { first:x.first, second:y.second, note:y.note };
+      } else if(mode < 0.5){
+        // flip First Up and Second Up inside one week
+        assign[i] = { first:x.second, second:x.first, note:x.note };
+        j = i; y = x;
+      } else {
+        assign[i] = { first:y.first, second:y.second, note:x.note };
+        assign[j] = { first:x.first, second:x.second, note:y.note };
+      }
       if(!weekOk(assign,i) || !weekOk(assign,j)){ assign[i]=x; assign[j]=y; continue; }
-      var sc = holidayScore(assign, roster);
-      if(sc <= cur){ cur = sc; moves++; }
+      var sc = cost();
+      if(sc < cur - 1e-9){ cur = sc; moves++; }
       else { assign[i]=x; assign[j]=y; }
     }
     return moves;
+  }
+
+  // Builds the weeks from startIdx forward one week at a time (beam search).
+  // Each week takes two (2) techs who were not on call the week before, and the
+  // search keeps the best partial schedules by: even gaps between each tech's
+  // turns first, then an even share of holiday weeks and of total weeks.
+  // Weeks before startIdx are left alone and counted. Notes stay with the week.
+  function buildSpaced(assign, roster, startIdx){
+    var techs = techsOnly(roster), n = techs.length, N = assign.length;
+    var ideal = n/2, W = 160;
+    var rnd = mulberry32(seedOf(techs));
+    var base = { last:{}, hc:{}, tc:{}, path:[], cost:0 };
+    techs.forEach(function(t){ base.last[t]=-99; base.hc[t]=0; base.tc[t]=0; });
+    for(var i=0;i<startIdx;i++){
+      var a=assign[i];
+      [a.first,a.second].forEach(function(t){ if(t in base.tc){ base.tc[t]++; base.last[t]=i; } });
+      if(HOLIDAY_WEEK[i] && a.first in base.hc) base.hc[a.first]++;
+    }
+    var prev = startIdx>0 ? assign[startIdx-1] : null;
+    base.prev = prev ? [prev.first, prev.second] : [];
+    var beam=[base];
+    for(var w=startIdx; w<N; w++){
+      var next=[], seen={};
+      beam.forEach(function(st){
+        var free = techs.filter(function(t){ return st.prev.indexOf(t)===-1; });
+        free.forEach(function(f){ free.forEach(function(sc){
+          if(f===sc) return;
+          var c = st.cost + rnd()*0.02;
+          [f,sc].forEach(function(t){
+            var gap = w - st.last[t];
+            if(gap < 90){ var d = gap-1-(ideal-1); c += d*d; }   // rest weeks vs ideal rest
+            c += 0.6*(2*st.tc[t]+1);
+          });
+          if(HOLIDAY_WEEK[w]) c += 30*(2*st.hc[f]+1);
+          var ns = { last:Object.assign({},st.last), hc:Object.assign({},st.hc), tc:Object.assign({},st.tc),
+                     path:st.path.concat([[f,sc]]), cost:c, prev:[f,sc] };
+          ns.last[f]=w; ns.last[sc]=w; ns.tc[f]++; ns.tc[sc]++;
+          if(HOLIDAY_WEEK[w]) ns.hc[f]++;
+          var key = techs.map(function(t){ return Math.min(w-ns.last[t],6)+"/"+ns.hc[t]+"/"+ns.tc[t]; }).join(",");
+          if(!seen[key] || seen[key].cost > c) seen[key]=ns;
+        }); });
+      });
+      next = Object.keys(seen).map(function(k){ return seen[k]; });
+      next.sort(function(x,y){ return x.cost-y.cost; });
+      beam = next.slice(0,W);
+      if(!beam.length) return 0;
+    }
+    var best=beam[0], moves=0;
+    for(var j=startIdx;j<N;j++){
+      var p=best.path[j-startIdx];
+      if(assign[j].first!==p[0] || assign[j].second!==p[1]) moves++;
+      assign[j]={ first:p[0], second:p[1], note:assign[j].note };
+    }
+    return moves;
+  }
+
+  function balanceHolidays(assign, roster, startIdx){
+    setSpread(roster);
+    if(spreadOn) return buildSpaced(assign, roster, startIdx);
+    return balanceOnce(assign, roster, startIdx, 0);
   }
 
   function holidaysInWeek(w){
@@ -643,6 +740,7 @@ body>*{position:relative;z-index:1;}
     var techs = techsOnly(DEFAULT_ROSTER);
     if(randomize) techs = shuffle(techs);
     var roster = techs.concat(DEFAULT_ROSTER.filter(isMgr));
+    setSpread(roster);
     var assign = genAssignments(roster);
     balanceHolidays(assign, roster, 0);
     repairAdjacency(assign, 0);
@@ -676,6 +774,12 @@ body>*{position:relative;z-index:1;}
   };
   /* Lets the sync module read the current schedule (to seed the shared copy). */
   window.__oncallCurrentState = function(){ return state; };
+  window.__oncallSetStatus = function(text, kind){
+    var el=document.getElementById("syncNote"); if(!el) return;
+    el.textContent=text||"";
+    el.style.color = kind==="ok" ? "#2e6b3b" : (kind==="bad" ? "#a5121a" : "#8a5a00");
+  };
+  window.__oncallSetStatus("Loading the shared schedule…","wait");
   /* Editors hand in the roster (account names); matches each on-call key such as
      "Jacob K." to one account (same first name, same last initial) and re-renders. */
   window.__oncallSetLinks = function(users){
@@ -770,6 +874,7 @@ body>*{position:relative;z-index:1;}
   }
 
   function render(){
+    setSpread(state.roster);
     var chip=document.getElementById("nowChip");
     if(NOW_I>=0){
       var w=WEEKS[NOW_I];
@@ -794,8 +899,8 @@ body>*{position:relative;z-index:1;}
       var a=state.assign[i];
       var conflict=(a.first===a.second);
       var prev=(i>0)? state.assign[i-1] : null;
-      var repeat=!!(prev && (prev.first===a.first || prev.second===a.second));
-      var rollup=!!(prev && prev.second===a.first);
+      var repeat=!!(prev && (spreadOn ? sharesTech(prev,a) : (prev.first===a.first || prev.second===a.second)));
+      var rollup=!!(!spreadOn && prev && prev.second===a.first);
       var isNow=(i===NOW_I);
       var isSel=(i===selectedWeek);
       var hols=holidaysInWeek(w);
@@ -851,7 +956,7 @@ body>*{position:relative;z-index:1;}
     var body=document.getElementById("tallyRows"); body.innerHTML="";
     var totals=[];
     state.roster.forEach(function(t){
-      var tot=first[t]+second[t]; totals.push(tot);
+      var tot=first[t]+second[t]; if(!isMgr(t)) totals.push(tot);
       var tr=document.createElement("tr");
       tr.innerHTML='<td class="name">'+escapeHtml(dn(t))+'</td><td>'+first[t]+'</td><td>'+second[t]+'</td><td><strong>'+tot+'</strong></td>';
       body.appendChild(tr);
@@ -862,6 +967,18 @@ body>*{position:relative;z-index:1;}
       if(mx-mn<=1){ note.textContent="Balanced — within one week across the roster."; note.style.color="#2e6b3b"; }
       else{ note.textContent="Uneven — spread is "+(mx-mn)+" weeks."; note.style.color="#a5121a"; }
     } else { note.textContent=""; }
+    // Rest weeks between each tech's on-call weeks (all roles), whole schedule.
+    try{
+      var last={}, lo=99, hi=0, any=false;
+      state.assign.forEach(function(a,i){
+        [a.first,a.second].forEach(function(t){
+          if(isMgr(t)) return;
+          if(last[t]!==undefined){ var r=i-last[t]-1; if(r<lo) lo=r; if(r>hi) hi=r; any=true; }
+          last[t]=i;
+        });
+      });
+      if(any) note.textContent += "  Rest between on-call weeks: shortest "+lo+", longest "+hi+" week"+(hi===1?"":"s")+".";
+    }catch(e){}
   }
 
   document.addEventListener("change",function(ev){
@@ -882,7 +999,6 @@ body>*{position:relative;z-index:1;}
   // ---- Admin lock (view-only by default; passcode unlocks editing) ----
   // NOTE: This is a deterrent only. A static page cannot truly secure edits.
   // Change ADMIN_CODE to your desired passcode.
-  var ADMIN_CODE = "FDEC2026";
   var unlocked = false;
 
   function applyLock(){
@@ -896,21 +1012,21 @@ body>*{position:relative;z-index:1;}
     }else{
       btn.textContent="🔒 Admin: locked";
       btn.classList.remove("unlocked");
-      hint.textContent="View-only. Click “Admin” to unlock editing.";
+      hint.textContent="View-only. Admins and managers can click “Admin” to unlock editing.";
     }
   }
 
   document.getElementById("adminBtn").addEventListener("click",function(){
-    if(unlocked){
-      unlocked=false; applyLock(); return;
+    if(unlocked){ unlocked=false; applyLock(); return; }
+    if(!window.__oncallIsEditor){
+      alert("Only signed-in admins and managers can edit the on-call schedule. Everyone else sees the shared schedule read-only.");
+      return;
     }
-    var code=prompt("Enter admin passcode to enable editing:");
-    if(code===null) return;
-    if(code===ADMIN_CODE){
-      unlocked=true; applyLock();
-    }else{
-      alert("Incorrect passcode. Editing remains locked.");
+    if(!window.__oncallSynced){
+      alert("The shared schedule has not loaded yet. Wait for the status line to say it is synced, then try again.");
+      return;
     }
+    unlocked=true; applyLock();
   });
 
   // ---- Calendar popup ----
@@ -1094,6 +1210,7 @@ body>*{position:relative;z-index:1;}
       var pi = order.indexOf(prevFirst);
       if(pi !== -1) off = (pi + 1) - startIdx;
     }
+    setSpread(state.roster);
     var g = secondGap(n);
     var at = function(i){ return order[(((i + off) % n) + n) % n]; };
     for(var i=startIdx;i<WEEKS.length;i++){
@@ -1173,22 +1290,31 @@ body>*{position:relative;z-index:1;}
     from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   (function run(){
     if(!(window.FDECAuth && window.FDECAuth.ready)){ setTimeout(run,50); return; }
+    var say = function(t,k){ if(window.__oncallSetStatus) window.__oncallSetStatus(t,k); };
     window.FDECAuth.ready.then(function(auth){
-      var db; try{ db = getFirestore(getApp("fdec")); }catch(e){ return; }
+      var db; try{ db = getFirestore(getApp("fdec")); }catch(e){ say("Cannot reach the shared schedule. This device is showing a saved copy that may be out of date.","bad"); return; }
       var ref = doc(db,"config","oncall");
       var isEditor = !!(auth && (auth.isAdmin || (auth.profile && (auth.profile.role==="admin" || auth.profile.role==="manager"))));
-      // Editors publish the schedule for everyone; others only read it.
+      window.__oncallIsEditor = isEditor;
+      var synced = false, linked = false;
+      // Only editors publish, and only after the shared copy has been read once,
+      // so an old copy saved on this device can never overwrite the shared one.
       window.__oncallPush = function(state){
-        if(!isEditor || !state) return;
+        if(!isEditor || !state || !synced) return;
         try{
           setDoc(ref, {
             roster: state.roster, assign: state.assign, holBal: state.holBal || 1, links: state.links || {},
-            updatedAt: serverTimestamp(), updatedBy: (auth.profile && auth.profile.email) || ""
+            updatedAt: serverTimestamp(), updatedBy: (auth.profile && (auth.profile.name || auth.profile.email)) || ""
           });
         }catch(e){}
       };
-      // Editors can read the account roster: keep the display names linked to it.
-      if(isEditor){
+      function stamp(d){
+        var when = "";
+        try{ if(d.updatedAt && d.updatedAt.toDate) when = d.updatedAt.toDate().toLocaleString([], {dateStyle:"medium", timeStyle:"short"}); }catch(e){}
+        return "Shared schedule" + (when ? " · updated "+when : "") + (d.updatedBy ? " by "+d.updatedBy : "");
+      }
+      function linkNames(){
+        if(!isEditor || linked) return; linked = true;
         try{
           getDocs(collection(db,"users")).then(function(q){
             var arr=[]; q.forEach(function(d){ var x=d.data()||{}; if((x.status||"approved")==="approved") arr.push({uid:d.id,name:x.name||""}); });
@@ -1196,16 +1322,28 @@ body>*{position:relative;z-index:1;}
           }).catch(function(){});
         }catch(e){}
       }
-      // Live read: apply the shared schedule to this device whenever it changes.
+      // Live read: the shared copy is the only schedule. Every device applies it.
       try{
         onSnapshot(ref, function(snap){
           if(snap.exists()){
-            if(window.__oncallApplyRemote) window.__oncallApplyRemote(snap.data());
+            var d = snap.data();
+            if(window.__oncallApplyRemote) window.__oncallApplyRemote(d);
+            synced = true; window.__oncallSynced = true;
+            say(stamp(d) + (snap.metadata && snap.metadata.hasPendingWrites ? " · saving…" : ""), "ok");
+            linkNames();
             return;
           }
-          // No shared schedule exists yet — an editor seeds it from the current one.
-          if(isEditor && window.__oncallCurrentState){ window.__oncallPush(window.__oncallCurrentState()); }
-        }, function(){});
+          // No shared schedule exists yet. An editor seeds it; everyone else waits.
+          synced = true; window.__oncallSynced = true;
+          if(isEditor && window.__oncallCurrentState){
+            window.__oncallPush(window.__oncallCurrentState());
+            say("Shared schedule created from this device.","ok"); linkNames();
+          } else {
+            say("No shared schedule has been published yet. Ask an admin to publish it.","bad");
+          }
+        }, function(err){
+          say("Cannot read the shared schedule ("+((err&&err.code)||"error")+"). This device is showing a saved copy that may be out of date.","bad");
+        });
       }catch(e){}
     });
   })();
