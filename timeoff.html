@@ -84,6 +84,7 @@ section.panel{
 }
 .panel-head{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:14px}
 .panel-head h2{margin:0}
+.chip.forme{background:#fff3d6;color:#7a5200;border:1px solid #e0b64a}
 .panel-head .note{font-size:13.5px;color:var(--steel);margin:0}
 
 /* ---------- level gauges ---------- */
@@ -382,7 +383,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc,
-  collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp,
+  collection, query, where, orderBy, onSnapshot, addDoc, getDocs, serverTimestamp,
   enableIndexedDbPersistence, waitForPendingWrites
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -427,6 +428,41 @@ function isReviewer(){
 }
 let myRequests = [];
 let roster = [];
+/* ---------- Managers who receive requests ---------- */
+const FALLBACK_MANAGERS = [
+  { id:"", name:"Mitchell Peebles", email:"mp1@firedefense.com" },
+  { id:"", name:"Wade H.",          email:"wh1@firedefense.com" }
+];
+const MGR_KEY = "fdec_timeoff_mgr";
+let managerPool = [];   // manager and admin accounts fetched for technicians
+function myEmailLc(){ return String((profile && profile.email) || (me && me.email) || "").toLowerCase(); }
+function managerChoices(){
+  const src = (isReviewer() && roster.length) ? roster : managerPool;
+  const seen = new Set();
+  let list = src
+    .filter(u => (u.role === "manager" || u.role === "admin") && u.active !== false && u.email && u.id !== (me && me.uid))
+    .map(u => ({ id:u.id, name:nameOf(u), email:u.email }))
+    .filter(m => { const k = m.email.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; });
+  if (!list.length) list = FALLBACK_MANAGERS.filter(m => m.email.toLowerCase() !== myEmailLc());
+  return list.sort((a,b) => a.name.localeCompare(b.name));
+}
+function managerOptionsHtml(selected){
+  const opts = managerChoices().map(m => `<option value="${esc(m.email)}" ${m.email===selected?"selected":""}>${esc(m.name)}</option>`).join("");
+  return `<option value="">Select a manager</option>${opts}`;
+}
+function paintManagerSelect(){
+  const sel = $("#fManager"); if (!sel) return;
+  const cur = sel.value || (()=>{ try{ return localStorage.getItem(MGR_KEY) || ""; }catch(e){ return ""; } })();
+  sel.innerHTML = managerOptionsHtml(cur);
+}
+async function loadManagerPool(){
+  try {
+    const s = await getDocs(query(collection(db, "users"), where("role", "in", ["manager","admin"])));
+    managerPool = s.docs.map(d => ({ id:d.id, ...d.data() }));
+  } catch(e){ managerPool = []; }   // the built-in list is used when the user list cannot be read
+  paintManagerSelect();
+}
+const addressedToMe = r => (!!r.managerUid && !!me && r.managerUid === me.uid) || (!!r.managerEmail && String(r.managerEmail).toLowerCase() === myEmailLc());
 let unsub = [];
 let activeTab = "request";
 let activeYear = new Date().getFullYear();
@@ -536,7 +572,7 @@ function authError(e){
 function nameOf(r){ try{ return window.FDEC_ID ? FDEC_ID.nameFor(r.uid||r.id, r.name, r.email) : (r.name||""); }catch(e){ return r.name||""; } }
 async function onAuth(user){
   unsub.forEach(fn => fn()); unsub = [];
-  me = user; profile = null; myRequests = []; roster = [];
+  me = user; profile = null; myRequests = []; roster = []; managerPool = [];
   if (!user){ show("gateView"); $("#whoami").textContent = ""; $("#signOutBtn").classList.add("hide"); return; }
 
   $("#signOutBtn").classList.remove("hide");
@@ -563,6 +599,7 @@ async function onAuth(user){
   $("#whoami").textContent = `${profile.name} · ${profile.role === "admin" ? "Administrator" : isReviewer() ? "Manager" : "Technician"}`;
   show("appView");
   startFeeds();
+  if (!isReviewer()) loadManagerPool();
   buildTabs();
   render();
 }
@@ -579,6 +616,7 @@ function startFeeds(){
     s => {
       myRequests = s.docs.map(d => ({ id:d.id, ...d.data() }))
         .sort((a,b) => (b.startDate || "").localeCompare(a.startDate || ""));
+      buildTabs();
       render();
     },
     e => toast("Could not load requests: " + e.message, 5000)
@@ -612,8 +650,8 @@ function requestsForUser(uid){ return myRequests.filter(r => r.uid === uid); }
 function tabList(){
   const t = [{ id:"request", label:"Request time off" }];
   if (isReviewer()){
-    t.push({ id:"approvals", label:"Approvals" });
-    t.push({ id:"roster",    label:"Roster" });
+    const mine = myRequests.filter(r => r.status === "pending" && addressedToMe(r)).length;
+    t.push({ id:"approvals", label:"Approvals" + (mine ? ` (${mine})` : "") });
   }
   return t;
 }
@@ -638,7 +676,6 @@ function render(){
   const v = $("#views");
   if (activeTab === "request")   { v.innerHTML = viewRequest(); wireRequest(); }
   if (activeTab === "approvals") { v.innerHTML = viewApprovals(); wireApprovals(); }
-  if (activeTab === "roster")    { v.innerHTML = viewRoster(); wireRoster(); }
   wireCommon();
 }
 
@@ -656,11 +693,13 @@ function reqRow(r, mgrView){
     <div class="body">
       <div class="ttl">${mgrView ? esc(nameOf(r)) + " — " : ""}${kind} · ${fmtDays(r.hours)} (${fmtHours(r.hours)} hrs)</div>
       <div class="meta">${span}</div>
+      ${r.managerName ? `<div class="meta">Sent to ${esc(r.managerName)}</div>` : ""}
       ${r.note ? `<div class="said">${esc(r.note)}</div>` : ""}
       ${r.managerNote ? `<div class="said">Manager: ${esc(r.managerNote)}</div>` : ""}
       ${handled ? `<div class="meta">Last handled by ${handled}</div>` : ""}
     </div>
     <div class="side">
+      ${mgrView && r.status === "pending" && addressedToMe(r) ? `<span class="chip forme">Sent to you</span>` : ""}
       <span class="chip ${esc(r.status)}">${r.status}</span>
       ${canCancel ? `<button class="btn ghost small" data-cancel="${r.id}">Cancel</button>` : ""}
       ${mgrView ? `
@@ -776,6 +815,12 @@ function viewRequest(){
     </div>
 
     <div class="field">
+      <label for="fManager">Send request to</label>
+      <select id="fManager">${managerOptionsHtml((()=>{ try{ return localStorage.getItem(MGR_KEY) || ""; }catch(e){ return ""; } })())}</select>
+      <p class="hint">This manager is notified by email and sees the request first in Approvals.</p>
+    </div>
+
+    <div class="field">
       <label for="fNote">Note to the manager</label>
       <textarea id="fNote" placeholder="Optional"></textarea>
     </div>
@@ -848,13 +893,33 @@ function wireRequest(){
   rebuild();
 }
 
+function managerMailto(mgr, r){
+  const span = r.startDate === r.endDate ? fmtLong(r.startDate) : `${fmtLong(r.startDate)} to ${fmtLong(r.endDate)}`;
+  const first = String(mgr.name || "").split(" ")[0] || "there";
+  const lines = [
+    `Hello ${first},`, "",
+    `${profile.name} submitted a time-off request in the FDEC time-off tool.`, "",
+    `Dates: ${span}`,
+    `Total: ${fmtDays(r.hours)} (${fmtHours(r.hours)} hrs)`
+  ];
+  if (r.days && r.days.length > 1) lines.push("Hours per day: " + r.days.map(d => `${fmtShort(d.date)} ${d.hours}`).join(", "));
+  if (r.note) lines.push("", "Note: " + r.note);
+  lines.push("", "Open the Approvals tab in the time-off tool to approve or deny it.", "", `Sent from the FDEC time-off tool by ${profile.name}.`);
+  const subject = `Time-off request from ${profile.name}: ${span}`;
+  return `mailto:${mgr.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join("\n"))}`;
+}
+
 async function submitRequest(){
   const days = Object.entries(formDays).filter(([,h]) => Number(h) > 0).map(([d,h]) => ({ date:d, hours:Number(h) }));
   const total = days.reduce((a,b) => a + b.hours, 0);
   if (!days.length) return msgTo("#formMsg", "Set at least one (1) day to more than zero (0) hours.", "err");
 
+  const mgr = managerChoices().find(m => m.email === ($("#fManager") ? $("#fManager").value : ""));
+  if (!mgr) return msgTo("#formMsg", "Select the manager who should receive this request.", "err");
+
   const btn = $("#fSubmit"); btn.disabled = true; btn.innerHTML = 'Submitting <span class="spin"></span>';
   try {
+    const noteText = $("#fNote").value.trim();
     await addDoc(collection(db, "requests"), {
       uid: me.uid,
       name: profile.name,
@@ -864,14 +929,23 @@ async function submitRequest(){
       endDate: days[days.length-1].date,
       days,
       hours: total,
-      note: $("#fNote").value.trim(),
+      note: noteText,
+      managerUid: mgr.id || "",
+      managerName: mgr.name,
+      managerEmail: mgr.email,
       status: "pending",
       submittedAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
+    try{ localStorage.setItem(MGR_KEY, mgr.email); }catch(e){}
+    const sent = { startDate:days[0].date, endDate:days[days.length-1].date, days, hours:total, note:noteText };
+    const mail = managerMailto(mgr, sent);
     formDays = {};
-    toast("Request submitted. Your manager sees it now.");
+    toast("Request submitted to " + mgr.name + ".");
     render(); window.scrollTo({ top:0 });
+    const fm = $("#formMsg");
+    if (fm) fm.innerHTML = `<div class="msg ok">Request sent to ${esc(mgr.name)}. An email to ${esc(mgr.name)} is ready. <a href="${esc(mail)}" id="mgrMailLink">Open the email</a> and press Send.</div>`;
+    try { const a = document.createElement("a"); a.href = mail; a.style.display = "none"; document.body.appendChild(a); a.click(); a.remove(); } catch(e){}
   } catch(e){
     msgTo("#formMsg", "Could not submit: " + e.message, "err");
     btn.disabled = false; btn.textContent = "Submit request";
@@ -881,7 +955,7 @@ async function submitRequest(){
 /* ---------- Approvals ---------- */
 function viewApprovals(){
   const pending = myRequests.filter(r => r.status === "pending")
-    .sort((a,b) => (a.startDate||"").localeCompare(b.startDate||""));
+    .sort((a,b) => (addressedToMe(b) - addressedToMe(a)) || (a.startDate||"").localeCompare(b.startDate||""));
   const settled  = myRequests.filter(r => r.status !== "pending");
   const decided  = settled.filter(r => !isArchived(r)).slice(0, 60);
   const archived = settled.filter(isArchived);
@@ -983,57 +1057,6 @@ function wireApprovals(){
   $("#emailBtn")?.addEventListener("click", emailStatus);
 }
 
-
-/* ---------- Roster ---------- */
-function viewRoster(){
-  const rows = roster.map(u => {
-    return `<tr>
-      <td><strong>${esc(nameOf(u))}</strong><div class="hint">${esc(u.email || "")}</div></td>
-      <td>
-        <select data-uid="${u.id}" data-field="role">
-          <option value="tech" ${u.role==="tech"?"selected":""}>Technician</option>
-          <option value="manager" ${u.role==="manager"?"selected":""}>Manager</option>
-          ${u.role==="admin"?'<option value="admin" selected>Administrator</option>':''}
-        </select>
-      </td>
-      <td>
-        <select data-uid="${u.id}" data-field="active">
-          <option value="true" ${u.active!==false?"selected":""}>Active</option>
-          <option value="false" ${u.active===false?"selected":""}>Inactive</option>
-        </select>
-      </td>
-    </tr>`;
-  }).join("");
-
-  return `
-  <section class="panel">
-    <div class="panel-head">
-      <h2>Roster</h2>
-      <p class="note">Set each person's role and whether they are active. Names, phone and access are managed in Administration. PTO balances are kept in a separate program.</p>
-    </div>
-    ${roster.length ? `<div class="tblwrap"><table class="grid">
-      <thead><tr>
-        <th>Tech</th><th>Role</th>
-        <th>Status</th>
-      </tr></thead>
-      <tbody>${rows}</tbody></table></div>`
-      : `<p class="empty">No accounts yet. Techs appear here after they register and sign in once.</p>`}
-  </section>`;
-}
-
-function wireRoster(){
-  $$('#views input[data-field], #views select[data-field]').forEach(el => {
-    el.addEventListener("change", async () => {
-      const uid = el.dataset.uid, field = el.dataset.field;
-      let patch;
-      if (field === "role") patch = { role: el.value };
-      else if (field === "active") patch = { active: el.value === "true" };
-      else return;
-      try { await updateDoc(doc(db,"users",uid), patch); toast("Saved."); }
-      catch(e){ toast("Could not save: " + e.message, 5000); }
-    });
-  });
-}
 
 </script>
 </body>
