@@ -273,6 +273,10 @@ button{font-family:inherit}
 .ad-table{width:100%;border-collapse:collapse;font-size:12.5px}
 .ad-table th{text-align:left;padding:7px 8px;border-bottom:2px solid var(--line);color:var(--navy);font-size:11px;text-transform:uppercase;letter-spacing:.3px}
 .ad-table td{padding:7px 8px;border-bottom:1px solid var(--line2);vertical-align:top}
+.ad-jobname{font-weight:700;color:var(--navy)}
+.ad-jobaddr{font-size:12px;color:#333;margin-top:1px}
+.ad-jobno{font-size:11.5px;color:#666;margin-top:1px}
+.ad-jobchips{margin-top:4px}
 .ad-dl,.ad-del,.ad-conf{border:1px solid var(--navy);background:#fff;color:var(--navy);border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer}
 .ad-view,.ad-edit,.ad-pdf{border:1px solid var(--navy);background:var(--navy);color:#fff;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer}
 .ad-view:hover,.ad-edit:hover,.ad-pdf:hover{background:var(--navy2,#16294a)}
@@ -2317,6 +2321,19 @@ function normalizeAddr(s){
 function recAddress(r){
   const sh=r && r.allValues && r.allValues.__shared;
   return normalizeAddr((sh && sh.shared_job_street) || (r && r.jobAddress) || '');
+}
+/* Full job address as typed on the report: street, then city / state / zip. */
+function recFullAddress(r){
+  const sh=r && r.allValues && r.allValues.__shared;
+  const g=k=>String((sh && sh[k])||'').trim();
+  return [g('shared_job_street'), g('shared_job_csz')].filter(Boolean).join(', ') || String((r && r.jobAddress)||'').trim();
+}
+/* Job cell for the admin lists: name, full address, job number — each on its own line. */
+function jobBlock(r){
+  const a=recFullAddress(r);
+  return '<div class="ad-jobname">'+esc(r.jobName||'—')+'</div>'+
+    (a?'<div class="ad-jobaddr">'+esc(a)+'</div>':'')+
+    (r.jobNumber?'<div class="ad-jobno">Job # '+esc(r.jobNumber)+'</div>':'');
 }
 function tsMs(t){ return t && t.toMillis ? t.toMillis() : 0; }
 function fmtTs(t){ return t && t.toDate ? t.toDate().toLocaleString() : ''; }
@@ -4467,7 +4484,7 @@ async function adminDashboard(fullPage){
     r._names=(r.reports||[]).map(id=>{const f=FORMS.find(x=>x.id===id); return f?shortName(f):id;}).join(', ');
     const edt=r.editedAt&&r.editedAt.toDate?r.editedAt.toDate():null;
     r._editedWhen=edt?edt.toLocaleDateString():'';
-    r._search=[recTechName(r),r.byName,r.byEmail,r.jobName,r.jobNumber,r._names,r.editedBy,TYPE_SHORT[groupOfRecord(r)]].filter(Boolean).join(' ').toLowerCase();
+    r._search=[recTechName(r),r.byName,r.byEmail,r.jobName,recFullAddress(r),r.jobNumber,r._names,r.editedBy,TYPE_SHORT[groupOfRecord(r)]].filter(Boolean).join(' ').toLowerCase();
   }
   /* A possible duplicate = same job number AND same street address AND same report
      type AND same inspection date. Different addresses under one job number are
@@ -4658,9 +4675,9 @@ async function adminDashboard(fullPage){
       return '<tr class="'+(dup?'dup-row':'')+'">'+
         '<td><input type="checkbox" class="ad-sel" data-id="'+esc(r.id)+'"'+(sel.has(r.id)?' checked':'')+'></td>'+
         '<td>'+esc(r._when)+'</td><td>'+esc(recTechName(r)||'—')+'</td>'+
-        '<td>'+esc(r.jobName||'—')+(r.jobNumber?(' · '+esc(r.jobNumber)):'')+' '+typeChip(r)+badge+sent+survey+edited+'</td>'+
+        '<td>'+jobBlock(r)+'<div class="ad-jobchips">'+typeChip(r)+badge+sent+survey+edited+'</div></td>'+
         '<td style="font-size:11px">'+esc(r._names)+'</td>'+
-        '<td style="white-space:nowrap"><button class="ad-view" data-id="'+esc(r.id)+'">View</button> <button class="ad-pdf" data-id="'+esc(r.id)+'" title="Open this report and choose pages to save as PDF">PDF</button> <button class="ad-edit" data-id="'+esc(r.id)+'">Edit</button> <button class="ad-dl" data-id="'+esc(r.id)+'">Download</button> <button class="ad-conf" data-id="'+esc(r.id)+'" title="Tech submit checklist">Checklist</button> <button class="ad-arch" data-id="'+esc(r.id)+'">Archive</button> '+more+'</td></tr>';
+        '<td style="white-space:nowrap"><button class="ad-view" data-id="'+esc(r.id)+'">View</button> <button class="ad-edit" data-id="'+esc(r.id)+'">Edit</button> <button class="ad-conf" data-id="'+esc(r.id)+'" title="Tech submit checklist">Checklist</button> <button class="ad-arch" data-id="'+esc(r.id)+'">Archive</button> '+more+'</td></tr>';
     }
     function draw(){
       const v=visibleRows();
@@ -4695,10 +4712,8 @@ async function adminDashboard(fullPage){
     const byId=(id)=>rows.find(x=>x.id===id);
     function wire(v){
       const idOf=(b)=>b.getAttribute('data-id');
-      listEl.querySelectorAll('.ad-view').forEach(b=>b.onclick=()=>viewCloudReport(byId(idOf(b)), close));
-      listEl.querySelectorAll('.ad-pdf').forEach(b=>b.onclick=()=>{ viewCloudReport(byId(idOf(b)), close); reportPickerModal(); });
+      listEl.querySelectorAll('.ad-view').forEach(b=>b.onclick=()=>viewReportAsPdf(byId(idOf(b)), close));
       listEl.querySelectorAll('.ad-edit').forEach(b=>b.onclick=()=>editCloudReport(byId(idOf(b)), close));
-      listEl.querySelectorAll('.ad-dl').forEach(b=>b.onclick=()=>downloadCloudReport(byId(idOf(b))));
       listEl.querySelectorAll('.ad-conf').forEach(b=>b.onclick=()=>showConfirmations(byId(idOf(b))));
       listEl.querySelectorAll('.ad-sel').forEach(b=>b.onchange=()=>{ if(b.checked) sel.add(idOf(b)); else sel.delete(idOf(b)); draw(); });
       const all=listEl.querySelector('#adSelAll');
@@ -4769,17 +4784,16 @@ async function adminDashboard(fullPage){
         const why = r.archivedReason ? esc(r.archivedReason) : '<span style="color:#9a2b20">Archived by the old automatic rule</span>';
         html+='<tr><td><input type="checkbox" class="ar-sel" data-id="'+esc(r.id)+'"'+(sel.has(r.id)?' checked':'')+'></td>'+
           '<td>'+esc(r._whenD)+'</td><td>'+esc(recTechName(r)||'—')+'</td>'+
-          '<td>'+esc(r.jobName||'—')+(r.jobNumber?(' · '+esc(r.jobNumber)):'')+' '+typeChip(r)+'</td>'+
+          '<td>'+jobBlock(r)+'<div class="ad-jobchips">'+typeChip(r)+'</div></td>'+
           '<td style="font-size:11px">'+esc(r._names)+'</td>'+
           '<td style="font-size:12px">'+esc(r._archD)+(r.archivedBy?('<br>by '+esc(r.archivedBy)):'')+'<br><span style="color:#777">Manual delete only</span></td>'+
           '<td style="font-size:12px">'+why+'</td>'+
-          '<td style="white-space:nowrap"><button class="ad-view" data-id="'+esc(r.id)+'">View</button> <button class="ad-dl" data-id="'+esc(r.id)+'">Download</button> <button class="ad-restore" data-id="'+esc(r.id)+'">Restore</button> <button class="ad-del" data-id="'+esc(r.id)+'">Delete</button></td></tr>';
+          '<td style="white-space:nowrap"><button class="ad-view" data-id="'+esc(r.id)+'">View</button> <button class="ad-restore" data-id="'+esc(r.id)+'">Restore</button> <button class="ad-del" data-id="'+esc(r.id)+'">Delete</button></td></tr>';
       });
       html+='</tbody></table><div class="ad-count">'+arows.length+' archived report'+(arows.length===1?'':'s')+'</div><div id="adWithdrawn"></div>';
       body.innerHTML=html;
       const byId=(b)=>arows.find(x=>x.id===b.getAttribute('data-id'));
-      body.querySelectorAll('.ad-view[data-id]').forEach(b=>b.onclick=()=>viewCloudReport(byId(b), close));
-      body.querySelectorAll('.ad-dl[data-id]').forEach(b=>b.onclick=()=>downloadCloudReport(byId(b)));
+      body.querySelectorAll('.ad-view[data-id]').forEach(b=>b.onclick=()=>viewReportAsPdf(byId(b), close));
       body.querySelectorAll('.ar-sel').forEach(b=>b.onchange=()=>{ if(b.checked) sel.add(b.getAttribute('data-id')); else sel.delete(b.getAttribute('data-id')); draw(); });
       const all=body.querySelector('#arSelAll'); if(all){ all.checked=arows.length>0 && arows.every(r=>sel.has(r.id)); all.onchange=()=>{ arows.forEach(r=>{ if(all.checked) sel.add(r.id); else sel.delete(r.id); }); draw(); }; }
       async function doRestore(recs){ try{ await restoreRecords(recs); await renderArchived(); }catch(e){ alert('Restore failed: '+(e.message||e)); } }
@@ -4810,14 +4824,13 @@ async function adminDashboard(fullPage){
       const sdt=r.submittedAt&&r.submittedAt.toDate?r.submittedAt.toDate().toLocaleDateString():'—';
       const wdt=r.withdrawnAt&&r.withdrawnAt.toDate?r.withdrawnAt.toDate().toLocaleDateString():'—';
       const names=(r.reports||[]).map(id=>{const f=FORMS.find(x=>x.id===id); return f?shortName(f):id;}).join(', ');
-      h+='<tr><td>'+esc(sdt)+'</td><td>'+esc(recTechName(r)||'—')+'</td><td>'+esc(r.jobName||'—')+(r.jobNumber?(' · '+esc(r.jobNumber)):'')+'</td><td style="font-size:11px">'+esc(names)+'</td><td>'+esc(wdt)+'</td>'+
-        '<td style="white-space:nowrap"><button class="wd-view" data-id="'+esc(r.id)+'">View</button> <button class="wd-dl" data-id="'+esc(r.id)+'">Download</button> <button class="wd-restore" data-id="'+esc(r.id)+'">Restore</button> <button class="wd-del" data-id="'+esc(r.id)+'" data-label="'+esc((r.jobName||'report')+' — '+(recTechName(r)||''))+'">Delete</button></td></tr>';
+      h+='<tr><td>'+esc(sdt)+'</td><td>'+esc(recTechName(r)||'—')+'</td><td>'+jobBlock(r)+'</td><td style="font-size:11px">'+esc(names)+'</td><td>'+esc(wdt)+'</td>'+
+        '<td style="white-space:nowrap"><button class="wd-view" data-id="'+esc(r.id)+'">View</button> <button class="wd-restore" data-id="'+esc(r.id)+'">Restore</button> <button class="wd-del" data-id="'+esc(r.id)+'" data-label="'+esc((r.jobName||'report')+' — '+(recTechName(r)||''))+'">Delete</button></td></tr>';
     });
     h+='</tbody></table>';
     holder.innerHTML=h;
     const find=(b)=>wrows.find(x=>x.id===b.getAttribute('data-id'));
-    holder.querySelectorAll('.wd-view').forEach(b=>b.onclick=()=>viewCloudReport(find(b), close));
-    holder.querySelectorAll('.wd-dl').forEach(b=>b.onclick=()=>downloadCloudReport(find(b)));
+    holder.querySelectorAll('.wd-view').forEach(b=>b.onclick=()=>viewReportAsPdf(find(b), close));
     holder.querySelectorAll('.wd-restore').forEach(b=>b.onclick=async()=>{
       b.disabled=true;
       try{ await FB_DB.collection('reports').doc(b.getAttribute('data-id')).update({ withdrawn:false, withdrawnAt:firebase.firestore.FieldValue.delete() }); await renderArchived(); }
@@ -4964,6 +4977,22 @@ function viewCloudReport(rec, closeDash){
     document.getElementById('viewDoneBtn').onclick=()=>clearEditMode();
     window.scrollTo({top:0, behavior:'smooth'});
   }catch(e){ alert('Could not open report: '+(e.message||e)); }
+}
+
+/* Admin "View": open the submitted report as a PDF. Every page that has entries
+   (plus the deficiencies summary when there is one) goes straight to the PDF
+   preview, which already has view, save and print. Nothing is re-filed. The report
+   stays loaded behind it, with "Save as PDF" on the view bar to pick other pages. */
+function viewReportAsPdf(rec, closeDash){
+  viewCloudReport(rec, closeDash);
+  setTimeout(()=>{
+    try{
+      const sel=orderedIds().filter(formHasData);
+      const inclSum=collectSummary().length>0;
+      if(!sel.length && !inclSum){ flashCloud('This report has no entries to show.'); return; }
+      printSelectedReports(sel, inclSum);
+    }catch(e){ alert('Could not open the PDF: '+(e.message||e)); }
+  }, 350);
 }
 
 /* Admin edit: load the technician's report into the form, then mark edit mode so
