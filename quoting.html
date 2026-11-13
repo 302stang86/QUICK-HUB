@@ -3394,6 +3394,62 @@ function broadcastJobInfo(){
 // Broadcast initial values once the shell is ready.
 setTimeout(broadcastJobInfo, 150);
 
+/* Export Full Package: strip lines that have no input from the cloned print
+   content. A row with a quantity/hours box is dropped when that box is blank or
+   zero (for example Overtime and Double time when only Straight time was
+   entered); a table with no rows left is dropped with its heading; a section
+   with nothing left is dropped. Job info fields that are blank are dropped too.
+   Only used on the export clone. */
+function pruneEmptyForExport(wrap){
+  const isBlank = el => !(parseFloat(el.getAttribute('value')) > 0);
+  // Rows that end in a quantity box: the LAST input in the row is the quantity.
+  wrap.querySelectorAll('#laborSP tr, #laborShop tr, #laborFA tr, #trucks tr, #perdiem tr').forEach(tr => {
+    const ins = tr.querySelectorAll('input');
+    if (!ins.length) return;
+    if (isBlank(ins[ins.length-1])) tr.remove();
+  });
+  // Hotel row (its own table, no tbody id).
+  const hotel = wrap.querySelector('#hotelOut');
+  if (hotel){
+    const tr = hotel.closest('tr'), ins = tr ? tr.querySelectorAll('input') : [];
+    if (tr && ins.length && isBlank(ins[ins.length-1])) tr.remove();
+  }
+  // Tables with no body rows left go away, with the heading just above them.
+  wrap.querySelectorAll('#sec-labor table, #sec-transport table').forEach(t => {
+    if (t.querySelector('tbody tr')) return;
+    const prev = t.previousElementSibling;
+    if (prev && prev.matches('h3.sub')) prev.remove();
+    t.remove();
+  });
+  // Keep the labor footnote when any labor line remains, even if its column goes.
+  const note = wrap.querySelector('#sec-labor p.hint');
+  const labBody = wrap.querySelector('#sec-labor .body');
+  if (note && labBody && labBody.querySelector('table')){ note.remove(); labBody.appendChild(note); }
+  // Empty columns, then empty sections.
+  wrap.querySelectorAll('#sec-labor .cols2 > div, #sec-transport .cols2 > div').forEach(col => {
+    if (!col.querySelector('table')) col.remove();
+  });
+  wrap.querySelectorAll('#sec-labor, #sec-transport').forEach(sec => {
+    if (!sec.querySelector('table')) sec.remove();
+  });
+  // Summary: drop the manpower block and the materials block when empty.
+  const mp = wrap.querySelector('#mpSummaryWrap');
+  if (mp && !mp.querySelector('#mpSummaryBody tr')) mp.remove();
+  const sel = wrap.querySelector('#selectedOut');
+  if (sel && sel.querySelector('p.empty')){
+    const h = sel.previousElementSibling && sel.previousElementSibling.previousElementSibling;
+    const hint = sel.previousElementSibling;
+    if (hint && hint.matches('p.hint')) hint.remove();
+    if (h && h.matches('h3.sub')) h.remove();
+    sel.remove();
+  }
+  // Job info: blank fields are not shown.
+  wrap.querySelectorAll('.jobbar > div').forEach(d => {
+    const i = d.querySelector('input');
+    if (i && !String(i.getAttribute('value') || '').trim()) d.remove();
+  });
+}
+
 /* Re-broadcast the down payment when the suite shell asks (e.g. when the
    Proposal tab is opened), so the note stays in sync even if the proposal
    frame loaded after the last edit. */
@@ -3470,6 +3526,9 @@ window.addEventListener('message', function(e){
           c.setAttribute('value', live.value);
         }
       });
+      // Export Full Package only: hide every line that has no input, so the PDF
+      // shows only what was filled in. (Save Draft does not use this clone.)
+      try { pruneEmptyForExport(wrap); } catch(pe){ console.error(pe); }
       // Remove interactive-only elements from the clone.
       wrap.querySelectorAll('.noprint, button, .totbar').forEach(el => el.remove());
       // For the exported PDF, keep the Labor, Transportation & Travel, and

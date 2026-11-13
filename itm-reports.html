@@ -2306,6 +2306,18 @@ function recDate(r){
   const sh=r && r.allValues && r.allValues.__shared;
   return String((sh && sh.shared_hdate)||'').trim();
 }
+/* Street address of the job, normalized so "123 Main Street" and "123 main st." match.
+   Used so two reports for different buildings under one job number are never
+   flagged as duplicates. */
+function normalizeAddr(s){
+  let t=String(s==null?'':s).toUpperCase().replace(/[.,#]/g,' ').replace(/\s+/g,' ').trim();
+  const map={STREET:'ST',AVENUE:'AVE',ROAD:'RD',DRIVE:'DR',BOULEVARD:'BLVD',HIGHWAY:'HWY',LANE:'LN',COURT:'CT',CIRCLE:'CIR',PARKWAY:'PKWY',PLACE:'PL',SUITE:'STE',NORTH:'N',SOUTH:'S',EAST:'E',WEST:'W'};
+  return t.split(' ').map(w=>map[w]||w).join(' ');
+}
+function recAddress(r){
+  const sh=r && r.allValues && r.allValues.__shared;
+  return normalizeAddr((sh && sh.shared_job_street) || (r && r.jobAddress) || '');
+}
 function tsMs(t){ return t && t.toMillis ? t.toMillis() : 0; }
 function fmtTs(t){ return t && t.toDate ? t.toDate().toLocaleString() : ''; }
 function reporterName(u){
@@ -2538,7 +2550,9 @@ async function chooseSubmitTarget(group, payload, u){
   }
   if(!mine){
     const found=await findExistingReports(payload.jobKey, group);
-    const same=found.filter(r=>recDate(r)===payload.inspectionDate);
+    // Same job number AND same street address: a different building under one job is a separate report.
+    const myAddr=recAddress(payload);
+    const same=found.filter(r=>recDate(r)===payload.inspectionDate && recAddress(r)===myAddr);
     mine=same.find(r=>r.uid===u.uid) || null;
     others=same.filter(r=>r.uid!==u.uid);
   }
@@ -4455,8 +4469,9 @@ async function adminDashboard(fullPage){
     r._editedWhen=edt?edt.toLocaleDateString():'';
     r._search=[recTechName(r),r.byName,r.byEmail,r.jobName,r.jobNumber,r._names,r.editedBy,TYPE_SHORT[groupOfRecord(r)]].filter(Boolean).join(' ').toLowerCase();
   }
-  /* A possible duplicate = same job number AND same report type AND same inspection
-     date. 5-Year Internal, 5-Year FDC Hydro and Corrections never match each other or
+  /* A possible duplicate = same job number AND same street address AND same report
+     type AND same inspection date. Different addresses under one job number are
+     separate buildings, so they are not duplicates. 5-Year Internal, 5-Year FDC Hydro and Corrections never match each other or
      an inspection. The newest of a matching set is "Current". */
   function computeDupes(rows){
     const sets={};
@@ -4464,7 +4479,7 @@ async function adminDashboard(fullPage){
       r._dupRole=''; r._dupHead='';
       if(r.archived || r.withdrawn || r.dupIgnore) return;
       const jk=recJobKey(r); if(!jk) return;
-      const key=jk+'|'+groupOfRecord(r)+'|'+recDate(r);
+      const key=jk+'|'+recAddress(r)+'|'+groupOfRecord(r)+'|'+recDate(r);
       (sets[key]=sets[key]||[]).push(r);
     });
     Object.keys(sets).forEach(k=>{
@@ -4631,7 +4646,7 @@ async function adminDashboard(fullPage){
       const dup = r._dupRole==='dup';
       let badge='';
       if(r._dupRole==='true') badge=' <span class="dup-true" title="Newest report with the same job number, type and inspection date">✓ Current</span>';
-      else if(dup) badge=' <span class="dup-dup" title="A newer report has the same job number, type and inspection date">⚠ Possible duplicate</span>';
+      else if(dup) badge=' <span class="dup-dup" title="A newer report has the same job number, address, type and inspection date">⚠ Possible duplicate</span>';
       const edited = r.editedBy ? (' <span class="edited-by" title="'+esc(r.editReason?('Reason: '+r.editReason):'Edited after submission')+'">✎ Edited by '+esc(recEditorName(r))+(r._editedWhen?(' · '+esc(r._editedWhen)):'')+(r.editReason?(' · “'+esc(r.editReason)+'”'):'')+'</span>') : '';
       const sent = r.sentToCustomer ? ' <span class="ad-chip ad-sent" title="Marked sent to customer">Sent</span>' : '';
       const cl=CONFS[r.id]||[];
@@ -4651,7 +4666,7 @@ async function adminDashboard(fullPage){
       const v=visibleRows();
       const dupCount=v.filter(r=>r._dupRole==='dup').length;
       let html='';
-      if(dupCount>0) html+='<div class="ad-dup-note">⚠ '+dupCount+' possible duplicate'+(dupCount===1?'':'s')+' — reports with the same job number, report type and inspection date. The newest (✓ Current) is the one to keep. Nothing is archived automatically; use Archive or “Not a duplicate”.</div>';
+      if(dupCount>0) html+='<div class="ad-dup-note">⚠ '+dupCount+' possible duplicate'+(dupCount===1?'':'s')+' — reports with the same job number, address, report type and inspection date. The newest (✓ Current) is the one to keep. Nothing is archived automatically; use Archive or “Not a duplicate”.</div>';
       if(!v.length){
         listEl.innerHTML=html+'<div style="padding:16px;color:#777">No reports'+((searchBox.value||typeSel.value||dupOnly.checked)?' match these filters':'')+' for '+selYear+'.</div>';
       }else{
