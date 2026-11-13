@@ -2130,6 +2130,22 @@ function renderSummary(){
   host.appendChild(buildSummaryPaper());
 }
 
+/* iPhone / iPad (including iPadOS, which reports itself as a Mac with touch). iOS only
+   opens the print / save-PDF sheet straight from a tap, never after a wait, so there
+   the PDF step is always a button the person taps. */
+const IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+function pdfPromptModal(intro, onTap){
+  const mh=document.getElementById('modalHost')||document.body;
+  const bg=document.createElement('div'); bg.className='modal-bg'; bg.style.zIndex=1600;
+  bg.innerHTML='<div class="modal" style="max-width:420px"><h3>Save your report as a PDF</h3>'+
+    '<p>'+intro+'Tap the button to open the PDF'+(IS_IOS?', then use Share to save it to Files or send it to ServiceTrade.':' so you can save or share it.')+'</p>'+
+    '<div class="mbtns"><button type="button" id="pdfLaterBtn">Not now</button><button type="button" id="pdfNowBtn" class="primary">Save as PDF</button></div></div>';
+  mh.appendChild(bg);
+  const gone=()=>{ if(bg.parentNode) bg.parentNode.removeChild(bg); };
+  bg.querySelector('#pdfLaterBtn').onclick=gone;
+  bg.querySelector('#pdfNowBtn').onclick=()=>{ gone(); onTap(); };
+}
+
 /* Build one combined view of all reports to include in the PDF:
    the three core forms plus every added addon form, in tab order. */
 function printSelectedReports(ids, includeSummary){
@@ -2835,7 +2851,22 @@ function reportPickerModal(){
       } else if(!VIEW_DOC && !sel.length){
         flashCloud('Summary printed only — it is not filed with the office');
       }
-      printSelectedReports(sel, inclSum);
+      const intro=(!VIEW_DOC && sel.length)?'Your report was submitted to the office. ':'';
+      const doPrint=()=>printSelectedReports(sel, inclSum);
+      if(IS_IOS){
+        // iOS needs a fresh tap to open the PDF sheet, so ask for it right away.
+        pdfPromptModal(intro, doPrint);
+      } else {
+        // Elsewhere print automatically; if the browser blocks it, offer the one-tap button.
+        let printStarted=false;
+        const mark=()=>{ printStarted=true; window.removeEventListener('beforeprint', mark); };
+        window.addEventListener('beforeprint', mark);
+        doPrint();
+        setTimeout(()=>{
+          window.removeEventListener('beforeprint', mark);
+          if(!printStarted) pdfPromptModal(intro, doPrint);
+        }, 1200);
+      }
       if(FINISH_EDIT_AFTER_PRINT){
         FINISH_EDIT_AFTER_PRINT=false;
         let done=false;
@@ -4990,7 +5021,8 @@ function viewReportAsPdf(rec, closeDash){
       const sel=orderedIds().filter(formHasData);
       const inclSum=collectSummary().length>0;
       if(!sel.length && !inclSum){ flashCloud('This report has no entries to show.'); return; }
-      printSelectedReports(sel, inclSum);
+      if(IS_IOS) pdfPromptModal('', ()=>printSelectedReports(sel, inclSum));
+      else printSelectedReports(sel, inclSum);
     }catch(e){ alert('Could not open the PDF: '+(e.message||e)); }
   }, 350);
 }
