@@ -406,6 +406,7 @@ header,main{position:relative;z-index:1;}
       <button class="go" id="mgrApprove" type="button">Save Review &amp; Mark Approved</button>
       <button class="secondary" id="mgrSaveOnly" type="button">Save Edits (keep open)</button>
       <button class="ghost" id="mgrPrint" type="button">Print / Save as PDF</button>
+      <button class="ghost" id="mgrCsv" type="button">Download CSV</button>
       <button class="danger" id="mgrDelete" type="button">Delete Submitted Timesheet</button>
       <button class="ghost" id="mgrBack" type="button">Back to Submitted Timesheets</button>
     </div>
@@ -946,8 +947,10 @@ function showReviewNoticeForTech(d){
 }
 
 /* ----- CSV ----- */
-function downloadCSV(){
-  const d=gather();
+function downloadCSV(dIn){
+  const d=dIn||gather();
+  const tot=(d.entries||[]).reduce((t,e)=>{t.st+=+e.st||0;t.ot+=+e.ot||0;t.dt+=+e.dt||0;return t;},{st:0,ot:0,dt:0});
+  const sumAll=tot.st+tot.ot+tot.dt;
   const rows=[
     ['Weekly Employee Time Sheet'],
     ['Employee',d.employee],['Week Start',d.weekStart],['Week End',d.weekEnd],
@@ -955,9 +958,9 @@ function downloadCSV(){
     ['Type / Department','Job Name','Job Number','Day','Rate','Regular ST','Time&Half 1.5x','Double 2x','Card Total','Notes'],
     ...d.entries.map(e=>[e.type,e.jobName??e.job,e.jobNumber||'',e.day,rateLabel(rateForDay(dayNames.indexOf(e.day))),e.st,e.ot,e.dt,(e.st+e.ot+e.dt).toFixed(2),e.notes]),
     [],
-    ['Total Regular',$('sumST').textContent],['Total Time&Half',$('sumOT').textContent],
-    ['Total Double',$('sumDT').textContent],['Total Hours',$('sumAll').textContent],
-    [],...(d.expenseReports||[]).flatMap((r,i)=>[['Expense Report '+(i+1),r.jobName,r.jobNumber],['Expense Total',expenseAmounts(r).total],['Company Card',expenseAmounts(r).companyCard],['Reimbursable',expenseAmounts(r).reimbursable],['Expense Reimbursement',expenseAmounts(r).owed],...(r.items||[]).map(e=>['Expense',e.date,e.account,e.description,r.jobName,r.jobNumber,e.amount,expensePayment(e)])]),
+    ['Total Regular',tot.st.toFixed(2)],['Total Time&Half',tot.ot.toFixed(2)],
+    ['Total Double',tot.dt.toFixed(2)],['Total Hours',sumAll.toFixed(2)],
+    [],...(d.expenseReports||(d.expenseReport?[d.expenseReport]:[])).flatMap((r,i)=>[['Expense Report '+(i+1),r.jobName,r.jobNumber],['Expense Total',expenseAmounts(r).total],['Company Card',expenseAmounts(r).companyCard],['Reimbursable',expenseAmounts(r).reimbursable],['Expense Reimbursement',expenseAmounts(r).owed],...(r.items||[]).map(e=>['Expense',e.date,e.account,e.description,r.jobName,r.jobNumber,e.amount,expensePayment(e)])]),
     [],['Comments',d.comments]
   ];
   const csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
@@ -1325,6 +1328,7 @@ async function saveManagerReview(markReviewed){
 
 $('mgrApprove')&&($('mgrApprove').onclick=()=>saveManagerReview(true));
 $('mgrSaveOnly')&&($('mgrSaveOnly').onclick=()=>saveManagerReview(false));
+$('mgrCsv')&&($('mgrCsv').onclick=()=>downloadCSV({...OPEN_SHEET,entries:currentMgrEntries()}));
 $('mgrPrint')&&($('mgrPrint').onclick=async()=>{
   // Re-read the saved record so print reflects the same expense attachments
   // that a manager sees after approval (including legacy expenseReport data).

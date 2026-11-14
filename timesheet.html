@@ -341,10 +341,8 @@ header,main{position:relative;z-index:1;}
     </div>
   </div>
   <div class="btns no-print">
-    <button class="secondary" id="saveCloud" type="button">☁ Save Draft to Cloud</button>
     <button class="go" id="submit" type="button">Submit to Manager</button>
-    <button class="ghost" id="csv" type="button">Download CSV</button>
-    <button class="ghost" id="print" type="button">Print / Save as PDF</button>
+    <button class="ghost" id="print" type="button">Download PDF</button>
     <button class="danger" id="reset" type="button">Reset Form</button>
   </div>
   <p class="small" id="savedInfo"></p>
@@ -406,6 +404,7 @@ header,main{position:relative;z-index:1;}
       <button class="go" id="mgrApprove" type="button">Save Review &amp; Mark Approved</button>
       <button class="secondary" id="mgrSaveOnly" type="button">Save Edits (keep open)</button>
       <button class="ghost" id="mgrPrint" type="button">Print / Save as PDF</button>
+      <button class="ghost" id="mgrCsv" type="button">Download CSV</button>
       <button class="danger" id="mgrDelete" type="button">Delete Submitted Timesheet</button>
       <button class="ghost" id="mgrBack" type="button">Back to My Timesheet</button>
     </div>
@@ -758,18 +757,31 @@ function defaultSunday(){
   const d=new Date();d.setDate(d.getDate()-d.getDay());
   $('weekStart').value=localISO(d);setWeek();
 }
-$('weekStart').addEventListener('change',()=>{setWeek();LAST_SAVED_ID=null;$('savedInfo').textContent='';if(FB_OK&&CURRENT.uid)loadMyDraftForWeek();});
+$('weekStart').addEventListener('change',()=>{clearTimeout(AUTO_T);AUTO_T=null;DRAFT_READY=false;CUR_STATUS=null;setWeek();LAST_SAVED_ID=null;$('savedInfo').textContent='';if(FB_OK&&CURRENT.uid)loadMyDraftForWeek();});
 
 /* ----- buttons ----- */
 $('addRow').onclick=()=>makeRow();
 $('addLeave').onclick=()=>openExpenseEditor();
 $('clearRows').onclick=()=>{if(confirm('Clear all hours cards?')){$('rows').innerHTML='';makeRow();calculate();}};
 $('print').onclick=()=>window.print();
-$('csv').onclick=downloadCSV;
-$('reset').onclick=()=>{if(confirm('Reset the form? This clears the on-screen entries. Cloud drafts are not deleted.')){
+$('reset').onclick=async()=>{
+  const locked=CUR_STATUS==='submitted'||CUR_STATUS==='reviewed';
+  const hasCloud=!!LAST_SAVED_ID && !locked;
+  const msg=hasCloud?'Reset the form? This clears the form and permanently deletes your saved cloud draft for this week.'
+    :locked?'Reset the form? This clears the screen only. The copy already submitted for this week stays with your manager.'
+    :'Reset the form? This clears the on-screen entries.';
+  if(!confirm(msg))return;
+  clearTimeout(AUTO_T);AUTO_T=null;
+  while(SHEET_SAVE_BUSY)await new Promise(r=>setTimeout(r,150));
+  if(hasCloud){
+    try{await db.collection(COL_SHEETS).doc(LAST_SAVED_ID).delete();}
+    catch(e){console.error(e);cloudMsg('error','Could not delete the cloud draft: '+(e.message||e)+'. The form was not reset.');return;}
+    CUR_STATUS=null;$('statusBadge').classList.add('hide');
+  }
   $('rows').innerHTML='';makeRow();$('comments').value='';$('manager').value='';EXPENSE_REPORTS=[];renderExpenseReport();
-  LAST_SAVED_ID=null;$('savedInfo').textContent='';defaultSunday();calculate();}};
-$('saveCloud').onclick=()=>saveSheet('draft');
+  LAST_SAVED_ID=null;$('savedInfo').textContent='';defaultSunday();calculate();
+  cloudMsg('ok',hasCloud?'Form reset and cloud draft deleted.':'Form reset.');
+};
 $('submit').onclick=()=>saveSheet('submitted');
 
 /* ----- gather / validate ----- */
@@ -819,8 +831,29 @@ function validate(forSubmit){
   return {ok,problems};
 }
 
-/* ----- save / submit ----- */
+/* ----- save / submit / autosave ----- */
 let SHEET_SAVE_BUSY=false;
+let AUTO_T=null, DRAFT_READY=false, CUR_STATUS=null;
+function autosaveWorthy(){
+  if(!$('employee').value.trim())return false;
+  if($('comments').value.trim()||EXPENSE_REPORTS.length)return true;
+  return [...document.querySelectorAll('#rows .rowcard')].some(c=>num(c,'st')+num(c,'ot')+num(c,'dt')>0||c.querySelector('.job').value.trim()||c.querySelector('.jobNumber').value.trim()||c.querySelector('.notes').value.trim());
+}
+function scheduleAutosave(){
+  if(!FB_OK||!CURRENT.uid||MODE!=='tech'||!DRAFT_READY)return;
+  if(CUR_STATUS==='submitted'||CUR_STATUS==='reviewed')return;
+  clearTimeout(AUTO_T);
+  AUTO_T=setTimeout(()=>{AUTO_T=null;saveSheet('draft',true);},2500);
+}
+function flushAutosave(){ if(AUTO_T){clearTimeout(AUTO_T);AUTO_T=null;saveSheet('draft',true);} }
+(function(){
+  const tv=$('techView');
+  tv.addEventListener('input',scheduleAutosave);
+  tv.addEventListener('change',scheduleAutosave);
+  tv.addEventListener('click',e=>{ if(e.target.closest&&e.target.closest('button.remove,#addRow,#clearRows,#expenseSummary button'))scheduleAutosave(); });
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden')flushAutosave(); });
+  window.addEventListener('pagehide',flushAutosave);
+})();
 // The workweek, not the two-week payroll folder, identifies an individual weekly sheet.
 // A deterministic ID protects against duplicates across devices when no legacy sheet exists.
 function stableWeekSheetId(uid,weekStart){return 'weekly_'+uid+'_'+weekStart;}
@@ -836,9 +869,16 @@ async function findExistingWeekSheet(weekStart){
   if(docs.length>1)console.warn('Existing duplicate weekly timesheets found for '+weekStart+'; using the reviewed/submitted record. No records were deleted.');
   return docs[0];
 }
-async function saveSheet(status){
-  if(SHEET_SAVE_BUSY)return;
-  const v=validate(status==='submitted');
+async function saveSheet(status,auto){
+  if(auto){
+    if(!FB_OK||!CURRENT.uid||!DRAFT_READY||CUR_STATUS==='submitted'||CUR_STATUS==='reviewed')return;
+    if(SHEET_SAVE_BUSY){scheduleAutosave();return;}
+    if(!autosaveWorthy())return;
+  }else{
+    clearTimeout(AUTO_T);AUTO_T=null;
+    while(SHEET_SAVE_BUSY)await new Promise(r=>setTimeout(r,150));
+  }
+  const v=auto?{ok:true}:validate(status==='submitted');
   if(!v.ok){
     cloudMsg('error', (status==='submitted'?'Cannot submit yet. ':'Cannot save yet. ')+v.problems.join(' '));
     if(markInvalid._first)markInvalid._first.scrollIntoView({behavior:'smooth',block:'center'});
@@ -851,12 +891,14 @@ async function saveSheet(status){
     return;
   }
   SHEET_SAVE_BUSY=true;
-  $('submit').disabled=true;$('saveCloud').disabled=true;
+  if(!auto)$('submit').disabled=true;
+  let skipped=false;
   try{
-    cloudMsg('info', status==='submitted'?'Checking existing weekly submission…':'Checking existing weekly draft…');
+    if(!auto)cloudMsg('info', status==='submitted'?'Checking existing weekly submission…':'Checking existing weekly draft…');
     const found=await findExistingWeekSheet(data.weekStart);
     if(found && found.data().status==='reviewed'){
-      LAST_SAVED_ID=found.id;
+      LAST_SAVED_ID=found.id;CUR_STATUS='reviewed';
+      if(auto)return;
       cloudMsg('error','This week has already been reviewed by a manager. Contact your manager to request a correction; a second timesheet was not created.');
       return;
     }
@@ -872,6 +914,7 @@ async function saveSheet(status){
         const previous=existing.data();
         if(previous.employeeUid!==CURRENT.uid || previous.weekStart!==data.weekStart)throw new Error('Weekly record ownership/date mismatch. No changes were saved.');
         if(previous.status==='reviewed')throw new Error('This timesheet was already reviewed. Ask your manager to make any corrections.');
+        if(auto && previous.status==='submitted'){skipped=true;return;}
         // Do not demote an already-submitted sheet when saving a draft afterward.
         if(status==='draft' && previous.status==='submitted')payload.status='submitted';
         tx.set(ref,payload,{merge:true});
@@ -879,19 +922,22 @@ async function saveSheet(status){
         tx.set(ref,{...payload,createdAt:now,managerEdits:[]});
       }
     });
-    LAST_SAVED_ID=id;
+    if(skipped){CUR_STATUS='submitted';LAST_SAVED_ID=id;return;}
+    LAST_SAVED_ID=id;CUR_STATUS=payload.status;
     $('statusBadge').className='badge '+payload.status+' ';
     $('statusBadge').classList.remove('hide');
     $('statusBadge').textContent=payload.status==='submitted'?'Submitted':'Draft saved';
     const t=new Date().toLocaleString();
+    if(auto){ $('savedInfo').textContent='Saved automatically at '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})+'.'; return; }
     $('savedInfo').textContent=(payload.status==='submitted'
       ? 'Updated the existing weekly timesheet for '+data.weekStart+' and submitted to '+(data.managerName||'manager')+' on '+t+'. No duplicate created.'
       : 'Draft saved to cloud '+t+'. Keep adding hours through the week.');
     cloudMsg('ok',payload.status==='submitted'?'Weekly timesheet submitted/updated successfully.':'Weekly timesheet saved successfully.');
   }catch(e){
     console.error(e);
-    cloudMsg('error','Save failed: '+(e.message||e)+'. Your entries are still on screen.');
-  }finally{SHEET_SAVE_BUSY=false;$('submit').disabled=false;$('saveCloud').disabled=false;}
+    if(auto){ $('savedInfo').textContent='Autosave could not reach the cloud. It will retry on your next change.'; }
+    else cloudMsg('error','Save failed: '+(e.message||e)+'. Your entries are still on screen.');
+  }finally{SHEET_SAVE_BUSY=false;$('submit').disabled=false;}
 }
 
 async function loadMyDraftForWeek(){
@@ -901,14 +947,15 @@ async function loadMyDraftForWeek(){
   try{
     const doc=await findExistingWeekSheet(requestedWeek);
     if($('weekStart').value!==requestedWeek)return; // Ignore stale async results after week change.
-    if(!doc)return;
+    if(!doc){DRAFT_READY=true;return;}
     LAST_SAVED_ID=doc.id;
     const d=doc.data();
+    CUR_STATUS=d.status||'draft';DRAFT_READY=true;
     fillTechForm(d);
     $('statusBadge').className='badge '+(d.status==='reviewed'?'reviewed':d.status||'draft')+' ';
     $('statusBadge').classList.remove('hide');
     $('statusBadge').textContent=d.status==='reviewed'?'Reviewed by manager':d.status==='submitted'?'Submitted':'Draft saved';
-    let msg='Loaded your existing '+(d.status||'draft')+' for this week. Further submissions will update this record.';
+    let msg=(d.status==='submitted'||d.status==='reviewed')?'Loaded your '+d.status+' timesheet for this week. Autosave is paused for submitted sheets; tap Submit to Manager again to send changes.':'Loaded your saved draft for this week. Changes save automatically.';
     if(d.status==='reviewed'&&(d.managerEdits||[]).length){
       msg+=' Your manager made '+d.managerEdits.length+' edit(s) — see the highlighted note below.';
       showReviewNoticeForTech(d);
@@ -941,8 +988,10 @@ function showReviewNoticeForTech(d){
 }
 
 /* ----- CSV ----- */
-function downloadCSV(){
-  const d=gather();
+function downloadCSV(dIn){
+  const d=dIn||gather();
+  const tot=(d.entries||[]).reduce((t,e)=>{t.st+=+e.st||0;t.ot+=+e.ot||0;t.dt+=+e.dt||0;return t;},{st:0,ot:0,dt:0});
+  const sumAll=tot.st+tot.ot+tot.dt;
   const rows=[
     ['Weekly Employee Time Sheet'],
     ['Employee',d.employee],['Week Start',d.weekStart],['Week End',d.weekEnd],
@@ -950,9 +999,9 @@ function downloadCSV(){
     ['Type / Department','Job Name','Job Number','Day','Rate','Regular ST','Time&Half 1.5x','Double 2x','Card Total','Notes'],
     ...d.entries.map(e=>[e.type,e.jobName??e.job,e.jobNumber||'',e.day,rateLabel(rateForDay(dayNames.indexOf(e.day))),e.st,e.ot,e.dt,(e.st+e.ot+e.dt).toFixed(2),e.notes]),
     [],
-    ['Total Regular',$('sumST').textContent],['Total Time&Half',$('sumOT').textContent],
-    ['Total Double',$('sumDT').textContent],['Total Hours',$('sumAll').textContent],
-    [],...(d.expenseReports||[]).flatMap((r,i)=>[['Expense Report '+(i+1),r.jobName,r.jobNumber],['Expense Total',expenseAmounts(r).total],['Company Card',expenseAmounts(r).companyCard],['Reimbursable',expenseAmounts(r).reimbursable],['Expense Reimbursement',expenseAmounts(r).owed],...(r.items||[]).map(e=>['Expense',e.date,e.account,e.description,r.jobName,r.jobNumber,e.amount,expensePayment(e)])]),
+    ['Total Regular',tot.st.toFixed(2)],['Total Time&Half',tot.ot.toFixed(2)],
+    ['Total Double',tot.dt.toFixed(2)],['Total Hours',sumAll.toFixed(2)],
+    [],...(d.expenseReports||(d.expenseReport?[d.expenseReport]:[])).flatMap((r,i)=>[['Expense Report '+(i+1),r.jobName,r.jobNumber],['Expense Total',expenseAmounts(r).total],['Company Card',expenseAmounts(r).companyCard],['Reimbursable',expenseAmounts(r).reimbursable],['Expense Reimbursement',expenseAmounts(r).owed],...(r.items||[]).map(e=>['Expense',e.date,e.account,e.description,r.jobName,r.jobNumber,e.amount,expensePayment(e)])]),
     [],['Comments',d.comments]
   ];
   const csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
@@ -1320,6 +1369,7 @@ async function saveManagerReview(markReviewed){
 
 $('mgrApprove')&&($('mgrApprove').onclick=()=>saveManagerReview(true));
 $('mgrSaveOnly')&&($('mgrSaveOnly').onclick=()=>saveManagerReview(false));
+$('mgrCsv')&&($('mgrCsv').onclick=()=>downloadCSV({...OPEN_SHEET,entries:currentMgrEntries()}));
 $('mgrPrint')&&($('mgrPrint').onclick=async()=>{
   // Re-read the saved record so print reflects the same expense attachments
   // that a manager sees after approval (including legacy expenseReport data).
@@ -1451,7 +1501,8 @@ function restoreExpenseReturn(){
     else EXPENSE_REPORTS.push(pending);
     renderExpenseReport();
     $('expenseSection').scrollIntoView({block:'start'});
-    cloudMsg('info','Expense report attached. Save Draft or Submit to Manager to persist all reports to the cloud.');
+    cloudMsg('info','Expense report attached. It saves automatically; tap Submit to Manager when you are ready.');
+    scheduleAutosave();
   }
 }
 /* ---------- go ---------- */
