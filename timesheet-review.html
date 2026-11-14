@@ -406,7 +406,6 @@ header,main{position:relative;z-index:1;}
       <button class="go" id="mgrApprove" type="button">Save Review &amp; Mark Approved</button>
       <button class="secondary" id="mgrSaveOnly" type="button">Save Edits (keep open)</button>
       <button class="ghost" id="mgrPrint" type="button">Print / Save as PDF</button>
-      <button class="ghost" id="mgrCsv" type="button">Download CSV</button>
       <button class="danger" id="mgrDelete" type="button">Delete Submitted Timesheet</button>
       <button class="ghost" id="mgrBack" type="button">Back to Submitted Timesheets</button>
     </div>
@@ -430,7 +429,7 @@ header,main{position:relative;z-index:1;}
         <div><label for="tsFilterFrom">From Date</label><input id="tsFilterFrom" type="date"></div>
         <div><label for="tsFilterTo">To Date</label><input id="tsFilterTo" type="date"></div>
       </div>
-      <div class="ts-search-actions"><button type="button" class="go" id="tsSearchGo">Search All Pay Periods</button><button type="button" class="secondary" id="tsSearchClear">Clear Filters</button><span class="small">Combined filters · submitted and reviewed · current and archived</span></div>
+      <div class="ts-search-actions"><button type="button" class="go" id="tsSearchGo">Search All Pay Periods</button><button type="button" class="secondary" id="tsSearchClear">Clear Filters</button><button type="button" class="secondary" id="tsSearchDl">↓ Download Search Results (printable)</button><span class="small">Combined filters · submitted and reviewed · current and archived</span></div>
       <div id="tsSearchResults" class="ts-search-results" aria-live="polite"></div>
     </div>
     <div class="ts-search no-print" id="jhPanel" style="margin-top:12px">
@@ -440,7 +439,7 @@ header,main{position:relative;z-index:1;}
         <div><label for="jhJob">Job Number</label><input id="jhJob" type="search" placeholder="e.g. 2515555 or cm200-123" autocomplete="off"></div>
         <div style="display:flex;align-items:flex-end"><label style="margin:0 0 8px;font-weight:400"><input id="jhNames" type="checkbox" style="width:auto;height:auto;margin-right:6px">Show employee names under each department</label></div>
       </div>
-      <div class="ts-search-actions"><button type="button" class="go" id="jhRun">Run Report</button><button type="button" class="secondary" id="jhCsv" disabled>Download CSV</button><span id="jhNote" class="small"></span></div>
+      <div class="ts-search-actions"><button type="button" class="go" id="jhRun">Run Report</button><button type="button" class="secondary" id="jhDl">↓ Download Job Report (printable)</button><span id="jhNote" class="small"></span></div>
       <div id="jhVariants" class="small" style="margin-top:8px"></div>
       <div id="jhResults" class="ts-search-results"></div>
     </div>
@@ -1069,6 +1068,19 @@ function tsEntryDate(sheet,day){
   // Week starts on Sunday. Derive date from actual entry day rather than submission date.
   return payISO(ws+idx*PAY_MS);
 }
+let LAST_TS=null;
+function tsDownload(){
+  if(!LAST_TS||!LAST_TS.matches.length){alert('Run a search first. There are no matching entries to download.');return;}
+  const m=LAST_TS.matches,t=LAST_TS.totals,fl=LAST_TS.filters,fmt=n=>(Number(n)||0).toFixed(2);
+  const rows=m.map(({s,e,actual})=>'<tr'+(isJobNo(e.jobNumber||'')?' class="orange"':'')+'><td>'+esc(actual||'Undated')+'</td><td>'+esc(s.employee||'')+'</td><td>'+esc(e.type||'')+'</td><td>'+esc(e.jobName??e.job??'')+'</td><td>'+esc(e.jobNumber||'')+'</td><td class="num">'+fmt(e.st)+'</td><td class="num">'+fmt(e.ot)+'</td><td class="num">'+fmt(e.dt)+'</td><td class="num">'+fmt((+e.st||0)+(+e.ot||0)+(+e.dt||0))+'</td><td>'+esc((s.status||'submitted')+(s.reviewedByInitials?' · '+s.reviewedByInitials:''))+'</td></tr>').join('');
+  const body='<p class="small">'+m.length+' matching job entries across '+new Set(m.map(x=>x.s.id)).size+' time sheets · ST '+fmt(t.st)+' · OT '+fmt(t.ot)+' · DT '+fmt(t.dt)+' · '+fmt(t.st+t.ot+t.dt)+' total hours</p><table><thead><tr><th>Work Date</th><th>Technician</th><th>Type / Department</th><th>Job Name</th><th>Job Number</th><th class="num">ST</th><th class="num">OT</th><th class="num">DT</th><th class="num">Total</th><th>Status / Review</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  const parts=[];
+  if(fl.type&&fl.type!==''&&!/^all/i.test(fl.type))parts.push('Department: '+fl.type);
+  if(fl.job)parts.push('Job number: '+fl.job);if(fl.tech)parts.push('Technician: '+fl.tech);
+  if(fl.from)parts.push('From: '+fl.from);if(fl.to)parts.push('To: '+fl.to);
+  savePrintable('FDEC Time Sheet Search',[parts.length?'Filters: '+parts.join(' · '):'Filters: none (all submitted and reviewed time sheets)','Generated '+new Date().toLocaleString()],body,'FDEC-Time-Sheet-Search-'+new Date().toISOString().slice(0,10)+'.html');
+}
+$('tsSearchDl')&&($('tsSearchDl').onclick=tsDownload);
 function renderTsSearch(){
   const type=$('tsFilterType').value.toLowerCase(),job=$('tsFilterJob').value.trim().toLowerCase(),tech=$('tsFilterTech').value.trim().toLowerCase();
   const from=$('tsFilterFrom').value,to=$('tsFilterTo').value, target=$('tsSearchResults');
@@ -1096,6 +1108,7 @@ function renderTsSearch(){
     html+='</tbody></table></div>';
     if(matches.length>limit)html+='<p class="small">Showing first '+limit+' matches. Totals include all '+matches.length+' matches; narrow your filters for additional rows.</p>';
   }else html+='<p class="small">No matching entries found among Time Sheets available to your account.</p>';
+  LAST_TS={matches:matches,totals:totals,filters:{type:$('tsFilterType').selectedOptions[0]?$('tsFilterType').selectedOptions[0].textContent:'',job:$('tsFilterJob').value.trim(),tech:$('tsFilterTech').value.trim(),from:from,to:to}};
   target.innerHTML=html;
   target.querySelectorAll('[data-search-open]').forEach(btn=>btn.onclick=()=>openManagerReview(btn.getAttribute('data-search-open'),true));
 }
@@ -1349,7 +1362,6 @@ async function saveManagerReview(markReviewed){
 
 $('mgrApprove')&&($('mgrApprove').onclick=()=>saveManagerReview(true));
 $('mgrSaveOnly')&&($('mgrSaveOnly').onclick=()=>saveManagerReview(false));
-$('mgrCsv')&&($('mgrCsv').onclick=()=>downloadCSV({...OPEN_SHEET,entries:currentMgrEntries()}));
 $('mgrPrint')&&($('mgrPrint').onclick=async()=>{
   // Re-read the saved record so print reflects the same expense attachments
   // that a manager sees after approval (including legacy expenseReport data).
@@ -1419,6 +1431,13 @@ window.addEventListener('popstate',()=>{ if(!$('managerView').classList.contains
 })();
 $('inboxBack')&&($('inboxBack').onclick=()=>{ location.href='administration.html'; });
 
+/* ---------- Printable downloads (same approach as Download Pay Period) ---------- */
+const PRINT_CSS=':root{color-scheme:light!important}*{box-sizing:border-box}html{background:#fff!important}body{margin:0;padding:18px;font:10pt/1.35 Arial,sans-serif;color:#172a46;background:#fff}header{border-bottom:3px solid #153b67;padding-bottom:12px;margin-bottom:12px}h1{font-size:22px;margin:0 0 4px}h3,h4{font-size:14px;margin:16px 0 6px}.meta,.small{color:#475569;margin:2px 0}table{width:100%;border-collapse:collapse;margin:0 0 10px}th,td{border:1px solid #cbd5e1;padding:4px 6px;text-align:left;vertical-align:top}th{background:#e8eef6}.num{text-align:right;white-space:nowrap}tr.orange td{background:#F7C58D}@media print{@page{margin:.5in}tr{break-inside:avoid}thead{display:table-header-group}th,td{-webkit-print-color-adjust:exact;print-color-adjust:exact}}';
+function savePrintable(title,metaLines,bodyHtml,filename){
+  const html='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(title)+'</title><style>'+PRINT_CSS+'</style></head><body><header><h1>'+esc(title)+'</h1>'+metaLines.map(l=>'<p class="meta">'+esc(l)+'</p>').join('')+'</header>'+bodyHtml+'</body></html>';
+  const blob=new Blob([html],{type:'text/html;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
 /* ---------- Job Hours Report (manager/admin) ---------- */
 const JH={q:'',variants:{},rows:[],sheets:0};
 function jhIsNum(v){return /^\d+$/.test(String(v==null?'':v).trim());}
@@ -1474,6 +1493,20 @@ function jhCompute(){
   JH.rows=Object.keys(byDept).sort().map(k=>({dept:k,...byDept[k]}));
   JH.sheets=Object.keys(sheets).length;JH.first=first;JH.last=last;
 }
+function jhBuildHtml(names){
+  const f=n=>(+n).toFixed(2);
+  const g={st:0,ot:0,dt:0};JH.rows.forEach(r=>{g.st+=r.st;g.ot+=r.ot;g.dt+=r.dt;});
+  const head='<thead><tr><th>'+(names?'Employee':'')+'</th><th class="num">Regular (ST)</th><th class="num">Time &amp; Half (OT)</th><th class="num">Double (DT)</th><th class="num">Total</th></tr></thead>';
+  const tot=(label,x,shade)=>'<tr style="background:'+(shade||'#e8eef6')+'"><td><b>'+label+'</b></td><td class="num"><b>'+f(x.st)+'</b></td><td class="num"><b>'+f(x.ot)+'</b></td><td class="num"><b>'+f(x.dt)+'</b></td><td class="num"><b>'+f(x.st+x.ot+x.dt)+'</b></td></tr>';
+  let h='<p class="small">Job '+esc(JH.q)+' · '+JH.sheets+' time sheet'+(JH.sheets===1?'':'s')+' · weeks '+esc(JH.first)+' to '+esc(JH.last)+'</p>';
+  JH.rows.forEach(r=>{
+    h+='<h4 style="margin:14px 0 6px;font-size:14px">'+esc(r.dept)+'</h4><div class="table-wrap"><table>'+head+'<tbody>';
+    if(names)Object.keys(r.emps).sort().forEach(n=>{const x=r.emps[n];h+='<tr><td>'+esc(n)+'</td><td class="num">'+f(x.st)+'</td><td class="num">'+f(x.ot)+'</td><td class="num">'+f(x.dt)+'</td><td class="num">'+f(x.st+x.ot+x.dt)+'</td></tr>';});
+    h+=tot(esc(r.dept)+' total',r)+'</tbody></table></div>';
+  });
+  h+='<h4 style="margin:16px 0 6px;font-size:14px">All departments</h4><div class="table-wrap"><table>'+head+'<tbody>'+tot('Grand Total',g,'#d5e0ee')+'</tbody></table></div>';
+  return h;
+}
 function jhRender(){
   const f=n=>(+n).toFixed(2);
   const names=$('jhNames').checked;
@@ -1482,17 +1515,11 @@ function jhRender(){
   vbox.innerHTML=keys.length?('<b>Job numbers included</b> (uncheck to leave one out): '+keys.map(k=>'<label style="margin-right:12px;font-weight:400"><input type="checkbox" class="jhVar" data-k="'+escAttr(k)+'"'+(JH.variants[k].checked?' checked':'')+' style="width:auto;height:auto"> '+esc(JH.variants[k].label)+' ('+JH.variants[k].count+' card'+(JH.variants[k].count===1?'':'s')+')</label>').join('')):'';
   vbox.querySelectorAll('.jhVar').forEach(cb=>cb.onchange=()=>{JH.variants[cb.dataset.k].checked=cb.checked;jhCompute();jhRender();});
   const out=$('jhResults');
-  if(!JH.q){out.innerHTML='';$('jhCsv').disabled=true;return;}
-  if(!JH.rows.length){out.innerHTML='<p class="small">No submitted or reviewed time sheets on record have hours for job number <b>'+esc(JH.q)+'</b>.</p>';$('jhCsv').disabled=true;return;}
+  if(!JH.q){out.innerHTML='';return;}
+  if(!JH.rows.length){out.innerHTML='<p class="small">No submitted or reviewed time sheets on record have hours for job number <b>'+esc(JH.q)+'</b>.</p>';return;}
   const g={st:0,ot:0,dt:0};JH.rows.forEach(r=>{g.st+=r.st;g.ot+=r.ot;g.dt+=r.dt;});
-  let h='<p class="small">Job '+esc(JH.q)+' · '+JH.sheets+' time sheet'+(JH.sheets===1?'':'s')+' · weeks '+esc(JH.first)+' to '+esc(JH.last)+'</p>'+
-    '<div class="table-wrap"><table><thead><tr><th>Department</th><th class="num">Regular (ST)</th><th class="num">Time &amp; Half (OT)</th><th class="num">Double (DT)</th><th class="num">Total</th></tr></thead><tbody>';
-  JH.rows.forEach(r=>{
-    h+='<tr><td><b>'+esc(r.dept)+'</b></td><td class="num">'+f(r.st)+'</td><td class="num">'+f(r.ot)+'</td><td class="num">'+f(r.dt)+'</td><td class="num">'+f(r.st+r.ot+r.dt)+'</td></tr>';
-    if(names)Object.keys(r.emps).sort().forEach(n=>{const x=r.emps[n];h+='<tr><td style="padding-left:22px">'+esc(n)+'</td><td class="num">'+f(x.st)+'</td><td class="num">'+f(x.ot)+'</td><td class="num">'+f(x.dt)+'</td><td class="num">'+f(x.st+x.ot+x.dt)+'</td></tr>';});
-  });
-  h+='<tr style="background:#e8eef6"><td><b>Grand Total</b></td><td class="num"><b>'+f(g.st)+'</b></td><td class="num"><b>'+f(g.ot)+'</b></td><td class="num"><b>'+f(g.dt)+'</b></td><td class="num"><b>'+f(g.st+g.ot+g.dt)+'</b></td></tr></tbody></table></div>';
-  out.innerHTML=h;$('jhCsv').disabled=false;
+  const h=jhBuildHtml(names);
+  out.innerHTML=h;
 }
 function jhRun(){
   if(!INBOX_ITEMS||!INBOX_ITEMS.length){$('jhNote').textContent='Submitted time sheets are still loading.';}
@@ -1500,23 +1527,14 @@ function jhRun(){
   JH.variants={};
   jhCollect();jhCompute();jhRender();
 }
-function jhCsv(){
-  const names=$('jhNames').checked;const f=n=>(+n).toFixed(2);
-  const rows=[['Job Hours Report'],['Job Number',JH.q],['Job numbers included',Object.keys(JH.variants).filter(k=>JH.variants[k].checked).map(k=>JH.variants[k].label).join('; ')],
-    ['Time sheets',JH.sheets],['Weeks',JH.first+' to '+JH.last],['Generated',new Date().toLocaleString()],[],
-    ['Department',...(names?['Employee']:[]),'Regular (ST)','Time & Half (OT)','Double (DT)','Total']];
-  const g={st:0,ot:0,dt:0};
-  JH.rows.forEach(r=>{g.st+=r.st;g.ot+=r.ot;g.dt+=r.dt;
-    rows.push([r.dept,...(names?['(all)']:[]),f(r.st),f(r.ot),f(r.dt),f(r.st+r.ot+r.dt)]);
-    if(names)Object.keys(r.emps).sort().forEach(n=>{const x=r.emps[n];rows.push([r.dept,n,f(x.st),f(x.ot),f(x.dt),f(x.st+x.ot+x.dt)]);});});
-  rows.push([]);rows.push(['Grand Total',...(names?['']:[]),f(g.st),f(g.ot),f(g.dt),f(g.st+g.ot+g.dt)]);
-  const csv=rows.map(r=>r.map(v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download='Job-Hours_'+JH.q.replace(/[^a-z0-9_-]/gi,'_')+'_'+new Date().toISOString().slice(0,10)+'.csv';
-  document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+function jhDownload(){
+  if(!JH.q||!JH.rows.length){alert('Run the report first. There are no hours to download for this job number.');return;}
+  const names=$('jhNames').checked;
+  const inc=Object.keys(JH.variants).filter(k=>JH.variants[k].checked).map(k=>JH.variants[k].label).join('; ');
+  savePrintable('FDEC Job Hours Report — '+JH.q,['Job numbers included: '+inc,'Time sheets: '+JH.sheets+' · Weeks '+JH.first+' to '+JH.last,'Submitted and reviewed time sheets only · Generated '+new Date().toLocaleString()],jhBuildHtml(names),'FDEC-Job-Hours-'+JH.q.replace(/[^a-z0-9_-]/gi,'_')+'.html');
 }
+$('jhDl')&&($('jhDl').onclick=jhDownload);
 $('jhRun')&&($('jhRun').onclick=jhRun);
-$('jhCsv')&&($('jhCsv').onclick=jhCsv);
 $('jhJob')&&$('jhJob').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();jhRun();}});
 $('jhNames')&&($('jhNames').onchange=()=>{if(JH.q){jhRender();}});
 
