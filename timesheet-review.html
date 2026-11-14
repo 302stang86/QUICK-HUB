@@ -432,6 +432,17 @@ header,main{position:relative;z-index:1;}
       <div class="ts-search-actions"><button type="button" class="go" id="tsSearchGo">Search All Pay Periods</button><button type="button" class="secondary" id="tsSearchClear">Clear Filters</button><span class="small">Combined filters · submitted and reviewed · current and archived</span></div>
       <div id="tsSearchResults" class="ts-search-results" aria-live="polite"></div>
     </div>
+    <div class="ts-search no-print" id="jhPanel" style="margin-top:12px">
+      <h3>Job Hours Report</h3>
+      <p class="small" style="margin:0 0 8px">Enter a job number to total the hours on every submitted and reviewed time sheet on record, split by department into Regular (ST), Time &amp; Half (OT) and Double (DT). A number with digits only must match exactly. A Job number with a letter or special character also pulls close matches, such as 200-123 for cm200-123.</p>
+      <div class="ts-search-fields" style="grid-template-columns:minmax(0,2fr) minmax(0,3fr)">
+        <div><label for="jhJob">Job Number</label><input id="jhJob" type="search" placeholder="e.g. 2515555 or cm200-123" autocomplete="off"></div>
+        <div style="display:flex;align-items:flex-end"><label style="margin:0 0 8px;font-weight:400"><input id="jhNames" type="checkbox" style="width:auto;height:auto;margin-right:6px">Show employee names under each department</label></div>
+      </div>
+      <div class="ts-search-actions"><button type="button" class="go" id="jhRun">Run Report</button><button type="button" class="secondary" id="jhCsv" disabled>Download CSV</button><span id="jhNote" class="small"></span></div>
+      <div id="jhVariants" class="small" style="margin-top:8px"></div>
+      <div id="jhResults" class="ts-search-results"></div>
+    </div>
     <div id="inboxYears" class="ibx-years"></div>
     <div id="inboxList" class="ibx-list"></div>
   </section>
@@ -476,6 +487,8 @@ const types=['Sprinkler','Fire Alarm','Special Hazard','Pre-Engineered','Portabl
 function rateForDay(i){return i===0?'dt':i===6?'ot':'st';}
 function rateLabel(cat){return cat==='dt'?'Double Time (2×)':cat==='ot'?'Time & Half (1.5×)':'Regular (ST)';}
 const $=id=>document.getElementById(id);
+// A Job (project) number is anything that is not digits only: letters, spaces, or characters such as - @ * _ . Plain digits are a ServiceTrade number.
+function isJobNo(v){v=String(v==null?'':v).trim();return v!==''&&!/^\d+$/.test(v);}
 
 /* ---------- Firebase bootstrap (reuse shared app if present) ---------- */
 let fb=null, db=null, auth=null, FB_OK=false;
@@ -648,7 +661,7 @@ function makeRow(data={}){
   card.querySelector('.job').value=data.jobName??data.job??'';
   card.querySelector('.jobNumber').value=data.jobNumber||'';
   const refreshJobNumberHighlight=()=>{
-    card.classList.toggle('job-number-alpha',/[a-z]/i.test(card.querySelector('.jobNumber').value));
+    card.classList.toggle('job-number-alpha',isJobNo(card.querySelector('.jobNumber').value));
   };
   card.querySelector('.jobNumber').addEventListener('input',refreshJobNumberHighlight);
   card.querySelector('.type').addEventListener('change',()=>syncJobRequirements(card));
@@ -1078,7 +1091,7 @@ function renderTsSearch(){
   let html='<p class="small"><strong>'+matches.length+' matching job entries</strong> across '+new Set(matches.map(m=>m.s.id)).size+' Time Sheets · ST '+fmt(totals.st)+' · OT '+fmt(totals.ot)+' · DT '+fmt(totals.dt)+' · <strong>'+fmt(totals.st+totals.ot+totals.dt)+' total hours</strong></p>';
   if(matches.length){
     html+='<div class="table-wrap"><table><thead><tr><th>Work Date</th><th>Technician</th><th>Type / Department</th><th>Job Name</th><th>Job Number</th><th class="num">ST</th><th class="num">OT</th><th class="num">DT</th><th class="num">Total</th><th>Status / Review</th></tr></thead><tbody>';
-    html+=matches.slice(0,limit).map(({s,e,actual,h})=>'<tr'+(/[a-z]/i.test(e.jobNumber||'')?' class="job-number-alpha"':'')+'><td>'+esc(actual||'Undated')+'</td><td>'+esc(s.employee||'')+'</td><td>'+esc(e.type||'')+'</td><td>'+esc(e.jobName??e.job??'')+'</td><td>'+esc(e.jobNumber||'')+'</td><td class="num">'+fmt(+e.st||0)+'</td><td class="num">'+fmt(+e.ot||0)+'</td><td class="num">'+fmt(+e.dt||0)+'</td><td class="num">'+fmt(h)+'</td><td><button type="button" class="search-open" data-search-open="'+escAttr(s.id)+'">'+esc(s.status||'submitted')+' · Open</button></td></tr>').join('');
+    html+=matches.slice(0,limit).map(({s,e,actual,h})=>'<tr'+(isJobNo(e.jobNumber||'')?' class="job-number-alpha"':'')+'><td>'+esc(actual||'Undated')+'</td><td>'+esc(s.employee||'')+'</td><td>'+esc(e.type||'')+'</td><td>'+esc(e.jobName??e.job??'')+'</td><td>'+esc(e.jobNumber||'')+'</td><td class="num">'+fmt(+e.st||0)+'</td><td class="num">'+fmt(+e.ot||0)+'</td><td class="num">'+fmt(+e.dt||0)+'</td><td class="num">'+fmt(h)+'</td><td><button type="button" class="search-open" data-search-open="'+escAttr(s.id)+'">'+esc(s.status||'submitted')+' · Open</button></td></tr>').join('');
     html+='</tbody></table></div>';
     if(matches.length>limit)html+='<p class="small">Showing first '+limit+' matches. Totals include all '+matches.length+' matches; narrow your filters for additional rows.</p>';
   }else html+='<p class="small">No matching entries found among Time Sheets available to your account.</p>';
@@ -1140,7 +1153,7 @@ function downloadPayPeriod(key){
     const entries=payrollEntries(d,key);
     const entryRows=entries.map(e=>{
       ['st','ot','dt'].forEach(k=>{subtotal[k]+=Number(e[k])||0;total[k]+=Number(e[k])||0;});
-      const flagged=/[a-z]/i.test(String(e.jobNumber||''));
+      const flagged=isJobNo(String(e.jobNumber||''));
       return '<tr'+(flagged?' class="orange"':'')+'><td>'+safe(e.day||'')+'</td><td>'+safe(e.type||'')+'</td><td>'+safe(e.jobName??e.job??'')+'</td><td>'+safe(e.jobNumber||'')+'</td><td class="num">'+fmt(e.st)+'</td><td class="num">'+fmt(e.ot)+'</td><td class="num">'+fmt(e.dt)+'</td><td>'+safe(e.notes||'')+'</td></tr>';
     }).join('');
     const reports=payPeriod(d).key===key?(Array.isArray(d.expenseReports)?d.expenseReports:(d.expenseReport?[d.expenseReport]:[])):[];
@@ -1211,14 +1224,14 @@ function renderManagerReview(){
       td(cell('notes',i,'<input data-f="notes" value="'+escAttr(e.notes||'')+'">'))+
       '<td class="num rowtot" data-tot="'+i+'">'+((+e.st||0)+(+e.ot||0)+(+e.dt||0)).toFixed(2)+'</td>';
     // Apply the existing job-number highlight on initial render.
-    tr.classList.toggle('job-number-alpha',/[a-z]/i.test(e.jobNumber||''));
+    tr.classList.toggle('job-number-alpha',isJobNo(e.jobNumber||''));
     body.appendChild(tr);
   });
 
   // store originals for diffing + wire inputs
   OPEN_SHEET._orig=JSON.parse(JSON.stringify(d.entries||[]));
   body.querySelectorAll('[data-f]').forEach(inp=>{
-    inp.addEventListener('input',()=>{flagIfEdited(inp);if(inp.dataset.f==='jobNumber')inp.closest('tr').classList.toggle('job-number-alpha',/[a-z]/i.test(inp.value));recalcMgr();renderEditLog();});
+    inp.addEventListener('input',()=>{flagIfEdited(inp);if(inp.dataset.f==='jobNumber')inp.closest('tr').classList.toggle('job-number-alpha',isJobNo(inp.value));recalcMgr();renderEditLog();});
   });
   // show any prior edits as highlighted
   (d.managerEdits||[]).forEach(ed=>{
@@ -1379,6 +1392,107 @@ $('mgrBack')&&($('mgrBack').onclick=()=>{
   else { showInbox(); }
 });
 $('inboxBack')&&($('inboxBack').onclick=()=>{ location.href='administration.html'; });
+
+/* ---------- Job Hours Report (manager/admin) ---------- */
+const JH={q:'',variants:{},rows:[],sheets:0};
+function jhIsNum(v){return /^\d+$/.test(String(v==null?'':v).trim());}
+function jhKey(v){return String(v==null?'':v).toLowerCase().replace(/[^a-z0-9]/g,'');}
+/* Digits-only searches must match exactly. A Job number (letters or special characters)
+   also matches entries that differ only by a leading letter prefix, e.g. 200-123 and cm200-123. */
+function jhMatches(q,entry){
+  const qs=String(q||'').trim(),es=String(entry==null?'':entry).trim();
+  if(!qs||!es)return false;
+  if(jhIsNum(qs))return qs===es;
+  if(jhIsNum(es))return false;
+  const qk=jhKey(qs),ek=jhKey(es);
+  if(!qk||!ek)return false;
+  if(qk===ek)return true;
+  const longer=qk.length>=ek.length?qk:ek,shorter=qk.length>=ek.length?ek:qk;
+  if(shorter.length<4||!/\d/.test(shorter)||!longer.endsWith(shorter))return false;
+  return /^[a-z]*$/.test(longer.slice(0,longer.length-shorter.length));
+}
+function jhCollect(){
+  const q=($('jhJob').value||'').trim();
+  JH.q=q;
+  const found={};
+  (INBOX_ITEMS||[]).forEach(s=>{
+    if(s.status!=='submitted'&&s.status!=='reviewed')return;
+    (s.entries||[]).forEach(e=>{
+      if(!jhMatches(q,e.jobNumber))return;
+      const k=String(e.jobNumber).trim().toLowerCase();
+      (found[k]=found[k]||{label:String(e.jobNumber).trim(),count:0}).count++;
+    });
+  });
+  const prev=JH.variants||{};
+  JH.variants={};
+  Object.keys(found).sort().forEach(k=>{JH.variants[k]={label:found[k].label,count:found[k].count,checked:prev[k]?prev[k].checked:true};});
+}
+function jhCompute(){
+  const byDept={};const sheets={};let first='',last='';
+  (INBOX_ITEMS||[]).forEach(s=>{
+    if(s.status!=='submitted'&&s.status!=='reviewed')return;
+    (s.entries||[]).forEach(e=>{
+      const k=String(e.jobNumber==null?'':e.jobNumber).trim().toLowerCase();
+      if(!JH.variants[k]||!JH.variants[k].checked||!jhMatches(JH.q,e.jobNumber))return;
+      const dept=e.type||'Unassigned';
+      const d=byDept[dept]=byDept[dept]||{st:0,ot:0,dt:0,emps:{}};
+      const st=+e.st||0,ot=+e.ot||0,dt=+e.dt||0;
+      d.st+=st;d.ot+=ot;d.dt+=dt;
+      const en=s.employee||'Unknown';
+      const x=d.emps[en]=d.emps[en]||{st:0,ot:0,dt:0};x.st+=st;x.ot+=ot;x.dt+=dt;
+      sheets[s.id]=1;
+      if(s.weekStart&&(!first||s.weekStart<first))first=s.weekStart;
+      if(s.weekEnd&&(!last||s.weekEnd>last))last=s.weekEnd;
+    });
+  });
+  JH.rows=Object.keys(byDept).sort().map(k=>({dept:k,...byDept[k]}));
+  JH.sheets=Object.keys(sheets).length;JH.first=first;JH.last=last;
+}
+function jhRender(){
+  const f=n=>(+n).toFixed(2);
+  const names=$('jhNames').checked;
+  const vbox=$('jhVariants');
+  const keys=Object.keys(JH.variants);
+  vbox.innerHTML=keys.length?('<b>Job numbers included</b> (uncheck to leave one out): '+keys.map(k=>'<label style="margin-right:12px;font-weight:400"><input type="checkbox" class="jhVar" data-k="'+escAttr(k)+'"'+(JH.variants[k].checked?' checked':'')+' style="width:auto;height:auto"> '+esc(JH.variants[k].label)+' ('+JH.variants[k].count+' card'+(JH.variants[k].count===1?'':'s')+')</label>').join('')):'';
+  vbox.querySelectorAll('.jhVar').forEach(cb=>cb.onchange=()=>{JH.variants[cb.dataset.k].checked=cb.checked;jhCompute();jhRender();});
+  const out=$('jhResults');
+  if(!JH.q){out.innerHTML='';$('jhCsv').disabled=true;return;}
+  if(!JH.rows.length){out.innerHTML='<p class="small">No submitted or reviewed time sheets on record have hours for job number <b>'+esc(JH.q)+'</b>.</p>';$('jhCsv').disabled=true;return;}
+  const g={st:0,ot:0,dt:0};JH.rows.forEach(r=>{g.st+=r.st;g.ot+=r.ot;g.dt+=r.dt;});
+  let h='<p class="small">Job '+esc(JH.q)+' · '+JH.sheets+' time sheet'+(JH.sheets===1?'':'s')+' · weeks '+esc(JH.first)+' to '+esc(JH.last)+'</p>'+
+    '<div class="table-wrap"><table><thead><tr><th>Department</th><th class="num">Regular (ST)</th><th class="num">Time &amp; Half (OT)</th><th class="num">Double (DT)</th><th class="num">Total</th></tr></thead><tbody>';
+  JH.rows.forEach(r=>{
+    h+='<tr><td><b>'+esc(r.dept)+'</b></td><td class="num">'+f(r.st)+'</td><td class="num">'+f(r.ot)+'</td><td class="num">'+f(r.dt)+'</td><td class="num">'+f(r.st+r.ot+r.dt)+'</td></tr>';
+    if(names)Object.keys(r.emps).sort().forEach(n=>{const x=r.emps[n];h+='<tr><td style="padding-left:22px">'+esc(n)+'</td><td class="num">'+f(x.st)+'</td><td class="num">'+f(x.ot)+'</td><td class="num">'+f(x.dt)+'</td><td class="num">'+f(x.st+x.ot+x.dt)+'</td></tr>';});
+  });
+  h+='<tr style="background:#e8eef6"><td><b>Grand Total</b></td><td class="num"><b>'+f(g.st)+'</b></td><td class="num"><b>'+f(g.ot)+'</b></td><td class="num"><b>'+f(g.dt)+'</b></td><td class="num"><b>'+f(g.st+g.ot+g.dt)+'</b></td></tr></tbody></table></div>';
+  out.innerHTML=h;$('jhCsv').disabled=false;
+}
+function jhRun(){
+  if(!INBOX_ITEMS||!INBOX_ITEMS.length){$('jhNote').textContent='Submitted time sheets are still loading.';}
+  else $('jhNote').textContent='';
+  JH.variants={};
+  jhCollect();jhCompute();jhRender();
+}
+function jhCsv(){
+  const names=$('jhNames').checked;const f=n=>(+n).toFixed(2);
+  const rows=[['Job Hours Report'],['Job Number',JH.q],['Job numbers included',Object.keys(JH.variants).filter(k=>JH.variants[k].checked).map(k=>JH.variants[k].label).join('; ')],
+    ['Time sheets',JH.sheets],['Weeks',JH.first+' to '+JH.last],['Generated',new Date().toLocaleString()],[],
+    ['Department',...(names?['Employee']:[]),'Regular (ST)','Time & Half (OT)','Double (DT)','Total']];
+  const g={st:0,ot:0,dt:0};
+  JH.rows.forEach(r=>{g.st+=r.st;g.ot+=r.ot;g.dt+=r.dt;
+    rows.push([r.dept,...(names?['(all)']:[]),f(r.st),f(r.ot),f(r.dt),f(r.st+r.ot+r.dt)]);
+    if(names)Object.keys(r.emps).sort().forEach(n=>{const x=r.emps[n];rows.push([r.dept,n,f(x.st),f(x.ot),f(x.dt),f(x.st+x.ot+x.dt)]);});});
+  rows.push([]);rows.push(['Grand Total',...(names?['']:[]),f(g.st),f(g.ot),f(g.dt),f(g.st+g.ot+g.dt)]);
+  const csv=rows.map(r=>r.map(v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='Job-Hours_'+JH.q.replace(/[^a-z0-9_-]/gi,'_')+'_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+}
+$('jhRun')&&($('jhRun').onclick=jhRun);
+$('jhCsv')&&($('jhCsv').onclick=jhCsv);
+$('jhJob')&&$('jhJob').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();jhRun();}});
+$('jhNames')&&($('jhNames').onchange=()=>{if(JH.q){jhRender();}});
 
 /* ---------- helpers ---------- */
 function cloudMsg(kind,msg){

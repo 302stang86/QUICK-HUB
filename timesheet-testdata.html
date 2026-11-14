@@ -70,7 +70,9 @@ function generateTestSheets(opts){
     mitch_p:{n:'ST Service Calls – MP',num:'2001-mp26',t:'Sprinkler'},
     owen_h:{n:'ST Service Calls – OH',num:'2001-oh26',t:'Sprinkler'},
     jacob_k:{n:'ST Alarm Service – JK',num:'2001-jk26',t:'Fire Alarm'},
-    shared:{n:'ST Fire Alarm Service Contract',num:'2003-fa26',t:'Fire Alarm'}
+    shared:{n:'ST Fire Alarm Service Contract',num:'2003-fa26',t:'Fire Alarm'},
+    eric_o:{n:'Ford Wixom Expansion (Job)',num:'cm200-123',t:'Sprinkler'},
+    proj2:{n:'Oakland Mall Phase 2 (Job)',num:'123-456',t:'Fire Alarm'}
   };
   var NOTES=['','','','','Alarm trouble callout','Quarterly inspection','Pump churn test','Backflow test and tag','Reset panel after storm','Waiting on parts','Customer walk-through','Hydrant flow test'];
 
@@ -79,7 +81,7 @@ function generateTestSheets(opts){
 
   /* Forced events so every scenario is present. */
   var PTO={'tim_h':{1:[{d:5,h:8}]},'jacob_k':{3:[{d:1,h:8},{d:2,h:8}]},'owen_h':{4:[{d:3,h:4}]},'eric_o':{0:[{d:2,h:8}]}};
-  var STDAY={'mitch_p':{0:[1],1:[4],2:[2],3:[3],4:[1],5:[2]},'owen_h':{1:[2],3:[1],5:[4]},'jacob_k':{0:[3],2:[5],4:[2]},'tim_h':{2:[4],4:[3]}}; /* tim_h uses the shared ST contract */
+  var STDAY={'mitch_p':{0:[1],1:[4],2:[2],3:[3],4:[1],5:[2]},'owen_h':{1:[2],3:[1],5:[4]},'jacob_k':{0:[3],2:[5],4:[2]},'tim_h':{2:[4],4:[3]},'eric_o':{1:[2],3:[3],5:[1]}}; /* tim_h uses the shared contract, or Job 123-456 in week 5 */
   var WEEKEND=[
     [{d:6,k:['owen_h','eric_o'],h:4}],
     [{d:0,k:['jacob_k'],h:3}],
@@ -116,7 +118,7 @@ function generateTestSheets(opts){
             return;
           }
           if(STDAY[k]&&STDAY[k][wi]&&STDAY[k][wi].indexOf(d)>=0){
-            var sj=k==='tim_h'?STJ.shared:STJ[k];
+            var sj=k==='tim_h'?(wi===4?STJ.proj2:STJ.shared):STJ[k];
             add(k,d,sj.t,sj,Math.min(h,8),'Service calls');
             if(h>8)add(k,d,type,job,h-8);
             return;
