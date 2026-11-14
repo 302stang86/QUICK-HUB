@@ -262,6 +262,7 @@ header,main{position:relative;z-index:1;}
 <!-- ============ MODE BAR ============ -->
 <div class="modebar no-print">
   <div class="who">
+    <button class="ghost" id="topBack" type="button" style="display:none;margin:0 10px 0 0;padding:6px 12px;font-size:13px">&larr; Back to Review</button>
     <span class="pill tech" id="rolePill">Technician</span>
     <span id="whoName">Signed in</span>
     <span id="statusBadge" class="badge draft hide"></span>
@@ -1178,6 +1179,14 @@ function downloadPayPeriod(key){
 async function openManagerReview(id, fromInbox){
   if(!FB_OK)return;
   try{
+    if(fromInbox && $('managerView').classList.contains('hide')){
+      window.__inboxScroll=window.scrollY;
+      // Give the browser's Back button something to return to, without reloading the list.
+      if(getSheetIdFromURL()!==id){
+        const u=new URL(location.href);u.searchParams.set('sheet',id);
+        history.pushState({fdecSheet:1},'',u.toString());
+      }
+    }
     const snap=await db.collection(COL_SHEETS).doc(id).get();
     if(!snap.exists){cloudMsg('error','That timesheet was not found.');return;}
     OPEN_SHEET={...snap.data()};OPEN_SHEET_ID=id;
@@ -1382,15 +1391,32 @@ $('mgrDelete')&&($('mgrDelete').onclick=async()=>{
   }catch(e){console.error(e);alert('Deletion failed: '+(e.message||e));}
   finally{btn.disabled=false;}
 });
-$('mgrBack')&&($('mgrBack').onclick=()=>{
+function leaveSheet(){
   $('managerView').classList.add('hide');
   OPEN_SHEET=null;OPEN_SHEET_ID=null;
-  // strip ?sheet= from URL so it does not reopen
-  const u=new URL(location.href);u.searchParams.delete('sheet');u.searchParams.delete('id');
-  history.replaceState({},'',u.toString());
-  if(window.__fromInbox && INBOX_ITEMS && INBOX_ITEMS.length){ $('inboxView').classList.remove('hide'); renderInbox(); window.scrollTo({top:0,behavior:'smooth'}); }
-  else { showInbox(); }
-});
+  if(!(history.state&&history.state.fdecSheet)){
+    const u=new URL(location.href);u.searchParams.delete('sheet');u.searchParams.delete('id');
+    history.replaceState({},'',u.toString());
+  }
+  if(INBOX_ITEMS && INBOX_ITEMS.length){
+    $('inboxView').classList.remove('hide');renderInbox();
+    const y=window.__inboxScroll||0;window.scrollTo({top:y,behavior:'auto'});
+  }else{ showInbox(); }
+}
+/* Back to Review: return to the list exactly as it was (search results, open pay periods, scroll position). */
+function backToReview(){
+  if(history.state&&history.state.fdecSheet){ history.back(); } else { leaveSheet(); }
+}
+$('mgrBack')&&($('mgrBack').onclick=backToReview);
+$('topBack')&&($('topBack').onclick=backToReview);
+window.addEventListener('popstate',()=>{ if(!$('managerView').classList.contains('hide')) leaveSheet(); });
+(function(){
+  const mv=$('managerView'),tb=$('topBack');
+  if(!mv||!tb)return;
+  const sync=()=>{ tb.style.display=mv.classList.contains('hide')?'none':''; };
+  new MutationObserver(sync).observe(mv,{attributes:true,attributeFilter:['class']});
+  sync();
+})();
 $('inboxBack')&&($('inboxBack').onclick=()=>{ location.href='administration.html'; });
 
 /* ---------- Job Hours Report (manager/admin) ---------- */
