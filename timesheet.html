@@ -779,21 +779,34 @@ $('clearRows').onclick=()=>{if(confirm('Clear all hours cards?')){$('rows').inne
 $('print').onclick=()=>window.print();
 $('reset').onclick=async()=>{
   const locked=CUR_STATUS==='submitted'||CUR_STATUS==='reviewed';
-  const hasCloud=!!LAST_SAVED_ID && !locked;
-  const msg=hasCloud?'Reset the form? This clears the form and permanently deletes your saved cloud draft for this week.'
-    :locked?'Reset the form? This clears the screen only. The copy already submitted for this week stays with your manager.'
-    :'Reset the form? This clears the on-screen entries.';
+  const msg=locked?'Reset the form? This clears the screen only. The copy already submitted for this week stays with your manager.'
+    :'Reset the form? This clears the form and permanently deletes any saved cloud draft for this week.';
   if(!confirm(msg))return;
   clearTimeout(AUTO_T);AUTO_T=null;
   while(SHEET_SAVE_BUSY)await new Promise(r=>setTimeout(r,150));
-  if(hasCloud){
-    try{await db.collection(COL_SHEETS).doc(LAST_SAVED_ID).delete();}
-    catch(e){console.error(e);cloudMsg('error','Could not delete the cloud draft: '+(e.message||e)+'. The form was not reset.');return;}
+  const week=$('weekStart').value;
+  let deleted=0;
+  if(!locked && FB_OK && CURRENT.uid){
+    // Delete every unsubmitted record for this week (older versions could leave more than one),
+    // then confirm nothing is left so a refresh cannot bring the form back.
+    try{
+      const draftIds=async()=>{
+        const ids=new Set(); if(LAST_SAVED_ID)ids.add(LAST_SAVED_ID);
+        const q=await db.collection(COL_SHEETS).where('employeeUid','==',CURRENT.uid).where('weekStart','==',week).get();
+        q.forEach(d=>{const st=(d.data()||{}).status; if(st!=='submitted'&&st!=='reviewed')ids.add(d.id); else ids.delete(d.id);});
+        return [...ids];
+      };
+      for(const id of await draftIds()){ await db.collection(COL_SHEETS).doc(id).delete(); deleted++; }
+      const check=await db.collection(COL_SHEETS).where('employeeUid','==',CURRENT.uid).where('weekStart','==',week).get();
+      let remain=0; check.forEach(d=>{const st=(d.data()||{}).status; if(st!=='submitted'&&st!=='reviewed')remain++;});
+      if(remain){cloudMsg('error','The cloud draft could not be fully removed. The form was not reset. Try again or contact your manager.');return;}
+    }catch(e){console.error(e);cloudMsg('error','Could not delete the cloud draft: '+(e.message||e)+'. The form was not reset.');return;}
     CUR_STATUS=null;$('statusBadge').classList.add('hide');
   }
+  try{ localStorage.removeItem('fdecTimesheet:'+(week||'week')); sessionStorage.removeItem(EXPENSE_KEY);sessionStorage.removeItem(SHEET_KEY);sessionStorage.removeItem(CANCEL_KEY); }catch(e){}
   $('rows').innerHTML='';makeRow();$('comments').value='';$('manager').value='';EXPENSE_REPORTS=[];renderExpenseReport();
   LAST_SAVED_ID=null;$('savedInfo').textContent='';defaultSunday();calculate();
-  cloudMsg('ok',hasCloud?'Form reset and cloud draft deleted.':'Form reset.');
+  cloudMsg('ok',deleted?'Form reset and cloud draft deleted.':'Form reset.');
 };
 $('submit').onclick=()=>saveSheet('submitted');
 
