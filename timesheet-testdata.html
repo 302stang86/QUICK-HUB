@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Timesheet Test Data Loader</title>
+<style>
+body{margin:0;background:#0f1722;color:#e8eef5;font:15px/1.45 Arial,Helvetica,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:18px}
+h1{font-size:20px;margin:0 0 4px}.sub{color:#9fb0c3;margin:0 0 14px}
+.panel{background:#18222f;border:1px solid #2c3b4e;border-radius:10px;padding:14px;margin:0 0 14px}
+button{background:#1d5f91;color:#fff;border:0;border-radius:7px;padding:9px 14px;font-size:14px;cursor:pointer;margin:0 8px 8px 0}
+button.warn{background:#9a2b2b}button.ghost{background:#3b4a5d}button:disabled{opacity:.5;cursor:default}
+table{border-collapse:collapse;width:100%;font-size:13px}th,td{border:1px solid #2c3b4e;padding:5px 7px;text-align:left}th{background:#223044}
+td.num{text-align:right;white-space:nowrap}.rev{color:#7fd69a}.sub2{color:#f2c46b}
+#log{white-space:pre-wrap;font:12px/1.5 Consolas,monospace;color:#c8d6e5;max-height:260px;overflow:auto}
+.bad{color:#ff8b8b}
+</style></head><body><main>
+<h1>Timesheet Test Data Loader</h1>
+<p class="sub">Creates thirty (30) fake weekly time sheets (five (5) employees, six (6) weeks) in the <b>timesheets</b> collection. Every record is marked <code>isTest: true</code> and uses IDs that start with <code>TEST_</code>, so it cannot overwrite a real sheet and can be removed with one button. Administrators only.</p>
+<div class="panel"><div id="who">Checking sign-in…</div></div>
+<div class="panel">
+ <button id="load" disabled>Load test data to cloud</button>
+ <button id="del" class="warn" disabled>Delete all test data</button>
+ <button id="dl" class="ghost">Download JSON</button>
+ <div id="log"></div>
+</div>
+<div class="panel"><b>Preview</b> (Regular / Time &amp; Half / Double hours per week, then status)<div id="prev" style="overflow-x:auto;margin-top:8px"></div></div>
+</main>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+/* Deterministic fake timesheet generator (no randomness outside the seeded RNG). */
+function generateTestSheets(opts){
+  opts=opts||{};
+  var manager=opts.manager||{uid:'TEST_MANAGER',name:'Test Manager',initials:'TM'};
+  var today=opts.today?new Date(opts.today+'T12:00:00'):new Date();
+  function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;var t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+  var R=rng(20261114);
+  var pick=function(a){return a[Math.floor(R()*a.length)];};
+  function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(R()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+  function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+  function addDays(d,n){var x=new Date(d);x.setDate(x.getDate()+n);return x;}
+  var DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+  var EMP=[
+    {key:'owen_h',name:'Owen H',initials:'OH',email:'owen.h@test.invalid'},
+    {key:'mitch_p',name:'Mitch P',initials:'MP',email:'mitch.p@test.invalid'},
+    {key:'tim_h',name:'Tim H',initials:'TH',email:'tim.h@test.invalid'},
+    {key:'jacob_k',name:'Jacob K',initials:'JK',email:'jacob.k@test.invalid'},
+    {key:'eric_o',name:'Eric O',initials:'EO',email:'eric.o@test.invalid'}
+  ];
+  /* Regular jobs: 7-digit numeric job numbers. */
+  var JOBS=[
+    {n:'Meijer #118 Livonia',num:'2514873',t:'Sprinkler'},
+    {n:'Henry Ford Macomb Hospital',num:'2514902',t:'Sprinkler'},
+    {n:'Oakland Mall Fire Alarm Upgrade',num:'2515044',t:'Fire Alarm'},
+    {n:'Ford Wixom Plant 4 Retrofit',num:'2515120',t:'Sprinkler'},
+    {n:'Troy Marriott Pump Room',num:'2515237',t:'Special Hazard'},
+    {n:'Beaumont Royal Oak Annual FA',num:'2515311',t:'Fire Alarm'},
+    {n:'Somerset Collection Backflow',num:'2515398',t:'Sprinkler'},
+    {n:'DTE Data Center Clean Agent',num:'2515476',t:'Special Hazard'},
+    {n:'Lakeside Mall Kitchen Hood',num:'2515555',t:'Pre-Engineered'},
+    {n:'Stellantis Warren Truck',num:'2515621',t:'Sprinkler'},
+    {n:'Oakland University Rec Center',num:'2515702',t:'Fire Alarm'},
+    {n:'Kroger #412 Clinton Twp',num:'2515788',t:'Portables'},
+    {n:'Auburn Hills Distribution Ctr',num:'2515864',t:'Sprinkler'},
+    {n:'Detroit Metro Hangar 6',num:'2515919',t:'EP'}
+  ];
+  /* STJOBS: job numbers that contain letters (example 2001-mp26). */
+  var STJ={
+    mitch_p:{n:'ST Service Calls – MP',num:'2001-mp26',t:'Sprinkler'},
+    owen_h:{n:'ST Service Calls – OH',num:'2001-oh26',t:'Sprinkler'},
+    jacob_k:{n:'ST Alarm Service – JK',num:'2001-jk26',t:'Fire Alarm'},
+    shared:{n:'ST Fire Alarm Service Contract',num:'2003-fa26',t:'Fire Alarm'}
+  };
+  var NOTES=['','','','','Alarm trouble callout','Quarterly inspection','Pump churn test','Backflow test and tag','Reset panel after storm','Waiting on parts','Customer walk-through','Hydrant flow test'];
+
+  var sunThis=addDays(today,-today.getDay());
+  var weekStarts=[];for(var w=6;w>=1;w--)weekStarts.push(addDays(sunThis,-7*w));
+
+  /* Forced events so every scenario is present. */
+  var PTO={'tim_h':{1:[{d:5,h:8}]},'jacob_k':{3:[{d:1,h:8},{d:2,h:8}]},'owen_h':{4:[{d:3,h:4}]},'eric_o':{0:[{d:2,h:8}]}};
+  var STDAY={'mitch_p':{0:[1],1:[4],2:[2],3:[3],4:[1],5:[2]},'owen_h':{1:[2],3:[1],5:[4]},'jacob_k':{0:[3],2:[5],4:[2]},'tim_h':{2:[4],4:[3]}}; /* tim_h uses the shared ST contract */
+  var WEEKEND=[
+    [{d:6,k:['owen_h','eric_o'],h:4}],
+    [{d:0,k:['jacob_k'],h:3}],
+    [{d:6,k:['tim_h'],h:5},{d:0,k:['tim_h','mitch_p'],h:2}],
+    [{d:6,k:['owen_h','eric_o','jacob_k'],h:6}],
+    [{d:0,k:['eric_o'],h:4}],
+    [{d:6,k:['mitch_p','tim_h'],h:3}]
+  ];
+  var HEAVY={2:.6,4:.6};
+  var EXPENSE={ '2:owen_h':1,'3:tim_h':1,'4:eric_o':1,'5:mitch_p':1 };
+
+  var sheets=[];
+  weekStarts.forEach(function(ws,wi){
+    var active=shuffle(JOBS).slice(0,6);
+    var cards={}; EMP.forEach(function(e){cards[e.key]=[];});
+    function add(k,day,type,job,hours,note){cards[k].push({day:day,type:type,job:job,h:hours,note:note||''});}
+
+    for(var d=1;d<=5;d++){
+      var order=shuffle(EMP.map(function(e){return e.key;}));
+      var crews=pick([[3,2],[2,2,1],[5],[4,1],[3,1,1]]);var pos=0;
+      crews.forEach(function(sz,ci){
+        var members=order.slice(pos,pos+sz);pos+=sz;
+        var job=active[(ci+d)%active.length];
+        var hrs=R()<(HEAVY[wi]||.12)?10:8;
+        var split=R()<.18;var job2=active[(ci+d+2)%active.length];
+        members.forEach(function(k){
+          var h=hrs;
+          if(R()<.07)h=pick([6,7]);              /* left early */
+          var type=R()<.25?pick(['Sprinkler','Fire Alarm']):job.t;
+          if(PTO[k]&&PTO[k][wi]&&PTO[k][wi].some(function(p){return p.d===d;})){
+            var p=PTO[k][wi].filter(function(p){return p.d===d;})[0];
+            add(k,d,'PTO',null,p.h);
+            if(p.h<h){add(k,d,type,job,h-p.h,NOTES[Math.floor(R()*NOTES.length)]);}
+            return;
+          }
+          if(STDAY[k]&&STDAY[k][wi]&&STDAY[k][wi].indexOf(d)>=0){
+            var sj=k==='tim_h'?STJ.shared:STJ[k];
+            add(k,d,sj.t,sj,Math.min(h,8),'Service calls');
+            if(h>8)add(k,d,type,job,h-8);
+            return;
+          }
+          if(split&&h>=8){add(k,d,type,job,h/2,NOTES[Math.floor(R()*NOTES.length)]);add(k,d,job2.t,job2,h/2);}
+          else add(k,d,type,job,h,NOTES[Math.floor(R()*NOTES.length)]);
+        });
+      });
+    }
+    WEEKEND[wi].forEach(function(ev,ei){
+      var job=active[(ei+wi)%active.length];
+      ev.k.forEach(function(k){add(k,ev.d,job.t,job,ev.h,ev.d===6?'Saturday callout':'Sunday emergency callout');});
+    });
+
+    EMP.forEach(function(e){
+      var list=cards[e.key].slice().sort(function(a,b){return a.day-b.day;});
+      var used=0;var entries=[];
+      /* weekday cards in day order first for the 40-hour split */
+      list.forEach(function(c){
+        var st=0,ot=0,dt=0;
+        if(c.day===6)ot=c.h;
+        else if(c.day===0)dt=c.h;
+        else{
+          if(c.type==='PTO'||c.type==='Holiday'){st=c.h;}
+          else{st=Math.min(c.h,Math.max(0,40-used));ot=c.h-st;}
+          used+=c.h;
+        }
+        entries.push({type:c.type,job:c.job?c.job.n:'',jobName:c.job?c.job.n:'',jobNumber:c.job?c.job.num:'',day:DAYS[c.day],st:st,ot:ot,dt:dt,notes:c.note});
+      });
+      /* status plan */
+      var status=(wi<=2)?'reviewed':(wi===3?((e.key==='jacob_k'||e.key==='eric_o')?'submitted':'reviewed'):'submitted');
+      var we=addDays(ws,6);
+      var subAt=new Date(addDays(we,1).getTime());subAt.setHours(16+Math.floor(R()*4),Math.floor(R()*60),0,0);
+      var revAt=new Date(addDays(we,3).getTime());revAt.setHours(9,15,0,0);
+      var doc={
+        isTest:true,testBatch:'seed-v1',
+        employee:e.name,employeeUid:'TEST_'+e.key,employeeEmail:e.email,
+        weekStart:iso(ws),weekEnd:iso(we),
+        managerUid:manager.uid,managerName:manager.name,
+        comments:(R()<.3?pick(['Short week, left early Friday.','Callout on the weekend, see notes.','Truck in the shop Tuesday.']):''),
+        expenseReports:[],entries:entries,status:status,managerEdits:[],
+        submittedAtISO:subAt.toISOString()
+      };
+      var ek=wi+':'+e.key;
+      if(EXPENSE[ek]){
+        var firstJob=entries.filter(function(x){return x.jobNumber;})[0]||{jobName:'',jobNumber:''};
+        doc.expenseReports=[{id:'expense-test-'+ek.replace(':','-'),employee:e.name,department:'Sprinkler',manager:manager.name,from:iso(ws),to:iso(we),
+          statement:'TEST-'+(1000+wi*10),purpose:'Travel and materials for '+firstJob.jobName,jobName:firstJob.jobName,jobNumber:firstJob.jobNumber,advance:0,notes:'Test expense report',
+          items:[{date:iso(addDays(ws,2)),account:'Meals',description:'Lunch on site',paymentMethod:'out_of_pocket',amount:18.75},
+                 {date:iso(addDays(ws,3)),account:'Fuel',description:'Truck fuel',paymentMethod:'company_card',amount:74.2},
+                 {date:iso(addDays(ws,4)),account:'Parts / Materials',description:'Fittings and tape',paymentMethod:'out_of_pocket',amount:42.1}]}];
+      }
+      if(status==='reviewed'){
+        doc.reviewedBy=manager.name;doc.reviewedByInitials=manager.initials;doc.reviewedAtISO=revAt.toISOString();
+        doc.managerNote=R()<.25?pick(['Approved.','OK for payroll.','Verified against job tickets.']):'';
+        if(wi===1&&e.key==='jacob_k'){
+          var ci=doc.entries.findIndex(function(x){return /^\d{7}$/.test(x.jobNumber);});
+          if(ci>=0){var good=doc.entries[ci].jobNumber;var bad=good.slice(0,6)+String((+good[6]+3)%10);
+            doc.managerEdits.push({row:ci,field:'jobNumber',from:bad,to:good,by:manager.initials,at:revAt.toISOString()});}
+        }
+        if(wi===2&&e.key==='tim_h'){
+          var ni=doc.entries.findIndex(function(x){return x.jobNumber;});
+          if(ni>=0){doc.managerEdits.push({row:ni,field:'notes',from:'',to:doc.entries[ni].notes||'Hydrant flow test',by:manager.initials,at:revAt.toISOString()});}
+        }
+      }
+      doc._id='TEST_'+e.key+'_'+iso(ws);
+      sheets.push(doc);
+    });
+  });
+  return sheets;
+}
+
+
+const FIREBASE_CONFIG={apiKey:"AIzaSyCS_Hw94f4b7X0IkZV9gFXkZDIYNoa8eYo",authDomain:"fire-defense-itm-reports.firebaseapp.com",projectId:"fire-defense-itm-reports",storageBucket:"fire-defense-itm-reports.firebasestorage.app",messagingSenderId:"477656152120",appId:"1:477656152120:web:a14b2c03bddfb2a9de8ecd"};
+const ADMIN_EMAILS=["mp1@firedefense.com","302stang86@gmail.com","wh1@firedefense.com"];
+const $=id=>document.getElementById(id);
+const log=m=>{$('log').textContent+=m+'\n';$('log').scrollTop=1e9;};
+let db=null,fb=null,ME=null,SHEETS=[];
+try{
+  if(window.firebase){
+    fb=window.fdecFirebaseApp||(firebase.apps&&firebase.apps.length?firebase.app():firebase.initializeApp(FIREBASE_CONFIG));
+    db=firebase.firestore();
+  }
+}catch(e){console.warn(e);}
+function initialsOf(n){return String(n||'').split(/\s+/).filter(Boolean).map(x=>x[0]).join('').slice(0,3).toUpperCase()||'MGR';}
+function render(){
+  const weeks=[...new Set(SHEETS.map(s=>s.weekStart))];
+  const emps=[...new Set(SHEETS.map(s=>s.employee))];
+  const f=n=>(+n).toFixed(2).replace(/\.00$/,'');
+  let h='<table><thead><tr><th>Employee</th>'+weeks.map(w=>'<th>'+w+'</th>').join('')+'</tr></thead><tbody>';
+  emps.forEach(e=>{h+='<tr><td>'+e+'</td>';weeks.forEach(w=>{
+    const s=SHEETS.find(x=>x.employee===e&&x.weekStart===w);
+    const t={st:0,ot:0,dt:0};s.entries.forEach(x=>{t.st+=x.st;t.ot+=x.ot;t.dt+=x.dt;});
+    h+='<td class="num">'+f(t.st)+' / '+f(t.ot)+' / '+f(t.dt)+'<br><span class="'+(s.status==='reviewed'?'rev':'sub2')+'">'+s.status+'</span></td>';});h+='</tr>';});
+  $('prev').innerHTML=h+'</tbody></table>';
+}
+function build(){
+  SHEETS=generateTestSheets({manager:{uid:ME?ME.uid:'TEST_MANAGER',name:ME?ME.name:'Test Manager',initials:initialsOf(ME?ME.name:'Test Manager')}});
+  render();
+}
+build();
+$('dl').onclick=()=>{
+  const b=new Blob([JSON.stringify(SHEETS,null,2)],{type:'application/json'}),a=document.createElement('a');
+  a.href=URL.createObjectURL(b);a.download='timesheet-test-data.json';a.click();
+};
+function ts(iso){return firebase.firestore.Timestamp.fromDate(new Date(iso));}
+$('load').onclick=async()=>{
+  if(!confirm('Write '+SHEETS.length+' TEST time sheets to the cloud?'))return;
+  $('load').disabled=true;
+  try{
+    const batch=db.batch();
+    SHEETS.forEach(s=>{
+      const d={...s};const id=d._id;delete d._id;
+      d.submittedAt=ts(d.submittedAtISO);delete d.submittedAtISO;
+      if(d.reviewedAtISO){d.reviewedAt=ts(d.reviewedAtISO);delete d.reviewedAtISO;}
+      d.createdAt=d.submittedAt;d.updatedAt=firebase.firestore.FieldValue.serverTimestamp();
+      batch.set(db.collection('timesheets').doc(id),d);
+    });
+    await batch.commit();
+    log('Loaded '+SHEETS.length+' test sheets. Open Administration > Review Timesheets to view them.');
+  }catch(e){console.error(e);log('LOAD FAILED: '+(e.message||e));}
+  $('load').disabled=false;
+};
+$('del').onclick=async()=>{
+  if(!confirm('Delete every time sheet marked isTest in the cloud? Real sheets are not touched.'))return;
+  $('del').disabled=true;
+  try{
+    const q=await db.collection('timesheets').where('isTest','==',true).get();
+    let n=0;const docs=q.docs;
+    for(let i=0;i<docs.length;i+=400){const b=db.batch();docs.slice(i,i+400).forEach(d=>{b.delete(d.ref);n++;});await b.commit();}
+    log('Deleted '+n+' test sheets.');
+  }catch(e){console.error(e);log('DELETE FAILED: '+(e.message||e));}
+  $('del').disabled=false;
+};
+if(!db){$('who').innerHTML='<span class="bad">Cloud is not available on this page. You can still preview and download the JSON.</span>';}
+else{
+  firebase.auth().onAuthStateChanged(async u=>{
+    if(!u){$('who').innerHTML='<span class="bad">Not signed in. Sign in to the Quick Hub first, then reopen this page.</span>';return;}
+    let role='tech',name=u.displayName||u.email;
+    try{const s=await db.collection('users').doc(u.uid).get();if(s.exists){role=(s.data().role||'tech').toLowerCase();name=s.data().name||s.data().displayName||name;}}catch(e){}
+    const admin=role==='admin'||ADMIN_EMAILS.map(x=>x.toLowerCase()).includes((u.email||'').toLowerCase());
+    ME={uid:u.uid,name:name};build();
+    if(!admin){$('who').innerHTML='<span class="bad">'+name+' is not an administrator. Loading is disabled.</span>';return;}
+    $('who').textContent='Signed in as '+name+' (administrator). Test sheets will be assigned to you as the reviewing manager.';
+    $('load').disabled=false;$('del').disabled=false;
+  });
+}
+</script></body></html>
