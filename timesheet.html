@@ -302,7 +302,7 @@ header,main{position:relative;z-index:1;}
   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
     <div>
       <h2>Hours Worked</h2>
-      <details class="compact-rules"><summary>Hours rules &amp; instructions</summary><p class="sub">Add a card for each department, customer/job, or leave type. Type/Department and Customer/Job are required on every card. Rate rule: Monday–Friday is Regular (straight time), Saturday is Time &amp; Half (1.5×), Sunday is Double Time (2×). Monday–Friday Regular hours over eight (8) in a day move to Overtime automatically; when a day has more than one card, the day's later card carries the Overtime. Because each weekday caps at eight (8) Regular hours, the Mon–Friday week never exceeds forty (40) Regular hours.</p></details>
+      <details class="compact-rules"><summary>Hours rules &amp; instructions</summary><p class="sub">Add a card for each department, customer/job, or leave type. Type/Department and Customer/Job are required on every card. Monday–Friday hours (jobs, PTO and Holiday) are Regular (straight time) until you reach forty (40) hours in the Sunday–Saturday week. Hours beyond forty (40) move to Overtime automatically, in day order, and land on the later card where a day has more than one card. PTO and Holiday count toward the forty (40) but are always paid as Regular. Saturday hours are always Time &amp; Half (1.5×) and Sunday hours are always Double Time (2×); weekend hours do not count toward the forty (40) and are not changed by it, so only the matching hours field shows on a Saturday or Sunday card.</p></details>
     </div>
   </div>
   <div class="rows" id="rows"></div>
@@ -645,7 +645,7 @@ function makeRow(data={}){
     card.classList.toggle('job-number-alpha',/[a-z]/i.test(card.querySelector('.jobNumber').value));
   };
   card.querySelector('.jobNumber').addEventListener('input',refreshJobNumberHighlight);
-  card.querySelector('.type').addEventListener('change',()=>syncJobRequirements(card));
+  card.querySelector('.type').addEventListener('change',()=>{syncJobRequirements(card);applyOvertimeRules();calculate();});
   refreshJobNumberHighlight();
   card.querySelector('.day').value=data.day||'Monday';
   ['st','ot','dt'].forEach(k=>card.querySelector('.'+k).value=data[k]??0);
@@ -692,39 +692,53 @@ function syncJobRequirements(card){
   }
 }
 function syncCardMode(card){
-  var wd=isWeekdayCard(card), ot=card.querySelector('.ot');
-  if(ot){ ot.readOnly=wd; ot.classList.toggle('autofield',wd);
-    ot.title = wd ? 'Overtime is figured automatically: Monday–Friday Regular hours over 8 in a day move to Overtime, on the day’s later card.' : ''; }
-  if(!wd){ delete card.dataset.rawst; }
-}
-/* Monday–Friday overtime, figured per DAY (not per card). For each weekday, the
-   first eight (8) Regular hours worked that day stay Regular; every remaining hour
-   that day becomes Overtime. Regular fills the day's earlier card(s) first, so the
-   overtime lands on the day's later card(s) — same Type/Dept, Job, and day. Only days
-   whose total exceeds eight (8) produce overtime; a day at or under eight is left as
-   Regular. Because each day caps at eight (8) Regular, Mon–Fri Regular can never top
-   forty (40) in a week. Saturday/Sunday are untouched. A card's ST+OT always equals
-   its raw regular hours, so saved sheets reload to the same split. */
-function applyOvertimeRules(){
-  var DAY=8;
-  var wd=[].slice.call(document.querySelectorAll('#rows .rowcard')).filter(isWeekdayCard);
-  // Group the day's cards in on-screen order so Regular fills earlier cards first.
-  var byDay={};
-  wd.forEach(function(card){
-    var d=card.querySelector('.day').value;
-    (byDay[d]=byDay[d]||[]).push(card);
+  var cat=rateForDay(dayNames.indexOf(card.querySelector('.day').value)), wd=(cat==='st');
+  var f={st:card.querySelector('.st'),ot:card.querySelector('.ot'),dt:card.querySelector('.dt')};
+  var prev=card.dataset.mode; card.dataset.mode=wd?'wd':cat;
+  if(f.ot){ f.ot.readOnly=wd; f.ot.classList.toggle('autofield',wd);
+    f.ot.title = wd ? 'Overtime is figured automatically: Monday–Friday hours over forty (40) in the week move to Overtime.' : ''; }
+  // Weekend cards show only the one field that matches the day's rate (Sat = 1.5x, Sun = 2x).
+  var shown = wd ? ['st','ot','dt'] : [cat];
+  ['st','ot','dt'].forEach(function(k){
+    var box=f[k]&&f[k].closest('div'); if(!box)return;
+    var on=shown.indexOf(k)>=0;
+    box.style.display=on?'':'none';
+    box.style.gridColumn=(!wd&&on)?'1':'';
   });
-  Object.keys(byDay).forEach(function(d){
-    var remaining=DAY;                 // Regular hours still available to assign this day
-    byDay[d].forEach(function(card){
-      var raw = (card.dataset.rawst!==undefined && card.dataset.rawst!=='') ? Math.max(0,+card.dataset.rawst||0) : (num(card,'st')+num(card,'ot'));
-      card.dataset.rawst=raw;
-      var stFinal=Math.min(raw,remaining); // earlier cards soak up the 8 Regular hours
-      var otFinal=raw-stFinal;             // the rest spills to Overtime on later cards
-      remaining-=stFinal;
-      setNum(card,'st',stFinal);
-      setNum(card,'ot',otFinal);
-    });
+  var total=num(card,'st')+num(card,'ot')+num(card,'dt');
+  if(!wd){
+    // Move whatever was entered into the one field that applies to this day.
+    ['st','ot','dt'].forEach(function(k){ setNum(card,k,k===cat?total:0); });
+    delete card.dataset.rawst;
+  }else if(prev && prev!=='wd'){
+    // Switching a weekend card to a weekday: hours restart as Regular; the 40-hour rule re-splits them.
+    setNum(card,'st',total);setNum(card,'ot',0);setNum(card,'dt',0);
+    card.dataset.rawst=total;
+  }
+}
+/* Monday–Friday overtime, figured per WEEK (the Sunday–Saturday sheet), not per day.
+   Weekday hours (jobs, PTO and Holiday) are Regular until the week reaches forty (40)
+   hours; everything after that becomes Overtime. Cards are taken in day order
+   (Monday first) and, within a day, in on-screen order, so Overtime lands on the later
+   card(s). PTO and Holiday count toward the forty (40) but are always Regular.
+   Saturday (1.5x) and Sunday (2x) cards are untouched and do not count toward the forty.
+   A card's ST+OT always equals its raw weekday hours, so saved sheets reload to the
+   same split. */
+function applyOvertimeRules(){
+  var LIMIT=40;
+  var wd=[].slice.call(document.querySelectorAll('#rows .rowcard')).filter(isWeekdayCard)
+    .map(function(card,n){return {card:card,n:n,d:dayNames.indexOf(card.querySelector('.day').value)};})
+    .sort(function(a,b){return a.d-b.d||a.n-b.n;});
+  var used=0;
+  wd.forEach(function(o){
+    var card=o.card;
+    var raw = (card.dataset.rawst!==undefined && card.dataset.rawst!=='') ? Math.max(0,+card.dataset.rawst||0) : (num(card,'st')+num(card,'ot'));
+    card.dataset.rawst=raw;
+    var leave=['PTO','Holiday'].indexOf(card.querySelector('.type').value)>=0;
+    var stFinal = leave ? raw : Math.min(raw,Math.max(0,LIMIT-used));
+    used+=raw;
+    setNum(card,'st',stFinal);
+    setNum(card,'ot',raw-stFinal);
   });
 }
 function calculate(){
