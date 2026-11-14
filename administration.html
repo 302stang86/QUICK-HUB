@@ -354,31 +354,31 @@ html.fdec-admin-boot body::after{content:"Loading Administration…";position:fi
         <span class="adm-body"><b>Review Timesheets</b><small>Submitted weekly time sheets, search, review, and approval</small></span>
         <span class="adm-go" aria-hidden="true">&rarr;</span>
       </a>
-      <button type="button" class="adm-card" data-view="qfWrap" style="--cc:#1565c0">
+      <a class="adm-card" href="#" data-view="qfWrap" style="--cc:#1565c0">
         <span class="adm-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="M13.6 13.2c0-.7-.8-1.2-1.6-1.2s-1.6.5-1.6 1.2.8 1.2 1.6 1.2 1.6.5 1.6 1.2-.8 1.2-1.6 1.2-1.6-.5-1.6-1.2"/></svg></span>
         <span class="adm-body"><b>Quote files</b><small>Saved quote drafts from the Quoting Suite</small></span>
         <span class="adm-go" aria-hidden="true">&rarr;</span>
-      </button>
-      <button type="button" class="adm-card" data-admin="1" data-view="mqWrap" style="--cc:#9d0e16">
+      </a>
+      <a class="adm-card" href="#" data-admin="1" data-view="mqWrap" style="--cc:#9d0e16">
         <span class="adm-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3 11 15-5v12L3 15v-4z"/><path d="M18 8a3 3 0 0 1 0 6"/><path d="M7 15.5V19a1 1 0 0 0 1 1h1.5a1 1 0 0 0 1-1v-2.5"/></svg></span>
         <span class="adm-body"><b>Announcement marquee</b><small>Scrolling alert bar on the hub home page &mdash; on/off and text</small></span>
         <span class="adm-go" aria-hidden="true">&rarr;</span>
-      </button>
-      <button type="button" class="adm-card" data-admin="1" data-view="erWrap" style="--cc:#1f7a3d">
+      </a>
+      <a class="adm-card" href="#" data-admin="1" data-view="erWrap" style="--cc:#1f7a3d">
         <span class="adm-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.2a5 5 0 0 1 5 5.8"/></svg></span>
         <span class="adm-body"><b>Employee roster</b><small>Names, phones, roles, approvals, and account status</small></span>
         <span class="adm-go" aria-hidden="true">&rarr;</span>
-      </button>
-      <button type="button" class="adm-card" data-admin="1" data-view="prWrap" style="--cc:#b4690e">
+      </a>
+      <a class="adm-card" href="#" data-admin="1" data-view="prWrap" style="--cc:#b4690e">
         <span class="adm-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/></svg></span>
         <span class="adm-body"><b>Password resets</b><small>Approve or deny reset requests from the sign-in screen</small></span>
         <span class="adm-go" aria-hidden="true">&rarr;</span>
-      </button>
-      <button type="button" class="adm-card" data-admin="1" data-view="permWrap" style="--cc:#6d3bb5">
+      </a>
+      <a class="adm-card" href="#" data-admin="1" data-view="permWrap" style="--cc:#6d3bb5">
         <span class="adm-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/><path d="M9 12l2 2 4-4"/></svg></span>
         <span class="adm-body"><b>Role &amp; page permissions</b><small>Which Quick Hub tools each role can open</small></span>
         <span class="adm-go" aria-hidden="true">&rarr;</span>
-      </button>
+      </a>
     </div>
 
     <div class="qf-wrap" id="qfWrap" style="display:none">
@@ -672,7 +672,7 @@ function setMenuForRole(amAdmin){
 }
 (function(){
   var menu=$("adminMenu");
-  if(menu){ menu.addEventListener("click",function(e){ var c=e.target.closest("[data-view]"); if(c){ openAdminView(c.getAttribute("data-view")); } }); }
+  if(menu){ menu.addEventListener("click",function(e){ var c=e.target.closest("[data-view]"); if(c){ e.preventDefault(); openAdminView(c.getAttribute("data-view")); } }); }
   var bb=$("admBackBtn"); if(bb){ bb.addEventListener("click",showAdminMenu); }
 })();
 
