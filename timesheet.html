@@ -558,7 +558,9 @@ async function afterIdentity(){
   const canManage=MANAGER_ROLES.includes(CURRENT.role);
 
   if(sheetId && FB_OK && canManage){
-    await openManagerReview(sheetId);
+    // Manager review now lives on its own page (opened from Administration > Review Timesheets).
+    location.replace('timesheet-review.html?sheet='+encodeURIComponent(sheetId));
+    return;
   }else{
     enterTechMode(sheetId);
   }
@@ -591,10 +593,7 @@ async function enterTechMode(sheetId){
 }
 
 function renderModeActions(){
-  $('modeActions').innerHTML = (FB_OK && MANAGER_ROLES.includes(CURRENT.role))
-    ? '<button class="secondary" id="toInbox" type="button" style="padding:8px 12px">View Submitted Timesheets</button>'
-    : '';
-  const b=$('toInbox'); if(b) b.onclick=showInbox;
+  $('modeActions').innerHTML = '';
 }
 
 async function loadManagersIntoDropdown(){
