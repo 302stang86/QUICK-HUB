@@ -237,6 +237,10 @@ header,main{position:relative;z-index:1;}
 .ts-search-results th,.ts-search-results td{padding:4px 5px;border:1px solid #d7e0ea;text-align:left;vertical-align:middle}
 .ts-search-results th{background:#e8eef6}.ts-search-results td.num,.ts-search-results th.num{text-align:right;white-space:nowrap}
 .ts-search-results tr.job-number-alpha td{background:#F7C58D!important}.ts-search-results .search-open{background:none;color:#155a93;border:0;text-decoration:underline;padding:0;font-size:inherit;cursor:pointer}
+.jh-fields{grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) auto}
+#jhList:disabled{opacity:.45!important;cursor:not-allowed!important;filter:grayscale(.4)}
+.jh-pick{background:none!important;box-shadow:none!important;color:#155a93!important;border:0!important;text-decoration:underline;padding:0!important;font-size:inherit!important;cursor:pointer;text-shadow:none!important}
+@media(max-width:800px){.jh-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.jh-fields>div:first-child{grid-column:1/-1}}
 @media(max-width:800px){.ts-search-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.ts-search-fields>div:first-child{grid-column:1/-1}}
 @media print{.ts-search{display:none!important}}
 </style>
@@ -434,11 +438,14 @@ header,main{position:relative;z-index:1;}
     </div>
     <div class="ts-search no-print" id="jhPanel" style="margin-top:12px">
       <h3>Job Hours Report</h3>
-      <p class="small" style="margin:0 0 8px">Enter a job number to total the hours on every submitted and reviewed time sheet on record, split by department into Regular (ST), Time &amp; Half (OT) and Double (DT). A number with digits only must match exactly. A Job number with a letter or special character also pulls close matches, such as 200-123 for cm200-123.</p>
-      <div class="ts-search-fields" style="grid-template-columns:minmax(0,2fr) minmax(0,3fr)">
+      <p class="small" style="margin:0 0 8px">Enter a job number to total the hours on every submitted and reviewed time sheet on record, split by department into Regular (ST), Time &amp; Half (OT) and Double (DT). A number with digits only must match exactly. A Job number with a letter or special character also pulls close matches, such as 200-123 for cm200-123. Pick a From and To date to limit the report to those weeks. To see every job worked in a date range, pick both dates, leave the job number empty and select List Jobs.</p>
+      <div class="ts-search-fields jh-fields">
         <div><label for="jhJob">Job Number</label><input id="jhJob" type="search" placeholder="e.g. 2515555 or cm200-123" autocomplete="off"></div>
-        <div style="display:flex;align-items:flex-end"><label style="margin:0 0 8px;font-weight:400"><input id="jhNames" type="checkbox" style="width:auto;height:auto;margin-right:6px">Show employee names under each department</label></div>
+        <div><label for="jhFrom">From Date</label><input id="jhFrom" type="date"></div>
+        <div><label for="jhTo">To Date</label><input id="jhTo" type="date"></div>
+        <div style="display:flex;align-items:flex-end"><button type="button" class="secondary" id="jhList" disabled title="Pick a From and To date and leave the job number empty">List Jobs</button></div>
       </div>
+      <div style="margin:8px 0 0"><label style="margin:0;font-weight:400"><input id="jhNames" type="checkbox" style="width:auto;height:auto;margin-right:6px">Show employee names under each department</label></div>
       <div class="ts-search-actions"><button type="button" class="go" id="jhRun">Run Report</button><button type="button" class="secondary" id="jhDl">↓ Download Job Report (printable)</button><span id="jhNote" class="small"></span></div>
       <div id="jhVariants" class="small" style="margin-top:8px"></div>
       <div id="jhResults" class="ts-search-results"></div>
@@ -1456,12 +1463,23 @@ function jhMatches(q,entry){
   if(shorter.length<4||!/\d/.test(shorter)||!longer.endsWith(shorter))return false;
   return /^[a-z]*$/.test(longer.slice(0,longer.length-shorter.length));
 }
+function jhInRange(sh){
+  const from=($('jhFrom')&&$('jhFrom').value)||'',to=($('jhTo')&&$('jhTo').value)||'';
+  if(!from&&!to)return true;
+  const ws=sh.weekStart||'';
+  let we=sh.weekEnd||'';
+  if(!we&&ws){const d=new Date(ws+'T12:00:00');d.setDate(d.getDate()+6);we=d.toISOString().slice(0,10);}
+  if(from&&we&&we<from)return false;
+  if(to&&ws&&ws>to)return false;
+  return true;
+}
 function jhCollect(){
   const q=($('jhJob').value||'').trim();
   JH.q=q;
   const found={};
   (INBOX_ITEMS||[]).forEach(s=>{
     if(s.status!=='submitted'&&s.status!=='reviewed')return;
+    if(!jhInRange(s))return;
     (s.entries||[]).forEach(e=>{
       if(!jhMatches(q,e.jobNumber))return;
       const k=String(e.jobNumber).trim().toLowerCase();
@@ -1476,6 +1494,7 @@ function jhCompute(){
   const byDept={};const sheets={};let first='',last='';
   (INBOX_ITEMS||[]).forEach(s=>{
     if(s.status!=='submitted'&&s.status!=='reviewed')return;
+    if(!jhInRange(s))return;
     (s.entries||[]).forEach(e=>{
       const k=String(e.jobNumber==null?'':e.jobNumber).trim().toLowerCase();
       if(!JH.variants[k]||!JH.variants[k].checked||!jhMatches(JH.q,e.jobNumber))return;
@@ -1493,12 +1512,16 @@ function jhCompute(){
   JH.rows=Object.keys(byDept).sort().map(k=>({dept:k,...byDept[k]}));
   JH.sheets=Object.keys(sheets).length;JH.first=first;JH.last=last;
 }
+function jhRangeText(){
+  const a=$('jhFrom').value,b=$('jhTo').value;
+  return (a||b)?' · filtered to '+(a||'the start')+' through '+(b||'today'):'';
+}
 function jhBuildHtml(names){
   const f=n=>(+n).toFixed(2);
   const g={st:0,ot:0,dt:0};JH.rows.forEach(r=>{g.st+=r.st;g.ot+=r.ot;g.dt+=r.dt;});
   const head='<thead><tr><th>'+(names?'Employee':'')+'</th><th class="num">Regular (ST)</th><th class="num">Time &amp; Half (OT)</th><th class="num">Double (DT)</th><th class="num">Total</th></tr></thead>';
   const tot=(label,x,shade)=>'<tr style="background:'+(shade||'#e8eef6')+'"><td><b>'+label+'</b></td><td class="num"><b>'+f(x.st)+'</b></td><td class="num"><b>'+f(x.ot)+'</b></td><td class="num"><b>'+f(x.dt)+'</b></td><td class="num"><b>'+f(x.st+x.ot+x.dt)+'</b></td></tr>';
-  let h='<p class="small">Job '+esc(JH.q)+' · '+JH.sheets+' time sheet'+(JH.sheets===1?'':'s')+' · weeks '+esc(JH.first)+' to '+esc(JH.last)+'</p>';
+  let h='<p class="small">Job '+esc(JH.q)+' · '+JH.sheets+' time sheet'+(JH.sheets===1?'':'s')+' · weeks '+esc(JH.first)+' to '+esc(JH.last)+jhRangeText()+'</p>';
   JH.rows.forEach(r=>{
     h+='<h4 style="margin:14px 0 6px;font-size:14px">'+esc(r.dept)+'</h4><div class="table-wrap"><table>'+head+'<tbody>';
     if(names)Object.keys(r.emps).sort().forEach(n=>{const x=r.emps[n];h+='<tr><td>'+esc(n)+'</td><td class="num">'+f(x.st)+'</td><td class="num">'+f(x.ot)+'</td><td class="num">'+f(x.dt)+'</td><td class="num">'+f(x.st+x.ot+x.dt)+'</td></tr>';});
@@ -1531,8 +1554,39 @@ function jhDownload(){
   if(!JH.q||!JH.rows.length){alert('Run the report first. There are no hours to download for this job number.');return;}
   const names=$('jhNames').checked;
   const inc=Object.keys(JH.variants).filter(k=>JH.variants[k].checked).map(k=>JH.variants[k].label).join('; ');
-  savePrintable('FDEC Job Hours Report — '+JH.q,['Job numbers included: '+inc,'Time sheets: '+JH.sheets+' · Weeks '+JH.first+' to '+JH.last,'Submitted and reviewed time sheets only · Generated '+new Date().toLocaleString()],jhBuildHtml(names),'FDEC-Job-Hours-'+JH.q.replace(/[^a-z0-9_-]/gi,'_')+'.html');
+  savePrintable('FDEC Job Hours Report — '+JH.q,['Job numbers included: '+inc,'Time sheets: '+JH.sheets+' · Weeks '+JH.first+' to '+JH.last+jhRangeText(),'Submitted and reviewed time sheets only · Generated '+new Date().toLocaleString()],jhBuildHtml(names),'FDEC-Job-Hours-'+JH.q.replace(/[^a-z0-9_-]/gi,'_')+'.html');
 }
+function jhListState(){
+  const b=$('jhList');if(!b)return;
+  b.disabled=!($('jhFrom').value&&$('jhTo').value&&!($('jhJob').value||'').trim());
+}
+function jhListJobs(){
+  if($('jhList').disabled)return;
+  $('jhNote').textContent=(!INBOX_ITEMS||!INBOX_ITEMS.length)?'Submitted time sheets are still loading.':'';
+  const f=n=>(+n).toFixed(2);
+  const jobs={};
+  (INBOX_ITEMS||[]).forEach(sh=>{
+    if(sh.status!=='submitted'&&sh.status!=='reviewed')return;
+    if(!jhInRange(sh))return;
+    (sh.entries||[]).forEach(e=>{
+      const label=String(e.jobNumber==null?'':e.jobNumber).trim();if(!label)return;
+      const hrs=(+e.st||0)+(+e.ot||0)+(+e.dt||0);if(!hrs)return;
+      const j=jobs[label.toLowerCase()]=jobs[label.toLowerCase()]||{label,hrs:0,sheets:{},depts:{}};
+      j.hrs+=hrs;j.sheets[sh.id]=1;j.depts[e.type||'Unassigned']=1;
+    });
+  });
+  JH.q='';JH.variants={};JH.rows=[];$('jhVariants').innerHTML='';
+  const keys=Object.keys(jobs).sort((a,b)=>{const na=jhIsNum(jobs[a].label),nb=jhIsNum(jobs[b].label);if(na!==nb)return na?-1:1;return a.localeCompare(b,undefined,{numeric:true});});
+  const out=$('jhResults');
+  if(!keys.length){out.innerHTML='<p class="small">No submitted or reviewed time sheets with job hours fall between '+esc($('jhFrom').value)+' and '+esc($('jhTo').value)+'.</p>';return;}
+  let h='<p class="small">'+keys.length+' job number'+(keys.length===1?'':'s')+' worked between '+esc($('jhFrom').value)+' and '+esc($('jhTo').value)+'. Select a job number to run its report for this date range. Orange rows are Job numbers.</p><div class="table-wrap"><table><thead><tr><th>Job Number</th><th>Departments</th><th class="num">Time Sheets</th><th class="num">Total Hours</th></tr></thead><tbody>';
+  keys.forEach(k=>{const j=jobs[k];h+='<tr'+(jhIsNum(j.label)?'':' class="job-number-alpha"')+'><td><button type="button" class="jh-pick" data-job="'+escAttr(j.label)+'">'+esc(j.label)+'</button></td><td>'+esc(Object.keys(j.depts).sort().join(', '))+'</td><td class="num">'+Object.keys(j.sheets).length+'</td><td class="num">'+f(j.hrs)+'</td></tr>';});
+  out.innerHTML=h+'</tbody></table></div>';
+  out.querySelectorAll('.jh-pick').forEach(b=>b.onclick=()=>{$('jhJob').value=b.dataset.job;jhListState();jhRun();$('jhResults').scrollIntoView({block:'nearest'});});
+}
+['jhJob','jhFrom','jhTo'].forEach(id=>{const el=$(id);if(el){el.addEventListener('input',jhListState);el.addEventListener('change',jhListState);}});
+$('jhList')&&($('jhList').onclick=jhListJobs);
+jhListState();
 $('jhDl')&&($('jhDl').onclick=jhDownload);
 $('jhRun')&&($('jhRun').onclick=jhRun);
 $('jhJob')&&$('jhJob').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();jhRun();}});
