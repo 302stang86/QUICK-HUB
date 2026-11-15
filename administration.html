@@ -213,6 +213,26 @@
   .hp-arrow{align-self:center;font-size:18px;color:#5c6470}
   .hp-sop h4{margin:12px 0 2px;font-size:13.5px;color:#1B2A4A}
 
+
+  /* Bug or suggestion form (same layout as the hub Help page) */
+  .hpf{grid-column:1/-1;background:#fff;border:1px solid #e4e7ea;border-radius:12px;box-shadow:0 1px 3px rgba(16,24,40,.08);padding:18px 18px 20px}
+  .hpf h2{font-size:17px;background:linear-gradient(90deg,#1565c0 0%,#1565c0 80%,#000 100%);color:#fff;font-weight:700;margin:-18px -18px 14px;padding:11px 18px;border-radius:11px 11px 0 0}
+  .hpf .lead{margin:0 0 14px;font-size:13px;color:#5c6470}
+  .hpf label{display:block;font-size:12.5px;font-weight:700;color:#1B2A4A;margin:12px 0 5px}
+  .hpf label .req{color:#C1121C}
+  .hpf input[type=text],.hpf textarea{width:100%;box-sizing:border-box;border:1.5px solid #cdd9e8;border-radius:8px;padding:10px 12px;font:15px Arial,sans-serif;color:#1b2430;background:#fff}
+  .hpf input[type=text]:focus,.hpf textarea:focus{outline:2px solid rgba(193,18,28,.28);border-color:#C1121C}
+  .hpf textarea{min-height:120px;resize:vertical}
+  .hpf .photo-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:6px}
+  .hpf input[type=file]{font-size:13px;color:#1b2430}
+  .hpf .photo-prev{display:none;max-width:140px;max-height:140px;border-radius:8px;border:1px solid #e4e7ea}
+  .hpf .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  .hpf button.send{border:0;border-radius:8px;background:#C1121C;color:#fff;font-weight:700;font-size:14px;padding:11px 18px;cursor:pointer}
+  .hpf .status{margin-top:12px;font-size:13px;font-weight:600;padding:10px 12px;border-radius:8px;display:none}
+  .hpf .status.ok{display:block;background:#edf8f0;border:1px solid #b9dfc3;color:#205d32}
+  .hpf .status.err{display:block;background:#fdecec;border:1px solid #e3b2b4;color:#6b211d}
+  .hpf .note{font-size:12px;color:#5c6470;margin:10px 0 0}
+
   /* Employee roster */
   .er-wrap { background:#fff; border:1px solid #dfe3e8; border-radius:10px; padding:16px; margin:4px 0 18px; box-shadow:0 1px 3px rgba(16,24,40,.08); }
   .er-head { display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; }
@@ -442,6 +462,26 @@ html.fdec-admin-boot body::after{content:"Loading Administration…";position:fi
         <div class="hp-card" data-hp="admin" style="--hc:#1f7a3d"><h3>Employee roster</h3><div class="hp-who">Admins</div><p>Names, phones, roles, approvals, and account status.</p><ul><li>Approve new sign-ups and set each person&rsquo;s role: New Employee, Technician, Temp, Office, Finance, Manager, or Administrator.</li><li>Archive an employee to stop access while keeping the record. Delete removes the account entry.</li></ul></div>
         <div class="hp-card" data-hp="admin" style="--hc:#b4690e"><h3>Password resets</h3><div class="hp-who">Admins</div><p>Requests sent from the sign-in screen. Approve or deny each one.</p></div>
         <div class="hp-card" data-hp="admin" style="--hc:#6d3bb5"><h3>Role &amp; page permissions</h3><div class="hp-who">Admins</div><p>Choose which Quick Hub tools each role can open. Select a role tab, switch tools on or off, then press Save. Administrators can always open every page.</p><ul><li>The Weekly Time Sheet and expense report pages share one switch. It is limited to admins until you release it here.</li><li>Office and Finance start from built-in defaults until you save their tabs once.</li></ul></div>
+        <div class="hpf" data-hp="*">
+          <h2>Report a bug or make a suggestion</h2>
+          <p class="lead">Something not working right, or an idea to make Quick Hub better? Tell us what happened or what you would like to see, and attach a photo if it helps. Submitting emails the report to the Quick Hub administrator.</p>
+          <form id="admBugForm" novalidate>
+            <label for="abfName">Your name</label>
+            <input type="text" id="abfName" autocomplete="name" placeholder="First and last name">
+            <label for="abfWhere">Where did it happen, or where would it help?</label>
+            <input type="text" id="abfWhere" placeholder="e.g. Review Timesheets, Payroll Hours, Finance, the home page&hellip;">
+            <label for="abfDesc">What happened, or what is your suggestion? <span class="req">*</span></label>
+            <textarea id="abfDesc" placeholder="Describe the problem and what you expected to see, or describe your suggestion."></textarea>
+            <label for="abfPhoto">Photo (optional)</label>
+            <div class="photo-row">
+              <input type="file" id="abfPhoto" accept="image/*" capture="environment">
+              <img id="abfPrev" class="photo-prev" alt="Selected photo preview">
+            </div>
+            <div class="btns"><button type="submit" class="send">Submit bug report or suggestion</button></div>
+            <div id="abfStatus" class="status"></div>
+            <p class="note">If your device supports it, a photo is attached to the email automatically. Otherwise your email app opens with the details filled in and you can attach the photo yourself.</p>
+          </form>
+        </div>
       </div>
     </div>
 
@@ -747,7 +787,7 @@ function setMenuForRole(amAdmin){
     c.style.display = ok ? "" : "none";
   });
   /* Help cards: each role sees only the help for cards it can open. */
-  [].forEach.call(document.querySelectorAll('#helpWrap .hp-card'),function(c){
+  [].forEach.call(document.querySelectorAll('#helpWrap .hp-card, #helpWrap .hpf'),function(c){
     var r=c.getAttribute("data-hp")||"*";
     c.style.display = (amAdmin || r==="*" || r.split(",").indexOf(role)>=0) ? "" : "none";
   });
@@ -1283,6 +1323,45 @@ if(configured){
   document.documentElement.classList.remove("fdec-admin-boot");
   $("adminNote").textContent = "Firebase not configured — paste your project keys in this file to enable sign-in and saving.";
 }
+</script>
+<script>
+(function(){
+  "use strict";
+  var EMAIL = "PASTE_HELP_PAGE_ADDRESS_HERE"; /* same address as EMAIL in help.html */
+  var form = document.getElementById("admBugForm");
+  if(!form) return;
+  var photo = document.getElementById("abfPhoto"), prev = document.getElementById("abfPrev"), statusEl = document.getElementById("abfStatus");
+  function setStatus(msg, bad){ statusEl.textContent = msg; statusEl.className = "status " + (bad ? "err" : "ok"); }
+  photo.addEventListener("change", function(){
+    var f = (photo.files || [])[0];
+    if(f && /^image\//.test(f.type)){ prev.src = URL.createObjectURL(f); prev.style.display = "inline-block"; }
+    else { prev.style.display = "none"; }
+  });
+  form.addEventListener("submit", async function(e){
+    e.preventDefault();
+    var name = document.getElementById("abfName").value.trim();
+    var where = document.getElementById("abfWhere").value.trim();
+    var desc = document.getElementById("abfDesc").value.trim();
+    if(!desc){ setStatus("Please describe the problem or your suggestion before submitting.", true); return; }
+    var file = (photo.files || [])[0];
+    var lines = ["Quick Hub bug report or suggestion"];
+    if(name) lines.push("From: " + name);
+    if(where) lines.push("Where: " + where);
+    lines.push("", desc, "", "\u2014 Sent from Quick Hub Administration (" + location.href + ")", "When: " + new Date().toLocaleString(), "Device: " + navigator.userAgent);
+    var body = lines.join("\n");
+    var subject = "Quick Hub Bug Report / Suggestion" + (where ? (" \u2014 " + where) : "");
+    if(file && navigator.canShare && navigator.canShare({ files: [file] })){
+      try{
+        await navigator.share({ files: [file], title: subject, text: body });
+        setStatus("Thanks! Your report was shared \u2014 choose your email app to send it to the administrator.");
+        form.reset(); prev.style.display = "none";
+        return;
+      }catch(err){ /* canceled or unsupported: fall back to email below */ }
+    }
+    window.location.href = "mailto:" + EMAIL + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+    setStatus("Opening your email app\u2026" + (file ? " Please attach the photo in your email \u2014 it could not be added automatically on this device." : ""));
+  });
+})();
 </script>
 </body>
 </html>
