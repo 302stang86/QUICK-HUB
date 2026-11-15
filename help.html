@@ -73,7 +73,8 @@
  #hpSearch{width:100%;max-width:420px;box-sizing:border-box;border:1.5px solid #cdd9e8;border-radius:8px;padding:10px 12px;font:15px Arial,sans-serif;margin:0 0 6px;background:#fff;color:#1b2430}
  .hp-sec{margin:18px 0 8px;font-size:15px;text-transform:uppercase;letter-spacing:.8px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7)}
  .hp-sub{margin:0 0 8px;font-size:12.5px;color:#dbe6f4;text-shadow:0 1px 2px rgba(0,0,0,.6)}
- .hp-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+ .hp-grid{column-count:2;column-gap:12px}
+ .hp-grid>.hp-card{break-inside:avoid;-webkit-column-break-inside:avoid;display:inline-block;width:100%;box-sizing:border-box;margin:0 0 12px}
  .hp-card{background:#fff;border:1px solid #e4e7ea;border-left:5px solid var(--hc,#5b6570);border-radius:10px;padding:12px 15px;box-shadow:0 2px 8px rgba(16,24,40,.06)}
  .hp-card h3{margin:0 0 2px;font-size:15px;color:#1B2A4A}
  .hp-who{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--hc,#5b6570);margin:0 0 6px}
@@ -81,7 +82,7 @@
  .hp-card ul,.hp-card ol{margin:4px 0 6px 18px;padding:0;font-size:13.5px;color:#33404f;line-height:1.45}
  .hp-card li{margin:0 0 3px}
  .hp-none{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7);font-size:14px;margin:14px 0}
- @media (max-width:760px){.hp-grid{grid-template-columns:1fr}}
+ @media (max-width:760px){.hp-grid{column-count:1}}
  @media print{.hp-card{break-inside:avoid;box-shadow:none}}
 </style>
 </head>
