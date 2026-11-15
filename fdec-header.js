@@ -107,7 +107,13 @@
     header.setAttribute("aria-label", "Fire Defense Equipment Co. — " + titleText());
     var actions = document.createElement("div");
     actions.className = "fdec-ubar-actions no-print";
-    document.body.insertBefore(header, document.body.firstChild);
+    /* Keep the banner and the Hub button below the phone status bar and notch. */
+    var safeTop = document.createElement("div");
+    safeTop.className = "fdec-safe-top no-print";
+    safeTop.style.cssText = "height:env(safe-area-inset-top,0px);background:#071b35;";
+    document.body.insertBefore(safeTop, document.body.firstChild);
+    header.__safeTop = safeTop;
+    document.body.insertBefore(header, safeTop.nextSibling);
     document.body.insertBefore(actions, header.nextSibling);
     relocate(actions);
     addHubButton(actions);

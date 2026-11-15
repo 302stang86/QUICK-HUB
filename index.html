@@ -339,8 +339,6 @@
 
 <!-- ============ HOME ============ -->
 <section class="tab active" id="home">
-  <p class="lead">The front door to FDEC's internal tools. Pick a tool below, or use the tabs above for standard operating procedures and field safety permits.</p>
-
   <div class="hubgrid" id="hubLinks"></div>
 </section>
 
@@ -356,14 +354,7 @@
 
   <div id="sopList">
 
-    <a class="doclink" href="fdec-itm-sop.html">
-      <span class="docicon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8"/></svg></span>
-      <span class="doctext">
-        <span class="docname">ITM-SOP</span>
-        <span class="docdesc">NFPA 25 (2026) inspection, testing &amp; maintenance field procedures</span>
-      </span>
-      <span class="docgo">Open &rarr;</span>
-    </a>
+    <div class="hubgrid no-print" id="sopCards" style="margin-bottom:14px"></div>
 
     <details class="sop">
       <summary><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M9 6l6 6-6 6"/></svg> Job Site Arrival &amp; Check-In <span class="cat field">Field</span></summary>
@@ -859,6 +850,11 @@ document.addEventListener('click', function(e){
   var LINKS = window.FDEC_CARDS.LINKS;
   function renderHub(auth){
     window.FDEC_CARDS.render(document.getElementById('hubLinks'), LINKS, auth);
+    // SOP tab: the ITM-SOP link uses the same card style as the hub cards.
+    window.FDEC_CARDS.render(document.getElementById('sopCards'), [
+      {name:'ITM-SOP', cat:'SOP', access:'', page:'sop', url:'fdec-itm-sop.html', color:'#1565c0', icon:'doc',
+       desc:'NFPA 25 (2026) inspection, testing & maintenance field procedures.'}
+    ], auth);
   }
   // Wait for the shared sign-in gate, then show only the cards this role may open.
   (function(){
