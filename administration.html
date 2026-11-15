@@ -195,6 +195,24 @@
   .qf-empty { font-size:13px; color:#5c6470; font-style:italic; padding:8px 2px; }
   
 
+
+  /* Help section */
+  .hp-head h2{margin:0 0 2px;font-size:17px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.65)}
+  .hp-head p{margin:0 0 12px;font-size:12.5px;color:#dbe6f4;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+  .hp-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .hp-card{background:#fff;border:1px solid #e4e7ea;border-left:5px solid var(--hc,#5b6570);border-radius:10px;padding:12px 15px;box-shadow:0 2px 8px rgba(16,24,40,.06)}
+  .hp-card h3{margin:0 0 2px;font-size:15px;color:#1B2A4A}
+  .hp-card .hp-who{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--hc,#5b6570);margin:0 0 6px}
+  .hp-card p{margin:0 0 6px;font-size:13px;color:#33404f;line-height:1.45}
+  .hp-card ul,.hp-card ol{margin:4px 0 4px 18px;padding:0;font-size:13px;color:#33404f;line-height:1.45}
+  .hp-card li{margin:0 0 3px}
+  .hp-sop{grid-column:1/-1;--hc:#1B2A4A}
+  .hp-flow{display:flex;align-items:stretch;gap:6px;flex-wrap:wrap;margin:8px 0 10px}
+  .hp-step{flex:1 1 150px;background:#f3f6fa;border:1px solid #d6dee7;border-radius:8px;padding:8px 10px;font-size:12.5px;color:#1B2A4A}
+  .hp-step b{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+  .hp-arrow{align-self:center;font-size:18px;color:#5c6470}
+  .hp-sop h4{margin:12px 0 2px;font-size:13.5px;color:#1B2A4A}
+
   /* Employee roster */
   .er-wrap { background:#fff; border:1px solid #dfe3e8; border-radius:10px; padding:16px; margin:4px 0 18px; box-shadow:0 1px 3px rgba(16,24,40,.08); }
   .er-head { display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; }
@@ -359,6 +377,11 @@ html.fdec-admin-boot body::after{content:"Loading Administration…";position:fi
         <span class="adm-badge" id="expBadge" hidden title="Expense reports waiting for approval"></span>
         <span class="adm-go" aria-hidden="true">&rarr;</span>
       </a>
+      <a class="adm-card" data-roles="office,finance,manager" href="#" data-view="helpWrap" style="--cc:#5b6570">
+        <span class="adm-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.3a2.6 2.6 0 0 1 5 .9c0 1.7-2.5 2.2-2.5 3.8"/><path d="M12 17h.01"/></svg></span>
+        <span class="adm-body"><b>Help</b><small>How each Administration card works and how work moves between managers, office, and finance</small></span>
+        <span class="adm-go" aria-hidden="true">&rarr;</span>
+      </a>
       <a class="adm-card" data-roles="office,finance,manager" href="payroll-hours.html" style="--cc:#2b6f8f">
         <span class="adm-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V4"/><path d="M4 20h16"/><path d="M8 16v-5M12 16V8M16 16v-3"/></svg></span>
         <span class="adm-body"><b>Payroll Hours</b><small>Office &middot; Read-only hours by pay period and the job hours report</small></span>
@@ -394,6 +417,32 @@ html.fdec-admin-boot body::after{content:"Loading Administration…";position:fi
         <span class="adm-body"><b>Role &amp; page permissions</b><small>Which Quick Hub tools each role can open</small></span>
         <span class="adm-go" aria-hidden="true">&rarr;</span>
       </a>
+    </div>
+
+    <div class="hp-wrap" id="helpWrap" style="display:none">
+      <div class="hp-head"><h2>Help</h2><p>How each card works. You see the cards your role can open.</p></div>
+      <div class="hp-grid">
+        <div class="hp-card hp-sop" data-hp="*"><h3>How work moves between managers, office, and finance</h3><div class="hp-who">Standard operating procedure (SOP)</div>
+<h4>Weekly time sheets</h4>
+<div class="hp-flow"><div class="hp-step"><b>1 Technician</b>Submits the sheet by Monday 8:00 AM Eastern</div><span class="hp-arrow">&rarr;</span><div class="hp-step"><b>2 Manager</b>Reviews, corrects, then approves or returns with a note</div><span class="hp-arrow">&rarr;</span><div class="hp-step"><b>3 Office &amp; finance</b>Read hours in Payroll Hours</div><span class="hp-arrow">&rarr;</span><div class="hp-step"><b>4 Payday</b>Tuesday after the period ends</div></div>
+<ol><li>The technician fills in the weekly sheet, picks a manager, and presses Submit to Manager. The sheet locks.</li><li>The manager opens it from Review Timesheets and checks hours, job names, and job numbers. If something is wrong, the manager corrects it or returns it with a note. A returned sheet shows the note to the technician, who fixes it and resubmits.</li><li>When correct, the manager types initials and presses Save Review &amp; Mark Approved.</li><li>Office and finance use Payroll Hours to read the submitted and reviewed hours for the pay period. They do not change time sheets.</li></ol>
+<h4>Expense reports</h4>
+<div class="hp-flow"><div class="hp-step"><b>1 Technician</b>Submits the report to a manager with job name and number</div><span class="hp-arrow">&rarr;</span><div class="hp-step"><b>2 Manager</b>Corrects, signs with initials, approves</div><span class="hp-arrow">&rarr;</span><div class="hp-step"><b>3 Manager</b>Prints the packet and marks it sent to finance</div><span class="hp-arrow">&rarr;</span><div class="hp-step"><b>4 Finance</b>Pays and marks the report paid</div></div>
+<ol><li>The technician creates the report on the Expense Reports page. The job name and job number are required, and each item needs an amount. Receipts are kept by the technician. The report locks when submitted.</li><li>The manager reviews it in Review Expense Reports, fixes any item (every fix is logged), and presses Sign &amp; Approve with typed initials. This is the manager&rsquo;s signature.</li><li>The manager prints the approved packet, gives it to finance, and marks the reports sent to finance.</li><li>Finance opens the Finance page, prints the packet, issues payment, and marks the reports paid with initials. Paid reports stay in History.</li></ol>
+<h4>Who does what</h4>
+<ul><li>Managers: review and sign time sheets and expense reports, and hand approved expense reports to finance.</li><li>Office: reads Payroll Hours, uses the quoting tools, and enters its own time and expenses when released.</li><li>Finance: pays reports sent by managers and reads Payroll Hours. Finance does not approve.</li><li>Admins: everything above, plus the roster, resets, permissions, and the announcement marquee.</li></ul>
+<p>Questions about an item go back to the person who last handled it: finance to the approving manager, and the manager to the technician.</p></div>
+        <div class="hp-card" data-hp="manager" style="--hc:#6d3bb5"><h3>Review Timesheets</h3><div class="hp-who">Managers and admins</div><p>Weekly time sheets that technicians have submitted, grouped by pay period. The count badge on the menu card shows how many are waiting.</p><ul><li>Pay periods run two weeks, Sunday through Saturday. Sheets are due Monday at 8:00 AM Eastern after the period ends, and payday is the Tuesday after the period ends.</li><li>Open a sheet to correct entries. Corrected cells are marked in red.</li><li>Type your initials and press Save Review &amp; Mark Approved, or press Return to Technician and write a required note. The technician sees the note, fixes the sheet, and resubmits.</li><li>Managers see the sheets sent to them. Admins see all sheets.</li><li>Use the search panel to filter by department, job number, technician, and dates. Switch between Time sheets and Job hours totals, then download a printable copy.</li></ul></div>
+        <div class="hp-card" data-hp="manager" style="--hc:#2e7d5b"><h3>Review Expense Reports</h3><div class="hp-who">Managers and admins</div><p>Expense reports that technicians have submitted to you. The badge shows how many are waiting for approval.</p><ul><li>Open a report, correct any item, then type your initials and press Sign &amp; Approve. Every correction is logged with your initials.</li><li>Approved reports collect under Approved &middot; ready for finance. Tick the ones you want, press Print approved packet, then press Mark selected as sent to finance.</li><li>Sent and paid reports move to History, grouped by month.</li><li>Managers see only reports sent to them. Admins see all reports.</li></ul></div>
+        <div class="hp-card" data-hp="office,finance,manager" style="--hc:#2b6f8f"><h3>Payroll Hours</h3><div class="hp-who">Office, finance, managers, and admins</div><p>Read-only hours for payroll. You cannot approve, return, or edit anything here.</p><ul><li>Pick a pay period to see each employee&rsquo;s regular (ST), time and a half (OT), and double time (DT) hours. Click a name to see the job lines behind the total.</li><li>Only submitted and reviewed time sheets are counted. Drafts and sheets returned to a technician are not.</li><li>The job hours report totals one job number by department. A number with letters or symbols also finds close matches, such as 200-123 for cm200-123.</li><li>Use Print for a paper copy.</li></ul></div>
+        <div class="hp-card" data-hp="finance" style="--hc:#8a5a14"><h3>Finance</h3><div class="hp-who">Finance and admins</div><p>Expense reports that a manager has marked sent to finance.</p><ul><li>Tick the reports you are paying and press Print packet for the printable summary and report pages.</li><li>After you issue the payments, press Mark selected as paid and type your initials. The report moves to Paid with today&rsquo;s date.</li><li>Open any report to see its items, who approved it, and when. Reports are read only; questions go back to the approving manager.</li><li>Reports appear here only after the manager marks them sent.</li></ul></div>
+        <div class="hp-card" data-hp="manager" style="--hc:#1565c0"><h3>Quote files</h3><div class="hp-who">Managers and admins</div><p>Quote drafts saved from the Quoting &amp; Proposal Suite. Search by job name, quote number, user, or file name, then press Open to keep editing.</p></div>
+        <div class="hp-card" data-hp="admin" style="--hc:#C1121C"><h3>ITM Reports &mdash; Admin Dashboard</h3><div class="hp-who">Admins</div><p>All submitted inspection reports, the technician roster for reports, and approvals. It opens in a new tab.</p></div>
+        <div class="hp-card" data-hp="admin" style="--hc:#9d0e16"><h3>Announcement marquee</h3><div class="hp-who">Admins</div><p>The scrolling alert bar on the hub home page. Turn it on or off and edit the text.</p></div>
+        <div class="hp-card" data-hp="admin" style="--hc:#1f7a3d"><h3>Employee roster</h3><div class="hp-who">Admins</div><p>Names, phones, roles, approvals, and account status.</p><ul><li>Approve new sign-ups and set each person&rsquo;s role: New Employee, Technician, Temp, Office, Finance, Manager, or Administrator.</li><li>Archive an employee to stop access while keeping the record. Delete removes the account entry.</li></ul></div>
+        <div class="hp-card" data-hp="admin" style="--hc:#b4690e"><h3>Password resets</h3><div class="hp-who">Admins</div><p>Requests sent from the sign-in screen. Approve or deny each one.</p></div>
+        <div class="hp-card" data-hp="admin" style="--hc:#6d3bb5"><h3>Role &amp; page permissions</h3><div class="hp-who">Admins</div><p>Choose which Quick Hub tools each role can open. Select a role tab, switch tools on or off, then press Save. Administrators can always open every page.</p><ul><li>The Weekly Time Sheet and expense report pages share one switch. It is limited to admins until you release it here.</li><li>Office and Finance start from built-in defaults until you save their tabs once.</li></ul></div>
+      </div>
     </div>
 
     <div class="qf-wrap" id="qfWrap" style="display:none">
@@ -664,8 +713,8 @@ async function loadPerms(){
 }
 
 /* ---------- Admin card menu (hub-style section picker) ---------- */
-var VIEW_TITLES={qfWrap:"Quote files",mqWrap:"Announcement marquee",erWrap:"Employee roster",prWrap:"Password resets",permWrap:"Role & page permissions"};
-var ADMIN_SECTIONS=["qfWrap","mqWrap","erWrap","prWrap","permWrap"];
+var VIEW_TITLES={qfWrap:"Quote files",mqWrap:"Announcement marquee",erWrap:"Employee roster",prWrap:"Password resets",permWrap:"Role & page permissions",helpWrap:"Help"};
+var ADMIN_SECTIONS=["qfWrap","mqWrap","erWrap","prWrap","permWrap","helpWrap"];
 /* Save / Reset / Export belong to the permissions view, so they only show there. */
 function togglePermButtons(on){ ["saveBtn","resetBtn","exportBtn"].forEach(function(id){ var b=$(id); if(b) b.style.display=on?"":"none"; }); }
 function resetAdminViews(){
@@ -696,6 +745,11 @@ function setMenuForRole(amAdmin){
   [].forEach.call(tagged,function(c){
     var ok = amAdmin || c.getAttribute("data-roles").split(",").indexOf(role)>=0;
     c.style.display = ok ? "" : "none";
+  });
+  /* Help cards: each role sees only the help for cards it can open. */
+  [].forEach.call(document.querySelectorAll('#helpWrap .hp-card'),function(c){
+    var r=c.getAttribute("data-hp")||"*";
+    c.style.display = (amAdmin || r==="*" || r.split(",").indexOf(role)>=0) ? "" : "none";
   });
 }
 (function(){
