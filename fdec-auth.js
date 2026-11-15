@@ -62,7 +62,7 @@ const DEFAULT_PAGES = {
   faquoting:       ["office","manager","admin"],
   finance:         ["finance","admin"],   // Finance page: approved expense reports, packet, mark paid
   payroll:         ["office","finance","manager","admin"],   // Payroll Hours (read only)
-  administration:  ["manager","admin"]   // managers reach the quote files here; roster/resets/permissions stay admin-only inside the page
+  administration:  ["manager","admin","office","finance"]   // managers reach the quote files here; office and finance see only their own cards (Payroll Hours, Finance); roster/resets/permissions stay admin-only inside the page
 };
 
 const app  = getApps().length ? getApp() : initializeApp(firebaseConfig, "fdec");

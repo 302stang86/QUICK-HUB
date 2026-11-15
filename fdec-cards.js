@@ -46,10 +46,8 @@
     {name:'Fire Alarm Proposals',cat:'Quoting', access:'Manager only', page:'faquoting',      url:'fire-alarm-quoting.html', color:'#d12f2f', icon:'bell', desc:'Fire alarm ITM quoting, inspection scope, proposals, and deficiency repair quotes.'},
     {name:'Weekly Time Sheet',       cat:'Team',    access:'Admin only · pending release', page:'timesheet', url:'timesheet.html', color:'#6d3bb5', icon:'clock', desc:'Interactive weekly time sheet for technicians. Locked until released by an administrator.'},
     {name:'Expense Reports',          cat:'Team',    access:'Admin only · pending release', page:'timesheet', url:'expense-report.html', color:'#2e7d5b', icon:'receipt', desc:'Submit job expense reports to your manager for review and signature. Managers review them from Administration.'},
-    {name:'Payroll Hours',          cat:'Team',    access:'Office, finance & managers', page:'payroll', url:'payroll-hours.html', color:'#2b6f8f', icon:'hours', desc:'Read-only hours by pay period and the job hours report. No approving or editing.'},
-    {name:'Finance',                 cat:'Team',    access:'Finance & admins', page:'finance', url:'finance.html', color:'#8a5a14', icon:'wallet', desc:'Approved expense reports, the finance packet, and marking reports paid.'},
     {name:'SwitchBack TD',          cat:'Break',   access:'Everyone',     page:'bathroom',       url:'switchback/index.html', color:'#b0306a', icon:'tower', desc:'SwitchBack Defense — a quick tower defense game. Beat the waves and climb the leaderboard.'},
-    {name:'Administration',          cat:'Admin',   access:'Admin & managers', page:'administration', url:'administration.html', color:'#c08a1e', icon:'admin', desc:'Quote files for managers; full management tools for admins.'},
+    {name:'Administration',          cat:'Admin',   access:'Admin, managers, office & finance', page:'administration', url:'administration.html', color:'#c08a1e', icon:'admin', desc:'Quote files and reviews for managers; Payroll Hours and Finance for office staff; full management tools for admins.'},
     {name:'Help',                    cat:'Help',    access:'Everyone',     page:'help',           url:'help.html', color:'#5b6570', icon:'hammer', desc:'Report a bug with a photo, and find quick help on using Quick Hub.'}
   ];
 

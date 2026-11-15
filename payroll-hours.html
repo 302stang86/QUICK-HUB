@@ -22,7 +22,7 @@ h4.dept{background:#c9bfe8;margin:14px 0 0;padding:5px 10px;border-radius:6px;fo
 <div id="cloudMsg" class="msg hide no-print"></div>
 <div id="view" class="hide">
 <section class="panel">
-  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2 style="margin:0">Hours by pay period</h2><span class="no-print"><button type="button" id="toHub">Back to hub</button></span></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2 style="margin:0">Hours by pay period</h2><span class="no-print"><button type="button" id="toHub">Back to Administration</button></span></div>
   <p class="hint">Counts submitted and reviewed time sheets only. Drafts and sheets returned to a technician are not included. Hours are placed in the pay period of the day they were worked.</p>
   <div class="row no-print">
     <div><label for="period">Pay period</label><select id="period"></select></div>
@@ -134,7 +134,7 @@ function init(){
   const depts=[...new Set(ents.map(x=>x.e.type).filter(Boolean))].sort();
   $('dept').innerHTML='<option value="">All departments</option>'+depts.map(d=>'<option>'+esc(d)+'</option>').join('');
   ['period','dept'].forEach(id=>$(id).onchange=renderPeriod);$('emp').oninput=renderPeriod;
-  $('print').onclick=()=>window.print();$('toHub').onclick=()=>{location.href='index.html';};
+  $('print').onclick=()=>window.print();$('toHub').onclick=()=>{location.href='administration.html';};
   $('jRun').onclick=runJob;$('jJob').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();runJob();}});$('jNames').onchange=()=>{if($('jOut').innerHTML)runJob();};
   window.__periods=periods;renderPeriod();
 }

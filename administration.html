@@ -347,19 +347,29 @@ html.fdec-admin-boot body::after{content:"Loading Administration…";position:fi
         <span class="adm-body"><b>ITM Reports &mdash; Admin Dashboard</b><small>All submitted inspection reports, technician roster, and approvals</small></span>
         <span class="adm-go" aria-hidden="true">&rarr;</span>
       </a>
-      <a class="adm-card" href="timesheet-review.html" style="--cc:#6d3bb5">
+      <a class="adm-card" data-roles="manager" href="timesheet-review.html" style="--cc:#6d3bb5">
         <span class="adm-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg></span>
         <span class="adm-body"><b>Review Timesheets</b><small>Submitted weekly time sheets, search, review, and approval</small></span>
         <span class="adm-badge" id="reviewBadge" hidden title="Time sheets waiting for review"></span>
         <span class="adm-go" aria-hidden="true">&rarr;</span>
       </a>
-      <a class="adm-card" href="expense-review.html" style="--cc:#2e7d5b">
+      <a class="adm-card" data-roles="manager" href="expense-review.html" style="--cc:#2e7d5b">
         <span class="adm-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6.5 9.5h.01M17.5 14.5h.01"/></svg></span>
         <span class="adm-body"><b>Review Expense Reports</b><small>Submitted expense reports, signing, and the finance packet</small></span>
         <span class="adm-badge" id="expBadge" hidden title="Expense reports waiting for approval"></span>
         <span class="adm-go" aria-hidden="true">&rarr;</span>
       </a>
-      <a class="adm-card" href="#" data-view="qfWrap" style="--cc:#1565c0">
+      <a class="adm-card" data-roles="office,finance,manager" href="payroll-hours.html" style="--cc:#2b6f8f">
+        <span class="adm-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V4"/><path d="M4 20h16"/><path d="M8 16v-5M12 16V8M16 16v-3"/></svg></span>
+        <span class="adm-body"><b>Payroll Hours</b><small>Office &middot; Read-only hours by pay period and the job hours report</small></span>
+        <span class="adm-go" aria-hidden="true">&rarr;</span>
+      </a>
+      <a class="adm-card" data-roles="finance" href="finance.html" style="--cc:#8a5a14">
+        <span class="adm-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 7.5h15a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/><path d="M3.5 7.5l12-4v4"/><circle cx="16.5" cy="14" r="1.3"/></svg></span>
+        <span class="adm-body"><b>Finance</b><small>Office &middot; Expense reports sent to finance, the packet, and marking reports paid</small></span>
+        <span class="adm-go" aria-hidden="true">&rarr;</span>
+      </a>
+      <a class="adm-card" data-roles="manager" href="#" data-view="qfWrap" style="--cc:#1565c0">
         <span class="adm-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="M13.6 13.2c0-.7-.8-1.2-1.6-1.2s-1.6.5-1.6 1.2.8 1.2 1.6 1.2 1.6.5 1.6 1.2-.8 1.2-1.6 1.2-1.6-.5-1.6-1.2"/></svg></span>
         <span class="adm-body"><b>Quote files</b><small>Saved quote drafts from the Quoting Suite</small></span>
         <span class="adm-go" aria-hidden="true">&rarr;</span>
@@ -529,8 +539,8 @@ window.PERM = (function () {
     new:    ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","pipevolume","bathroom","nicet","timeoff","fleet"],
     tech:   ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","pipevolume","bathroom","nicet","timeoff","itm","servicetrade","oncall","inventory","fleet"],
     temp:   ["home","troubleshooting","frequencies","help","library","pipevolume","bathroom","nicet","fleet"],
-    office: ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","pipevolume","bathroom","nicet","timeoff","itm","servicetrade","oncall","inventory","fleet","quoting","faquoting","payroll"],
-    finance:["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","pipevolume","bathroom","nicet","timeoff","fleet","finance","payroll"],
+    office: ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","pipevolume","bathroom","nicet","timeoff","itm","servicetrade","oncall","inventory","fleet","quoting","faquoting","payroll","administration"],
+    finance:["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","pipevolume","bathroom","nicet","timeoff","fleet","finance","payroll","administration"],
     manager:["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","pipevolume","bathroom","nicet","timeoff","itm","servicetrade","oncall","inventory","quoting","faquoting","administration","fleet","payroll"],
     admin:null
   };
@@ -678,8 +688,15 @@ function openAdminView(view){
 }
 /* ITM + admin-only sections show for admins; Quote files also for managers. */
 function setMenuForRole(amAdmin){
+  var role = (me && me.role) || "";
   var cards=document.querySelectorAll('#adminMenu [data-admin="1"]');
   [].forEach.call(cards,function(c){ c.style.display = amAdmin ? "" : "none"; });
+  /* Cards tagged data-roles show only to those roles (admins see every card). */
+  var tagged=document.querySelectorAll('#adminMenu [data-roles]');
+  [].forEach.call(tagged,function(c){
+    var ok = amAdmin || c.getAttribute("data-roles").split(",").indexOf(role)>=0;
+    c.style.display = ok ? "" : "none";
+  });
 }
 (function(){
   var menu=$("adminMenu");
@@ -697,10 +714,13 @@ async function onAuth(user){
   const amAdmin = me.role==="admin"||isAdminEmail(me.email);
   P.setAuth({ signedIn:true, isAdmin: amAdmin, me });
   await loadPerms();
-  await loadRoster();
-  await loadResetRequests();
-  await loadQuoteFiles();
-  await loadMarquee();
+  var limitedRole = !amAdmin && (me.role==="office" || me.role==="finance");
+  if(!limitedRole){
+    await loadRoster();
+    await loadResetRequests();
+    await loadQuoteFiles();
+    await loadMarquee();
+  }
   loadReviewBadge(amAdmin);
   loadExpenseBadge(amAdmin);
   setMenuForRole(amAdmin);

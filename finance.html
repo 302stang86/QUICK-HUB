@@ -32,7 +32,7 @@ body:not(.printing-packet) #listView{display:none!important}}
   <section class="panel">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
       <h2 style="margin:0">Approved Expense Reports</h2>
-      <span class="no-print"><button type="button" class="secondary" id="toPayroll">Payroll Hours</button> <button type="button" class="secondary" id="toHub">Back to hub</button></span>
+      <span class="no-print"><button type="button" class="secondary" id="toPayroll">Payroll Hours</button> <button type="button" class="secondary" id="toHub">Back to Administration</button></span>
     </div>
     <div class="pend" id="pend">Loading…</div>
     <div class="sr no-print">
@@ -195,8 +195,9 @@ function renderList(){
   document.querySelectorAll('.grp').forEach(el=>el.onclick=()=>{EXPANDED[el.dataset.k]=!(EXPANDED[el.dataset.k]===true);renderList();});
 }
 ['qText','qStatus','qFrom','qTo'].forEach(id=>{$(id).addEventListener('input',renderList);$(id).addEventListener('change',renderList);});
-$('toHub').onclick=()=>{location.href='index.html';};
+
 $('toPayroll').onclick=()=>{location.href='payroll-hours.html';};
+$('toHub').onclick=()=>{location.href='administration.html';};
 $('selAll').onclick=()=>{const ready=ROWS.filter(r=>r.status==='sent'&&matches(r));const allOn=ready.every(r=>SELECTED[r.id]);ready.forEach(r=>{SELECTED[r.id]=!allOn;});renderList();};
 
 /* ---------- detail ---------- */
