@@ -65,6 +65,25 @@
 <meta name="fdec-hide" content=".masthead">
 <meta name="fdec-actions" content="#hubLink">
 <script defer src="fdec-header.js?v=88-industrial"></script>
+
+<style id="hp-cards">
+ main{max-width:1100px}
+ .hp-head h2{margin:0 0 2px;font-size:20px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.65)}
+ .hp-head p{margin:0 0 10px;font-size:13px;color:#dbe6f4;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+ #hpSearch{width:100%;max-width:420px;box-sizing:border-box;border:1.5px solid #cdd9e8;border-radius:8px;padding:10px 12px;font:15px Arial,sans-serif;margin:0 0 6px;background:#fff;color:#1b2430}
+ .hp-sec{margin:18px 0 8px;font-size:15px;text-transform:uppercase;letter-spacing:.8px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+ .hp-sub{margin:0 0 8px;font-size:12.5px;color:#dbe6f4;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+ .hp-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+ .hp-card{background:#fff;border:1px solid #e4e7ea;border-left:5px solid var(--hc,#5b6570);border-radius:10px;padding:12px 15px;box-shadow:0 2px 8px rgba(16,24,40,.06)}
+ .hp-card h3{margin:0 0 2px;font-size:15px;color:#1B2A4A}
+ .hp-who{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--hc,#5b6570);margin:0 0 6px}
+ .hp-card p{margin:0 0 6px;font-size:13.5px;color:#33404f;line-height:1.45}
+ .hp-card ul,.hp-card ol{margin:4px 0 6px 18px;padding:0;font-size:13.5px;color:#33404f;line-height:1.45}
+ .hp-card li{margin:0 0 3px}
+ .hp-none{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7);font-size:14px;margin:14px 0}
+ @media (max-width:760px){.hp-grid{grid-template-columns:1fr}}
+ @media print{.hp-card{break-inside:avoid;box-shadow:none}}
+</style>
 </head>
 <body>
 <div class="bg-layer" aria-hidden="true"></div>
@@ -77,29 +96,27 @@
   </div>
 
   <!-- ===== Quick Help Topics ===== -->
-  <div class="panel">
-    <h2>Quick help topics</h2>
-    <p class="lead">Short answers to common questions about using Quick Hub.</p>
-
-    <details class="topic">
-      <summary>Navigate Quick Hub &mdash; where things are</summary>
-      <div class="body">
-        <p>Quick Hub opens on the Home page, which shows one card for each tool you can use. The cards you see depend on your role, so a technician sees fewer cards than a manager or administrator.</p>
+  <div class="hp-head"><h2>Quick help topics</h2><p>Short answers to common questions about using Quick Hub.</p>
+<input type="search" id="hpSearch" placeholder="Search help&hellip;" autocomplete="off"></div>
+<h2 class="hp-sec" data-sec>Getting around</h2><div class="hp-grid"><div class="hp-card" style="--hc:#1565c0"><h3>Navigate Quick Hub &mdash; where things are</h3><div class="hp-who">Everyone</div><p>Quick Hub opens on the Home page, which shows one card for each tool you can use. The cards you see depend on your role, so a technician sees fewer cards than a manager or administrator. Tap a card to open it. Every tool has a link in the top-left corner (Hub or Employee Hub) that returns you to Home.</p>
+<ul><li>Home cards for technicians: Announcements, ITM Inspection Reports, Field Tools, Tech Cards, Local Dispatch Numbers, SwitchBack TD and Help. Weekly Time Sheet and Expense Reports appear once an administrator releases them.</li>
+<li>Field Tools opens ServiceTrade, Troubleshooting Guide, NFPA 25 Frequencies, Library, NICET and the Pipe Volume Calculator.</li>
+<li>Tech Cards opens Personal Inventory, Fleet Service, Time-Off Requests and On-Call Rotation.</li>
+<li>Managers and office staff also see Quoting and Fire Alarm Proposals. Managers also see Fleet Service Records. Managers, administrators, office and finance see Administration.</li>
+<li>The small badge in the corner shows Online, Offline or Syncing. Your name in the header is the name set in the employee roster.</li></ul>
+<p>Where an expected card is missing, ask a manager to check your role in Administration.</p></div><div class="hp-card" style="--hc:#1565c0"><h3>Announcements and the scrolling alert bar</h3><div class="hp-who">Everyone</div><p>Department news is posted on the Announcements card. When there is a critical update, a red scrolling bar appears at the very top of the hub home page. Tap the &times; to dismiss it; a new message brings it back automatically.</p></div><div class="hp-card" style="--hc:#1565c0"><h3>Can I use Quick Hub without a signal?</h3><div class="hp-who">Everyone</div><p>Yes. Pages you have opened before work offline, and anything you save is held on your device and syncs automatically when you are back online. A small badge in the corner shows Online, Offline, or Syncing.</p></div><div class="hp-card" style="--hc:#1565c0"><h3>Install Quick Hub as an app on my phone or computer</h3><div class="hp-who">Everyone</div><p>Installing gives you a home-screen icon and a full-screen window.</p>
         <ul>
-          <li>Tap a card to open that tool. Every tool has a link in the top-left corner (Hub or Employee Hub) that returns you to Home.</li>
-          <li>Field tools: ITM Inspection Reports, ServiceTrade, Local Dispatch Numbers, Troubleshooting Guide, NFPA 25 Frequencies, Library, NICET, Personal Inventory and Fleet Service.</li>
-          <li>Team tools: Announcements, Time-Off Requests and On-Call Rotation.</li>
-          <li>Managers and administrators also see Quoting, Fire Alarm Proposals, Fleet Service Records and Administration.</li>
-          <li>The small badge in the corner shows Online, Offline or Syncing. Your name in the header is the name set in the employee roster.</li>
-        </ul>
-        <p>Where an expected card is missing, ask a manager to check your role in Administration.</p>
-      </div>
-    </details>
-
-    <details class="topic" open>
-      <summary>ITM Reports &mdash; what changed (read this first)</summary>
-      <div class="body">
-        <p>ITM (Inspection, Testing and Maintenance) reports now follow four (4) separate groups. Each submission belongs to exactly one group:</p>
+          <li>Phone (Android/Chrome): tap the browser menu, then "Install app" or "Add to Home screen".</li>
+          <li>iPhone/iPad (Safari): tap the Share button, then "Add to Home Screen".</li>
+          <li>Computer (Chrome/Edge): click the install icon in the address bar, or the browser menu, then "Install".</li>
+        </ul></div><div class="hp-card" style="--hc:#1565c0"><h3>Pages aren't loading or look out of date — how do I refresh?</h3><div class="hp-who">Everyone</div><p>Quick Hub saves a copy of itself on your device so it works offline, which can occasionally leave you on an older copy. To force the latest version:</p>
+        <ol>
+          <li>In a browser tab: hard refresh with <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd> (Windows) or <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd> (Mac).</li>
+          <li>If it still looks old, clear the saved copy: press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Delete</kbd>, set the range to "All time", check "Cached images and files" and "Cookies and other site data", then click "Clear data". Reopen Quick Hub and sign in again.</li>
+          <li>On a phone or tablet: fully close the app or browser tab and reopen it. If installed as an app, you can remove and reinstall it.</li>
+        </ol>
+        <p>Once you are on the current version, future updates refresh on their own while you are online.</p></div></div>
+<h2 class="hp-sec" data-sec>ITM Inspection Reports</h2><div class="hp-grid"><div class="hp-card" style="--hc:#C1121C"><h3>ITM Reports &mdash; what changed (read this first)</h3><div class="hp-who">Technicians</div><p>ITM (Inspection, Testing and Maintenance) reports now follow four (4) separate groups. Each submission belongs to exactly one group:</p>
         <ol>
           <li>Normal ITM inspection reports: the main inspection forms (FD-16, FD-17, FD-19, FD-20 and FD-21), the add-on system forms (dry, antifreeze, deluge, standpipe and similar) and the Deficiency Summary.</li>
           <li>5-Year Internal Pipe Inspection (FD-24).</li>
@@ -107,14 +124,7 @@
           <li>Deficiency Correction Report, or DCR (FD-DCR).</li>
         </ol>
         <p>The 5-Year Internal, 5-Year FDC Hydro and DCR reports are always submitted on their own, even when they share a job number with a normal inspection. The Summary never goes with a 5-Year or DCR report. The Submit window only lets you tick reports from one group at a time, so a mixed submission cannot happen by mistake.</p>
-        <p>Other changes: you can view, edit and update your own past reports at any time, the system now warns you about duplicates before you submit, and nothing is archived or deleted automatically.</p>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>ITM Reports &mdash; how to submit a report</summary>
-      <div class="body">
-        <ol>
+        <p>Other changes: you can view, edit and update your own past reports at any time, the system now warns you about duplicates before you submit, and nothing is archived or deleted automatically.</p></div><div class="hp-card" style="--hc:#C1121C"><h3>ITM Reports &mdash; how to submit a report</h3><div class="hp-who">Technicians</div><ol>
           <li>Open ITM Inspection Reports and sign in.</li>
           <li>Enter the Job Number, job name and inspection date, then fill out the forms you need. The job number is tidied for you (extra spaces and letter case are ignored) so the same job always matches.</li>
           <li>Tap Submit Report on the bottom bar. The Submit window lists the reports you filled out. Tick the ones to send. Picking a 5-Year or DCR report unticks the others, because those go alone.</li>
@@ -129,214 +139,48 @@
           </ul>
           <p>Always verify that each report uploaded and that it uploaded correctly.</p>
         </div>
-        <p>Deficiency Correction Reports: enter the job number and the report pulls the deficiencies from that job's normal inspection report. It does not read the 5-Year reports.</p>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>ITM Reports &mdash; duplicate warnings</summary>
-      <div class="body">
-        <p>A duplicate means the same job number, the same type of report and the same inspection date. When you submit one, you are asked what to do:</p>
+        <p>Deficiency Correction Reports: enter the job number and the report pulls the deficiencies from that job's normal inspection report. It does not read the 5-Year reports.</p></div><div class="hp-card" style="--hc:#C1121C"><h3>ITM Reports &mdash; duplicate warnings</h3><div class="hp-who">Technicians</div><p>A duplicate means the same job number, the same type of report and the same inspection date. When you submit one, you are asked what to do:</p>
         <ul>
           <li>"You already submitted this report" means you sent it before. Choose "Update submitted report" to replace it (a reason is required), or "Submit as a new report" if this is truly a different visit.</li>
           <li>"A matching report already exists" means another person submitted the same job. Choose "Submit as a separate report" only where applicable, such as a second technician on the same job.</li>
         </ul>
-        <p>A different report type or a different inspection date is never a duplicate, so a 5-Year report and a normal report on the same job do not conflict.</p>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>ITM Reports &mdash; save a draft and finish later</summary>
-      <div class="body">
-        <ul>
+        <p>A different report type or a different inspection date is never a duplicate, so a 5-Year report and a normal report on the same job do not conflict.</p></div><div class="hp-card" style="--hc:#C1121C"><h3>ITM Reports &mdash; save a draft and finish later</h3><div class="hp-who">Technicians</div><ul>
           <li>Save Draft stores your work in progress on this device. Load Draft brings it back.</li>
           <li>Your work is also saved automatically while you type. If the page closes before you submit, you are offered "Restore" the next time you open it.</li>
           <li>Clear Form starts a new blank report. It never deletes a report you already submitted.</li>
-        </ul>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>ITM Reports &mdash; view, edit or withdraw a report you submitted</summary>
-      <div class="body">
-        <p>Tap My Submissions on the bottom bar to see every report you have sent.</p>
+        </ul></div><div class="hp-card" style="--hc:#C1121C"><h3>ITM Reports &mdash; view, edit or withdraw a report you submitted</h3><div class="hp-who">Technicians</div><p>Tap My Submissions on the bottom bar to see every report you have sent.</p>
         <ul>
           <li>View opens the report. PDF saves it as a PDF.</li>
           <li>Edit loads it into the form. Make your corrections, then tap Submit Report. You are asked for a short reason. The office sees "Edited by", the date and your reason. The earlier version is not kept, so check your changes before you update.</li>
           <li>Withdraw removes a report you submitted by mistake. It stays recoverable for 30 days: open My Submissions and choose Restore.</li>
         </ul>
         <p>If the office has already sent the report to the customer, you see a warning. Your change does not reach the customer unless the office sends it again. If someone else changed the report while you were editing, you can load the latest version, save yours anyway or cancel.</p>
-        <p>There is no time limit for editing your own reports.</p>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>My name looks wrong on a report or form</summary>
-      <div class="body">
-        <p>Your name comes from your account in the employee roster, and the same name is used on ITM reports, Fleet Service, Time Off, Inventory and On-Call. Only an administrator can change it. If your name is wrong (for example, showing a short login name), tell an administrator. Once it is corrected in the roster, your older records show the corrected name too.</p>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>Pages aren't loading or look out of date — how do I refresh?</summary>
-      <div class="body">
-        <p>Quick Hub saves a copy of itself on your device so it works offline, which can occasionally leave you on an older copy. To force the latest version:</p>
-        <ol>
-          <li>In a browser tab: hard refresh with <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd> (Windows) or <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd> (Mac).</li>
-          <li>If it still looks old, clear the saved copy: press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Delete</kbd>, set the range to "All time", check "Cached images and files" and "Cookies and other site data", then click "Clear data". Reopen Quick Hub and sign in again.</li>
-          <li>On a phone or tablet: fully close the app or browser tab and reopen it. If installed as an app, you can remove and reinstall it.</li>
-        </ol>
-        <p>Once you are on the current version, future updates refresh on their own while you are online.</p>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>Install Quick Hub as an app on my phone or computer</summary>
-      <div class="body">
-        <p>Installing gives you a home-screen icon and a full-screen window.</p>
-        <ul>
-          <li>Phone (Android/Chrome): tap the browser menu, then "Install app" or "Add to Home screen".</li>
-          <li>iPhone/iPad (Safari): tap the Share button, then "Add to Home Screen".</li>
-          <li>Computer (Chrome/Edge): click the install icon in the address bar, or the browser menu, then "Install".</li>
-        </ul>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>I forgot my password</summary>
-      <div class="body">
-        <p>On the sign-in screen, enter your firedefense.com email, then click "Reset password". Your request goes to an administrator; once approved, you receive an email with a secure reset link. Check your inbox and spam folder.</p>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>My account says "waiting for approval"</summary>
-      <div class="body">
-        <p>New sign-ups must be approved by an administrator or manager in the Administration area. Once approved, sign out and back in and you will have access. If it has been a while, contact your manager.</p>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>Can I use Quick Hub without a signal?</summary>
-      <div class="body">
-        <p>Yes. Pages you have opened before work offline, and anything you save is held on your device and syncs automatically when you are back online. A small badge in the corner shows Online, Offline, or Syncing.</p>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>Open a job in ServiceTrade from an ITM report</summary>
-      <div class="body">
-        <p>Each ITM report can hand its job number to ServiceTrade so you can pull the job up fast.</p>
+        <p>There is no time limit for editing your own reports.</p></div><div class="hp-card" style="--hc:#C1121C"><h3>Open a job in ServiceTrade from an ITM report</h3><div class="hp-who">Technicians</div><p>Each ITM report can hand its job number to ServiceTrade so you can pull the job up fast.</p>
         <ol>
           <li>Open the ITM report and enter the job number in the "Job Number" field at the top of the report.</li>
           <li>Tap the "&#8942;" (more) button on the bottom action bar, then choose "Open in ServiceTrade".</li>
           <li>Quick Hub copies that job number and opens ServiceTrade in a new tab.</li>
           <li>In ServiceTrade, tap the search box and paste the number &mdash; Ctrl+V on a PC, or press and hold then Paste on a phone. The job comes up.</li>
         </ol>
-        <p>If nothing was copied, enter the Job Number first, then use "Open in ServiceTrade" again. ServiceTrade has no direct web address for a job number, so the paste step is needed.</p>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>Where are my saved ITM reports and quotes?</summary>
-      <div class="body">
-        <p>Technicians: open ITM Inspection Reports and tap My Submissions to view, edit or withdraw your own reports.</p>
-        <p>Administrators: submitted ITM reports and saved quote files are kept centrally. Use the ITM Admin Dashboard to review, edit, download, archive or delete reports. In Administration, search the Quote files section by job name, quote number or person.</p>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>Submit a Fleet Service Request</summary>
-      <div class="body">
-        <p>Report a vehicle that needs service from the Fleet Service card.</p>
-        <ol>
-          <li>Pick your vehicle. If a manager has assigned you a van, it shows at the top and your vehicle number and plate fill in automatically.</li>
-          <li>Set the service date, answer the drop-off and spare-vehicle questions, and tap the diagram to drop numbered pins on the areas that need attention.</li>
-          <li>Tap "Submit Service Request". The request is saved for managers to review and your email app opens addressed to the fleet managers &mdash; press Send to deliver it.</li>
-        </ol>
-        <p>Choosing "Other" as the vehicle lets you type the make, model, year, number, and plate by hand.</p>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>My assigned vehicle</summary>
-      <div class="body">
-        <p>A manager assigns your van under Fleet Service &rarr; Assets. Once assigned, it appears in a "Your assigned vehicle" panel at the top of the Fleet Service Request page and fills in your vehicle number and plate for you. If it is wrong or missing, ask a manager to update it.</p>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>Fill out your Weekly Time Sheet</summary>
-      <div class="body">
-        <p>Add a card for each type of work, enter your hours by day, and the totals update as you go.</p>
-        <ul>
-          <li>Monday&ndash;Friday hours over eight (8) in a day move to Overtime automatically &mdash; you do not enter weekday overtime by hand.</li>
-          <li>Your name is set by an administrator, so the Employee Name field is filled in for you.</li>
-          <li>Choose your manager and tap Submit. Submitted sheets go to that manager's review list; your own submitted sheet also shows for you to review.</li>
-        </ul>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>Add an Expense Report to your time sheet</summary>
-      <div class="body">
-        <p>On the Weekly Time Sheet, use "Add Another Expense Report". Each report covers a single job number.</p>
-        <ul>
-          <li>Add an item for each expense with its date, account, description, amount, and payment method.</li>
-          <li>Out-of-pocket and company-card items prompt that a receipt is required &mdash; provide it per company policy.</li>
-          <li>The report attaches to your time sheet and its totals roll into your pay period.</li>
-        </ul>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>Personal Inventory &mdash; track your vehicle stock</summary>
-      <div class="body">
-        <p>The Personal Inventory card holds your vehicle's on-hand counts by category. Update the counts as you use or restock parts; items that fall below the recommended amount flag as low so you know what to reorder.</p>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>Field reference tools &mdash; frequencies, Library, troubleshooting</summary>
-      <div class="body">
-        <ul>
-          <li>NFPA 25 Frequencies: search a device to confirm how often it must be inspected or tested.</li>
-          <li>Library: see the Library topic below.</li>
-          <li>Troubleshooting Guide: see the Troubleshooting topic below.</li>
-        </ul>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>Library &mdash; find a datasheet, recall or reference table</summary>
-      <div class="body">
-        <p>The Library (called "Product and technical library" at the top of the page) holds NFPA and manufacturer reference material in one place.</p>
+        <p>If nothing was copied, enter the Job Number first, then use "Open in ServiceTrade" again. ServiceTrade has no direct web address for a job number, so the paste step is needed.</p></div><div class="hp-card" style="--hc:#C1121C"><h3>Where are my saved ITM reports and quotes?</h3><div class="hp-who">Technicians and administrators</div><p>Technicians: open ITM Inspection Reports and tap My Submissions to view, edit or withdraw your own reports.</p>
+        <p>Administrators: submitted ITM reports and saved quote files are kept centrally. Use the ITM Admin Dashboard to review, edit, download, archive or delete reports. In Administration, search the Quote files section by job name, quote number or person.</p></div></div>
+<h2 class="hp-sec" data-sec>Field tools</h2><div class="hp-grid"><div class="hp-card" style="--hc:#c2570c"><h3>Field tools &mdash; where to find them</h3><div class="hp-who">Everyone</div><p>Home, then Field Tools. Each tool has its own topic on this page.</p>
+<ul><li>ServiceTrade: opens ServiceTrade in a new tab for jobs, service records and deficiencies.</li>
+<li>NFPA 25 Frequencies: search a device to confirm how often it must be inspected or tested.</li>
+<li>Troubleshooting Guide, Library, NICET and Pipe Volume Calculator: see their topics.</li>
+<li>Local Dispatch Numbers is on the Home page: fire department dispatch numbers by city, searchable.</li></ul></div><div class="hp-card" style="--hc:#c2570c"><h3>Library &mdash; find a datasheet, recall or reference table</h3><div class="hp-who">Everyone</div><p>The Library (called "Product and technical library" at the top of the page) holds NFPA and manufacturer reference material in one place.</p>
         <ol>
           <li>Pick a category from the row of buttons: Sprinklers, Air Compressors, Nitrogen and Corrosion, Test and Drain, Vents and Auxiliary Drains, Risers and Controls, Hangers and Supports, Switches and Alarms, Fire Pumps, Suppliers, Recalls, Cross-Reference, Dry Valves, Deluge Valves, Preaction, Backflow, Fittings and Flanges or Manufacturer Libraries. "All" shows everything.</li>
           <li>Use the search box to find a model, part or word.</li>
           <li>Tap an item to open it. Reference tables (recalled head markings, obsolete heads, flange and fitting dimensions) open right in the page. Manufacturer documents open on the manufacturer's own site, so they stay current.</li>
           <li>Tap "Library overview" to return to the main list.</li>
         </ol>
-        <p>When a recalled or obsolete head is suspected, do not disturb the head. Photograph it and check the recall table.</p>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>Troubleshooting Guide &mdash; how to use it</summary>
-      <div class="body">
-        <ol>
+        <p>When a recalled or obsolete head is suspected, do not disturb the head. Photograph it and check the recall table.</p></div><div class="hp-card" style="--hc:#c2570c"><h3>Troubleshooting Guide &mdash; how to use it</h3><div class="hp-who">Everyone</div><ol>
           <li>Choose the system or equipment at the top (or All systems for a wider search).</li>
           <li>Type a symptom, model or component in the search box. Tap Clear to start over.</li>
           <li>Pick a view: Diagnose (follow the symptom to a cause), Model resets (reset steps for the exact model), Restore service (steps to return the system to service) or Source manuals (the manufacturer documents behind the steps).</li>
         </ol>
-        <p>Always match the document revision and trim to the installed equipment. The governing NFPA edition and the authority having jurisdiction control. The page shows the date the manufacturer sources were last checked.</p>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>NICET study centers &mdash; Levels I, II and III</summary>
-      <div class="body">
-        <p>The NICET card opens one study center for each level. Each has the same menu on the left:</p>
+        <p>Always match the document revision and trim to the installed equipment. The governing NFPA edition and the authority having jurisdiction control. The page shows the date the manufacturer sources were last checked.</p></div><div class="hp-card" style="--hc:#c2570c"><h3>NICET study centers &mdash; Levels I, II and III</h3><div class="hp-who">Everyone</div><p>The NICET card opens one study center for each level. Each has the same menu on the left:</p>
         <ul>
           <li>Dashboard: your progress at a glance.</li>
           <li>Study guides: read each topic, then mark the guides reviewed.</li>
@@ -346,53 +190,37 @@
           <li>A hands-on tool for each level: the Main drain lab (Level I), the Pump and dry-valve lab (Level II) or Flow-test analysis (Level III).</li>
           <li>My notes: type notes, save them and export them as a text file.</li>
         </ul>
-        <p>Exam content follows NFPA 25 (2023). Visual references use current NFPA editions. Your progress and notes are saved on this device only, so use the same device each time. Reset progress clears them. The NICET Portal Guide covers login, CPD (continuing professional development) points, Work History and recertification.</p>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>Announcements and the scrolling alert bar</summary>
-      <div class="body">
-        <p>Department news is posted on the Announcements card. When there is a critical update, a red scrolling bar appears at the very top of the hub home page. Tap the &times; to dismiss it; a new message brings it back automatically.</p>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>Request time off and view the on-call schedule</summary>
-      <div class="body">
-        <p>Use the Time-Off Requests card to submit a PTO (paid time off) request, choose your dates and hours for each day, and watch its status change from pending to approved or denied. PTO balances are not shown in Quick Hub; they are kept in a separate program.</p>
-        <p>The On-Call Rotation card shows the current sprinkler department schedule. Names match the employee roster.</p>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>Still stuck?</summary>
-      <div class="body">
-        <p>Use the bug report form above, or email the administrator directly at <a href="mailto:mp1@firedefense.com">mp1@firedefense.com</a>.</p>
-      </div>
-    </details>
-  </div>
-
-  <div class="panel" id="adminHelp" style="display:none">
-    <h2>Admin &amp; manager help</h2>
-    <p class="lead">Visible to managers and administrators &mdash; short answers for the management tools.</p>
-
-    <details class="topic">
-      <summary>ITM reports &mdash; what changed for the office</summary>
-      <div class="body">
-        <ul>
+        <p>Exam content follows NFPA 25 (2023). Visual references use current NFPA editions. Your progress and notes are saved on this device only, so use the same device each time. Reset progress clears them. The NICET Portal Guide covers login, CPD (continuing professional development) points, Work History and recertification.</p></div><div class="hp-card" style="--hc:#c2570c"><h3>Pipe Volume Calculator</h3><div class="hp-who">Everyone</div><p>Open Field Tools, then Pipe Volume Calculator. It gives the water volume in steel sprinkler pipe by size and schedule, the fill make-up needed, and expansion. Enter the pipe size, schedule and length, and read the result.</p>
+<p>Use it as a field aid. Confirm critical numbers against the system design and the governing NFPA edition.</p></div></div>
+<h2 class="hp-sec" data-sec>Tech cards</h2><div class="hp-grid"><div class="hp-card" style="--hc:#2b4a80"><h3>Tech Cards &mdash; what is inside</h3><div class="hp-who">Technicians</div><p>Home, then Tech Cards, holds your personal tools.</p>
+<ul><li>Personal Inventory: your vehicle stock.</li><li>Fleet Service: submit a vehicle service request.</li><li>Time-Off Requests: submit and follow PTO requests.</li><li>On-Call Rotation: the current sprinkler department schedule.</li></ul></div><div class="hp-card" style="--hc:#2b4a80"><h3>Personal Inventory &mdash; track your vehicle stock</h3><div class="hp-who">Technicians</div><p>The Personal Inventory card holds your vehicle's on-hand counts by category. Update the counts as you use or restock parts; items that fall below the recommended amount flag as low so you know what to reorder.</p></div><div class="hp-card" style="--hc:#2b4a80"><h3>Submit a Fleet Service Request</h3><div class="hp-who">Everyone</div><p>Report a vehicle that needs service from the Fleet Service card.</p>
+        <ol>
+          <li>Pick your vehicle. If a manager has assigned you a van, it shows at the top and your vehicle number and plate fill in automatically.</li>
+          <li>Set the service date, answer the drop-off and spare-vehicle questions, and tap the diagram to drop numbered pins on the areas that need attention.</li>
+          <li>Tap "Submit Service Request". The request is saved for managers to review and your email app opens addressed to the fleet managers &mdash; press Send to deliver it.</li>
+        </ol>
+        <p>Choosing "Other" as the vehicle lets you type the make, model, year, number, and plate by hand.</p></div><div class="hp-card" style="--hc:#2b4a80"><h3>My assigned vehicle</h3><div class="hp-who">Technicians</div><p>A manager assigns your van under Fleet Service &rarr; Assets. Once assigned, it appears in a "Your assigned vehicle" panel at the top of the Fleet Service Request page and fills in your vehicle number and plate for you. If it is wrong or missing, ask a manager to update it.</p></div><div class="hp-card" style="--hc:#2b4a80"><h3>Request time off and view the on-call schedule</h3><div class="hp-who">Everyone</div><p>Use the Time-Off Requests card to submit a PTO (paid time off) request, choose your dates and hours for each day, and watch its status change from pending to approved or denied. PTO balances are not shown in Quick Hub; they are kept in a separate program.</p>
+        <p>The On-Call Rotation card shows the current sprinkler department schedule. Names match the employee roster.</p></div></div>
+<h2 class="hp-sec" data-sec>Time sheets and expenses</h2><div class="hp-grid"><div class="hp-card" style="--hc:#6d3bb5"><h3>Weekly Time Sheet &mdash; fill it out and submit</h3><div class="hp-who">Technicians, once released</div><p>The Weekly Time Sheet card appears on Home once an administrator releases it. A sheet covers one week, Sunday through Saturday, and saves automatically as you work.</p>
+<ol><li>Your name fills in from the employee roster. If it is wrong or blank, ask an administrator.</li>
+<li>Add an hours card for each type of work, choose the day, and enter your hours. Job work needs a job name and job number. The totals update as you go.</li>
+<li>Choose your manager, add any comment for payroll, and tap Submit to Manager. The sheet then goes to that manager&rsquo;s review list and locks.</li>
+<li>If the manager returns it, the note appears at the top of the sheet. Fix the hours, then tap Submit to Manager again.</li></ol>
+<p>Overtime is figured for you by the week. Monday through Friday hours, including PTO and holiday, are regular until the week reaches forty (40) hours, and anything after that becomes overtime. PTO and holiday count toward the forty (40) but are always regular. Saturday time is paid at time and a half and Sunday at double time, and neither counts toward the forty (40).</p>
+<p>Sheets are due Monday at 8:00 AM Eastern after the pay period ends.</p></div><div class="hp-card" style="--hc:#6d3bb5"><h3>Expense Reports &mdash; submit one to your manager</h3><div class="hp-who">Technicians, once released</div><p>Expense reports have their own card on Home, separate from the time sheet. It appears once an administrator releases it. Each report covers one job.</p>
+<ol><li>Tap New Expense Report and enter the job name and job number. These are the only required fields. Use any dates you need.</li>
+<li>Add an item for each expense with its date, account, description, amount and payment method. Amounts are in US dollars. Company card items are not reimbursable, and the report shows the amount owed to you.</li>
+<li>Reports save automatically as drafts. When it is complete, choose your manager and submit.</li>
+<li>Keep every receipt and give them to your manager with the report.</li></ol>
+<p>Your list shows each report&rsquo;s status: Draft, Submitted, Approved (signed by your manager), Sent to finance, or Paid. A submitted report is locked while your manager reviews it.</p></div></div>
+<h2 class="hp-sec" data-sec>My account</h2><div class="hp-grid"><div class="hp-card" style="--hc:#5b6570"><h3>My name looks wrong on a report or form</h3><div class="hp-who">Everyone</div><p>Your name comes from your account in the employee roster, and the same name is used on ITM reports, Fleet Service, Time Off, Inventory and On-Call. Only an administrator can change it. If your name is wrong (for example, showing a short login name), tell an administrator. Once it is corrected in the roster, your older records show the corrected name too.</p></div><div class="hp-card" style="--hc:#5b6570"><h3>I forgot my password</h3><div class="hp-who">Everyone</div><p>On the sign-in screen, enter your firedefense.com email, then click "Reset password". Your request goes to an administrator; once approved, you receive an email with a secure reset link. Check your inbox and spam folder.</p></div><div class="hp-card" style="--hc:#5b6570"><h3>My account says "waiting for approval"</h3><div class="hp-who">Everyone</div><p>New sign-ups must be approved by an administrator or manager in the Administration area. Once approved, sign out and back in and you will have access. If it has been a while, contact your manager.</p></div><div class="hp-card" style="--hc:#5b6570"><h3>Still stuck?</h3><div class="hp-who">Everyone</div><p>Use the bug report form above, or email the administrator directly at <a href="mailto:mp1@firedefense.com">mp1@firedefense.com</a>.</p></div></div>
+<p id="hpNone" class="hp-none" style="display:none">No help topics match your search.</p>
+<div id="adminHelp" style="display:none"><h2 class="hp-sec" data-sec>Admin &amp; manager help</h2><p class="hp-sub">Visible to managers and administrators &mdash; short answers for the management tools. More detail is in Administration &rarr; Help.</p><div class="hp-grid"><div class="hp-card" style="--hc:#c08a1e"><h3>ITM reports &mdash; what changed for the office</h3><div class="hp-who">Managers and administrators</div><ul>
           <li>Every submission is one of four groups: normal inspection, 5-Year Internal (FD-24), 5-Year FDC Hydro (FD-25) or Deficiency Correction Report (FD-DCR). The last three are always their own report, even on the same job number. The Summary is never combined with them.</li>
           <li>Duplicates are decided by job number, group and inspection date. The newest is labeled Current. A job can now hold a normal report and a 5-Year or DCR report without a false duplicate.</li>
           <li>Technicians can view, edit and withdraw their own reports at any time. Edited reports show "Edited by", the date and the reason. No earlier versions are kept.</li>
           <li>Nothing is archived or deleted automatically. Archiving and deleting are manual only.</li>
-        </ul>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>ITM Admin Dashboard &mdash; review, archive and clean up</summary>
-      <div class="body">
-        <p>Open the dashboard from the Administration card or the Admin Dashboard button in ITM Reports. It opens as its own full-page tab with a Back to Hub link.</p>
+        </ul></div><div class="hp-card" style="--hc:#c08a1e"><h3>ITM Admin Dashboard &mdash; review, archive and clean up</h3><div class="hp-who">Administrators</div><p>Open the dashboard from the Administration card or the Admin Dashboard button in ITM Reports. It opens as its own full-page tab with a Back to Hub link.</p>
         <ul>
           <li>Find reports: pick the year, filter by report group, search by job, name or tech, show duplicates only, or group reports by job.</li>
           <li>Duplicates: reports with the same job, group and inspection date are flagged. Where the flag is wrong, tap "Not a duplicate". Archive the older copies where needed.</li>
@@ -400,56 +228,23 @@
           <li>Fix a job number: use the More menu on a report to correct a mistyped job number without resubmitting.</li>
           <li>Withdrawn and sent: reports a tech withdrew are listed separately and can be restored for 30 days. A report marked sent to the customer warns the tech before they change it.</li>
           <li>Names show the current roster name, so renaming a person in Administration updates old reports too.</li>
-        </ul>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>Employee roster &mdash; the one place for employee information</summary>
-      <div class="body">
-        <p>The roster in Administration is the single source for each person's name, phone, role and approval status. Only administrators can change a name. Every page (ITM, Fleet, Time Off, Inventory, On-Call and the home page) reads that name, so correct it once and it updates everywhere, including older records.</p>
-        <p>Use Archive instead of Delete when someone leaves. Archive blocks access and keeps the profile. Delete removes the profile permanently.</p>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>Review and archive Fleet Service Records</summary>
-      <div class="body">
-        <p>The Fleet Service Records card lists submitted requests. Open one to review it, update its status, and add management notes.</p>
+        </ul></div><div class="hp-card" style="--hc:#c08a1e"><h3>Employee roster &mdash; the one place for employee information</h3><div class="hp-who">Administrators</div><p>The roster in Administration is the single source for each person's name, phone, role and approval status. Only administrators can change a name. Every page (ITM, Fleet, Time Off, Inventory, On-Call and the home page) reads that name, so correct it once and it updates everywhere, including older records.</p>
+        <p>Use Archive instead of Delete when someone leaves. Archive blocks access and keeps the profile. Delete removes the profile permanently.</p></div><div class="hp-card" style="--hc:#c08a1e"><h3>Review and archive Fleet Service Records</h3><div class="hp-who">Managers and administrators</div><p>The Fleet Service Records card lists submitted requests. Open one to review it, update its status, and add management notes.</p>
         <ul>
           <li>Use "Archive record" to move it to the Archived tab. You are warned first that archived records are kept for 30 days and then permanently deleted.</li>
           <li>Open the <b>Archived records</b> tab to view or Restore an archived record before the 30 days are up.</li>
           <li>The 30-day cleanup runs automatically whenever a manager or admin opens the dashboard.</li>
-        </ul>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>Assign vehicles to technicians (Assets)</summary>
-      <div class="body">
-        <p>In the Fleet Service page, open the <b>Assets</b> tab (managers and admins only). Each employee has fields for make, model, year, plate, and vehicle number &mdash; fill one in and save to assign it. The technician then sees that vehicle at the top of their Fleet Service Request, with the number and plate filled in.</p>
+        </ul></div><div class="hp-card" style="--hc:#c08a1e"><h3>Assign vehicles to technicians (Assets)</h3><div class="hp-who">Managers and administrators</div><p>In the Fleet Service page, open the <b>Assets</b> tab (managers and admins only). Each employee has fields for make, model, year, plate, and vehicle number &mdash; fill one in and save to assign it. The technician then sees that vehicle at the top of their Fleet Service Request, with the number and plate filled in.</p>
         <ul>
           <li>"Remove asset" clears the assignment and removes the card after you confirm.</li>
           <li>Use "Add spare vehicle" to record shared or spare vehicles that are not tied to one technician; those can be picked on any request.</li>
-        </ul>
-      </div>
-    </details>
-
-    <details class="topic">
-      <summary>Administration &mdash; roster, permissions, and the alert bar</summary>
-      <div class="body">
-        <p>The Administration card opens a menu of management tools.</p>
+        </ul></div><div class="hp-card" style="--hc:#c08a1e"><h3>Administration &mdash; roster, permissions, and the alert bar</h3><div class="hp-who">Administrators</div><p>The Administration card opens a menu of management tools.</p>
         <ul>
           <li><b>Employee roster</b> &mdash; edit names and phone numbers, approve or deny sign-ups, change roles, and archive or remove accounts. The name set here is used everywhere a technician's name appears.</li>
           <li><b>Role &amp; page permissions</b> &mdash; control which tools each role can open.</li>
           <li><b>Announcement bar</b> &mdash; turn the hub's scrolling alert bar on or off and set its text. It appears directly under the top banner on the hub home page and updates live for everyone.</li>
-        </ul>
-      </div>
-    </details>
+        </ul></div></div></div>
 
-  </div>
-
-  <!-- ===== Bug Fix ===== -->
   <div class="panel">
     <h2>Report a bug</h2>
     <p class="lead">Something not working right? Tell us what happened and attach a photo if it helps. Submitting emails the report to the Quick Hub administrator (mp1@firedefense.com).</p>
@@ -561,5 +356,19 @@
 </script>
 
 <script type="module" src="fdec-auth.js" data-page="help"></script>
+<script>
+(function(){
+  var q=document.getElementById("hpSearch"); if(!q) return;
+  q.addEventListener("input",function(){
+    var t=q.value.trim().toLowerCase(), any=false;
+    [].forEach.call(document.querySelectorAll(".hp-card"),function(c){
+      var show=!t||c.textContent.toLowerCase().indexOf(t)>=0; c.style.display=show?"":"none"; if(show) any=true; });
+    [].forEach.call(document.querySelectorAll(".hp-grid"),function(g){
+      var vis=[].some.call(g.children,function(c){return c.style.display!=="none";});
+      g.style.display=vis?"":"none"; var h=g.previousElementSibling; while(h&&!h.hasAttribute("data-sec")) h=h.previousElementSibling; if(h&&h.nextElementSibling===g) h.style.display=vis?"":"none"; });
+    document.getElementById("hpNone").style.display=any?"none":"";
+  });
+})();
+</script>
 </body>
 </html>

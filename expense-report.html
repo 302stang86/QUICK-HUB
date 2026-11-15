@@ -106,7 +106,7 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','
 function money(n){return '$'+Number(n||0).toFixed(2);}
 function num(v){return Math.max(0,Number(v)||0);}
 function methodLabel(m){return m==='company_card'?'Company Card':m==='per_diem'?'Per Diem':'Out of Pocket';}
-function statusLabel(s){return s==='submitted'?'Submitted':s==='approved'?'Approved':s==='sent'?'Sent to finance':'Draft';}
+function statusLabel(s){return s==='submitted'?'Submitted':s==='approved'?'Approved':s==='sent'?'Sent to finance':s==='paid'?'Paid':'Draft';}
 
 let fb=null, db=null, auth=null, FB_OK=false;
 (function(){try{
