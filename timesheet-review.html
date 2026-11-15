@@ -56,6 +56,10 @@ input.autofield{background:#eef1f4;color:#5a6472;cursor:not-allowed}
 .ibx-item{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;border:1px solid #e2e7ee;border-radius:10px;padding:11px 14px;margin-bottom:8px;background:#fff;cursor:pointer;text-decoration:none;color:inherit}
 .ibx-item:hover{border-color:var(--navy,#3281b9);background:#f6f9fc}
 .ibx-item .lbl{font-weight:650;font-size:14px}
+.view-seg{display:inline-flex;border:1px solid #b9c6d6;border-radius:8px;overflow:hidden;background:#fff}
+.view-seg .seg-b{padding:8px 12px;font-size:13px;cursor:pointer;color:#3c566f;user-select:none}
+.view-seg .seg-b+.seg-b{border-left:1px solid #b9c6d6}
+.view-seg .seg-b.on{background:#dbe8f6;color:#12365a;font-weight:700}
 .ibx-pending{margin:4px 0 8px;padding:8px 12px;border-radius:9px;background:#eef4fb;border:1px solid #cfdcec;color:#17324d;font-size:13px}
 .ibx-returned .ibx-item.static{cursor:default;flex-wrap:wrap}.ibx-returned .ibx-item.static:hover{background:#fff;border-color:#e2e7ee}
 .ibx-note{flex-basis:100%;font-size:12px;color:#66707f}
@@ -305,7 +309,6 @@ header,main{position:relative;z-index:1;}
 .ts-search-results tr.job-number-alpha td{background:#F7C58D!important}.ts-search-results .search-open{background:none;color:#155a93;border:0;text-decoration:underline;padding:0;font-size:inherit;cursor:pointer}
 .dept-bar{background:#c9bfe8!important;color:#1a1530!important;border:1px solid #000;font-weight:700;font-size:14px;line-height:1.2;margin:14px 0 4px!important;padding:6px 12px 6px 100px;text-shadow:none;-webkit-print-color-adjust:exact;print-color-adjust:exact}.dept-tag{display:inline-block;background:#c9bfe8;color:#1a1530;border:1px solid #000;font-weight:700;padding:0 6px;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .jh-fields{grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) auto}
-#jhList:disabled{opacity:.45!important;cursor:not-allowed!important;filter:grayscale(.4)}
 .jh-pick{background:none!important;box-shadow:none!important;color:#155a93!important;border:0!important;text-decoration:underline;padding:0!important;font-size:inherit!important;cursor:pointer;text-shadow:none!important}
 @media(max-width:800px){.jh-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.jh-fields>div:first-child{grid-column:1/-1}}
 @media(max-width:800px){.ts-search-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.ts-search-fields>div:first-child{grid-column:1/-1}}
@@ -497,27 +500,25 @@ header,main{position:relative;z-index:1;}
       <h3>Search Time Sheets</h3>
       <div class="ts-search-fields">
         <div><label for="tsFilterType">Type / Department</label><select id="tsFilterType"><option value="">All Departments</option></select></div>
-        <div><label for="tsFilterJob">Job Number</label><input id="tsFilterJob" type="search" placeholder="Any job number"></div>
+        <div><label for="tsFilterJob">Job Number</label><input id="tsFilterJob" type="search" placeholder="e.g. 2515555 or cm200-123" autocomplete="off"></div>
         <div><label for="tsFilterTech">Technician Name</label><input id="tsFilterTech" type="search" placeholder="Any technician"></div>
         <div><label for="tsFilterFrom">From Date</label><input id="tsFilterFrom" type="date"></div>
         <div><label for="tsFilterTo">To Date</label><input id="tsFilterTo" type="date"></div>
       </div>
-      <div class="ts-search-actions"><button type="button" class="go" id="tsSearchGo">Search All Pay Periods</button><button type="button" class="secondary" id="tsSearchClear">Clear Filters</button><button type="button" class="secondary" id="tsSearchDl">↓ Download Search Results (printable)</button><span class="small">Combined filters · submitted and reviewed · current and archived</span></div>
-      <div id="tsSearchResults" class="ts-search-results" aria-live="polite"></div>
-    </div>
-    <div class="ts-search no-print" id="jhPanel" style="margin-top:12px">
-      <h3>Job Hours Report</h3>
-      <p class="small" style="margin:0 0 8px">Enter a job number to total the hours on every submitted and reviewed time sheet on record, split by department into Regular (ST), Time &amp; Half (OT) and Double (DT). A number with digits only must match exactly. A Job number with a letter or special character also pulls close matches, such as 200-123 for cm200-123. Pick a From and To date to limit the report to those weeks. To see every job worked in a date range, pick both dates, leave the job number empty and select List Jobs.</p>
-      <div class="ts-search-fields jh-fields">
-        <div><label for="jhJob">Job Number</label><input id="jhJob" type="search" placeholder="e.g. 2515555 or cm200-123" autocomplete="off"></div>
-        <div><label for="jhFrom">From Date</label><input id="jhFrom" type="date"></div>
-        <div><label for="jhTo">To Date</label><input id="jhTo" type="date"></div>
-        <div style="display:flex;align-items:flex-end"><button type="button" class="secondary" id="jhList" disabled title="Pick a From and To date and leave the job number empty">List Jobs</button></div>
+      <div class="ts-search-actions">
+        <button type="button" class="go" id="tsSearchGo">Search</button>
+        <button type="button" class="secondary" id="tsSearchClear">Clear Filters</button>
+        <span class="view-seg" id="viewSeg" role="group" aria-label="Results view"><span role="button" tabindex="0" class="seg-b on" data-view="sheets">Time sheets</span><span role="button" tabindex="0" class="seg-b" data-view="totals">Job hours totals</span></span>
+        <label id="jhNamesWrap" class="hide" style="margin:0;font-weight:400"><input id="jhNames" type="checkbox" checked style="width:auto;height:auto;margin-right:6px">Employee names</label>
+        <button type="button" class="secondary" id="tsSearchDl">↓ Download (printable)</button>
       </div>
-      <div style="margin:8px 0 0"><label style="margin:0;font-weight:400"><input id="jhNames" type="checkbox" checked style="width:auto;height:auto;margin-right:6px">Show employee names under each department</label></div>
-      <div class="ts-search-actions"><button type="button" class="go" id="jhRun">Run Report</button><button type="button" class="secondary" id="jhDl">↓ Download Job Report (printable)</button><span id="jhNote" class="small"></span></div>
-      <div id="jhVariants" class="small" style="margin-top:8px"></div>
-      <div id="jhResults" class="ts-search-results"></div>
+      <p class="small" id="tsHint" style="margin:8px 0 0"></p>
+      <div id="tsSearchResults" class="ts-search-results" aria-live="polite"></div>
+      <div id="jhPanel" class="hide">
+        <span id="jhNote" class="small"></span>
+        <div id="jhVariants" class="small" style="margin-top:8px"></div>
+        <div id="jhResults" class="ts-search-results"></div>
+      </div>
     </div>
     <div id="inboxYears" class="ibx-years"></div>
     <div id="inboxList" class="ibx-list"></div>
@@ -1172,10 +1173,10 @@ function initTsSearch(){
   const categories=[...new Set(INBOX_ITEMS.flatMap(s=>(s.entries||[]).map(e=>String(e.type||'').trim())).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
   sel.innerHTML='<option value="">All Departments</option>'+categories.map(t=>'<option value="'+escAttr(t)+'">'+esc(t)+'</option>').join('');
   if(categories.includes(prior))sel.value=prior;
-  $('tsSearchGo').onclick=renderTsSearch;
-  $('tsSearchClear').onclick=()=>{['tsFilterJob','tsFilterTech','tsFilterFrom','tsFilterTo'].forEach(id=>$(id).value='');sel.value='';$('tsSearchResults').innerHTML='';};
-  ['tsFilterType','tsFilterFrom','tsFilterTo'].forEach(id=>$(id).addEventListener('change',renderTsSearch));
-  ['tsFilterJob','tsFilterTech'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();renderTsSearch();}}));
+  $('tsSearchGo').onclick=runSearch;
+  $('tsSearchClear').onclick=()=>{['tsFilterJob','tsFilterTech','tsFilterFrom','tsFilterTo'].forEach(id=>$(id).value='');sel.value='';$('tsSearchResults').innerHTML='';$('jhResults').innerHTML='';$('jhVariants').innerHTML='';$('jhNote').textContent='';JH.q='';};
+  ['tsFilterType','tsFilterFrom','tsFilterTo'].forEach(id=>$(id).addEventListener('change',()=>{if(VIEW==='sheets')renderTsSearch();}));
+  ['tsFilterJob','tsFilterTech'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();runSearch();}}));
   $('tsSearchResults').innerHTML='';
 }
 function tsEntryDate(sheet,day){
@@ -1196,13 +1197,34 @@ function tsDownload(){
   if(fl.from)parts.push('From: '+fl.from);if(fl.to)parts.push('To: '+fl.to);
   savePrintable('FDEC Time Sheet Search',[parts.length?'Filters: '+parts.join(' · '):'Filters: none (all submitted and reviewed time sheets)','Generated '+new Date().toLocaleString()],body,'FDEC-Time-Sheet-Search-'+new Date().toISOString().slice(0,10)+'.html');
 }
-$('tsSearchDl')&&($('tsSearchDl').onclick=tsDownload);
+$('tsSearchDl')&&($('tsSearchDl').onclick=()=>{VIEW==='sheets'?tsDownload():jhDownload();});
+let VIEW='sheets';
+const VIEW_HINT={sheets:'Lists every matching job entry. Combined filters · submitted and reviewed · current and archived.',
+  totals:'Totals hours by department for a job number. Leave the job number empty and pick From and To dates to list every job worked in that range.'};
+function setView(v){
+  VIEW=v;
+  document.querySelectorAll('#viewSeg .seg-b').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
+  $('tsSearchResults').classList.toggle('hide',v!=='sheets');
+  $('jhPanel').classList.toggle('hide',v!=='totals');
+  $('jhNamesWrap').classList.toggle('hide',v!=='totals');
+  $('tsHint').textContent=VIEW_HINT[v];
+}
+async function runSearch(){
+  if(VIEW==='sheets')return renderTsSearch();
+  const job=$('tsFilterJob').value.trim();
+  if(job)return jhRun();
+  if($('tsFilterFrom').value&&$('tsFilterTo').value)return jhListJobs();
+  $('jhVariants').innerHTML='';
+  $('jhResults').innerHTML='<p class="small">Enter a job number, or pick both a From and a To date to list every job worked in that range.</p>';
+}
+document.querySelectorAll('#viewSeg .seg-b').forEach(b=>{b.onclick=()=>setView(b.dataset.view);b.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setView(b.dataset.view);}});});
+setView('sheets');
 async function renderTsSearch(){
   try{await ensureOlderFor($('tsFilterFrom').value,$('tsSearchResults'));}catch(e){return;}
   renderTsSearchNow();
 }
 function renderTsSearchNow(){
-  const type=$('tsFilterType').value.toLowerCase(),job=$('tsFilterJob').value.trim().toLowerCase(),tech=$('tsFilterTech').value.trim().toLowerCase();
+  const jobRaw=$('tsFilterJob').value.trim(),type=$('tsFilterType').value.toLowerCase(),job=jobRaw,tech=$('tsFilterTech').value.trim().toLowerCase();
   const from=$('tsFilterFrom').value,to=$('tsFilterTo').value, target=$('tsSearchResults');
   if(from&&to&&from>to){target.textContent='From Date must be on or before To Date.';return;}
   const matches=[];
@@ -1210,7 +1232,7 @@ function renderTsSearchNow(){
     if(tech&&!String(s.employee||'').toLowerCase().includes(tech))return;
     (s.entries||[]).forEach(e=>{
       if(type&&String(e.type||'').toLowerCase()!==type)return;
-      if(job&&!String(e.jobNumber||'').toLowerCase().includes(job))return;
+      if(job&&!jhMatches(jobRaw,e.jobNumber))return;
       const actual=tsEntryDate(s,e.day);
       // Missing day dates are excluded from date-scoped searches, not guessed.
       if((from||to)&&(!actual||(from&&actual<from)||(to&&actual>to)))return;
@@ -1665,7 +1687,7 @@ function jhMatches(q,entry){
   return /^[a-z]*$/.test(longer.slice(0,longer.length-shorter.length));
 }
 function jhInRange(sh){
-  const from=($('jhFrom')&&$('jhFrom').value)||'',to=($('jhTo')&&$('jhTo').value)||'';
+  const from=($('tsFilterFrom')&&$('tsFilterFrom').value)||'',to=($('tsFilterTo')&&$('tsFilterTo').value)||'';
   if(!from&&!to)return true;
   const ws=sh.weekStart||'';
   let we=sh.weekEnd||'';
@@ -1674,15 +1696,21 @@ function jhInRange(sh){
   if(to&&ws&&ws>to)return false;
   return true;
 }
+function jhEntryOk(s,e){
+  const type=($('tsFilterType').value||'').toLowerCase(),tech=($('tsFilterTech').value||'').trim().toLowerCase();
+  if(type&&String(e.type||'').toLowerCase()!==type)return false;
+  if(tech&&!String(s.employee||'').toLowerCase().includes(tech))return false;
+  return true;
+}
 function jhCollect(){
-  const q=($('jhJob').value||'').trim();
+  const q=($('tsFilterJob').value||'').trim();
   JH.q=q;
   const found={};
   (INBOX_ITEMS||[]).forEach(s=>{
     if(s.status!=='submitted'&&s.status!=='reviewed')return;
     if(!jhInRange(s))return;
     (s.entries||[]).forEach(e=>{
-      if(!jhMatches(q,e.jobNumber))return;
+      if(!jhMatches(q,e.jobNumber)||!jhEntryOk(s,e))return;
       const k=String(e.jobNumber).trim().toLowerCase();
       (found[k]=found[k]||{label:String(e.jobNumber).trim(),count:0}).count++;
     });
@@ -1698,7 +1726,7 @@ function jhCompute(){
     if(!jhInRange(s))return;
     (s.entries||[]).forEach(e=>{
       const k=String(e.jobNumber==null?'':e.jobNumber).trim().toLowerCase();
-      if(!JH.variants[k]||!JH.variants[k].checked||!jhMatches(JH.q,e.jobNumber))return;
+      if(!JH.variants[k]||!JH.variants[k].checked||!jhMatches(JH.q,e.jobNumber)||!jhEntryOk(s,e))return;
       const dept=e.type||'Unassigned';
       const d=byDept[dept]=byDept[dept]||{st:0,ot:0,dt:0,emps:{}};
       const st=+e.st||0,ot=+e.ot||0,dt=+e.dt||0;
@@ -1714,8 +1742,9 @@ function jhCompute(){
   JH.sheets=Object.keys(sheets).length;JH.first=first;JH.last=last;
 }
 function jhRangeText(){
-  const a=$('jhFrom').value,b=$('jhTo').value;
-  return (a||b)?' · filtered to '+(a||'the start')+' through '+(b||'today'):'';
+  const a=$('tsFilterFrom').value,b=$('tsFilterTo').value;
+  const ty=$('tsFilterType').value,te=($('tsFilterTech').value||'').trim();
+  return ((a||b)?' · filtered to '+(a||'the start')+' through '+(b||'today'):'')+(ty?' · department '+ty:'')+(te?' · technician '+te:'');
 }
 function jhBuildHtml(names){
   const f=n=>(+n).toFixed(2);
@@ -1746,7 +1775,7 @@ function jhRender(){
   out.innerHTML=h;
 }
 async function jhRun(){
-  try{await ensureOlderFor($('jhFrom').value,$('jhResults'));}catch(e){return;}
+  try{await ensureOlderFor($('tsFilterFrom').value,$('jhResults'));}catch(e){return;}
   if(!INBOX_ITEMS||!INBOX_ITEMS.length){$('jhNote').textContent='Submitted time sheets are still loading.';}
   else $('jhNote').textContent='';
   JH.variants={};
@@ -1758,13 +1787,8 @@ function jhDownload(){
   const inc=Object.keys(JH.variants).filter(k=>JH.variants[k].checked).map(k=>JH.variants[k].label).join('; ');
   savePrintable('FDEC Job Hours Report — '+JH.q,['Job numbers included: '+inc,'Time sheets: '+JH.sheets+' · Weeks '+JH.first+' to '+JH.last+jhRangeText(),'Submitted and reviewed time sheets only · Generated '+new Date().toLocaleString()],jhBuildHtml(names),'FDEC-Job-Hours-'+JH.q.replace(/[^a-z0-9_-]/gi,'_')+'.html');
 }
-function jhListState(){
-  const b=$('jhList');if(!b)return;
-  b.disabled=!($('jhFrom').value&&$('jhTo').value&&!($('jhJob').value||'').trim());
-}
 async function jhListJobs(){
-  if($('jhList').disabled)return;
-  try{await ensureOlderFor($('jhFrom').value,$('jhResults'));}catch(e){return;}
+  try{await ensureOlderFor($('tsFilterFrom').value,$('jhResults'));}catch(e){return;}
   $('jhNote').textContent=(!INBOX_ITEMS||!INBOX_ITEMS.length)?'Submitted time sheets are still loading.':'';
   const f=n=>(+n).toFixed(2);
   const jobs={};
@@ -1772,6 +1796,7 @@ async function jhListJobs(){
     if(sh.status!=='submitted'&&sh.status!=='reviewed')return;
     if(!jhInRange(sh))return;
     (sh.entries||[]).forEach(e=>{
+      if(!jhEntryOk(sh,e))return;
       const label=String(e.jobNumber==null?'':e.jobNumber).trim();if(!label)return;
       const hrs=(+e.st||0)+(+e.ot||0)+(+e.dt||0);if(!hrs)return;
       const j=jobs[label.toLowerCase()]=jobs[label.toLowerCase()]||{label,hrs:0,sheets:{},depts:{}};
@@ -1781,18 +1806,12 @@ async function jhListJobs(){
   JH.q='';JH.variants={};JH.rows=[];$('jhVariants').innerHTML='';
   const keys=Object.keys(jobs).sort((a,b)=>{const na=jhIsNum(jobs[a].label),nb=jhIsNum(jobs[b].label);if(na!==nb)return na?-1:1;return a.localeCompare(b,undefined,{numeric:true});});
   const out=$('jhResults');
-  if(!keys.length){out.innerHTML='<p class="small">No submitted or reviewed time sheets with job hours fall between '+esc($('jhFrom').value)+' and '+esc($('jhTo').value)+'.</p>';return;}
-  let h='<p class="small">'+keys.length+' job number'+(keys.length===1?'':'s')+' worked between '+esc($('jhFrom').value)+' and '+esc($('jhTo').value)+'. Select a job number to run its report for this date range. Orange rows are Job numbers.</p><div class="table-wrap"><table><thead><tr><th>Job Number</th><th>Departments</th><th class="num">Time Sheets</th><th class="num">Total Hours</th></tr></thead><tbody>';
+  if(!keys.length){out.innerHTML='<p class="small">No submitted or reviewed time sheets with job hours fall between '+esc($('tsFilterFrom').value)+' and '+esc($('tsFilterTo').value)+'.</p>';return;}
+  let h='<p class="small">'+keys.length+' job number'+(keys.length===1?'':'s')+' worked between '+esc($('tsFilterFrom').value)+' and '+esc($('tsFilterTo').value)+'. Select a job number to run its report for this date range. Orange rows are Job numbers.</p><div class="table-wrap"><table><thead><tr><th>Job Number</th><th>Departments</th><th class="num">Time Sheets</th><th class="num">Total Hours</th></tr></thead><tbody>';
   keys.forEach(k=>{const j=jobs[k];h+='<tr'+(jhIsNum(j.label)?'':' class="job-number-alpha"')+'><td><button type="button" class="jh-pick" data-job="'+escAttr(j.label)+'">'+esc(j.label)+'</button></td><td>'+Object.keys(j.depts).sort().map(d=>'<span class="dept-tag">'+esc(d)+'</span>').join(' ')+'</td><td class="num">'+Object.keys(j.sheets).length+'</td><td class="num">'+f(j.hrs)+'</td></tr>';});
   out.innerHTML=h+'</tbody></table></div>';
-  out.querySelectorAll('.jh-pick').forEach(b=>b.onclick=()=>{$('jhJob').value=b.dataset.job;jhListState();jhRun();$('jhResults').scrollIntoView({block:'nearest'});});
+  out.querySelectorAll('.jh-pick').forEach(b=>b.onclick=()=>{$('tsFilterJob').value=b.dataset.job;jhRun();$('jhResults').scrollIntoView({block:'nearest'});});
 }
-['jhJob','jhFrom','jhTo'].forEach(id=>{const el=$(id);if(el){el.addEventListener('input',jhListState);el.addEventListener('change',jhListState);}});
-$('jhList')&&($('jhList').onclick=jhListJobs);
-jhListState();
-$('jhDl')&&($('jhDl').onclick=jhDownload);
-$('jhRun')&&($('jhRun').onclick=jhRun);
-$('jhJob')&&$('jhJob').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();jhRun();}});
 $('jhNames')&&($('jhNames').onchange=()=>{if(JH.q){jhRender();}});
 
 /* ---------- helpers ---------- */
