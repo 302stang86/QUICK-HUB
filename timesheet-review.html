@@ -114,13 +114,38 @@ table.review tbody tr.job-number-alpha > td{background:#F7C58D;box-shadow:inset 
 table.review tbody tr.job-number-alpha > td:first-child{box-shadow:inset 2px 0 #D58229,inset 0 1px #D58229,inset 0 -1px #D58229}
 table.review tbody tr.job-number-alpha > td:last-child{box-shadow:inset -2px 0 #D58229,inset 0 1px #D58229,inset 0 -1px #D58229}
 @media print{table.review tbody tr.job-number-alpha > td{background:#F7C58D!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-table.review tbody tr:has(+ tr.daysub) > td{border-bottom:0}
-table.review tbody tr.daysub td{border-bottom:0;padding:6px 5px 8px;vertical-align:middle}
-.daylbl{display:flex;align-items:center;gap:10px;font-size:10pt;opacity:.85}
+/* Day cards: screen only. Printing falls back to plain rows with the thin line and boxes. */
+.dcwrap{background:#e6ecf3;border-radius:12px;padding:8px}
+.dcwrap table.review{border-collapse:separate;border-spacing:0}
+.dcwrap table.review thead th{background:#e6ecf3}
+.dcwrap table.review tbody tr.dc > td{border-bottom:0}
+.dcwrap table.review tbody tr.dc:not(.job-number-alpha) > td{background:#fbfcfe}
+.dcwrap table.review tbody tr.dc > td:first-child{border-left:1px solid #cfd8e3;padding-left:12px}
+.dcwrap table.review tbody tr.dc > td:last-child{border-right:1px solid #cfd8e3;padding-right:12px}
+.dcwrap table.review tbody tr.dc-first > td{border-top:1px solid #cfd8e3;padding-top:8px}
+.dcwrap table.review tbody tr.dc-first > td:first-child{border-top-left-radius:12px}
+.dcwrap table.review tbody tr.dc-first > td:last-child{border-top-right-radius:12px}
+.dcwrap table.review tbody tr.daysub > td{border-bottom:1px solid #cfd8e3;padding:6px 5px 9px}
+.dcwrap table.review tbody tr.daysub > td:first-child{border-bottom-left-radius:12px;padding-left:12px}
+.dcwrap table.review tbody tr.daysub > td:last-child{border-bottom-right-radius:12px;padding-right:12px}
+table.review tbody tr.daygap > td{height:5px;padding:0;border:0;background:transparent;line-height:0;font-size:0}
+table.review tbody tr.daysub td{vertical-align:middle}
+.daylbl{display:flex;align-items:center;gap:10px;font-size:10pt;color:#445568}
 .daylbl span{white-space:nowrap}
-.dayline{flex:1;height:0;border-top:1px solid currentColor;opacity:.6}
-.daybox{display:block;box-sizing:border-box;width:100%;text-align:center;border:1px solid rgba(127,127,127,.55);border-radius:6px;background:rgba(127,127,127,.08);padding:3px 4px;font-size:10pt;font-weight:600;line-height:1.2}
+.dayline{flex:1;height:0;border-top:1px solid #8fa1b5}
+.daybox{display:block;box-sizing:border-box;width:100%;text-align:center;border:1px solid #6fb3da;border-radius:6px;background:#8fcaec;color:#0c2b4a;padding:3px 4px;font-size:10pt;font-weight:600;line-height:1.2}
 .daybox small{display:block;font-size:8pt;font-weight:400;opacity:.8}
+@media print{
+.dcwrap{background:none;padding:0;border-radius:0}
+.dcwrap table.review thead th{background:#f1f5f8}
+.dcwrap table.review tbody tr.dc:not(.job-number-alpha) > td{background:transparent}
+.dcwrap table.review tbody tr.dc > td,.dcwrap table.review tbody tr.daysub > td{border-radius:0!important}
+.dcwrap table.review tbody tr.dc > td:first-child,.dcwrap table.review tbody tr.dc > td:last-child,.dcwrap table.review tbody tr.dc-first > td{border-left:0;border-right:0;border-top:0}
+.dcwrap table.review tbody tr.daysub > td{border-bottom:0}
+table.review tbody tr.daygap{display:none}
+.daybox{background:#fff;border-color:#555;color:#000}
+.dayline{border-top-color:#555}
+}
 td.rowtot{font-weight:700;color:var(--navy)}
 .edited{background:#fff1f2!important;outline:3px solid #c40018!important;outline-offset:-2px;border-radius:4px}
 /* Manager changes: outline the actual editable control, without altering row dimensions. */
@@ -377,7 +402,7 @@ header,main{position:relative;z-index:1;}
       <h2 style="margin:0">Hours (editable)</h2>
       <span class="small no-print">Any value you change is highlighted and logged with your initials.</span>
     </div>
-    <div class="table-wrap" style="margin-top:12px">
+    <div class="table-wrap dcwrap" style="margin-top:12px">
       <table class="review" id="mgrTable">
         <thead><tr>
           <th>Type / Department</th><th>Job Name</th><th>Job Number</th><th>Day</th>
@@ -1308,7 +1333,7 @@ function flagIfEdited(inp){
 function recalcMgr(){
   let st=0,ot=0,dt=0;
   const body=$('mgrBody');
-  body.querySelectorAll('tr.daysub').forEach(r=>r.remove());
+  body.querySelectorAll('tr.daysub,tr.daygap').forEach(r=>r.remove());
   const rows=[...body.querySelectorAll('tr[data-row]')];
   let run=null;
   const closeRun=()=>{
@@ -1316,7 +1341,10 @@ function recalcMgr(){
     const sub=document.createElement('tr');sub.className='daysub';
     const bx=(l,v)=>'<td class="num"><span class="daybox"><small>'+l+'</small>'+v.toFixed(2)+'</span></td>';
     sub.innerHTML='<td colspan="4"><div class="daylbl"><span>'+esc(run.day||'No day')+' total</span><i class="dayline"></i></div></td>'+bx('ST',run.st)+bx('OT',run.ot)+bx('DT',run.dt)+'<td></td><td></td>';
-    run.last.after(sub);run=null;
+    sub.className='daysub dc';
+    run.last.after(sub);
+    const gap=document.createElement('tr');gap.className='daygap';gap.innerHTML='<td colspan="9"></td>';sub.after(gap);
+    run=null;
   };
   rows.forEach(tr=>{
     const g=f=>+tr.querySelector('[data-f="'+f+'"]').value||0;
@@ -1324,7 +1352,8 @@ function recalcMgr(){
     tr.querySelector('[data-tot]').textContent=(a+b+c).toFixed(2);
     const day=tr.querySelector('[data-f="day"]').value;
     if(run&&run.day!==day)closeRun();
-    if(!run)run={day:day,st:0,ot:0,dt:0,last:tr};
+    tr.classList.add('dc');tr.classList.remove('dc-first');
+    if(!run){run={day:day,st:0,ot:0,dt:0,last:tr};tr.classList.add('dc-first');}
     run.st+=a;run.ot+=b;run.dt+=c;run.last=tr;
   });
   closeRun();
