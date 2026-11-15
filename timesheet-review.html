@@ -133,8 +133,17 @@ table.review tbody tr.daysub td{vertical-align:middle}
 .daylbl{display:flex;align-items:center;gap:10px;font-size:10pt;color:#445568}
 .daylbl span{white-space:nowrap}
 .dayline{flex:1;height:0;border-top:1px solid #8fa1b5}
-.daybox{display:block;box-sizing:border-box;width:100%;text-align:center;border:1px solid #6fb3da;border-radius:6px;background:#8fcaec;color:#0c2b4a;padding:3px 4px;font-size:10pt;font-weight:600;line-height:1.2}
-.daybox small{display:block;font-size:8pt;font-weight:400;opacity:.8}
+.daybox{display:block;box-sizing:border-box;width:100%;text-align:center;border:0;border-top:2px solid #bac9d9;background:transparent;color:#172a46;padding:3px 4px;font-size:10pt;font-weight:600;line-height:1.2}
+.daybox small{display:block;font-size:8pt;font-weight:400;color:#566a80}
+.daybox.zero{opacity:.45}
+.daybox.hot{border-top-color:#2f6aa3}
+.dcwrap table.review tbody tr.dayhead > td{padding:8px 12px 4px;border-bottom:0}
+.dayhd{display:flex;justify-content:space-between;align-items:baseline;font-size:11pt;font-weight:700;color:#172a46}
+.dayhd span{font-weight:400;font-size:10pt;color:#566a80}
+@media screen{
+.dcwrap table.review tbody tr.job-number-alpha > td,.dcwrap table.review tbody tr.job-number-alpha > td:first-child,.dcwrap table.review tbody tr.job-number-alpha > td:last-child{background:#FEF3E2;box-shadow:none!important}
+.dcwrap table.review tbody tr.job-number-alpha [data-cell^="jobNumber"] input{border-color:#E8A04A;box-shadow:0 0 0 1px #E8A04A;font-weight:600}
+}
 @media print{
 .dcwrap{background:none;padding:0;border-radius:0}
 .dcwrap table.review thead th{background:#f1f5f8}
@@ -143,8 +152,10 @@ table.review tbody tr.daysub td{vertical-align:middle}
 .dcwrap table.review tbody tr.dc > td:first-child,.dcwrap table.review tbody tr.dc > td:last-child,.dcwrap table.review tbody tr.dc-first > td{border-left:0;border-right:0;border-top:0}
 .dcwrap table.review tbody tr.daysub > td{border-bottom:0}
 table.review tbody tr.daygap{display:none}
-.daybox{background:#fff;border-color:#555;color:#000}
+.daybox{border-top-color:#555;color:#000}
 .dayline{border-top-color:#555}
+.dcwrap table.review tbody tr.dayhead > td{padding:6px 5px 2px}
+.dcwrap table.review tbody tr.dc-first > td{padding-top:6px}
 }
 td.rowtot{font-weight:700;color:var(--navy)}
 .edited{background:#fff1f2!important;outline:3px solid #c40018!important;outline-offset:-2px;border-radius:4px}
@@ -1333,15 +1344,18 @@ function flagIfEdited(inp){
 function recalcMgr(){
   let st=0,ot=0,dt=0;
   const body=$('mgrBody');
-  body.querySelectorAll('tr.daysub,tr.daygap').forEach(r=>r.remove());
+  body.querySelectorAll('tr.daysub,tr.daygap,tr.dayhead').forEach(r=>r.remove());
   const rows=[...body.querySelectorAll('tr[data-row]')];
   let run=null;
   const closeRun=()=>{
     if(!run)return;
     const sub=document.createElement('tr');sub.className='daysub';
-    const bx=(l,v)=>'<td class="num"><span class="daybox"><small>'+l+'</small>'+v.toFixed(2)+'</span></td>';
+    const bx=(l,v)=>'<td class="num"><span class="daybox'+(v>0?' hot':' zero')+'"><small>'+l+'</small>'+v.toFixed(2)+'</span></td>';
     sub.innerHTML='<td colspan="4"><div class="daylbl"><span>'+esc(run.day||'No day')+' total</span><i class="dayline"></i></div></td>'+bx('ST',run.st)+bx('OT',run.ot)+bx('DT',run.dt)+'<td></td><td></td>';
     sub.className='daysub dc';
+    const hd=document.createElement('tr');hd.className='dayhead dc dc-first';
+    hd.innerHTML='<td colspan="9"><div class="dayhd">'+esc(run.day||'No day')+'<span>'+(run.st+run.ot+run.dt).toFixed(2)+' hrs</span></div></td>';
+    run.first.before(hd);
     run.last.after(sub);
     const gap=document.createElement('tr');gap.className='daygap';gap.innerHTML='<td colspan="9"></td>';sub.after(gap);
     run=null;
@@ -1352,8 +1366,8 @@ function recalcMgr(){
     tr.querySelector('[data-tot]').textContent=(a+b+c).toFixed(2);
     const day=tr.querySelector('[data-f="day"]').value;
     if(run&&run.day!==day)closeRun();
-    tr.classList.add('dc');tr.classList.remove('dc-first');
-    if(!run){run={day:day,st:0,ot:0,dt:0,last:tr};tr.classList.add('dc-first');}
+    tr.classList.add('dc');
+    if(!run)run={day:day,st:0,ot:0,dt:0,first:tr,last:tr};
     run.st+=a;run.ot+=b;run.dt+=c;run.last=tr;
   });
   closeRun();
