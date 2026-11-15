@@ -1,0 +1,17 @@
+Add this inside "match /databases/{database}/documents { ... }" in Firebase console > Firestore Database > Rules.
+It uses the same "users/{uid}.role" lookup pattern as your time sheet rules. If your timesheets rule is written differently, copy its role check.
+
+function isSignedIn() { return request.auth != null; }
+function myRole() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role; }
+function isManager() { return isSignedIn() && (myRole() == 'manager' || myRole() == 'admin'); }
+
+match /expensereports/{id} {
+  // Technicians read their own reports. Managers and admins read all.
+  allow read: if isSignedIn() && (resource.data.employeeUid == request.auth.uid || isManager());
+  // A technician creates a report for themselves.
+  allow create: if isSignedIn() && request.resource.data.employeeUid == request.auth.uid;
+  // A technician edits or deletes only their own drafts. Managers and admins can update any report.
+  allow update: if isSignedIn() && ((resource.data.employeeUid == request.auth.uid && resource.data.status == 'draft'
+                  && request.resource.data.employeeUid == request.auth.uid) || isManager());
+  allow delete: if isSignedIn() && resource.data.employeeUid == request.auth.uid && resource.data.status == 'draft';
+}

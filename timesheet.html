@@ -309,7 +309,7 @@ header,main{position:relative;z-index:1;}
     <button class="addrow" id="addRow" type="button">＋ Add Hours Card</button>
   </div>
   <div class="btns no-print">
-    <button class="ghost" id="addLeave" type="button">＋ Add Expense Report</button>
+    <button class="ghost" id="addLeave" type="button">Expense Reports ›</button>
     <button class="ghost" id="clearRows" type="button">Clear All Cards</button>
   </div>
 </section>
@@ -326,9 +326,10 @@ header,main{position:relative;z-index:1;}
 </section>
 
 <section class="panel" id="expenseSection">
-  <div class="expense-heading"><h2>Expense Reports</h2><span class="small">One job number per report</span></div>
-  <div id="expenseSummary" class="small">No expense reports attached.</div>
-  <div id="expenseActions" class="btns no-print"><button class="secondary" type="button" id="newExpense">＋ Add Another Expense Report</button></div>
+  <div class="expense-heading"><h2>Expense Reports</h2><span class="small">Submitted separately from the time sheet</span></div>
+  <div id="expenseSummary" class="small"></div>
+  <p class="small no-print">Expense reports now have their own page with their own approval. Reports already attached to this sheet stay here for reference.</p>
+  <div id="expenseActions" class="btns no-print"><button class="secondary" type="button" id="newExpense">Open Expense Reports ›</button></div>
 </section>
 
 <section class="panel">
@@ -693,7 +694,7 @@ $('weekStart').addEventListener('change',()=>{clearTimeout(AUTO_T);AUTO_T=null;D
 
 /* ----- buttons ----- */
 $('addRow').onclick=()=>makeRow();
-$('addLeave').onclick=()=>openExpenseEditor();
+$('addLeave').onclick=()=>{location.href='expense-report.html';};
 $('clearRows').onclick=()=>{if(confirm('Clear all hours cards?')){$('rows').innerHTML='';makeRow();calculate();}};
 $('print').onclick=()=>window.print();
 $('reset').onclick=async()=>{
@@ -990,10 +991,10 @@ function expenseAmounts(r){const items=Array.isArray(r.items)?r.items:[];let tot
 
 function renderExpenseReport(){
   const target=$('expenseSummary');
-  if(!EXPENSE_REPORTS.length){target.textContent='No expense reports attached.';return;}
+  if(!EXPENSE_REPORTS.length){target.textContent='';return;}
   target.innerHTML=EXPENSE_REPORTS.map((d,index)=>{
     const items=Array.isArray(d.items)?d.items:[];
-    return '<article class="expense-attached"><div class="expense-heading"><strong>Report '+(index+1)+' · '+esc(d.jobName||'Job')+' · #'+esc(d.jobNumber||'')+'</strong><button type="button" class="secondary edit-expense no-print" data-expense-index="'+index+'">✎ Edit</button></div>'+ 
+    return '<article class="expense-attached"><div class="expense-heading"><strong>Report '+(index+1)+' · '+esc(d.jobName||'Job')+' · #'+esc(d.jobNumber||'')+'</strong></div>'+ 
       '<div class="expense-meta small">'+esc(d.employee||$('employee').value||'Employee')+' · '+esc(d.from||'')+' to '+esc(d.to||'')+' · '+esc(d.purpose||'')+'</div>'+ 
       '<div class="expense-scroll"><table class="expense-table"><thead><tr><th>Date</th><th>Account</th><th>Description</th><th>Payment Method</th><th>Amount</th></tr></thead><tbody>'+items.map(i=>'<tr><td>'+esc(i.date)+'</td><td>'+esc(i.account)+'</td><td>'+esc(i.description)+'</td><td>'+esc(expensePayment(i))+'</td><td>'+moneyExpense(i.amount)+'</td></tr>').join('')+'</tbody></table></div>'+ 
       '<div class="expense-totals"><span>Expenses: <b>'+moneyExpense(expenseAmounts(d).total)+'</b></span><span>Company Card: <b>'+moneyExpense(expenseAmounts(d).companyCard)+'</b></span><span>Reimbursable: <b>'+moneyExpense(expenseAmounts(d).reimbursable)+'</b></span><span>Cash advances: <b>'+moneyExpense(d.advance)+'</b></span><span>Reimbursement: <b>'+moneyExpense(Math.abs(expenseAmounts(d).owed))+'</b></span></div>'+
@@ -1012,7 +1013,7 @@ function openExpenseEditor(index=null){
   url.searchParams.set('return','timesheet.html');
   location.href=url.toString();
 }
-$('newExpense').onclick=()=>openExpenseEditor();
+$('newExpense').onclick=()=>{location.href='expense-report.html';};
 function restoreExpenseReturn(){
   let pending=null,snapshot=null,cancelled=false;
   try{

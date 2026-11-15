@@ -1,6 +1,336 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Expense Report | Fire Defense</title><style>
-:root{--navy:#142b46;--blue:#1d5f91;--line:#d6dee7;--muted:#667586}*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;background:#f2f5f8;color:#202b36;font:16px/1.45 Arial,sans-serif}header{background:linear-gradient(110deg,#102840,#1d5f91);padding:18px 16px;color:white}header .inside{max-width:1000px;margin:auto}header h1{font-size:24px;margin:0}header p{font-size:13px;margin:4px 0 0;opacity:.85}main{max-width:1000px;margin:16px auto;padding:0 14px 100px}.panel{background:white;border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:14px;box-shadow:0 3px 12px #172b3c0a}h2{font-size:17px;color:var(--navy);margin:0 0 12px}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.field{min-width:0}label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:#526273;letter-spacing:.3px;margin:0 0 5px}input,select,textarea{width:100%;font:16px Arial;color:#202b36;border:1px solid #c8d2dc;border-radius:7px;padding:10px;background:#fff;min-width:0}input:focus,select:focus,textarea:focus{outline:2px solid #9fc8e6;border-color:var(--blue)}button{border:0;border-radius:7px;padding:12px 14px;font-size:15px;font-weight:700;background:var(--blue);color:#fff;cursor:pointer}button.secondary{background:#e8eef3;color:var(--navy)}button.danger{color:#a3312a;background:#fff0ef;border:1px solid #f0c4c0}.btns{display:flex;gap:10px;flex-wrap:wrap}.expense-item{background:#f8fbfd;border:1px solid #dce4ec;border-radius:10px;padding:12px;margin:10px 0}.expense-item .itemtop{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;font-size:13px;color:var(--navy);font-weight:bold}.itemfields{display:grid;grid-template-columns:1fr 1.1fr 1.5fr .8fr 1.25fr;gap:10px}.itemjobs{display:none}.receipt-warning{display:none;margin-top:9px;padding:8px 10px;border-left:3px solid #ca7a22;background:#fff0d5;color:#753e09;font-size:13px}.receipt-warning.show{display:block}.totals{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.total{background:#edf3f8;border-radius:9px;padding:12px}.total span{font-size:12px;color:var(--muted);display:block}.total b{font-size:22px;color:var(--navy)}.error{padding:10px;background:#fff0ef;color:#923d2f;border-radius:7px;margin:10px 0}.hint{color:var(--muted);font-size:12px}#error{display:none}.sticky{position:sticky;bottom:0;background:#fff;border-top:1px solid #d6dee7;padding:12px max(14px,env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom));z-index:10;display:flex;justify-content:center;gap:10px}.sticky button{max-width:470px;flex:1}@media(max-width:650px){main{margin:10px auto;padding:0 10px 90px}.panel{padding:12px;margin-bottom:10px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.itemfields{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.itemjobs{gap:8px}.expense-item{padding:10px}.totals{grid-template-columns:1fr 1fr}.total:last-child{grid-column:1/-1}.total{padding:10px}.total b{font-size:18px}header{padding:12px}header h1{font-size:20px}input,select,textarea{padding:9px}button{min-height:44px}}@media print{.sticky,.btns,.danger{display:none!important}body{background:white}.panel{box-shadow:none}}
-</style><meta name="fdec-page-title" content="Expense Report"><meta name="fdec-hide" content=".fdec-original-masthead"><script defer src="fdec-header.js?v=88-industrial"></script></head><body><header class="fdec-original-masthead"><div class="inside"><h1>Fire Defense Equipment Co.</h1><p>Employee Portal · Expense Report</p></div></header><main><section class="panel"><h2>Employee Information</h2><div class="grid"><div class="field"><label for="employee">Employee Name *</label><input id="employee" required></div><div class="field"><label for="department">Department</label><select id="department"><option value="">Select department</option><option>Field Service</option><option>Sprinkler</option><option>Fire Alarm</option><option>Other</option></select></div><div class="field"><label for="manager">Manager</label><input id="manager"></div><div class="field"><label for="from">Pay Period From *</label><input id="from" type="date" required></div><div class="field"><label for="to">Pay Period To *</label><input id="to" type="date" required></div><div class="field"><label for="purpose">Purpose *</label><input id="purpose" required placeholder="Reason for expenses"></div><div class="field"><label for="jobName">Job Name *</label><input id="jobName" required></div><div class="field"><label for="jobNumber">Job Number *</label><input id="jobNumber" required></div><div class="field"><label for="statement">Statement Number</label><input id="statement"></div></div></section><section class="panel"><h2>Expenses</h2><p class="hint">All expenses in this report must belong to the single job number above. Select Add to enter another expense for the same job. Amounts are in USD.</p><div id="items"></div><div class="btns"><button id="add" type="button" class="secondary">＋ Add</button></div></section><section class="panel"><h2>Reimbursement Summary</h2><div class="grid"><div class="field"><label for="advance">Cash Advances ($)</label><input id="advance" type="number" min="0" step="0.01" inputmode="decimal" value="0"></div><div class="field"><label for="notes">Notes</label><textarea id="notes" rows="2" placeholder="Optional details"></textarea></div></div><div class="totals" style="margin-top:12px"><div class="total"><span>Total Expenses</span><b id="total">$0.00</b></div><div class="total"><span>Company Card (not reimbursable)</span><b id="companyTotal">$0.00</b></div><div class="total"><span>Reimbursable Expenses</span><b id="reimbursableTotal">$0.00</b></div><div class="total"><span>Cash Advances</span><b id="advTotal">$0.00</b></div><div class="total"><span id="owedLabel">Amount Owed to Technician</span><b id="owed">$0.00</b></div></div><div id="error" class="error" role="alert"></div></section></main><div class="sticky"><button type="button" class="secondary" id="cancel">Back to Time Sheet</button><button type="button" id="finish">Add to Time Sheet</button></div><script>
-const $=id=>document.getElementById(id),KEY='fdecExpenseReportTransferV1',SNAP='fdecExpenseTimesheetSnapshotV1';let edit=null;try{edit=JSON.parse(sessionStorage.getItem(KEY)||'null');const snapshot=JSON.parse(sessionStorage.getItem(SNAP)||'null');if(!edit&&snapshot&&snapshot.sheet){const d=snapshot.sheet;$('employee').value=d.employee||'';$('from').value=d.weekStart||'';$('to').value=d.weekEnd||'';$('manager').value=d.managerName||'';} }catch(e){}
-const fields=['employee','department','manager','from','to','purpose','jobName','jobNumber','statement','advance','notes'];const paymentMethods=[['out_of_pocket','Out of Pocket'],['per_diem','Per Diem'],['company_card','Company Card']];const accounts=['Transport','Fuel','Meals','Hotel','Parking','Materials','Misc','Per diem'];function money(n){return '$'+Number(n||0).toFixed(2)}function safe(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}function n(v){return Math.max(0,Number(v)||0)}function addItem(data={}){const div=document.createElement('div');div.className='expense-item';div.innerHTML='<div class="itemtop"><span>Expense Item</span><button class="danger remove" type="button">Remove</button></div><div class="itemfields"><div class="field"><label>Date *</label><input class="date" type="date" required></div><div class="field"><label>Account *</label><select class="account"><option value="">Select</option>'+accounts.map(a=>'<option>'+a+'</option>').join('')+'</select></div><div class="field"><label>Description *</label><input class="description" placeholder="What was purchased?"></div><div class="field"><label>Amount ($) *</label><input class="amount" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0.00"></div><div class="field"><label>Payment Method *</label><select class="paymentMethod"><option value="">Select method</option>'+paymentMethods.map(([v,l])=>'<option value="'+v+'">'+l+'</option>').join('')+'</select></div></div><div class="receipt-warning" role="note">A receipt is required for this expense. Provide the receipt to FDEC according to company policy.</div>'; $('items').append(div);for(const f of ['date','account','description','amount','paymentMethod'])div.querySelector('.'+f).value=data[f]??'';if(!data.paymentMethod && Object.keys(data).length)div.querySelector('.paymentMethod').value='out_of_pocket';div.querySelector('.remove').onclick=()=>{div.remove();recalc()};div.querySelectorAll('input,select').forEach(e=>{e.addEventListener('input',recalc);e.addEventListener('change',recalc)});recalc()}function recalc(){let total=0,companyCard=0,reimbursable=0;document.querySelectorAll('.expense-item').forEach(row=>{const amount=n(row.querySelector('.amount').value),method=row.querySelector('.paymentMethod').value;total+=amount;if(method==='company_card')companyCard+=amount;else if(method==='out_of_pocket'||method==='per_diem')reimbursable+=amount;row.querySelector('.receipt-warning').classList.toggle('show',method==='out_of_pocket'||method==='company_card')});const a=n($('advance').value),owed=reimbursable-a;$('total').textContent=money(total);$('companyTotal').textContent=money(companyCard);$('reimbursableTotal').textContent=money(reimbursable);$('advTotal').textContent=money(a);$('owed').textContent=money(Math.abs(owed));$('owedLabel').textContent=owed<0?'Amount Due from Technician':'Amount Owed to Technician';return {total,companyCard,reimbursable,advance:a,owed}}$('advance').addEventListener('input',recalc);$('add').onclick=()=>addItem();if(edit){if(!edit.jobNumber && edit.items?.length){edit.jobNumber=edit.items[0].jobNumber||'';edit.jobName=edit.jobName||edit.items[0].jobName||'';}for(const f of fields)if(edit[f]!==undefined)$(f).value=edit[f];(edit.items||[]).forEach(i=>addItem(i))}if(!$('items').children.length)addItem();function back(){location.href=new URL('timesheet.html',location.href).href}$('cancel').onclick=()=>{if(confirm('Return to Time Sheet without applying these edits?')){try{sessionStorage.removeItem(KEY);sessionStorage.setItem('fdecExpenseReturnCancelledV1','1')}catch(e){}back()}};$('finish').onclick=()=>{const items=[];let bad='';for(const row of document.querySelectorAll('.expense-item')){const item={};for(const f of ['date','account','description','amount','paymentMethod'])item[f]=row.querySelector('.'+f).value.trim();if(!item.date||!item.account||!item.description||!(Number(item.amount)>0)||!item.paymentMethod)bad='Complete date, account, description, positive amount, and payment method on each expense item.';items.push({...item,amount:n(item.amount)});}for(const f of ['employee','from','to','purpose','jobName','jobNumber'])if(!$(f).value.trim())bad='Complete employee name, pay period dates and purpose.';if(!items.length)bad='Add at least one expense item.';if(bad){$('error').textContent=bad;$('error').style.display='block';$('error').scrollIntoView({block:'center'});return;}const payload={};for(const f of fields)payload[f]=$(f).value.trim();Object.assign(payload,recalc(),{items,id:edit?.id||('expense-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)),updatedAt:new Date().toISOString()});try{sessionStorage.setItem(KEY,JSON.stringify(payload));}catch(e){alert('Cannot save the report in this browser. Please check private browsing settings.');return;}back()};
-</script><script src="fdec-identity.js"></script><script>(function(){function f(){try{var e=document.getElementById("employee");var n=window.FDEC_ID&&FDEC_ID.myName();if(e&&n&&!e.value.trim()){e.value=n;e.dispatchEvent(new Event("input",{bubbles:true}));}}catch(x){}}window.addEventListener("load",function(){f();setTimeout(f,700);});})();</script></body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Expense Reports | Fire Defense</title><style>
+:root{--navy:#142b46;--blue:#1d5f91;--line:#d6dee7;--muted:#667586}*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;background:#f2f5f8;color:#202b36;font:16px/1.45 Arial,sans-serif}header.top{background:linear-gradient(110deg,#102840,#1d5f91);padding:18px 16px;color:white}header.top .inside{max-width:1000px;margin:auto}header.top h1{font-size:24px;margin:0}header.top p{font-size:13px;margin:4px 0 0;opacity:.85}main{max-width:1000px;margin:16px auto;padding:0 14px 100px}.panel{background:white;border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:14px;box-shadow:0 3px 12px #172b3c0a}h2{font-size:17px;color:var(--navy);margin:0 0 12px}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.field{min-width:0}label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:#526273;letter-spacing:.3px;margin:0 0 5px}input,select,textarea{width:100%;font:16px Arial;color:#202b36;border:1px solid #c8d2dc;border-radius:7px;padding:10px;background:#fff;min-width:0}input:focus,select:focus,textarea:focus{outline:2px solid #9fc8e6;border-color:var(--blue)}input:disabled,select:disabled,textarea:disabled{background:#f1f4f7;color:#46525e}button{border:0;border-radius:7px;padding:12px 14px;font-size:15px;font-weight:700;background:var(--blue);color:#fff;cursor:pointer}button:disabled{opacity:.5;cursor:default}button.secondary{background:#e8eef3;color:var(--navy)}button.go{background:#1f7a3d}button.danger{color:#a3312a;background:#fff0ef;border:1px solid #f0c4c0}.btns{display:flex;gap:10px;flex-wrap:wrap}.expense-item{background:#f8fbfd;border:1px solid #dce4ec;border-radius:10px;padding:12px;margin:10px 0}.expense-item .itemtop{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;font-size:13px;color:var(--navy);font-weight:bold}.itemfields{display:grid;grid-template-columns:1fr 1.1fr 1.5fr .8fr 1.25fr;gap:10px}.receipt-warning{display:none;margin-top:9px;padding:8px 10px;border-left:3px solid #ca7a22;background:#fff0d5;color:#753e09;font-size:13px}.receipt-warning.show{display:block}.totals{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.total{background:#edf3f8;border-radius:9px;padding:12px}.total span{font-size:12px;color:var(--muted);display:block}.total b{font-size:22px;color:var(--navy)}.msg{padding:10px;border-radius:7px;margin:10px 0;font-size:14px}.msg.err{background:#fff0ef;color:#923d2f}.msg.ok{background:#e6f4ea;color:#1f6b3a}.msg.info{background:#eaf2f9;color:#17324d}.msg.warn{background:#fff0d5;color:#753e09}.hint{color:var(--muted);font-size:12px}.hide{display:none!important}.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700}.badge.draft{background:#eef0f3;color:#55616f}.badge.submitted{background:#fff2d6;color:#7a5600}.badge.approved{background:#e3f4e9;color:#1f6b3a}.badge.sent{background:#dde9f7;color:#1d4f86}.rep-row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;border:1px solid #dce4ec;border-radius:10px;padding:10px 12px;margin:8px 0;background:#fbfdff;cursor:pointer}.rep-row:hover{background:#f0f6fb}.rep-row .main{min-width:0;flex:1 1 240px}.rep-row .main b{display:block;color:var(--navy)}.rep-row .main small{color:var(--muted)}.rep-row .amt{font-weight:700;color:var(--navy)}.sticky{position:sticky;bottom:0;background:#fff;border-top:1px solid #d6dee7;padding:12px 14px calc(12px + env(safe-area-inset-bottom));z-index:10;display:flex;justify-content:center;gap:10px}.sticky button{max-width:320px;flex:1}.sigbox{border:1px solid #cfe0d4;background:#f2faf4;border-radius:10px;padding:12px;margin:10px 0}.sigline{display:none}table.tbl{width:100%;border-collapse:collapse;font-size:14px}table.tbl th,table.tbl td{border:1px solid #dce4ec;padding:6px 8px;text-align:left}table.tbl th{background:#edf3f8;font-size:12px;text-transform:uppercase;color:#526273}table.tbl td.r,table.tbl th.r{text-align:right}@media(max-width:650px){main{margin:10px auto;padding:0 10px 90px}.panel{padding:12px;margin-bottom:10px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.itemfields{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.expense-item{padding:10px}.totals{grid-template-columns:1fr 1fr}.total:last-child{grid-column:1/-1}.total{padding:10px}.total b{font-size:18px}header.top{padding:12px}header.top h1{font-size:20px}input,select,textarea{padding:9px}button{min-height:44px}}@media print{.sticky,.btns,.no-print,button{display:none!important}body{background:white}.panel{box-shadow:none;border-color:#999}.sigline{display:block;margin-top:28px;border-top:1px solid #000;padding-top:4px;font-size:12px}}
+</style>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1B2A4A">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<script defer src="fdec-offline.js"></script>
+<meta name="fdec-page-title" content="Expense Reports">
+<meta name="fdec-hide" content="header.top">
+<script defer src="fdec-header.js"></script>
+</head>
+<body>
+<header class="top"><div class="inside"><h1>Fire Defense Equipment Co.</h1><p>Employee Portal · Expense Reports</p></div></header>
+<main>
+<div id="cloudMsg" class="msg info no-print hide"></div>
+
+<!-- ===== LIST ===== -->
+<div id="listView">
+  <section class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <h2 style="margin:0">My Expense Reports</h2>
+      <button type="button" id="newReport">＋ New Expense Report</button>
+    </div>
+    <p class="hint">Each report is for one job. Reports save automatically as drafts. Use any dates you need; only the job name and job number are required. After you submit, your manager reviews and signs it.</p>
+    <div id="myList"><p class="hint">Loading…</p></div>
+  </section>
+</div>
+
+<!-- ===== EDITOR ===== -->
+<div id="editView" class="hide">
+  <section class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <h2 style="margin:0">Expense Report <span id="stBadge" class="badge draft">Draft</span></h2>
+      <button type="button" class="secondary no-print" id="backList">‹ My Expense Reports</button>
+    </div>
+    <div id="lockNote" class="msg info hide"></div>
+    <div class="grid" style="margin-top:12px">
+      <div class="field"><label for="employee">Employee</label><input id="employee" readonly></div>
+      <div class="field"><label for="department">Department</label><select id="department"><option value="">Select department</option><option>Field Service</option><option>Sprinkler</option><option>Fire Alarm</option><option>Other</option></select></div>
+      <div class="field"><label for="manager">Submit To (Manager) *</label><select id="manager"><option value="">Loading…</option></select></div>
+      <div class="field"><label for="jobName">Job Name *</label><input id="jobName" placeholder="Required"></div>
+      <div class="field"><label for="jobNumber">Job Number *</label><input id="jobNumber" placeholder="Required"></div>
+      <div class="field"><label for="purpose">Purpose</label><input id="purpose" placeholder="Reason for expenses"></div>
+      <div class="field"><label for="statement">Statement Number</label><input id="statement"></div>
+    </div>
+  </section>
+  <section class="panel">
+    <h2>Expenses</h2>
+    <p class="hint">Every expense in this report belongs to the job above. Dates can be any dates. Amounts are in USD.</p>
+    <div id="items"></div>
+    <div class="btns no-print"><button id="add" type="button" class="secondary">＋ Add Expense</button></div>
+  </section>
+  <section class="panel">
+    <h2>Reimbursement Summary</h2>
+    <div class="grid">
+      <div class="field"><label for="advance">Cash Advances ($)</label><input id="advance" type="number" min="0" step="0.01" inputmode="decimal" value="0"></div>
+      <div class="field" style="grid-column:span 2"><label for="notes">Notes</label><textarea id="notes" rows="2" placeholder="Optional details"></textarea></div>
+    </div>
+    <div class="totals" style="margin-top:12px">
+      <div class="total"><span>Total Expenses</span><b id="total">$0.00</b></div>
+      <div class="total"><span>Company Card (not reimbursable)</span><b id="companyTotal">$0.00</b></div>
+      <div class="total"><span>Reimbursable Expenses</span><b id="reimbursableTotal">$0.00</b></div>
+      <div class="total"><span>Cash Advances</span><b id="advTotal">$0.00</b></div>
+      <div class="total"><span id="owedLabel">Amount Owed to Technician</span><b id="owed">$0.00</b></div>
+    </div>
+    <div id="sigArea"></div>
+    <div id="saveInfo" class="hint no-print" style="margin-top:8px"></div>
+    <div id="error" class="msg err hide" role="alert"></div>
+  </section>
+</div>
+</main>
+<div class="sticky no-print hide" id="editBar">
+  <button type="button" class="danger" id="delDraft">Delete Draft</button>
+  <button type="button" class="secondary" id="printBtn">Print</button>
+  <button type="button" class="go" id="submitBtn">Submit to Manager</button>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+/* FDEC Expense Reports - technician page. Saved in the "expensereports" collection (same Firebase project as the time sheets). */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCS_Hw94f4b7X0IkZV9gFXkZDIYNoa8eYo",
+  authDomain: "fire-defense-itm-reports.firebaseapp.com",
+  projectId: "fire-defense-itm-reports",
+  storageBucket: "fire-defense-itm-reports.firebasestorage.app",
+  messagingSenderId: "477656152120",
+  appId: "1:477656152120:web:a14b2c03bddfb2a9de8ecd"
+};
+const COL='expensereports', COL_USERS='users', MANAGER_ROLES=['manager','admin'];
+const ADMIN_EMAILS=["mp1@firedefense.com","302stang86@gmail.com","wh1@firedefense.com"];
+const $=id=>document.getElementById(id);
+const paymentMethods=[['out_of_pocket','Out of Pocket'],['per_diem','Per Diem'],['company_card','Company Card']];
+const accounts=['Transport','Fuel','Meals','Hotel','Parking','Materials','Misc','Per diem'];
+const fields=['department','manager','jobName','jobNumber','purpose','statement','advance','notes'];
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function money(n){return '$'+Number(n||0).toFixed(2);}
+function num(v){return Math.max(0,Number(v)||0);}
+function methodLabel(m){return m==='company_card'?'Company Card':m==='per_diem'?'Per Diem':'Out of Pocket';}
+function statusLabel(s){return s==='submitted'?'Submitted':s==='approved'?'Approved':s==='sent'?'Sent to finance':'Draft';}
+
+let fb=null, db=null, auth=null, FB_OK=false;
+(function(){try{
+  if(window.firebase){
+    if(window.fdecFirebaseApp){fb=window.fdecFirebaseApp;}
+    else if(firebase.apps&&firebase.apps.length){fb=firebase.app();}
+    else{fb=firebase.initializeApp(FIREBASE_CONFIG);}
+    if(fb){db=firebase.firestore();auth=firebase.auth();FB_OK=true;
+      try{db.enablePersistence({synchronizeTabs:true}).catch(function(){});}catch(_){}
+    }
+  }
+}catch(e){console.warn('Firebase init issue',e);}})();
+
+let CURRENT={uid:null,name:'',email:'',role:'tech'};
+let REPORT=null;          // {id,status,...} currently open
+let DRAFT_READY=false, AUTO_T=null, SAVING=false;
+
+function cloudMsg(kind,msg){const b=$('cloudMsg');b.className='msg '+kind+' no-print';b.textContent=msg;}
+function showErr(msg){const e=$('error');if(!msg){e.classList.add('hide');return;}e.textContent=msg;e.classList.remove('hide');e.scrollIntoView({block:'center'});}
+
+/* ---------- identity ---------- */
+function start(){
+  if(!FB_OK){cloudMsg('warn','Cloud is not available. Open this page from the Quick Hub while signed in.');$('myList').innerHTML='';return;}
+  auth.onAuthStateChanged(async u=>{
+    if(!u){cloudMsg('warn','You are not signed in. Open this page from the Quick Hub.');$('myList').innerHTML='';return;}
+    CURRENT.uid=u.uid;CURRENT.email=u.email||'';CURRENT.name=u.displayName||u.email||'';
+    try{
+      let snap=await db.collection(COL_USERS).doc(u.uid).get();
+      if(!snap.exists&&u.email){const q=await db.collection(COL_USERS).where('email','==',u.email).limit(1).get();if(!q.empty)snap=q.docs[0];}
+      if(snap&&snap.exists){const d=snap.data();CURRENT.role=(d.role||'tech').toLowerCase();CURRENT.name=d.name||d.displayName||CURRENT.name;}
+    }catch(e){console.warn('user lookup failed',e);}
+    try{if(window.FDECAuth){if(window.FDECAuth.ready)await window.FDECAuth.ready;
+      if(window.FDECAuth.isAdmin)CURRENT.role='admin';
+      else if(window.FDECAuth.profile&&MANAGER_ROLES.indexOf(window.FDECAuth.profile.role)>=0)CURRENT.role=window.FDECAuth.profile.role;}}catch(_){}
+    if(ADMIN_EMAILS.map(x=>x.toLowerCase()).includes((u.email||'').toLowerCase()))CURRENT.role='admin';
+    $('employee').value=CURRENT.name;
+    await loadManagers();
+    const id=new URL(location.href).searchParams.get('id');
+    if(id){await openReport(id);}else{await showList();}
+  });
+}
+
+async function loadManagers(){
+  const sel=$('manager');
+  try{
+    const q=await db.collection(COL_USERS).where('role','in',MANAGER_ROLES).get();
+    const list=[];q.forEach(d=>{const x=d.data();list.push({uid:d.id,name:x.name||x.displayName||x.email,email:x.email||''});});
+    list.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+    sel.innerHTML=list.length?'<option value="">— Select a manager —</option>'+list.map(m=>'<option value="'+esc(m.uid)+'" data-name="'+esc(m.name)+'">'+esc(m.name)+'</option>').join(''):'<option value="">No managers found</option>';
+  }catch(e){console.warn('managers load failed',e);sel.innerHTML='<option value="">Could not load managers</option>';}
+}
+
+/* ---------- list ---------- */
+async function showList(){
+  REPORT=null;DRAFT_READY=false;clearTimeout(AUTO_T);
+  $('editView').classList.add('hide');$('editBar').classList.add('hide');$('listView').classList.remove('hide');
+  try{const u=new URL(location.href);u.searchParams.delete('id');history.replaceState({},'',u.toString());}catch(_){}
+  $('myList').innerHTML='<p class="hint">Loading…</p>';
+  try{
+    const q=await db.collection(COL).where('employeeUid','==',CURRENT.uid).get();
+    const rows=[];q.forEach(d=>rows.push({id:d.id,...d.data()}));
+    rows.sort((a,b)=>String(b.updatedAtISO||'').localeCompare(String(a.updatedAtISO||'')));
+    $('myList').innerHTML=rows.length?rows.map(r=>{
+      const t=(r.total!=null?r.total:0);
+      return '<div class="rep-row" data-id="'+esc(r.id)+'"><div class="main"><b>'+esc(r.jobName||'(no job name)')+(r.jobNumber?' · #'+esc(r.jobNumber):'')+'</b><small>'+esc(r.managerName?'To '+r.managerName:'')+(r.updatedAtISO?' · updated '+esc(new Date(r.updatedAtISO).toLocaleDateString()):'')+'</small></div><span class="amt">'+money(t)+'</span><span class="badge '+esc(r.status||'draft')+'">'+statusLabel(r.status)+'</span></div>';
+    }).join(''):'<p class="hint">No expense reports yet. Tap New Expense Report to start one.</p>';
+    $('myList').querySelectorAll('.rep-row').forEach(el=>el.onclick=()=>openReport(el.dataset.id));
+  }catch(e){console.error(e);$('myList').innerHTML='<div class="msg err">Could not load your expense reports: '+esc(e.message||e)+'</div>';}
+}
+$('newReport').onclick=()=>newReport();
+
+/* ---------- editor ---------- */
+function newReport(){
+  const id='exp_'+CURRENT.uid.slice(0,8)+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  REPORT={id:id,status:'draft',isNew:true};
+  fillForm({});
+  enterEditor();
+}
+async function openReport(id){
+  try{
+    const snap=await db.collection(COL).doc(id).get();
+    if(!snap.exists){cloudMsg('error','That expense report was not found.');await showList();return;}
+    const d=snap.data();
+    if(d.employeeUid!==CURRENT.uid){cloudMsg('error','That expense report belongs to someone else.');await showList();return;}
+    REPORT={id:id,status:d.status||'draft',data:d};
+    fillForm(d);enterEditor();
+    try{const bk=JSON.parse(localStorage.getItem('fdecExpBackupV1:'+id)||'null');
+      if(bk&&REPORT.status==='draft'&&bk.savedAt>(Date.parse(d.updatedAtISO||'')||0)){fillForm(bk.data);cloudMsg('warn','Restored changes that were saved on this phone but not yet uploaded. They will upload automatically.');scheduleAutosave();}}catch(_){}
+  }catch(e){console.error(e);cloudMsg('error','Could not open the expense report: '+(e.message||e));}
+}
+function enterEditor(){
+  $('listView').classList.add('hide');$('editView').classList.remove('hide');$('editBar').classList.remove('hide');
+  try{const u=new URL(location.href);u.searchParams.set('id',REPORT.id);history.replaceState({},'',u.toString());}catch(_){}
+  applyLock();DRAFT_READY=true;recalc();window.scrollTo({top:0});
+}
+function fillForm(d){
+  $('employee').value=CURRENT.name;
+  for(const f of fields){if(f==='manager')continue;const el=$(f);if(el)el.value=d[f]!=null?d[f]:(f==='advance'?0:'');}
+  if(d.managerUid)$('manager').value=d.managerUid;else $('manager').value='';
+  $('items').innerHTML='';
+  const items=Array.isArray(d.items)&&d.items.length?d.items:[{}];
+  items.forEach(i=>addItem(i));
+  $('saveInfo').textContent='';showErr('');
+}
+function applyLock(){
+  const st=REPORT.status,locked=st!=='draft';
+  $('stBadge').className='badge '+st;$('stBadge').textContent=statusLabel(st);
+  ['department','manager','jobName','jobNumber','purpose','statement','advance','notes'].forEach(f=>{$(f).disabled=locked;});
+  document.querySelectorAll('.expense-item input,.expense-item select').forEach(e=>e.disabled=locked);
+  document.querySelectorAll('.expense-item .remove').forEach(e=>e.classList.toggle('hide',locked));
+  $('add').classList.toggle('hide',locked);
+  $('submitBtn').classList.toggle('hide',locked);$('delDraft').classList.toggle('hide',locked);
+  const ln=$('lockNote');
+  if(locked){ln.classList.remove('hide');ln.textContent=st==='submitted'?'Submitted to your manager. It is locked while it waits for review and signature.':st==='approved'?'Approved and signed by your manager.':'Approved, signed, and sent to finance.';}
+  else ln.classList.add('hide');
+  renderSig();
+}
+function renderSig(){
+  const d=(REPORT&&REPORT.data)||{},a=d.approval,box=$('sigArea');
+  if(!a||REPORT.status==='draft'||REPORT.status==='submitted'){box.innerHTML='<div class="sigline">Manager signature: ______________________ Initials: ______ Date: ____________</div>';return;}
+  box.innerHTML='<div class="sigbox"><b>Approved by '+esc(a.by||'')+'</b> (initials '+esc(a.initials||'')+') on '+esc(a.atISO?new Date(a.atISO).toLocaleString():'')+(d.sentToFinanceAt?'<br>Sent to finance on '+esc(new Date(d.sentToFinanceAt).toLocaleDateString()):'')+'</div>';
+}
+function addItem(data){
+  data=data||{};
+  const div=document.createElement('div');div.className='expense-item';
+  div.innerHTML='<div class="itemtop"><span>Expense Item</span><button class="danger remove no-print" type="button">Remove</button></div><div class="itemfields"><div class="field"><label>Date</label><input class="date" type="date"></div><div class="field"><label>Account</label><select class="account"><option value="">Select</option>'+accounts.map(a=>'<option>'+a+'</option>').join('')+'</select></div><div class="field"><label>Description</label><input class="description" placeholder="What was purchased?"></div><div class="field"><label>Amount ($) *</label><input class="amount" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0.00"></div><div class="field"><label>Payment Method</label><select class="paymentMethod">'+paymentMethods.map(([v,l])=>'<option value="'+v+'">'+l+'</option>').join('')+'</select></div></div><div class="receipt-warning" role="note">Keep the receipt and give it to your manager with this report.</div>';
+  $('items').append(div);
+  for(const f of ['date','account','description','amount','paymentMethod'])div.querySelector('.'+f).value=data[f]!=null?data[f]:(f==='paymentMethod'?'out_of_pocket':'');
+  div.querySelector('.remove').onclick=()=>{div.remove();if(!$('items').children.length)addItem();recalc();scheduleAutosave();};
+  div.querySelectorAll('input,select').forEach(e=>{e.addEventListener('input',()=>{recalc();scheduleAutosave();});e.addEventListener('change',()=>{recalc();scheduleAutosave();});});
+  recalc();
+}
+function readItems(){
+  const out=[];
+  document.querySelectorAll('.expense-item').forEach(row=>{
+    const it={};for(const f of ['date','account','description','amount','paymentMethod'])it[f]=row.querySelector('.'+f).value.trim();
+    if(it.date||it.account||it.description||it.amount)out.push({...it,amount:num(it.amount)});
+  });
+  return out;
+}
+function recalc(){
+  let total=0,companyCard=0,reimbursable=0;
+  document.querySelectorAll('.expense-item').forEach(row=>{
+    const amount=num(row.querySelector('.amount').value),method=row.querySelector('.paymentMethod').value;
+    total+=amount;if(method==='company_card')companyCard+=amount;else reimbursable+=amount;
+    row.querySelector('.receipt-warning').classList.toggle('show',amount>0&&method!=='per_diem');
+  });
+  const a=num($('advance').value),owed=reimbursable-a;
+  $('total').textContent=money(total);$('companyTotal').textContent=money(companyCard);$('reimbursableTotal').textContent=money(reimbursable);$('advTotal').textContent=money(a);
+  $('owed').textContent=money(Math.abs(owed));$('owedLabel').textContent=owed<0?'Amount Due from Technician':'Amount Owed to Technician';
+  return {total,companyCard,reimbursable,advance:a,owed};
+}
+['advance','jobName','jobNumber','purpose','statement','notes','department','manager'].forEach(f=>{$(f).addEventListener('input',()=>{recalc();scheduleAutosave();});$(f).addEventListener('change',()=>{recalc();scheduleAutosave();});});
+
+function gather(){
+  const t=recalc(),sel=$('manager'),opt=sel.selectedOptions[0];
+  return {
+    employeeUid:CURRENT.uid,employee:CURRENT.name,employeeEmail:CURRENT.email,
+    department:$('department').value,managerUid:sel.value||'',managerName:sel.value&&opt?(opt.dataset.name||opt.textContent):'',
+    jobName:$('jobName').value.trim(),jobNumber:$('jobNumber').value.trim(),purpose:$('purpose').value.trim(),statement:$('statement').value.trim(),
+    advance:t.advance,notes:$('notes').value.trim(),items:readItems(),
+    total:t.total,companyCard:t.companyCard,reimbursable:t.reimbursable,owed:t.owed
+  };
+}
+function worthSaving(d){return !!(d.jobName||d.jobNumber||d.purpose||d.notes||d.items.length||d.advance);}
+function scheduleAutosave(){
+  if(!FB_OK||!CURRENT.uid||!DRAFT_READY||!REPORT||REPORT.status!=='draft')return;
+  clearTimeout(AUTO_T);AUTO_T=setTimeout(()=>{AUTO_T=null;saveReport('draft',true);},2500);
+}
+function backup(id,data){try{localStorage.setItem('fdecExpBackupV1:'+id,JSON.stringify({savedAt:Date.now(),data:data}));}catch(_){}}
+async function saveReport(status,auto){
+  if(!REPORT||REPORT.status!=='draft')return;
+  if(SAVING){if(auto)scheduleAutosave();return;}
+  const data=gather();
+  if(auto&&!worthSaving(data))return;
+  if(status==='submitted'){
+    const problems=[];
+    if(!data.jobName)problems.push('Enter the job name.');
+    if(!data.jobNumber)problems.push('Enter the job number.');
+    if(!data.managerUid)problems.push('Select the manager to submit to.');
+    if(!data.items.some(i=>i.amount>0))problems.push('Add at least one expense with an amount.');
+    if(problems.length){showErr(problems.join(' '));return;}
+  }
+  showErr('');
+  backup(REPORT.id,data);
+  if(navigator.onLine===false){
+    if(status==='submitted'){showErr('You are offline. Submit needs a connection so your manager receives it. Your report is saved on this phone; tap Submit again when you have signal.');return;}
+    $('saveInfo').textContent='Offline — saved on this phone. It will upload when your signal returns.';return;
+  }
+  SAVING=true;if(!auto)$('submitBtn').disabled=true;
+  try{
+    const ref=db.collection(COL).doc(REPORT.id);
+    const ts=firebase.firestore.FieldValue.serverTimestamp(),nowISO=new Date().toISOString();
+    await db.runTransaction(async tx=>{
+      const ex=await tx.get(ref);
+      if(ex.exists){
+        const p=ex.data();
+        if(p.employeeUid!==CURRENT.uid)throw new Error('This report belongs to someone else.');
+        if(p.status&&p.status!=='draft')throw new Error('This report was already submitted.');
+        tx.set(ref,{...data,status:status,updatedAt:ts,updatedAtISO:nowISO,...(status==='submitted'?{submittedAt:ts,submittedAtISO:nowISO}:{})},{merge:true});
+      }else{
+        tx.set(ref,{...data,status:status,createdAt:ts,createdAtISO:nowISO,updatedAt:ts,updatedAtISO:nowISO,managerEdits:[],...(status==='submitted'?{submittedAt:ts,submittedAtISO:nowISO}:{})});
+      }
+    });
+    try{localStorage.removeItem('fdecExpBackupV1:'+REPORT.id);}catch(_){}
+    REPORT.isNew=false;
+    if(status==='submitted'){
+      REPORT.status='submitted';REPORT.data={...data,status:'submitted'};applyLock();
+      cloudMsg('ok','Submitted to '+(data.managerName||'your manager')+'. They will review and sign it.');window.scrollTo({top:0,behavior:'smooth'});
+    }else{
+      $('saveInfo').textContent='Saved '+(auto?'automatically ':'')+'at '+new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+'.';
+    }
+  }catch(e){
+    console.error(e);
+    if(auto)$('saveInfo').textContent='Could not reach the cloud. Your report is kept on this phone and will retry on your next change.';
+    else showErr('Save failed: '+(e.message||e)+'. Your entries are still on screen.');
+  }finally{SAVING=false;$('submitBtn').disabled=false;}
+}
+window.addEventListener('online',()=>{if(REPORT&&REPORT.status==='draft'&&DRAFT_READY)saveReport('draft',true);});
+$('submitBtn').onclick=async()=>{clearTimeout(AUTO_T);while(SAVING)await new Promise(r=>setTimeout(r,150));await saveReport('submitted',false);};
+$('printBtn').onclick=()=>window.print();
+$('backList').onclick=async()=>{clearTimeout(AUTO_T);if(REPORT&&REPORT.status==='draft'&&DRAFT_READY){await saveReport('draft',true);}await showList();};
+$('delDraft').onclick=async()=>{
+  if(!REPORT||REPORT.status!=='draft')return;
+  if(!confirm('Delete this draft expense report? This cannot be undone.'))return;
+  clearTimeout(AUTO_T);DRAFT_READY=false;
+  try{await db.collection(COL).doc(REPORT.id).delete();}catch(e){console.warn(e);}
+  try{localStorage.removeItem('fdecExpBackupV1:'+REPORT.id);}catch(_){}
+  await showList();
+};
+start();
+</script>
+<script type="module" src="fdec-auth.js" data-page="timesheet"></script>
+</body></html>
