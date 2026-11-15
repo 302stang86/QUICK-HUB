@@ -13,7 +13,7 @@
      - Everything else (Firestore API, etc.): straight to network — Firestore's
        own offline mode handles those when there is no signal.
 */
-const CACHE = 'fdec-quickhub-v163-merged-search';
+const CACHE = 'fdec-quickhub-v164-fresh-pages';
 
 const CORE = [
   "troubleshooting-data.js",
@@ -143,7 +143,9 @@ self.addEventListener('fetch', (e) => {
 async function networkFirst(req) {
   const c = await caches.open(CACHE);
   try {
-    const res = await fetch(req);
+    // 'no-cache' = always check with the server (a tiny 304 when unchanged), so the
+    // browser's own 10-minute HTTP cache can never serve an old page or script first.
+    const res = await fetch(req.mode === 'navigate' ? req.url : req, { cache: 'no-cache' });
     if (res && res.ok) c.put(req, res.clone());
     return res;
   } catch (_) {
