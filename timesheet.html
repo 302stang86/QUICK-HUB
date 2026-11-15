@@ -29,7 +29,7 @@ input.invalid,select.invalid{border-color:#e0918b;background:#fff6f5}
 .pill{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:4px 10px;border-radius:999px;background:#23507e}
 .pill.tech{background:#23507e}.pill.manager{background:#7a4a12}.pill.admin{background:#5b2d82}
 .badge{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:4px 10px;border-radius:999px;margin-left:6px}
-.badge.draft{background:#eef0f3;color:#55616f}.badge.submitted{background:#fff2d6;color:#7a5600}.badge.reviewed{background:#e3f4e9;color:#1f6b3a}
+.badge.draft{background:#eef0f3;color:#55616f}.badge.submitted{background:#fff2d6;color:#7a5600}.badge.reviewed{background:#e3f4e9;color:#1f6b3a}.badge.returned{background:#fde8d0;color:#8a3b00}
 
 /* Hours allocation cards */
 .rows{display:flex;flex-direction:column;gap:14px}
@@ -350,90 +350,6 @@ header,main{position:relative;z-index:1;}
 </div><!-- /techView -->
 
 <!-- ============ MANAGER REVIEW VIEW ============ -->
-<div id="managerView" class="hide">
-  <section class="panel">
-    <h2 id="mgrTitle">Timesheet Review</h2>
-    <p class="sub" id="mgrMeta"></p>
-    <div id="mgrHeadGrid" class="grid"></div>
-  </section>
-
-  <section class="panel">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-      <h2 style="margin:0">Hours (editable)</h2>
-      <span class="small no-print">Any value you change is highlighted and logged with your initials.</span>
-    </div>
-    <div class="table-wrap" style="margin-top:12px">
-      <table class="review" id="mgrTable">
-        <thead><tr>
-          <th>Type / Department</th><th>Job Name</th><th>Job Number</th><th>Day</th>
-          <th class="num">ST</th><th class="num">1.5×</th><th class="num">2×</th>
-          <th>Notes</th><th class="num">Total</th>
-        </tr></thead>
-        <tbody id="mgrBody"></tbody>
-        <tfoot><tr>
-          <th colspan="3" style="text-align:right">Totals</th>
-          <th aria-hidden="true"></th>
-          <th class="num" id="mST">0.00</th><th class="num" id="mOT">0.00</th><th class="num" id="mDT">0.00</th>
-          <th></th><th class="num" id="mAll">0.00</th>
-        </tr></tfoot>
-      </table>
-    </div>
-    <div id="mgrEditLog" class="editlog hide"></div>
-  </section>
-
-  <section class="panel" id="mgrExpenseSection">
-    <h2>Submitted Expense Reports</h2>
-    <p class="sub">Read-only copies of the individual reports attached to this submitted Time Sheet. Each report has one billing job number.</p>
-    <div id="mgrExpenseSummary">No expense reports attached.</div>
-  </section>
-
-  <section class="panel">
-    <h2>Manager Note &amp; Decision</h2>
-    <div class="grid">
-      <div>
-        <label for="mgrInitials">Your Initials <span class="req">*</span></label>
-        <input id="mgrInitials" maxlength="5" placeholder="e.g. MP">
-      </div>
-      <div style="grid-column:2/-1">
-        <label for="mgrNote">Note to employee / payroll</label>
-        <input id="mgrNote" placeholder="Optional">
-      </div>
-    </div>
-    <div class="btns no-print">
-      <button class="go" id="mgrApprove" type="button">Save Review &amp; Mark Approved</button>
-      <button class="secondary" id="mgrSaveOnly" type="button">Save Edits (keep open)</button>
-      <button class="ghost" id="mgrPrint" type="button">Print / Save as PDF</button>
-      <button class="ghost" id="mgrCsv" type="button">Download CSV</button>
-      <button class="danger" id="mgrDelete" type="button">Delete Submitted Timesheet</button>
-      <button class="ghost" id="mgrBack" type="button">Back to My Timesheet</button>
-    </div>
-    <p class="small" id="mgrSavedInfo"></p>
-  </section>
-</div><!-- /managerView -->
-
-<div id="inboxView" class="hide">
-  <section class="panel">
-    <div class="ibx-head">
-      <h2 style="margin:0">Submitted Timesheets</h2>
-      <button class="ghost no-print" id="inboxBack" type="button">Back to My Timesheet</button>
-    </div>
-    <p class="sub">Daily hours grouped by their actual work dates within each FDEC biweekly pay period. Past periods appear in the archive after every submitted sheet in that period has been reviewed. Existing records are never moved or deleted.</p>
-    <div class="ts-search no-print" id="tsSearch">
-      <h3>Search Time Sheets</h3>
-      <div class="ts-search-fields">
-        <div><label for="tsFilterType">Type / Department</label><select id="tsFilterType"><option value="">All Departments</option></select></div>
-        <div><label for="tsFilterJob">Job Number</label><input id="tsFilterJob" type="search" placeholder="Any job number"></div>
-        <div><label for="tsFilterTech">Technician Name</label><input id="tsFilterTech" type="search" placeholder="Any technician"></div>
-        <div><label for="tsFilterFrom">From Date</label><input id="tsFilterFrom" type="date"></div>
-        <div><label for="tsFilterTo">To Date</label><input id="tsFilterTo" type="date"></div>
-      </div>
-      <div class="ts-search-actions"><button type="button" class="go" id="tsSearchGo">Search All Pay Periods</button><button type="button" class="secondary" id="tsSearchClear">Clear Filters</button><span class="small">Combined filters · submitted and reviewed · current and archived</span></div>
-      <div id="tsSearchResults" class="ts-search-results" aria-live="polite"></div>
-    </div>
-    <div id="inboxYears" class="ibx-years"></div>
-    <div id="inboxList" class="ibx-list"></div>
-  </section>
-</div><!-- /inboxView -->
 
 </main>
 
@@ -485,7 +401,10 @@ let fb=null, db=null, auth=null, FB_OK=false;
       if(window.fdecFirebaseApp){ fb=window.fdecFirebaseApp; }
       else if(firebase.apps && firebase.apps.length){ fb=firebase.app(); }
       else if(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey!=="PASTE_API_KEY"){ fb=firebase.initializeApp(FIREBASE_CONFIG); }
-      if(fb){ db=firebase.firestore(); auth=firebase.auth(); FB_OK=true; }
+      if(fb){ db=firebase.firestore(); auth=firebase.auth(); FB_OK=true;
+        // Offline saving: keep a copy of recent reads on the phone so the page still opens with poor signal.
+        try{ db.enablePersistence({synchronizeTabs:true}).catch(function(e){ console.info('Offline cache not enabled:',e&&e.code); }); }catch(_){}
+      }
     }
   }catch(e){ console.warn('Firebase init issue:',e); }
 })();
@@ -581,8 +500,6 @@ function setLockedEmployeeName(){
 async function enterTechMode(sheetId){
   MODE='tech';
   $('techView').classList.remove('hide');
-  $('managerView').classList.add('hide');
-  $('inboxView')&&$('inboxView').classList.add('hide');
   renderModeActions();
   setLockedEmployeeName();
   defaultSunday();
@@ -780,8 +697,8 @@ $('addLeave').onclick=()=>openExpenseEditor();
 $('clearRows').onclick=()=>{if(confirm('Clear all hours cards?')){$('rows').innerHTML='';makeRow();calculate();}};
 $('print').onclick=()=>window.print();
 $('reset').onclick=async()=>{
-  const locked=CUR_STATUS==='submitted'||CUR_STATUS==='reviewed';
-  const msg=locked?'Reset the form? This clears the screen only. The copy already submitted for this week stays with your manager.'
+  const locked=CUR_STATUS==='submitted'||CUR_STATUS==='reviewed'||CUR_STATUS==='returned';
+  const msg=locked?'Reset the form? This clears the screen only. The copy already submitted or returned for this week stays on record.'
     :'Reset the form? This clears the form and permanently deletes any saved cloud draft for this week.';
   if(!confirm(msg))return;
   clearTimeout(AUTO_T);AUTO_T=null;
@@ -795,12 +712,12 @@ $('reset').onclick=async()=>{
       const draftIds=async()=>{
         const ids=new Set(); if(LAST_SAVED_ID)ids.add(LAST_SAVED_ID);
         const q=await db.collection(COL_SHEETS).where('employeeUid','==',CURRENT.uid).where('weekStart','==',week).get();
-        q.forEach(d=>{const st=(d.data()||{}).status; if(st!=='submitted'&&st!=='reviewed')ids.add(d.id); else ids.delete(d.id);});
+        q.forEach(d=>{const st=(d.data()||{}).status; if(st!=='submitted'&&st!=='reviewed'&&st!=='returned')ids.add(d.id); else ids.delete(d.id);});
         return [...ids];
       };
       for(const id of await draftIds()){ await db.collection(COL_SHEETS).doc(id).delete(); deleted++; }
       const check=await db.collection(COL_SHEETS).where('employeeUid','==',CURRENT.uid).where('weekStart','==',week).get();
-      let remain=0; check.forEach(d=>{const st=(d.data()||{}).status; if(st!=='submitted'&&st!=='reviewed')remain++;});
+      let remain=0; check.forEach(d=>{const st=(d.data()||{}).status; if(st!=='submitted'&&st!=='reviewed'&&st!=='returned')remain++;});
       if(remain){cloudMsg('error','The cloud draft could not be fully removed. The form was not reset. Try again or contact your manager.');return;}
     }catch(e){console.error(e);cloudMsg('error','Could not delete the cloud draft: '+(e.message||e)+'. The form was not reset.');return;}
     CUR_STATUS=null;$('statusBadge').classList.add('hide');
@@ -867,6 +784,14 @@ function autosaveWorthy(){
   if($('comments').value.trim()||EXPENSE_REPORTS.length)return true;
   return [...document.querySelectorAll('#rows .rowcard')].some(c=>num(c,'st')+num(c,'ot')+num(c,'dt')>0||c.querySelector('.job').value.trim()||c.querySelector('.jobNumber').value.trim()||c.querySelector('.notes').value.trim());
 }
+/* ----- poor-signal safety: a copy of the draft is kept on this phone until the cloud confirms the save ----- */
+function backupKey(week){return 'fdecTsBackupV1:'+(CURRENT.uid||'x')+':'+(week||'');}
+function writeBackup(data){try{localStorage.setItem(backupKey(data.weekStart),JSON.stringify({savedAt:Date.now(),data:data}));}catch(e){}}
+function readBackup(week){try{return JSON.parse(localStorage.getItem(backupKey(week))||'null');}catch(e){return null;}}
+function clearBackup(week){try{localStorage.removeItem(backupKey(week));}catch(e){}}
+window.addEventListener('online',function(){
+  if(MODE==='tech'&&FB_OK&&CURRENT.uid&&DRAFT_READY&&readBackup($('weekStart').value)){ saveSheet('draft',true); }
+});
 function scheduleAutosave(){
   if(!FB_OK||!CURRENT.uid||MODE!=='tech'||!DRAFT_READY)return;
   if(CUR_STATUS==='submitted'||CUR_STATUS==='reviewed')return;
@@ -913,6 +838,17 @@ async function saveSheet(status,auto){
     return;
   }
   const data=gather();
+  if(FB_OK&&typeof navigator!=='undefined'&&navigator.onLine===false){
+    if(status==='submitted'){
+      cloudMsg('error','You are offline. Submit needs a connection so your manager actually receives it. Your hours are saved on this phone; tap Submit again when you have signal.');
+      writeBackup(data);return;
+    }
+    writeBackup(data);
+    $('savedInfo').textContent='Offline — saved on this phone. It will upload when your signal returns.';
+    if(!auto)cloudMsg('warn','You are offline. Your hours are saved on this phone and will upload when your signal returns.');
+    return;
+  }
+  if(FB_OK&&status==='draft')writeBackup(data);
   if(!FB_OK){
     try{localStorage.setItem('fdecTimesheet:'+(data.weekStart||'week'),JSON.stringify({...data,status}));}catch(e){}
     cloudMsg('warn','Cloud is off, so this was saved only on this device. Fill in the Firebase config to enable real cloud save and submit.');
@@ -944,7 +880,12 @@ async function saveSheet(status,auto){
         if(previous.status==='reviewed')throw new Error('This timesheet was already reviewed. Ask your manager to make any corrections.');
         if(auto && previous.status==='submitted'){skipped=true;return;}
         // Do not demote an already-submitted sheet when saving a draft afterward.
-        if(status==='draft' && previous.status==='submitted')payload.status='submitted';
+        if(status==='draft' && (previous.status==='submitted'||previous.status==='returned'))payload.status=previous.status;
+        // Sending a returned sheet back to the manager clears the open note (it stays in returnHistory).
+        if(status==='submitted' && previous.status==='returned'){
+          const del=firebase.firestore.FieldValue.delete();
+          payload.returnedNote=del;payload.returnedBy=del;payload.returnedByInitials=del;payload.returnedAt=del;
+        }
         tx.set(ref,payload,{merge:true});
       }else{
         tx.set(ref,{...payload,createdAt:now,managerEdits:[]});
@@ -952,6 +893,7 @@ async function saveSheet(status,auto){
     });
     if(skipped){CUR_STATUS='submitted';LAST_SAVED_ID=id;return;}
     LAST_SAVED_ID=id;CUR_STATUS=payload.status;
+    clearBackup(data.weekStart);
     $('statusBadge').className='badge '+payload.status+' ';
     $('statusBadge').classList.remove('hide');
     $('statusBadge').textContent=payload.status==='submitted'?'Submitted':'Draft saved';
@@ -963,7 +905,7 @@ async function saveSheet(status,auto){
     cloudMsg('ok',payload.status==='submitted'?'Weekly timesheet submitted/updated successfully.':'Weekly timesheet saved successfully.');
   }catch(e){
     console.error(e);
-    if(auto){ $('savedInfo').textContent='Autosave could not reach the cloud. It will retry on your next change.'; }
+    if(auto){ writeBackup(data); $('savedInfo').textContent='Autosave could not reach the cloud. Your hours are kept on this phone and will retry on your next change.'; }
     else cloudMsg('error','Save failed: '+(e.message||e)+'. Your entries are still on screen.');
   }finally{SHEET_SAVE_BUSY=false;$('submit').disabled=false;}
 }
@@ -975,20 +917,29 @@ async function loadMyDraftForWeek(){
   try{
     const doc=await findExistingWeekSheet(requestedWeek);
     if($('weekStart').value!==requestedWeek)return; // Ignore stale async results after week change.
-    if(!doc){DRAFT_READY=true;return;}
+    const bk=readBackup(requestedWeek);
+    const cloudMs=doc?(((doc.data().updatedAt&&doc.data().updatedAt.seconds)||0)*1000):0;
+    const useBackup=!!(bk&&bk.data&&(!doc||(['draft','returned'].includes(doc.data().status||'draft')&&bk.savedAt>cloudMs)));
+    if(!doc){
+      DRAFT_READY=true;
+      if(useBackup){fillTechForm(bk.data);cloudMsg('warn','Restored hours that were saved on this phone but not yet uploaded. They will upload automatically.');scheduleAutosave();}
+      return;
+    }
     LAST_SAVED_ID=doc.id;
     const d=doc.data();
     CUR_STATUS=d.status||'draft';DRAFT_READY=true;
     fillTechForm(d);
     $('statusBadge').className='badge '+(d.status==='reviewed'?'reviewed':d.status||'draft')+' ';
     $('statusBadge').classList.remove('hide');
-    $('statusBadge').textContent=d.status==='reviewed'?'Reviewed by manager':d.status==='submitted'?'Submitted':'Draft saved';
-    let msg=(d.status==='submitted'||d.status==='reviewed')?'Loaded your '+d.status+' timesheet for this week. Autosave is paused for submitted sheets; tap Submit to Manager again to send changes.':'Loaded your saved draft for this week. Changes save automatically.';
+    $('statusBadge').textContent=d.status==='reviewed'?'Reviewed by manager':d.status==='submitted'?'Submitted':d.status==='returned'?'Returned - needs changes':'Draft saved';
+    let msg=d.status==='returned'?'Your manager returned this time sheet. Make the corrections below and tap Submit to Manager again. Changes save automatically.':(d.status==='submitted'||d.status==='reviewed')?'Loaded your '+d.status+' timesheet for this week. Autosave is paused for submitted sheets; tap Submit to Manager again to send changes.':'Loaded your saved draft for this week. Changes save automatically.';
     if(d.status==='reviewed'&&(d.managerEdits||[]).length){
       msg+=' Your manager made '+d.managerEdits.length+' edit(s) — see the highlighted note below.';
       showReviewNoticeForTech(d);
     }
     cloudMsg('info',msg);
+    if(d.status==='returned')showReturnedNoticeForTech(d);
+    if(useBackup){fillTechForm(bk.data);cloudMsg('warn','Restored hours that were saved on this phone but not yet uploaded. They will upload automatically.');scheduleAutosave();}
   }catch(e){console.warn('weekly sheet load failed',e);cloudMsg('warn','Could not check for an existing weekly timesheet. Saving will retry this check.');}
 }
 
@@ -1003,6 +954,11 @@ function fillTechForm(d){
   calculate();
 }
 
+function showReturnedNoticeForTech(d){
+  const box=$('checkStatus');
+  box.className='status warn';
+  box.innerHTML='<b>Returned by your manager:</b> '+(d.returnedBy?esc(d.returnedBy)+'. ':'')+(d.returnedNote?esc(d.returnedNote):'Please review your hours and submit again.')+' Make the corrections, then tap Submit to Manager.';
+}
 function showReviewNoticeForTech(d){
   const box=$('checkStatus');
   const edits=d.managerEdits||[];
@@ -1015,440 +971,6 @@ function showReviewNoticeForTech(d){
     '</ul>';
 }
 
-/* ----- CSV ----- */
-function downloadCSV(dIn){
-  const d=dIn||gather();
-  const tot=(d.entries||[]).reduce((t,e)=>{t.st+=+e.st||0;t.ot+=+e.ot||0;t.dt+=+e.dt||0;return t;},{st:0,ot:0,dt:0});
-  const sumAll=tot.st+tot.ot+tot.dt;
-  const rows=[
-    ['Weekly Employee Time Sheet'],
-    ['Employee',d.employee],['Week Start',d.weekStart],['Week End',d.weekEnd],
-    ['Submit To',d.managerName],[],
-    ['Type / Department','Job Name','Job Number','Day','Rate','Regular ST','Time&Half 1.5x','Double 2x','Card Total','Notes'],
-    ...d.entries.map(e=>[e.type,e.jobName??e.job,e.jobNumber||'',e.day,rateLabel(rateForDay(dayNames.indexOf(e.day))),e.st,e.ot,e.dt,(e.st+e.ot+e.dt).toFixed(2),e.notes]),
-    [],
-    ['Total Regular',tot.st.toFixed(2)],['Total Time&Half',tot.ot.toFixed(2)],
-    ['Total Double',tot.dt.toFixed(2)],['Total Hours',sumAll.toFixed(2)],
-    [],...(d.expenseReports||(d.expenseReport?[d.expenseReport]:[])).flatMap((r,i)=>[['Expense Report '+(i+1),r.jobName,r.jobNumber],['Expense Total',expenseAmounts(r).total],['Company Card',expenseAmounts(r).companyCard],['Reimbursable',expenseAmounts(r).reimbursable],['Expense Reimbursement',expenseAmounts(r).owed],...(r.items||[]).map(e=>['Expense',e.date,e.account,e.description,r.jobName,r.jobNumber,e.amount,expensePayment(e)])]),
-    [],['Comments',d.comments]
-  ];
-  const csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download='Timesheet_'+(d.employee||'Employee').replace(/[^a-z0-9_-]/gi,'_')+'_'+(d.weekStart||'week')+'.csv';
-  a.click();URL.revokeObjectURL(url);
-}
-
-/* =====================================================================
-   MANAGER INBOX + REVIEW MODE
-   ===================================================================== */
-let INBOX_ITEMS=[], INBOX_YEAR='', INBOX_EXPANDED={};
-// FDEC biweekly payroll anchor. Weekly Sunday–Saturday documents remain unchanged;
-// only their dated daily entries are apportioned into the appropriate payroll period.
-const PAY_ANCHOR=Date.UTC(2026,9,12), PAY_DAY_ANCHOR=Date.UTC(2026,9,28), PAY_MS=86400000;
-function payDate(s){if(!/^\d{4}-\d{2}-\d{2}$/.test(String(s||'')))return NaN; const d=new Date(s+'T00:00:00Z');return d.getTime();}
-function payISO(t){return new Date(t).toISOString().slice(0,10);}
-function payFmt(t){return new Date(t).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'});}
-function payrollPeriodFromTime(t){
-  if(!Number.isFinite(t))return {key:'undated',undated:true,year:'Undated',title:'Undated submissions',sort:-Infinity};
-  const n=Math.floor((t-PAY_ANCHOR)/(14*PAY_MS));
-  const from=PAY_ANCHOR+n*14*PAY_MS,to=from+13*PAY_MS;
-  return {key:payISO(from),year:String(new Date(to).getUTCFullYear()),title:payFmt(from)+' – '+payFmt(to),from,to,sort:from,due:to+PAY_MS,payday:PAY_DAY_ANCHOR+n*14*PAY_MS};
-}
-function payPeriod(it){
-  const we=payDate(it.weekEnd), ws=payDate(it.weekStart);
-  return payrollPeriodFromTime(Number.isFinite(we)?we:Number.isFinite(ws)?ws+6*PAY_MS:NaN);
-}
-function payrollEntryTime(sheet,entry){
-  const date=tsEntryDate(sheet,entry.day);
-  return payDate(date);
-}
-function payrollEntries(sheet,key){
-  return (sheet.entries||[]).filter(e=>payrollPeriodFromTime(payrollEntryTime(sheet,e)).key===key);
-}
-function payrollKeys(sheet){
-  const entries=sheet.entries||[];
-  if(!entries.length)return [payPeriod(sheet).key];
-  return [...new Set(entries.map(e=>payrollPeriodFromTime(payrollEntryTime(sheet,e)).key))];
-}
-function payrollHours(entries){
-  return entries.reduce((v,e)=>{v.st+=Number(e.st)||0;v.ot+=Number(e.ot)||0;v.dt+=Number(e.dt)||0;return v;},{st:0,ot:0,dt:0});
-}
-function tsSheetYear(it){return payPeriod(it).year;}
-function tsSheetLabel(it){
-  return (it.employee||'Employee')+' · '+(it.weekStart||'?')+' – '+(it.weekEnd||'?');
-}
-async function showInbox(){
-  if(!FB_OK)return;
-  cloudMsg('info','Loading submitted timesheets…');
-  try{
-    const wanted={submitted:1,reviewed:1};
-    let rows=[];
-    if(CURRENT.role==='admin'){
-      // Admins oversee every submitted sheet (including their own).
-      const q=await db.collection(COL_SHEETS).where('status','in',['submitted','reviewed']).get();
-      q.forEach(d=>rows.push({id:d.id,...d.data()}));
-    } else {
-      // Managers see sheets submitted TO them plus their own submitted sheets.
-      // Single-field queries (no composite index needed); status filtered here.
-      const seen={};
-      const q1=await db.collection(COL_SHEETS).where('managerUid','==',CURRENT.uid).get();
-      const q2=await db.collection(COL_SHEETS).where('employeeUid','==',CURRENT.uid).get();
-      [q1,q2].forEach(q=>q.forEach(d=>{ const dt=d.data()||{}; if(wanted[dt.status] && !seen[d.id]){ seen[d.id]=1; rows.push({id:d.id,...dt}); } }));
-    }
-    INBOX_ITEMS=rows;
-    INBOX_ITEMS.sort((a,b)=>(b.submittedAt&&b.submittedAt.seconds||0)-(a.submittedAt&&a.submittedAt.seconds||0));
-    $('techView').classList.add('hide');
-    $('managerView').classList.add('hide');
-    $('cloudStatus').classList.add('hide');
-    $('inboxView').classList.remove('hide');
-    renderInbox();
-    initTsSearch();
-    window.scrollTo({top:0,behavior:'smooth'});
-  }catch(e){console.error(e);cloudMsg('error','Could not load submitted timesheets: '+(e.message||e));}
-}
-
-// Search operates over already-authorized manager inbox documents; no extra Firestore reads/writes.
-function initTsSearch(){
-  const sel=$('tsFilterType'), prior=sel.value;
-  const categories=[...new Set(INBOX_ITEMS.flatMap(s=>(s.entries||[]).map(e=>String(e.type||'').trim())).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
-  sel.innerHTML='<option value="">All Departments</option>'+categories.map(t=>'<option value="'+escAttr(t)+'">'+esc(t)+'</option>').join('');
-  if(categories.includes(prior))sel.value=prior;
-  $('tsSearchGo').onclick=renderTsSearch;
-  $('tsSearchClear').onclick=()=>{['tsFilterJob','tsFilterTech','tsFilterFrom','tsFilterTo'].forEach(id=>$(id).value='');sel.value='';$('tsSearchResults').innerHTML='';};
-  ['tsFilterType','tsFilterFrom','tsFilterTo'].forEach(id=>$(id).addEventListener('change',renderTsSearch));
-  ['tsFilterJob','tsFilterTech'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();renderTsSearch();}}));
-  $('tsSearchResults').innerHTML='';
-}
-function tsEntryDate(sheet,day){
-  const ws=payDate(sheet.weekStart), idx=dayNames.indexOf(day);
-  if(!Number.isFinite(ws)||idx<0)return '';
-  // Week starts on Sunday. Derive date from actual entry day rather than submission date.
-  return payISO(ws+idx*PAY_MS);
-}
-function renderTsSearch(){
-  const type=$('tsFilterType').value.toLowerCase(),job=$('tsFilterJob').value.trim().toLowerCase(),tech=$('tsFilterTech').value.trim().toLowerCase();
-  const from=$('tsFilterFrom').value,to=$('tsFilterTo').value, target=$('tsSearchResults');
-  if(from&&to&&from>to){target.textContent='From Date must be on or before To Date.';return;}
-  const matches=[];
-  INBOX_ITEMS.forEach(s=>{
-    if(tech&&!String(s.employee||'').toLowerCase().includes(tech))return;
-    (s.entries||[]).forEach(e=>{
-      if(type&&String(e.type||'').toLowerCase()!==type)return;
-      if(job&&!String(e.jobNumber||'').toLowerCase().includes(job))return;
-      const actual=tsEntryDate(s,e.day);
-      // Missing day dates are excluded from date-scoped searches, not guessed.
-      if((from||to)&&(!actual||(from&&actual<from)||(to&&actual>to)))return;
-      matches.push({s,e,actual,h:(+e.st||0)+(+e.ot||0)+(+e.dt||0)});
-    });
-  });
-  matches.sort((a,b)=>String(b.actual||b.s.weekStart||'').localeCompare(String(a.actual||a.s.weekStart||'')));
-  const totals=matches.reduce((o,m)=>{o.st+=+m.e.st||0;o.ot+=+m.e.ot||0;o.dt+=+m.e.dt||0;return o;},{st:0,ot:0,dt:0});
-  const fmt=n=>n.toFixed(2);
-  const limit=500;
-  let html='<p class="small"><strong>'+matches.length+' matching job entries</strong> across '+new Set(matches.map(m=>m.s.id)).size+' Time Sheets · ST '+fmt(totals.st)+' · OT '+fmt(totals.ot)+' · DT '+fmt(totals.dt)+' · <strong>'+fmt(totals.st+totals.ot+totals.dt)+' total hours</strong></p>';
-  if(matches.length){
-    html+='<div class="table-wrap"><table><thead><tr><th>Work Date</th><th>Technician</th><th>Type / Department</th><th>Job Name</th><th>Job Number</th><th class="num">ST</th><th class="num">OT</th><th class="num">DT</th><th class="num">Total</th><th>Status / Review</th></tr></thead><tbody>';
-    html+=matches.slice(0,limit).map(({s,e,actual,h})=>'<tr'+(isJobNo(e.jobNumber||'')?' class="job-number-alpha"':'')+'><td>'+esc(actual||'Undated')+'</td><td>'+esc(s.employee||'')+'</td><td>'+esc(e.type||'')+'</td><td>'+esc(e.jobName??e.job??'')+'</td><td>'+esc(e.jobNumber||'')+'</td><td class="num">'+fmt(+e.st||0)+'</td><td class="num">'+fmt(+e.ot||0)+'</td><td class="num">'+fmt(+e.dt||0)+'</td><td class="num">'+fmt(h)+'</td><td><button type="button" class="search-open" data-search-open="'+escAttr(s.id)+'">'+esc(s.status||'submitted')+' · Open</button></td></tr>').join('');
-    html+='</tbody></table></div>';
-    if(matches.length>limit)html+='<p class="small">Showing first '+limit+' matches. Totals include all '+matches.length+' matches; narrow your filters for additional rows.</p>';
-  }else html+='<p class="small">No matching entries found among Time Sheets available to your account.</p>';
-  target.innerHTML=html;
-  target.querySelectorAll('[data-search-open]').forEach(btn=>btn.onclick=()=>openManagerReview(btn.getAttribute('data-search-open'),true));
-}
-function renderInbox(){
-  const now=Date.now();
-  const grouped=new Map();
-  INBOX_ITEMS.forEach(it=>{payrollKeys(it).forEach(key=>{const period=key==='undated'?payrollPeriodFromTime(NaN):payrollPeriodFromTime(payDate(key));const group=grouped.get(key)||{period,items:[]};group.items.push(it);grouped.set(key,group);});});
-  const all=Array.from(grouped.values()).sort((a,b)=>b.period.sort-a.period.sort);
-  const years=[...new Set(all.map(g=>g.period.year))].sort((a,b)=>Number(b)-Number(a));
-  if(INBOX_YEAR&&!years.includes(INBOX_YEAR))INBOX_YEAR='';
-  $('inboxYears').innerHTML=all.length?'<button class="ibx-year'+(!INBOX_YEAR?' active':'')+'" data-y="">All<span class="n">'+INBOX_ITEMS.length+'</span></button>'+years.map(y=>'<button class="ibx-year'+(INBOX_YEAR===y?' active':'')+'" data-y="'+esc(y)+'">'+esc(y)+'<span class="n">'+all.filter(g=>g.period.year===y).length+'</span></button>').join(''):'';
-  const relevant=all.filter(g=>!INBOX_YEAR||g.period.year===INBOX_YEAR);
-  function itemHTML(it,key){
-    const hours=payrollHours(payrollEntries(it,key));
-    const tot=(hours.st+hours.ot+hours.dt).toFixed(2);
-    return '<a href="#" class="ibx-item" data-open="'+esc(it.id)+'"><span class="lbl">'+esc(tsSheetLabel(it))+'</span><span class="meta">'+tot+' hrs in period &nbsp;<span class="badge '+(it.status==='reviewed'?'reviewed':'submitted')+'">'+(it.status==='reviewed'?'Reviewed':'Submitted')+'</span></span></a>';
-  }
-  function periodHTML(g,archived){
-    const p=g.period, reviewed=g.items.filter(it=>it.status==='reviewed').length;
-    const expanded=INBOX_EXPANDED[g.period.key]===true || (!archived&&INBOX_EXPANDED[g.period.key]!==false);
-    const heading='<button type="button" class="pay-folder" data-period="'+esc(p.key)+'" aria-expanded="'+expanded+'"><span class="pay-folder-icon">'+(archived?'▣':'▤')+'</span><span class="pay-folder-info"><strong>'+esc(p.title)+'</strong><small>'+(p.undated?'Date not supplied':'Due '+esc(payFmt(p.due))+' at 8:00 AM ET · Payday '+esc(payFmt(p.payday)))+'</small></span><span class="pay-folder-meta">'+reviewed+'/'+g.items.length+' reviewed '+(expanded?'▾':'▸')+'</span></button>';
-    const list=expanded?'<div class="pay-folder-items">'+g.items.sort((a,b)=>(a.weekStart||'').localeCompare(b.weekStart||'')||String(a.employee||'').localeCompare(String(b.employee||''))).map(it=>itemHTML(it,p.key)).join('')+'</div>':'';
-    const exportButton='<div class="pay-export-bar"><button type="button" class="secondary" data-export-period="'+esc(p.key)+'">↓ Download Pay Period (printable)</button></div>';
-    return '<div class="pay-folder-wrap">'+heading+exportButton+list+'</div>';
-  }
-  const current=payrollPeriodFromTime(now).key;
-  // No record-level archive flag: folders become archived when the period is in the past
-  // AND every currently visible submitted record in that period has status "reviewed".
-  const active=relevant.filter(g=>!g.period.undated&&(g.period.key===current));
-  const awaiting=relevant.filter(g=>g.period.undated||g.period.key!==current && !(g.period.to<now && g.items.every(it=>it.status==='reviewed')));
-  const archived=relevant.filter(g=>!g.period.undated&&g.period.key!==current&&g.period.to<now&&g.items.every(it=>it.status==='reviewed'));
-  let html='';
-  if(!all.length) html='<div class="ibx-empty">No submitted timesheets for you right now.</div>';
-  if(active.length)html+='<div class="ibx-group">Current Pay Period</div>'+active.map(g=>periodHTML(g,false)).join('');
-  if(awaiting.length)html+='<div class="ibx-group">Awaiting Review / Previous Pay Periods</div>'+awaiting.map(g=>periodHTML(g,false)).join('');
-  if(archived.length)html+='<div class="ibx-group">Past Pay Periods · Archived after review</div>'+archived.map(g=>periodHTML(g,true)).join('');
-  $('inboxList').innerHTML=html;
-  $('inboxList').querySelectorAll('[data-open]').forEach(a=>a.onclick=ev=>{ev.preventDefault();openManagerReview(a.getAttribute('data-open'),true);});
-  $('inboxList').querySelectorAll('[data-export-period]').forEach(b=>b.onclick=()=>downloadPayPeriod(b.getAttribute('data-export-period')));
-  $('inboxList').querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{const k=b.getAttribute('data-period');INBOX_EXPANDED[k]=b.getAttribute('aria-expanded')!=='true';renderInbox();});
-  $('inboxYears').querySelectorAll('[data-y]').forEach(b=>b.onclick=()=>{INBOX_YEAR=b.getAttribute('data-y');renderInbox();});
-}
-
-// Local, self-contained, print-ready archive of the manager-visible pay period.
-// This does not move/change Firestore records and never exports other managers' unseen sheets.
-function downloadPayPeriod(key){
-  const sheets=INBOX_ITEMS.filter(it=>payrollKeys(it).includes(key)).slice().sort((a,b)=>String(a.employee||'').localeCompare(String(b.employee||''))||String(a.weekStart||'').localeCompare(String(b.weekStart||'')));
-  if(!sheets.length){alert('No submitted timesheets were found for this pay period.');return;}
-  const period=payPeriod(sheets[0]);
-  const safe=esc;
-  const cash=n=>'$'+(Number(n)||0).toFixed(2);
-  const fmt=n=>(Number(n)||0).toFixed(2);
-  const total={st:0,ot:0,dt:0,expenses:0,advances:0};
-  const sections=sheets.map((d,i)=>{
-    let subtotal={st:0,ot:0,dt:0};
-    const entries=payrollEntries(d,key);
-    const entryRows=entries.map(e=>{
-      ['st','ot','dt'].forEach(k=>{subtotal[k]+=Number(e[k])||0;total[k]+=Number(e[k])||0;});
-      const flagged=isJobNo(String(e.jobNumber||''));
-      return '<tr'+(flagged?' class="orange"':'')+'><td>'+safe(e.day||'')+'</td><td>'+safe(e.type||'')+'</td><td>'+safe(e.jobName??e.job??'')+'</td><td>'+safe(e.jobNumber||'')+'</td><td class="num">'+fmt(e.st)+'</td><td class="num">'+fmt(e.ot)+'</td><td class="num">'+fmt(e.dt)+'</td><td>'+safe(e.notes||'')+'</td></tr>';
-    }).join('');
-    const reports=payPeriod(d).key===key?(Array.isArray(d.expenseReports)?d.expenseReports:(d.expenseReport?[d.expenseReport]:[])):[];
-    const reportsHtml=reports.map((r,j)=>{
-      const items=Array.isArray(r.items)?r.items:[];
-      const {total:expenses,companyCard,reimbursable,advance:advances,owed}=expenseAmounts(r);
-      total.expenses+=expenses;total.advances+=advances;total.companyCard=(total.companyCard||0)+companyCard;total.reimbursable=(total.reimbursable||0)+reimbursable;
-      return '<section class="expense"><h4>Expense Report '+(j+1)+' — '+safe(r.jobName||'')+' · Job #'+safe(r.jobNumber||'')+'</h4><p>'+safe(r.purpose||'')+' · '+safe(r.from||'')+' to '+safe(r.to||'')+' · Statement '+safe(r.statement||'—')+'</p><table><thead><tr><th>Date</th><th>Account</th><th>Description</th><th>Payment Method</th><th class="num">Amount</th></tr></thead><tbody>'+items.map(e=>'<tr><td>'+safe(e.date||'')+'</td><td>'+safe(e.account||'')+'</td><td>'+safe(e.description||'')+'</td><td>'+safe(expensePayment(e))+'</td><td class="num">'+cash(e.amount)+'</td></tr>').join('')+'</tbody></table><p class="totals">Expenses '+cash(expenses)+' · Company card '+cash(companyCard)+' · Reimbursable '+cash(reimbursable)+' · Advances '+cash(advances)+' · Net reimbursement '+cash(owed)+'</p>'+(r.notes?'<p>Notes: '+safe(r.notes)+'</p>':'')+'</section>';
-    }).join('');
-    return '<section class="sheet"><h3>'+(i+1)+'. '+safe(d.employee||'Employee')+' — '+safe(d.weekStart||'?')+' through '+safe(d.weekEnd||'?')+'</h3><p class="meta">Status: '+safe(d.status||'submitted')+' · Submitted to: '+safe(d.managerName||'Manager')+' · Review initials: '+safe(d.reviewedByInitials||'—')+'</p>'+'<p class="meta">Only daily hours worked within this pay period are included below; the original weekly submission is unchanged.</p>'+'<table><thead><tr><th>Day</th><th>Department</th><th>Job name</th><th>Job #</th><th class="num">Regular</th><th class="num">OT</th><th class="num">DT</th><th>Notes</th></tr></thead><tbody>'+entryRows+'</tbody></table><p class="totals">Regular '+fmt(subtotal.st)+' · Overtime '+fmt(subtotal.ot)+' · Double '+fmt(subtotal.dt)+' · Total '+fmt(subtotal.st+subtotal.ot+subtotal.dt)+' hours</p>'+(d.comments?'<p>Employee comments: '+safe(d.comments)+'</p>':'')+(d.managerNote?'<p>Manager note: '+safe(d.managerNote)+'</p>':'')+reportsHtml+'</section>';
-  }).join('');
-  const heading=period.undated?'Undated submissions':period.title;
-  const title='FDEC Pay Period — '+heading;
-  const html='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+safe(title)+'</title><style>:root{color-scheme:light!important}*{box-sizing:border-box}html{background:#fff!important;color:#172a46!important}body{margin:0;padding:18px;font:10pt/1.35 Arial,sans-serif;color:#172a46!important;background:#fff!important}header{background:#fff!important;border-bottom:3px solid #153b67;padding-bottom:13px}h1{font-size:23px;margin:0}h2{font-size:17px}h3{font-size:16px;margin:0 0 8px}.meta{color:#475569}.sheet{break-before:page;page-break-before:always;margin:24px 0;background:#fff!important;color:#172a46!important}.sheet:first-of-type{break-before:auto;page-break-before:auto}table{width:100%;border-collapse:collapse;table-layout:auto;margin:7px 0;font-size:10pt}th,td{border:1px solid #cbd5e1;padding:4px;text-align:left;vertical-align:top;overflow-wrap:anywhere;color:#172a46!important;background:#fff}td.orange{background:#F7C58D!important}th{background:#e8eef6}.num{text-align:right;white-space:nowrap}.orange{background:#F7C58D!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.totals{font-weight:bold;text-align:right}.warning{background:#fff0d5;padding:8px;border-left:3px solid #d58229}.expense{margin:12px 0;padding-top:5px;border-top:1px solid #94a3b8;break-inside:avoid}.expense h4{margin:0}.expense p{margin:6px 0}.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:20px}.toolbar button{padding:10px 15px;border:0;border-radius:7px;background:#153b67;color:white;cursor:pointer}.summary{padding:12px;background:#edf3f9;break-inside:avoid}@page{size:landscape;margin:9mm}@media print{html,body{background:#fff!important;color:#172a46!important}body{padding:0}.toolbar{display:none}.sheet{margin:0 0 18px}th{background:#e8eef6!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><div class="toolbar"><button onclick="window.print()">Print / Save as PDF</button><span>Saved offline copy · No internet required</span></div><header><h1>'+safe(title)+'</h1><p>'+(period.undated?'Undated':('Submission deadline: '+safe(payFmt(period.due))+' at 8:00 AM ET · Payday: '+safe(payFmt(period.payday))))+'</p></header><section class="summary"><h2>Pay Period Summary</h2><p>'+sheets.length+' weekly submissions · '+sheets.filter(s=>s.status==='reviewed').length+' reviewed</p><p id="hour-summary"></p></section>'+sections+'<footer><p>Generated from the submitted/reviewed records visible to this manager. This is a snapshot, not a live connection to Firestore. Hours are allocated by the recorded work date; original weekly submissions are unchanged. Expense reports remain attached to their source weekly submission and are displayed in the export for the pay period containing that weekly submission’s end date.</p></footer></body></html>';
-  // Insert totals after entries have been accumulated, without adding script dependencies to exported file.
-  const full=html.replace('<p id="hour-summary"></p>','<p>Regular: '+fmt(total.st)+' · Overtime: '+fmt(total.ot)+' · Double: '+fmt(total.dt)+' · Combined: '+fmt(total.st+total.ot+total.dt)+' hours</p><p>Expenses: '+cash(total.expenses)+' · Company card: '+cash(total.companyCard||0)+' · Reimbursable: '+cash(total.reimbursable||0)+' · Cash advances: '+cash(total.advances)+' · Net reimbursement: '+cash((total.reimbursable||0)-total.advances)+'</p>');
-  const blob=new Blob([full],{type:'text/html;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');a.href=url;a.download='FDEC-Pay-Period-'+(period.undated?'undated':payISO(period.from)+'-to-'+payISO(period.to))+'.html';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
-}
-
-async function openManagerReview(id, fromInbox){
-  if(!FB_OK)return;
-  try{
-    const snap=await db.collection(COL_SHEETS).doc(id).get();
-    if(!snap.exists){cloudMsg('error','That timesheet was not found.');return;}
-    OPEN_SHEET={...snap.data()};OPEN_SHEET_ID=id;
-    MODE='manager';
-    window.__fromInbox=!!fromInbox;
-    $('techView').classList.add('hide');
-    $('inboxView')&&$('inboxView').classList.add('hide');
-    $('managerView').classList.remove('hide');
-    $('cloudStatus').classList.add('hide');
-    renderManagerReview();
-    window.scrollTo({top:0,behavior:'smooth'});
-  }catch(e){console.error(e);cloudMsg('error','Could not open timesheet: '+(e.message||e));}
-}
-
-function renderManagerReview(){
-  const d=OPEN_SHEET;
-  $('mgrTitle').textContent='Timesheet — '+(d.employee||'Employee');
-  const subd=new Date().toLocaleString();
-  $('mgrMeta').textContent='Week of '+(d.weekStart||'?')+' through '+(d.weekEnd||'?')+
-    '  ·  Submitted by '+(d.employee||'?')+(d.employeeEmail?' ('+d.employeeEmail+')':'')+
-    '  ·  Status: '+(d.status||'submitted');
-  $('mgrHeadGrid').innerHTML=
-    headCell('Employee',d.employee)+
-    headCell('Week',d.weekStart+' → '+d.weekEnd)+
-    headCell('Employee Comments',d.comments||'—')+
-    headCell('Current Total',((d.entries||[]).reduce((s,e)=>s+(+e.st||0)+(+e.ot||0)+(+e.dt||0),0)).toFixed(2)+' hrs');
-
-  // prefill initials if this manager reviewed before
-  if(d.reviewedByInitials)$('mgrInitials').value=d.reviewedByInitials;
-  if(d.managerNote)$('mgrNote').value=d.managerNote;
-
-  const body=$('mgrBody');body.innerHTML='';
-  (d.entries||[]).forEach((e,i)=>{
-    const tr=document.createElement('tr');tr.dataset.row=i;
-    const cat=rateForDay(dayNames.indexOf(e.day));
-    tr.innerHTML=
-      td(cell('type',i,selectHTML('type',types,e.type)))+
-      td(cell('jobName',i,'<input data-f="jobName" value="'+escAttr(e.jobName??e.job??'')+'">'))+
-      td(cell('jobNumber',i,'<input data-f="jobNumber" value="'+escAttr(e.jobNumber||'')+'">'))+
-      td(cell('day',i,selectHTML('day',dayNames,e.day)))+
-      tdnum(cell('st',i,'<input class="num" data-f="st" type="number" min="0" step=".25" value="'+(+e.st||0)+'">'))+
-      tdnum(cell('ot',i,'<input class="num" data-f="ot" type="number" min="0" step=".25" value="'+(+e.ot||0)+'">'))+
-      tdnum(cell('dt',i,'<input class="num" data-f="dt" type="number" min="0" step=".25" value="'+(+e.dt||0)+'">'))+
-      td(cell('notes',i,'<input data-f="notes" value="'+escAttr(e.notes||'')+'">'))+
-      '<td class="num rowtot" data-tot="'+i+'">'+((+e.st||0)+(+e.ot||0)+(+e.dt||0)).toFixed(2)+'</td>';
-    // Apply the existing job-number highlight on initial render.
-    tr.classList.toggle('job-number-alpha',isJobNo(e.jobNumber||''));
-    body.appendChild(tr);
-  });
-
-  // store originals for diffing + wire inputs
-  OPEN_SHEET._orig=JSON.parse(JSON.stringify(d.entries||[]));
-  body.querySelectorAll('[data-f]').forEach(inp=>{
-    inp.addEventListener('input',()=>{flagIfEdited(inp);if(inp.dataset.f==='jobNumber')inp.closest('tr').classList.toggle('job-number-alpha',isJobNo(inp.value));recalcMgr();renderEditLog();});
-  });
-  // show any prior edits as highlighted
-  (d.managerEdits||[]).forEach(ed=>{
-    const cellEl=body.querySelector('[data-cell="'+ed.field+'-'+ed.row+'"]');
-    if(cellEl)cellEl.classList.add('edited');
-  });
-  recalcMgr();renderEditLog();
-  renderManagerExpenses();
-}
-
-function selectHTML(f,opts,val){
-  return '<select data-f="'+f+'">'+opts.map(o=>'<option'+(o===val?' selected':'')+'>'+o+'</option>').join('')+'</select>';
-}
-function cell(f,i,inner){return '<span data-cell="'+f+'-'+i+'">'+inner+'</span>';}
-function td(x){return '<td>'+x+'</td>';}
-function tdnum(x){return '<td class="num">'+x+'</td>';}
-function headCell(label,val){return '<div><label>'+esc(label)+'</label><div style="padding:3px 0 1px;font-size:10pt;color:var(--navy);font-weight:600">'+esc(val||'—')+'</div></div>';}
-
-function currentMgrEntries(){
-  return [...$('mgrBody').querySelectorAll('tr')].map(tr=>{
-    const g=f=>tr.querySelector('[data-f="'+f+'"]').value;
-    return {type:g('type'),job:g('jobName').trim(),jobName:g('jobName').trim(),jobNumber:g('jobNumber').trim(),day:g('day'),
-      st:+g('st')||0,ot:+g('ot')||0,dt:+g('dt')||0,notes:g('notes').trim()};
-  });
-}
-
-function flagIfEdited(inp){
-  const tr=inp.closest('tr');const i=+tr.dataset.row;const f=inp.getAttribute('data-f');
-  const orig=OPEN_SHEET._orig[i]||{};
-  const span=tr.querySelector('[data-cell="'+f+'-'+i+'"]');
-  const nowVal=(f==='st'||f==='ot'||f==='dt')?(+inp.value||0):inp.value.trim();
-  const wasVal=(f==='st'||f==='ot'||f==='dt')?(+orig[f]||0):String((f==='jobName'?(orig.jobName??orig.job):orig[f])||'').trim();
-  if(String(nowVal)!==String(wasVal)){span.classList.add('edited');}
-  else{span.classList.remove('edited');}
-}
-
-function recalcMgr(){
-  let st=0,ot=0,dt=0;
-  $('mgrBody').querySelectorAll('tr').forEach(tr=>{
-    const g=f=>+tr.querySelector('[data-f="'+f+'"]').value||0;
-    const a=g('st'),b=g('ot'),c=g('dt');st+=a;ot+=b;dt+=c;
-    tr.querySelector('[data-tot]').textContent=(a+b+c).toFixed(2);
-  });
-  $('mST').textContent=st.toFixed(2);$('mOT').textContent=ot.toFixed(2);
-  $('mDT').textContent=dt.toFixed(2);$('mAll').textContent=(st+ot+dt).toFixed(2);
-}
-
-function computeEdits(){
-  const init=($('mgrInitials').value||'').trim().toUpperCase()||'MGR';
-  const cur=currentMgrEntries();const orig=OPEN_SHEET._orig||[];
-  const edits=[];
-  cur.forEach((e,i)=>{
-    const o=orig[i]||{};
-    ['type','jobName','jobNumber','day','st','ot','dt','notes'].forEach(f=>{
-      const nv=(f==='st'||f==='ot'||f==='dt')?(+e[f]||0):String(e[f]||'').trim();
-      const ov=(f==='st'||f==='ot'||f==='dt')?(+o[f]||0):String((f==='jobName'?(o.jobName??o.job):o[f])||'').trim();
-      if(String(nv)!==String(ov))edits.push({row:i,field:f,from:ov,to:nv,by:init,at:new Date().toISOString()});
-    });
-  });
-  return edits;
-}
-
-function renderEditLog(){
-  const edits=computeEdits();const box=$('mgrEditLog');
-  if(!edits.length){box.classList.add('hide');box.innerHTML='';return;}
-  box.classList.remove('hide');
-  box.innerHTML='<b>'+edits.length+' edit(s) pending — initials: '+esc(($('mgrInitials').value||'MGR').toUpperCase())+'</b>'+
-    '<ul>'+edits.map(e=>'<li>Card '+(e.row+1)+' · '+esc(e.field.toUpperCase())+': '+esc(String(e.from)||'(blank)')+' → <b>'+esc(String(e.to)||'(blank)')+'</b></li>').join('')+'</ul>';
-}
-
-$('mgrInitials')&&$('mgrInitials').addEventListener('input',renderEditLog);
-
-async function saveManagerReview(markReviewed){
-  if(!FB_OK||!OPEN_SHEET_ID)return;
-  const init=($('mgrInitials').value||'').trim().toUpperCase();
-  if(!init){cloudMsg('error','Enter your initials before saving a review.');$('mgrInitials').focus();return;}
-  const newEdits=computeEdits();
-  const prior=OPEN_SHEET.managerEdits||[];
-  const allEdits=prior.concat(newEdits);
-  const entries=currentMgrEntries();
-  const payload={
-    entries,
-    managerEdits:allEdits,
-    reviewedBy:CURRENT.name||init,
-    reviewedByInitials:init,
-    managerNote:$('mgrNote').value.trim(),
-    reviewedAt:firebase.firestore.FieldValue.serverTimestamp(),
-    updatedAt:firebase.firestore.FieldValue.serverTimestamp()
-  };
-  if(markReviewed)payload.status='reviewed';
-  try{
-    await db.collection(COL_SHEETS).doc(OPEN_SHEET_ID).set(payload,{merge:true});
-    // Reconcile from the persisted document after approval. Expense attachments are
-    // not part of the manager-edit payload and must remain visible/printable.
-    const persisted=await db.collection(COL_SHEETS).doc(OPEN_SHEET_ID).get();
-    if(!persisted.exists)throw new Error('Reviewed Time Sheet could not be reloaded.');
-    const saved=persisted.data()||{};
-    OPEN_SHEET={...OPEN_SHEET,...saved,entries,_orig:JSON.parse(JSON.stringify(entries)),managerEdits:allEdits};
-    renderManagerExpenses();
-    $('mgrSavedInfo').textContent=(markReviewed?'Review saved and marked approved. ':'Edits saved. ')+
-      newEdits.length+' new change(s) logged under '+init+' at '+new Date().toLocaleString()+'.';
-    renderEditLog();
-    if(markReviewed){OPEN_SHEET.status='reviewed';const old=INBOX_ITEMS.find(it=>it.id===OPEN_SHEET_ID);if(old)old.status='reviewed';}
-  }catch(e){console.error(e);$('mgrSavedInfo').textContent='Save failed: '+(e.message||e);}
-}
-
-$('mgrApprove')&&($('mgrApprove').onclick=()=>saveManagerReview(true));
-$('mgrSaveOnly')&&($('mgrSaveOnly').onclick=()=>saveManagerReview(false));
-$('mgrCsv')&&($('mgrCsv').onclick=()=>downloadCSV({...OPEN_SHEET,entries:currentMgrEntries()}));
-$('mgrPrint')&&($('mgrPrint').onclick=async()=>{
-  // Re-read the saved record so print reflects the same expense attachments
-  // that a manager sees after approval (including legacy expenseReport data).
-  try{
-    if(FB_OK&&OPEN_SHEET_ID){
-      const snap=await db.collection(COL_SHEETS).doc(OPEN_SHEET_ID).get();
-      if(!snap.exists)throw new Error('Time Sheet no longer exists.');
-      OPEN_SHEET={...OPEN_SHEET,...snap.data()};
-    }
-    renderManagerExpenses();
-    window.print();
-  }catch(e){console.error(e);alert('Could not prepare the saved Time Sheet for printing: '+(e.message||e));}
-});
-$('mgrDelete')&&($('mgrDelete').onclick=async()=>{
-  if(!FB_OK||!OPEN_SHEET_ID||!MANAGER_ROLES.includes(String(CURRENT.role||'').toLowerCase()))return;
-  const id=OPEN_SHEET_ID, sheet=OPEN_SHEET||{};
-  if(!['submitted','reviewed'].includes(sheet.status)){
-    alert('Only submitted or reviewed Time Sheets can be deleted from this manager view.');return;
-  }
-  const label=(sheet.employee||'Employee')+' — '+(sheet.weekStart||'?')+' to '+(sheet.weekEnd||'?');
-  const ok=confirm('WARNING: Permanently delete this submitted Time Sheet?\n\n'+label+'\n\nThis also removes its attached expense reports from the review and pay-period archive. This cannot be undone.\n\nSelect Cancel to keep the Time Sheet.');
-  if(!ok)return;
-  const btn=$('mgrDelete');btn.disabled=true;
-  try{
-    // Recheck the stored status just before deleting. Other managers may have updated it.
-    await db.runTransaction(async tx=>{
-      const ref=db.collection(COL_SHEETS).doc(id), snap=await tx.get(ref);
-      if(!snap.exists)throw new Error('The Time Sheet has already been deleted.');
-      if(!['submitted','reviewed'].includes(snap.data().status))throw new Error('This record is no longer submitted or reviewed.');
-      tx.delete(ref);
-    });
-    INBOX_ITEMS=INBOX_ITEMS.filter(it=>it.id!==id);
-    OPEN_SHEET=null;OPEN_SHEET_ID=null;
-    $('managerView').classList.add('hide');
-    $('inboxView').classList.remove('hide');
-    const u=new URL(location.href);u.searchParams.delete('sheet');u.searchParams.delete('id');history.replaceState({},'',u.toString());
-    renderInbox();window.scrollTo({top:0,behavior:'smooth'});
-    cloudMsg('ok','Deleted submitted Time Sheet: '+label);
-  }catch(e){console.error(e);alert('Deletion failed: '+(e.message||e));}
-  finally{btn.disabled=false;}
-});
-$('mgrBack')&&($('mgrBack').onclick=()=>{
-  $('managerView').classList.add('hide');
-  OPEN_SHEET=null;OPEN_SHEET_ID=null;
-  // strip ?sheet= from URL so it does not reopen
-  const u=new URL(location.href);u.searchParams.delete('sheet');u.searchParams.delete('id');
-  history.replaceState({},'',u.toString());
-  if(window.__fromInbox){ $('inboxView').classList.remove('hide'); renderInbox(); window.scrollTo({top:0,behavior:'smooth'}); }
-  else { enterTechMode(null); }
-});
-$('inboxBack')&&($('inboxBack').onclick=()=>{ $('inboxView').classList.add('hide'); enterTechMode(null); });
 
 /* ---------- helpers ---------- */
 function cloudMsg(kind,msg){
@@ -1466,25 +988,6 @@ function moneyExpense(n){return '$'+Number(n||0).toFixed(2);}
 function expensePayment(i){return i.paymentMethod==='company_card'?'Company Card':i.paymentMethod==='per_diem'?'Per Diem':'Out of Pocket';}
 function expenseAmounts(r){const items=Array.isArray(r.items)?r.items:[];let total=0,companyCard=0,reimbursable=0;for(const i of items){const amt=Number(i.amount)||0;total+=amt;if(i.paymentMethod==='company_card')companyCard+=amt;else reimbursable+=amt;}const advance=Number(r.advance)||0;return {total,companyCard,reimbursable,advance,owed:reimbursable-advance};}
 
-function renderManagerExpenses(){
-  const d=OPEN_SHEET||{};
-  const reports=Array.isArray(d.expenseReports)?d.expenseReports:(d.expenseReport?[d.expenseReport]:[]);
-  const target=$('mgrExpenseSummary');
-  if(!reports.length){target.textContent='No expense reports attached to this submission.';return;}
-  target.innerHTML=reports.map((r,index)=>{
-    const items=Array.isArray(r.items)?r.items:[];
-    const {total,companyCard,reimbursable,advance,owed}=expenseAmounts(r);
-    return '<article class="expense-attached">'+
-      '<div class="expense-heading"><strong>Expense Report '+(index+1)+' · '+esc(r.jobName||'Job')+' · Job #'+esc(r.jobNumber||'—')+'</strong></div>'+
-      '<div class="expense-meta small">Employee: '+esc(r.employee||d.employee||'—')+' · Department: '+esc(r.department||'—')+' · Manager: '+esc(r.manager||d.managerName||'—')+'</div>'+
-      '<div class="expense-meta small">Pay period: '+esc(r.from||'—')+' to '+esc(r.to||'—')+' · Statement #: '+esc(r.statement||'—')+' · Purpose: '+esc(r.purpose||'—')+'</div>'+
-      '<div class="expense-scroll"><table class="expense-table"><thead><tr><th>Date</th><th>Account</th><th>Description</th><th>Payment Method</th><th>Amount</th></tr></thead><tbody>'+
-      items.map(item=>'<tr><td>'+esc(item.date||'')+'</td><td>'+esc(item.account||'')+'</td><td>'+esc(item.description||'')+'</td><td>'+esc(expensePayment(item))+'</td><td>'+moneyExpense(item.amount)+'</td></tr>').join('')+
-      '</tbody></table></div>'+
-      '<div class="expense-totals"><span>Expenses: <b>'+moneyExpense(total)+'</b></span><span>Company Card: <b>'+moneyExpense(companyCard)+'</b></span><span>Reimbursable: <b>'+moneyExpense(reimbursable)+'</b></span><span>Cash advances: <b>'+moneyExpense(advance)+'</b></span><span>'+(owed<0?'Due from technician':'Reimbursement')+': <b>'+moneyExpense(Math.abs(owed))+'</b></span></div>'+
-      (r.notes?'<div class="small">Notes: '+esc(r.notes)+'</div>':'')+'</article>';
-  }).join('');
-}
 function renderExpenseReport(){
   const target=$('expenseSummary');
   if(!EXPENSE_REPORTS.length){target.textContent='No expense reports attached.';return;}

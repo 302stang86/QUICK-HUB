@@ -29,7 +29,7 @@ input.invalid,select.invalid{border-color:#e0918b;background:#fff6f5}
 .pill{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:4px 10px;border-radius:999px;background:#23507e}
 .pill.tech{background:#23507e}.pill.manager{background:#7a4a12}.pill.admin{background:#5b2d82}
 .badge{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:4px 10px;border-radius:999px;margin-left:6px}
-.badge.draft{background:#eef0f3;color:#55616f}.badge.submitted{background:#fff2d6;color:#7a5600}.badge.reviewed{background:#e3f4e9;color:#1f6b3a}
+.badge.draft{background:#eef0f3;color:#55616f}.badge.submitted{background:#fff2d6;color:#7a5600}.badge.reviewed{background:#e3f4e9;color:#1f6b3a}.badge.returned{background:#fde8d0;color:#8a3b00}
 
 /* Hours allocation cards */
 .rows{display:flex;flex-direction:column;gap:14px}
@@ -56,6 +56,10 @@ input.autofield{background:#eef1f4;color:#5a6472;cursor:not-allowed}
 .ibx-item{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;border:1px solid #e2e7ee;border-radius:10px;padding:11px 14px;margin-bottom:8px;background:#fff;cursor:pointer;text-decoration:none;color:inherit}
 .ibx-item:hover{border-color:var(--navy,#3281b9);background:#f6f9fc}
 .ibx-item .lbl{font-weight:650;font-size:14px}
+.ibx-pending{margin:4px 0 8px;padding:8px 12px;border-radius:9px;background:#eef4fb;border:1px solid #cfdcec;color:#17324d;font-size:13px}
+.ibx-returned .ibx-item.static{cursor:default;flex-wrap:wrap}.ibx-returned .ibx-item.static:hover{background:#fff;border-color:#e2e7ee}
+.ibx-note{flex-basis:100%;font-size:12px;color:#66707f}
+.ibx-older{margin:12px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .exp-chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:2px 9px;border-radius:999px;background:#e3ecf8;color:#1d4a7a;border:1px solid #b8cfe8;vertical-align:middle}
 .ibx-item .meta{font-size:12px;color:#66707f;white-space:nowrap}
 .ibx-empty{padding:20px;text-align:center;color:#777;font-size:13px}
@@ -472,6 +476,7 @@ header,main{position:relative;z-index:1;}
     </div>
     <div class="btns no-print">
       <button class="go" id="mgrApprove" type="button">Save Review &amp; Mark Approved</button>
+      <button class="secondary" id="mgrReturn" type="button">Return to Technician</button>
       <button class="secondary" id="mgrSaveOnly" type="button">Save Edits (keep open)</button>
       <button class="ghost" id="mgrPrint" type="button">Print / Save as PDF</button>
       <button class="danger" id="mgrDelete" type="button">Delete Submitted Timesheet</button>
@@ -1058,7 +1063,9 @@ function downloadCSV(dIn){
 let INBOX_ITEMS=[], INBOX_YEAR='', INBOX_EXPANDED={};
 // FDEC biweekly payroll anchor. Weekly Sunday–Saturday documents remain unchanged;
 // only their dated daily entries are apportioned into the appropriate payroll period.
-const PAY_ANCHOR=Date.UTC(2026,9,12), PAY_DAY_ANCHOR=Date.UTC(2026,9,28), PAY_MS=86400000;
+/* Pay periods are two full Sunday-to-Saturday weeks. A period starts on a Sunday that is a multiple of 14 days from Sep 27, 2026 (so 10/25, 11/8, 11/22 ...).
+   Time sheets are due Monday 8:00 AM ET after the period ends; payday is the Tuesday after it ends. */
+const PAY_ANCHOR=Date.UTC(2026,8,27), PAY_MS=86400000;
 function payDate(s){if(!/^\d{4}-\d{2}-\d{2}$/.test(String(s||'')))return NaN; const d=new Date(s+'T00:00:00Z');return d.getTime();}
 function payISO(t){return new Date(t).toISOString().slice(0,10);}
 function payFmt(t){return new Date(t).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'});}
@@ -1066,7 +1073,7 @@ function payrollPeriodFromTime(t){
   if(!Number.isFinite(t))return {key:'undated',undated:true,year:'Undated',title:'Undated submissions',sort:-Infinity};
   const n=Math.floor((t-PAY_ANCHOR)/(14*PAY_MS));
   const from=PAY_ANCHOR+n*14*PAY_MS,to=from+13*PAY_MS;
-  return {key:payISO(from),year:String(new Date(to).getUTCFullYear()),title:payFmt(from)+' – '+payFmt(to),from,to,sort:from,due:to+PAY_MS,payday:PAY_DAY_ANCHOR+n*14*PAY_MS};
+  return {key:payISO(from),year:String(new Date(to).getUTCFullYear()),title:payFmt(from)+' – '+payFmt(to),from,to,sort:from,due:to+2*PAY_MS,payday:to+3*PAY_MS};
 }
 function payPeriod(it){
   const we=payDate(it.weekEnd), ws=payDate(it.weekStart);
@@ -1091,26 +1098,41 @@ function tsSheetYear(it){return payPeriod(it).year;}
 function tsSheetLabel(it){
   return (it.employee||'Employee')+' · '+(it.weekStart||'?')+' – '+(it.weekEnd||'?');
 }
+let INBOX_RETURNED=[], INBOX_ALL=false;
+/* Faster loading: admins load every sheet still waiting for review plus all sheets from the current and previous two (2) pay periods.
+   Older reviewed sheets load on request (Load older pay periods) or automatically when a search or report needs them. */
+function inboxCutoff(){return payISO(payrollPeriodFromTime(Date.now()).from-28*PAY_MS);}
+function inboxMerge(rows){
+  const seen={};
+  rows.forEach(r=>{seen[r.id]=r;});
+  const all=Object.keys(seen).map(k=>seen[k]);
+  INBOX_ITEMS=all.filter(r=>r.status==='submitted'||r.status==='reviewed');
+  INBOX_RETURNED=all.filter(r=>r.status==='returned');
+  INBOX_ITEMS.sort((a,b)=>(b.submittedAt&&b.submittedAt.seconds||0)-(a.submittedAt&&a.submittedAt.seconds||0));
+}
 async function showInbox(){
   if(!FB_OK)return;
   cloudMsg('info','Loading submitted timesheets…');
   try{
-    const wanted={submitted:1,reviewed:1};
     let rows=[];
+    const add=q=>q.forEach(d=>rows.push({id:d.id,...d.data()}));
     if(CURRENT.role==='admin'){
-      // Admins oversee every submitted sheet (including their own).
-      const q=await db.collection(COL_SHEETS).where('status','in',['submitted','reviewed']).get();
-      q.forEach(d=>rows.push({id:d.id,...d.data()}));
+      // Admins oversee every submitted sheet (including their own). Single-field queries only, so no composite index is needed.
+      const cut=inboxCutoff();
+      const [qa,qb,qc]=await Promise.all([
+        db.collection(COL_SHEETS).where('status','==','submitted').get(),
+        db.collection(COL_SHEETS).where('weekStart','>=',cut).get(),
+        db.collection(COL_SHEETS).where('status','==','returned').get()
+      ]);
+      add(qa);add(qb);add(qc);
+      if(INBOX_ALL){add(await db.collection(COL_SHEETS).where('weekStart','<',cut).get());}
     } else {
       // Managers see sheets submitted TO them plus their own submitted sheets.
-      // Single-field queries (no composite index needed); status filtered here.
-      const seen={};
       const q1=await db.collection(COL_SHEETS).where('managerUid','==',CURRENT.uid).get();
       const q2=await db.collection(COL_SHEETS).where('employeeUid','==',CURRENT.uid).get();
-      [q1,q2].forEach(q=>q.forEach(d=>{ const dt=d.data()||{}; if(wanted[dt.status] && !seen[d.id]){ seen[d.id]=1; rows.push({id:d.id,...dt}); } }));
+      add(q1);add(q2);INBOX_ALL=true;
     }
-    INBOX_ITEMS=rows;
-    INBOX_ITEMS.sort((a,b)=>(b.submittedAt&&b.submittedAt.seconds||0)-(a.submittedAt&&a.submittedAt.seconds||0));
+    inboxMerge(rows);
     $('techView').classList.add('hide');
     $('managerView').classList.add('hide');
     $('cloudStatus').classList.add('hide');
@@ -1120,8 +1142,31 @@ async function showInbox(){
     window.scrollTo({top:0,behavior:'smooth'});
   }catch(e){console.error(e);cloudMsg('error','Could not load submitted timesheets: '+(e.message||e));}
 }
+/* Load every older sheet (admin). Safe to call repeatedly. */
+let INBOX_OLDER_BUSY=null;
+function loadOlderSheets(){
+  if(INBOX_ALL||CURRENT.role!=='admin'){INBOX_ALL=true;return Promise.resolve();}
+  if(INBOX_OLDER_BUSY)return INBOX_OLDER_BUSY;
+  INBOX_OLDER_BUSY=(async()=>{
+    const q=await db.collection(COL_SHEETS).where('weekStart','<',inboxCutoff()).get();
+    const rows=[].concat(INBOX_ITEMS,INBOX_RETURNED);
+    q.forEach(d=>rows.push({id:d.id,...d.data()}));
+    inboxMerge(rows);INBOX_ALL=true;
+    const sel=$('tsFilterType');
+    if(sel){const prior=sel.value;const cats=[...new Set(INBOX_ITEMS.flatMap(x=>(x.entries||[]).map(e=>String(e.type||'').trim())).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+      sel.innerHTML='<option value="">All Departments</option>'+cats.map(t=>'<option value="'+escAttr(t)+'">'+esc(t)+'</option>').join('');if(cats.includes(prior))sel.value=prior;}
+    if(!$('inboxView').classList.contains('hide'))renderInbox();
+  })().finally(()=>{INBOX_OLDER_BUSY=null;});
+  return INBOX_OLDER_BUSY;
+}
+/* A search or report reaches older sheets when it has no From date, or its From date is before the loaded window. */
+async function ensureOlderFor(from,noteEl){
+  if(INBOX_ALL)return;
+  if(from&&from>=inboxCutoff())return;
+  if(noteEl)noteEl.innerHTML='<p class="small">Loading older sheets so the results are complete…</p>';
+  try{await loadOlderSheets();}catch(e){console.error(e);if(noteEl)noteEl.innerHTML='<p class="small">Could not load older sheets: '+esc(e.message||e)+'</p>';throw e;}
+}
 
-// Search operates over already-authorized manager inbox documents; no extra Firestore reads/writes.
 function initTsSearch(){
   const sel=$('tsFilterType'), prior=sel.value;
   const categories=[...new Set(INBOX_ITEMS.flatMap(s=>(s.entries||[]).map(e=>String(e.type||'').trim())).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
@@ -1152,7 +1197,11 @@ function tsDownload(){
   savePrintable('FDEC Time Sheet Search',[parts.length?'Filters: '+parts.join(' · '):'Filters: none (all submitted and reviewed time sheets)','Generated '+new Date().toLocaleString()],body,'FDEC-Time-Sheet-Search-'+new Date().toISOString().slice(0,10)+'.html');
 }
 $('tsSearchDl')&&($('tsSearchDl').onclick=tsDownload);
-function renderTsSearch(){
+async function renderTsSearch(){
+  try{await ensureOlderFor($('tsFilterFrom').value,$('tsSearchResults'));}catch(e){return;}
+  renderTsSearchNow();
+}
+function renderTsSearchNow(){
   const type=$('tsFilterType').value.toLowerCase(),job=$('tsFilterJob').value.trim().toLowerCase(),tech=$('tsFilterTech').value.trim().toLowerCase();
   const from=$('tsFilterFrom').value,to=$('tsFilterTo').value, target=$('tsSearchResults');
   if(from&&to&&from>to){target.textContent='From Date must be on or before To Date.';return;}
@@ -1202,9 +1251,9 @@ function renderInbox(){
     return '<a href="#" class="ibx-item" data-open="'+esc(it.id)+'"><span class="lbl">'+esc(tsSheetLabel(it))+'</span><span class="meta">'+expChip(it)+tot+' hrs in period &nbsp;<span class="badge '+(it.status==='reviewed'?'reviewed':'submitted')+'">'+(it.status==='reviewed'?'Reviewed':'Submitted')+'</span></span></a>';
   }
   function periodHTML(g,archived){
-    const p=g.period, reviewed=g.items.filter(it=>it.status==='reviewed').length;
-    const expanded=INBOX_EXPANDED[g.period.key]===true || (!archived&&INBOX_EXPANDED[g.period.key]!==false);
-    const heading='<div role="button" tabindex="0" class="pay-folder'+(p.key===current?' current':'')+'" data-period="'+esc(p.key)+'" aria-expanded="'+expanded+'"><span class="pay-folder-icon">'+(archived?'▣':'▤')+'</span><span class="pay-folder-info"><strong>'+esc(p.title)+'</strong><small>'+(p.undated?'Date not supplied':'Due '+esc(payFmt(p.due))+' at 8:00 AM ET · Payday '+esc(payFmt(p.payday)))+'</small></span><span class="pay-folder-meta">'+reviewed+'/'+g.items.length+' reviewed '+(expanded?'▾':'▸')+'</span></div>';
+    const p=g.period, reviewed=g.items.filter(it=>it.status==='reviewed').length, waiting=g.items.filter(it=>it.status==='submitted').length;
+    const expanded=INBOX_EXPANDED[g.period.key]===true; // every pay period starts collapsed
+    const heading='<div role="button" tabindex="0" class="pay-folder'+(p.key===current?' current':'')+'" data-period="'+esc(p.key)+'" aria-expanded="'+expanded+'"><span class="pay-folder-icon">'+(archived?'▣':'▤')+'</span><span class="pay-folder-info"><strong>'+esc(p.title)+'</strong><small>'+(p.undated?'Date not supplied':'Due '+esc(payFmt(p.due))+' at 8:00 AM ET · Payday '+esc(payFmt(p.payday)))+'</small></span><span class="pay-folder-meta">'+reviewed+'/'+g.items.length+' reviewed'+(waiting?' · '+waiting+' waiting':'')+' '+(expanded?'▾':'▸')+'</span></div>';
     const list=expanded?'<div class="pay-folder-items">'+g.items.sort((a,b)=>(a.weekStart||'').localeCompare(b.weekStart||'')||String(a.employee||'').localeCompare(String(b.employee||''))).map(it=>itemHTML(it,p.key)).join('')+'</div>':'';
     const exportButton='<div class="pay-export-bar"><button type="button" class="secondary" data-export-period="'+esc(p.key)+'">↓ Download Pay Period (printable)</button></div>';
     return '<div class="pay-folder-wrap">'+heading+exportButton+list+'</div>';
@@ -1216,11 +1265,20 @@ function renderInbox(){
   const awaiting=relevant.filter(g=>g.period.undated||g.period.key!==current && !(g.period.to<now && g.items.every(it=>it.status==='reviewed')));
   const archived=relevant.filter(g=>!g.period.undated&&g.period.key!==current&&g.period.to<now&&g.items.every(it=>it.status==='reviewed'));
   let html='';
-  if(!all.length) html='<div class="ibx-empty">No submitted timesheets for you right now.</div>';
+  const pendingAll=INBOX_ITEMS.filter(it=>it.status==='submitted').length;
+  html+='<div class="ibx-pending"><b>Awaiting review: '+pendingAll+'</b>'+(pendingAll===1?' time sheet':' time sheets')+(INBOX_RETURNED.length?' · '+INBOX_RETURNED.length+' returned to technicians':'')+'</div>';
+  if(INBOX_RETURNED.length){
+    html+='<div class="ibx-group">Returned to technicians · waiting for a correction</div><div class="ibx-returned">'+INBOX_RETURNED.slice().sort((a,b)=>String(a.employee||'').localeCompare(String(b.employee||''))||String(a.weekStart||'').localeCompare(String(b.weekStart||''))).map(it=>{
+      const when=it.returnedAt&&it.returnedAt.seconds?new Date(it.returnedAt.seconds*1000).toLocaleDateString():it.returnedAtISO?new Date(it.returnedAtISO).toLocaleDateString():'';
+      return '<div class="ibx-item static"><span class="lbl">'+esc(tsSheetLabel(it))+'</span><span class="meta">Returned'+(when?' '+esc(when):'')+(it.returnedBy?' by '+esc(it.returnedBy):'')+' &nbsp;<span class="badge returned">Returned</span></span>'+(it.returnedNote?'<span class="ibx-note">'+esc(it.returnedNote)+'</span>':'')+'</div>';}).join('')+'</div>';
+  }
+  if(!all.length) html+='<div class="ibx-empty">No submitted timesheets for you right now.</div>';
   if(active.length)html+='<div class="ibx-group">Current Pay Period</div>'+active.map(g=>periodHTML(g,false)).join('');
   if(awaiting.length)html+='<div class="ibx-group">Awaiting Review / Previous Pay Periods</div>'+awaiting.map(g=>periodHTML(g,false)).join('');
   if(archived.length)html+='<div class="ibx-group">Past Pay Periods · Archived after review</div>'+archived.map(g=>periodHTML(g,true)).join('');
+  if(!INBOX_ALL)html+='<div class="ibx-older no-print"><button type="button" class="secondary" id="loadOlder">Load older pay periods</button><span class="small" id="olderNote"> Showing every sheet awaiting review plus the current and previous two (2) pay periods.</span></div>';
   $('inboxList').innerHTML=html;
+  $('loadOlder')&&($('loadOlder').onclick=async()=>{const b=$('loadOlder');b.disabled=true;$('olderNote').textContent=' Loading older pay periods…';try{await loadOlderSheets();}catch(e){console.error(e);b.disabled=false;$('olderNote').textContent=' Could not load older sheets: '+(e.message||e);}});
   $('inboxList').querySelectorAll('[data-open]').forEach(a=>a.onclick=ev=>{ev.preventDefault();openManagerReview(a.getAttribute('data-open'),true);});
   $('inboxList').querySelectorAll('[data-export-period]').forEach(b=>b.onclick=()=>downloadPayPeriod(b.getAttribute('data-export-period')));
   $('inboxList').querySelectorAll('[data-period]').forEach(b=>b.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();b.click();}});
@@ -1525,6 +1583,34 @@ $('mgrDelete')&&($('mgrDelete').onclick=async()=>{
   }catch(e){console.error(e);alert('Deletion failed: '+(e.message||e));}
   finally{btn.disabled=false;}
 });
+$('mgrReturn')&&($('mgrReturn').onclick=async()=>{
+  if(!FB_OK||!OPEN_SHEET_ID||!MANAGER_ROLES.includes(String(CURRENT.role||'').toLowerCase()))return;
+  const id=OPEN_SHEET_ID,sheet=OPEN_SHEET||{};
+  if(!['submitted','reviewed'].includes(sheet.status)){alert('Only submitted or reviewed Time Sheets can be returned to the technician.');return;}
+  const label=(sheet.employee||'Employee')+' — '+(sheet.weekStart||'?')+' to '+(sheet.weekEnd||'?');
+  const note=(prompt('Return this Time Sheet to the technician:\n'+label+'\n\nType the note the technician will see (required). Unsaved changes on this screen are not applied.')||'').trim();
+  if(!note)return;
+  const init=($('mgrInitials').value||'').trim().toUpperCase();
+  const by=CURRENT.name||init||'Manager';
+  const btn=$('mgrReturn');btn.disabled=true;
+  try{
+    let from='';
+    await db.runTransaction(async tx=>{
+      const ref=db.collection(COL_SHEETS).doc(id),snap=await tx.get(ref);
+      if(!snap.exists)throw new Error('The Time Sheet no longer exists.');
+      from=snap.data().status;
+      if(!['submitted','reviewed'].includes(from))throw new Error('This Time Sheet is no longer submitted or reviewed.');
+      const ts=firebase.firestore.FieldValue.serverTimestamp();
+      tx.set(ref,{status:'returned',returnedNote:note,returnedBy:by,returnedByInitials:init,returnedAt:ts,updatedAt:ts,
+        returnHistory:firebase.firestore.FieldValue.arrayUnion({note:note,by:by,initials:init,at:new Date().toISOString(),from:from})},{merge:true});
+    });
+    INBOX_ITEMS=INBOX_ITEMS.filter(it=>it.id!==id);
+    INBOX_RETURNED=INBOX_RETURNED.filter(it=>it.id!==id).concat([{...sheet,id:id,status:'returned',returnedNote:note,returnedBy:by,returnedAtISO:new Date().toISOString()}]);
+    backToReview();
+    setTimeout(()=>cloudMsg('ok','Returned to '+(sheet.employee||'the technician')+': '+(sheet.weekStart||'')+'. They will see your note and can resubmit.'),80);
+  }catch(e){console.error(e);alert('Could not return the Time Sheet: '+(e.message||e));}
+  finally{btn.disabled=false;}
+});
 function leaveSheet(){
   $('managerView').classList.add('hide');
   OPEN_SHEET=null;OPEN_SHEET_ID=null;
@@ -1659,7 +1745,8 @@ function jhRender(){
   const h=jhBuildHtml(names);
   out.innerHTML=h;
 }
-function jhRun(){
+async function jhRun(){
+  try{await ensureOlderFor($('jhFrom').value,$('jhResults'));}catch(e){return;}
   if(!INBOX_ITEMS||!INBOX_ITEMS.length){$('jhNote').textContent='Submitted time sheets are still loading.';}
   else $('jhNote').textContent='';
   JH.variants={};
@@ -1675,8 +1762,9 @@ function jhListState(){
   const b=$('jhList');if(!b)return;
   b.disabled=!($('jhFrom').value&&$('jhTo').value&&!($('jhJob').value||'').trim());
 }
-function jhListJobs(){
+async function jhListJobs(){
   if($('jhList').disabled)return;
+  try{await ensureOlderFor($('jhFrom').value,$('jhResults'));}catch(e){return;}
   $('jhNote').textContent=(!INBOX_ITEMS||!INBOX_ITEMS.length)?'Submitted time sheets are still loading.':'';
   const f=n=>(+n).toFixed(2);
   const jobs={};
