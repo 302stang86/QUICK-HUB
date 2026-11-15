@@ -114,6 +114,13 @@ table.review tbody tr.job-number-alpha > td{background:#F7C58D;box-shadow:inset 
 table.review tbody tr.job-number-alpha > td:first-child{box-shadow:inset 2px 0 #D58229,inset 0 1px #D58229,inset 0 -1px #D58229}
 table.review tbody tr.job-number-alpha > td:last-child{box-shadow:inset -2px 0 #D58229,inset 0 1px #D58229,inset 0 -1px #D58229}
 @media print{table.review tbody tr.job-number-alpha > td{background:#F7C58D!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+table.review tbody tr:has(+ tr.daysub) > td{border-bottom:0}
+table.review tbody tr.daysub td{border-bottom:0;padding:6px 5px 8px;vertical-align:middle}
+.daylbl{display:flex;align-items:center;gap:10px;font-size:10pt;opacity:.85}
+.daylbl span{white-space:nowrap}
+.dayline{flex:1;height:0;border-top:1px solid currentColor;opacity:.6}
+.daybox{display:block;box-sizing:border-box;width:100%;text-align:center;border:1px solid rgba(127,127,127,.55);border-radius:6px;background:rgba(127,127,127,.08);padding:3px 4px;font-size:10pt;font-weight:600;line-height:1.2}
+.daybox small{display:block;font-size:8pt;font-weight:400;opacity:.8}
 td.rowtot{font-weight:700;color:var(--navy)}
 .edited{background:#fff1f2!important;outline:3px solid #c40018!important;outline-offset:-2px;border-radius:4px}
 /* Manager changes: outline the actual editable control, without altering row dimensions. */
@@ -1281,7 +1288,7 @@ function tdnum(x){return '<td class="num">'+x+'</td>';}
 function headCell(label,val){return '<div><label>'+esc(label)+'</label><div style="padding:3px 0 1px;font-size:10pt;color:var(--navy);font-weight:600">'+esc(val||'—')+'</div></div>';}
 
 function currentMgrEntries(){
-  return [...$('mgrBody').querySelectorAll('tr')].map(tr=>{
+  return [...$('mgrBody').querySelectorAll('tr[data-row]')].map(tr=>{
     const g=f=>tr.querySelector('[data-f="'+f+'"]').value;
     return {type:g('type'),job:g('jobName').trim(),jobName:g('jobName').trim(),jobNumber:g('jobNumber').trim(),day:g('day'),
       st:+g('st')||0,ot:+g('ot')||0,dt:+g('dt')||0,notes:g('notes').trim()};
@@ -1300,11 +1307,27 @@ function flagIfEdited(inp){
 
 function recalcMgr(){
   let st=0,ot=0,dt=0;
-  $('mgrBody').querySelectorAll('tr').forEach(tr=>{
+  const body=$('mgrBody');
+  body.querySelectorAll('tr.daysub').forEach(r=>r.remove());
+  const rows=[...body.querySelectorAll('tr[data-row]')];
+  let run=null;
+  const closeRun=()=>{
+    if(!run)return;
+    const sub=document.createElement('tr');sub.className='daysub';
+    const bx=(l,v)=>'<td class="num"><span class="daybox"><small>'+l+'</small>'+v.toFixed(2)+'</span></td>';
+    sub.innerHTML='<td colspan="4"><div class="daylbl"><span>'+esc(run.day||'No day')+' total</span><i class="dayline"></i></div></td>'+bx('ST',run.st)+bx('OT',run.ot)+bx('DT',run.dt)+'<td></td><td></td>';
+    run.last.after(sub);run=null;
+  };
+  rows.forEach(tr=>{
     const g=f=>+tr.querySelector('[data-f="'+f+'"]').value||0;
     const a=g('st'),b=g('ot'),c=g('dt');st+=a;ot+=b;dt+=c;
     tr.querySelector('[data-tot]').textContent=(a+b+c).toFixed(2);
+    const day=tr.querySelector('[data-f="day"]').value;
+    if(run&&run.day!==day)closeRun();
+    if(!run)run={day:day,st:0,ot:0,dt:0,last:tr};
+    run.st+=a;run.ot+=b;run.dt+=c;run.last=tr;
   });
+  closeRun();
   $('mST').textContent=st.toFixed(2);$('mOT').textContent=ot.toFixed(2);
   $('mDT').textContent=dt.toFixed(2);$('mAll').textContent=(st+ot+dt).toFixed(2);
 }
