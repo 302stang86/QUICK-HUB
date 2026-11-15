@@ -274,12 +274,15 @@ header,main{position:relative;z-index:1;}
 
 /* Keep the per-period export action separate from the folder expand control. */
 /* Raised glass pay period headers */
-.pay-folder{position:relative;background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0) 55%),linear-gradient(90deg,rgba(116,134,162,.92) 0%,rgba(75,90,116,.92) 100%)!important;color:#fff!important;border:1px solid rgba(255,255,255,.32)!important;border-radius:10px!important;box-shadow:0 6px 14px rgba(15,30,55,.30),inset 0 1px 0 rgba(255,255,255,.40),inset 0 -1px 0 rgba(0,0,0,.25)!important;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);text-shadow:0 1px 1px rgba(0,0,0,.35)}
-.pay-folder.current{background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0) 55%),linear-gradient(90deg,rgba(38,140,92,.95) 0%,rgba(63,111,112,.93) 55%,rgba(75,90,116,.92) 100%)!important}
+.pay-folder{position:relative;background:linear-gradient(180deg,rgba(255,255,255,.20),rgba(255,255,255,0) 55%),linear-gradient(90deg,rgba(75,90,116,.95) 0%,rgba(116,134,162,.92) 100%)!important;color:#fff!important;border:1px solid rgba(255,255,255,.32)!important;border-radius:10px!important;box-shadow:0 6px 14px rgba(15,30,55,.30),inset 0 1px 0 rgba(255,255,255,.40),inset 0 -1px 0 rgba(0,0,0,.25)!important;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);text-shadow:0 1px 2px rgba(0,0,0,.55);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+.pay-folder.current{background:linear-gradient(180deg,rgba(255,255,255,.20),rgba(255,255,255,0) 55%),linear-gradient(90deg,rgba(75,90,116,.95) 0%,rgba(63,111,112,.93) 45%,rgba(38,140,92,.95) 100%)!important}
 .pay-folder:hover{filter:brightness(1.08)}
 .pay-folder:focus-visible{outline:2px solid #9cc4ee;outline-offset:2px}
-.pay-folder .pay-folder-icon,.pay-folder .pay-folder-info small,.pay-folder .pay-folder-meta{color:#fff!important}
-.pay-folder .pay-folder-info small{opacity:.9}
+.pay-folder .pay-folder-icon{color:#fff!important;font-size:25px}
+.pay-folder .pay-folder-info strong{font-size:17px!important;font-weight:700;letter-spacing:.1px;color:#fff!important}
+.pay-folder .pay-folder-info small{font-size:13.5px!important;font-weight:500;color:#fff!important;opacity:1}
+.pay-folder .pay-folder-meta{font-size:13.5px!important;font-weight:700;color:#fff!important}
+@media(max-width:600px){.pay-folder .pay-folder-info strong{font-size:15px!important}.pay-folder .pay-folder-info small,.pay-folder .pay-folder-meta{font-size:12.5px!important}}
 .pay-folder-wrap{background:#fff}
 .pay-export-bar{padding:6px 12px 10px;display:flex;justify-content:flex-end}
 .pay-export-bar button{font-size:13px;padding:8px 12px}
