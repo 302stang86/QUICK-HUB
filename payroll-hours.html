@@ -1,0 +1,196 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=1280"><title>Payroll Hours | Fire Defense</title><style>
+:root{--navy:#142b46;--blue:#1d5f91;--line:#d6dee7;--muted:#667586}*{box-sizing:border-box}body{margin:0;background:#f2f5f8;color:#202b36;font:15px/1.45 Arial,sans-serif}
+header.top{background:linear-gradient(110deg,#102840,#1d5f91);padding:18px 16px;color:#fff}header.top .inside{max-width:1280px;margin:auto}header.top h1{font-size:24px;margin:0}header.top p{font-size:13px;margin:4px 0 0;opacity:.85}
+main{max-width:1280px;margin:16px auto;padding:0 14px 80px}.panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:14px}
+h2{font-size:17px;color:var(--navy);margin:0 0 10px}label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:#526273;letter-spacing:.3px;margin:0 0 4px}
+input,select{width:100%;height:36px;border:1px solid #c3cfdc;border-radius:7px;padding:5px 8px;font:inherit;background:#fff}
+.row{display:grid;grid-template-columns:2fr 1.3fr 1.3fr auto;gap:10px;align-items:end}.row3{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr auto;gap:10px;align-items:end}
+button{height:36px;border:1px solid #9fb3c8;background:#eef3f8;color:#17324d;border-radius:8px;padding:0 14px;font:inherit;font-weight:700;cursor:pointer}button.go{background:#1f7a3d;border-color:#1f7a3d;color:#fff}
+table{width:100%;border-collapse:collapse;font-size:14px;margin-top:10px}th,td{border-bottom:1px solid #e3e9ef;padding:7px 8px;text-align:left}th{background:#eef3f8;font-size:12px;text-transform:uppercase;color:#3c566f}.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.emp{cursor:pointer}tr.emp:hover{background:#f5f9fd}tr.tot td{background:#dbe8f6;font-weight:700}tr.sub td{background:#fafcfe;font-size:13px;color:#33475b}tr.alpha td{background:#f7c58d}
+.hint{color:var(--muted);font-size:13px;margin:6px 0}.msg{padding:10px 14px;border-radius:9px;margin-bottom:12px;background:#eef4fb;border:1px solid #cfdcec}.msg.error{background:#fde8e8;border-color:#f0b4b4}.hide{display:none!important}
+h4.dept{background:#c9bfe8;margin:14px 0 0;padding:5px 10px;border-radius:6px;font-size:14px}
+@media print{header.top,.no-print{display:none!important}body{background:#fff}.panel{border:0;padding:0}tr.alpha td{background:#f7c58d!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style>
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#1B2A4A">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+<script defer src="fdec-offline.js"></script>
+<meta name="fdec-page-title" content="Payroll Hours"><meta name="fdec-hide" content="header.top"><script defer src="fdec-header.js"></script>
+</head><body>
+<header class="top"><div class="inside"><h1>Fire Defense Equipment Co.</h1><p>Payroll Hours · read only</p></div></header>
+<main>
+<div id="cloudMsg" class="msg hide no-print"></div>
+<div id="view" class="hide">
+<section class="panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2 style="margin:0">Hours by pay period</h2><span class="no-print"><button type="button" id="toHub">Back to hub</button></span></div>
+  <p class="hint">Counts submitted and reviewed time sheets only. Drafts and sheets returned to a technician are not included. Hours are placed in the pay period of the day they were worked.</p>
+  <div class="row no-print">
+    <div><label for="period">Pay period</label><select id="period"></select></div>
+    <div><label for="dept">Type / Department</label><select id="dept"><option value="">All departments</option></select></div>
+    <div><label for="emp">Employee</label><input id="emp" type="search" placeholder="Any employee"></div>
+    <div><button type="button" class="go" id="print">Print</button></div>
+  </div>
+  <div id="periodInfo" class="hint"></div>
+  <div id="periodOut"></div>
+</section>
+<section class="panel no-print">
+  <h2>Job hours report</h2>
+  <p class="hint">Total hours on one job number, split by department. A number with digits only must match exactly. A Job number with a letter or special character also pulls close matches, such as 200-123 for cm200-123.</p>
+  <div class="row3">
+    <div><label for="jJob">Job number</label><input id="jJob" type="search" placeholder="e.g. 2515555 or cm200-123" autocomplete="off"></div>
+    <div><label for="jFrom">From date</label><input id="jFrom" type="date"></div>
+    <div><label for="jTo">To date</label><input id="jTo" type="date"></div>
+    <div><label style="margin-top:4px"><input id="jNames" type="checkbox" checked style="width:auto;height:auto;margin-right:5px">Employee names</label></div>
+    <div><button type="button" class="go" id="jRun">Run report</button></div>
+  </div>
+  <div id="jOut"></div>
+</section>
+</div>
+</main>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCS_Hw94f4b7X0IkZV9gFXkZDIYNoa8eYo",
+  authDomain: "fire-defense-itm-reports.firebaseapp.com",
+  projectId: "fire-defense-itm-reports",
+  storageBucket: "fire-defense-itm-reports.firebasestorage.app",
+  messagingSenderId: "477656152120",
+  appId: "1:477656152120:web:a14b2c03bddfb2a9de8ecd"
+};
+const COL='timesheets', COL_USERS='users', ALLOWED=['office','finance','manager','admin'];
+const ADMIN_EMAILS=["mp1@firedefense.com","302stang86@gmail.com","wh1@firedefense.com"];
+const $=id=>document.getElementById(id);
+const dayNames=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const PAY_ANCHOR=Date.UTC(2026,8,27), PAY_MS=86400000;
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function payDate(s){if(!/^\d{4}-\d{2}-\d{2}$/.test(String(s||'')))return NaN;return new Date(s+'T00:00:00Z').getTime();}
+function payISO(t){return new Date(t).toISOString().slice(0,10);}
+function payFmt(t){return new Date(t).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'});}
+function periodOf(t){
+  if(!Number.isFinite(t))return {key:'undated',title:'Undated entries',sort:-Infinity};
+  const n=Math.floor((t-PAY_ANCHOR)/(14*PAY_MS)),from=PAY_ANCHOR+n*14*PAY_MS,to=from+13*PAY_MS;
+  return {key:payISO(from),title:payFmt(from)+' – '+payFmt(to),from,to,sort:from,due:to+2*PAY_MS,payday:to+3*PAY_MS};
+}
+function entryDate(sheet,day){const ws=payDate(sheet.weekStart),i=dayNames.indexOf(day);return(!Number.isFinite(ws)||i<0)?'':payISO(ws+i*PAY_MS);}
+function isJobNo(v){v=String(v==null?'':v).trim();return v!==''&&!/^\d+$/.test(v);}
+function jhIsNum(v){return /^\d+$/.test(String(v==null?'':v).trim());}
+function jhKey(v){return String(v==null?'':v).toLowerCase().replace(/[^a-z0-9]/g,'');}
+function jhMatches(q,entry){
+  const qs=String(q||'').trim(),es=String(entry==null?'':entry).trim();
+  if(!qs||!es)return false;
+  if(jhIsNum(qs))return qs===es;
+  if(jhIsNum(es))return false;
+  const qk=jhKey(qs),ek=jhKey(es);if(!qk||!ek)return false;if(qk===ek)return true;
+  const longer=qk.length>=ek.length?qk:ek,shorter=qk.length>=ek.length?ek:qk;
+  if(shorter.length<4||!/\d/.test(shorter)||!longer.endsWith(shorter))return false;
+  return /^[a-z]*$/.test(longer.slice(0,longer.length-shorter.length));
+}
+const f2=n=>(+n||0).toFixed(2);
+function cloudMsg(kind,msg){const b=$('cloudMsg');b.className='msg '+(kind==='error'?'error':'')+' no-print';b.textContent=msg;}
+
+let fb=null,db=null,auth=null,FB_OK=false;
+(function(){try{
+  if(window.firebase){
+    if(window.fdecFirebaseApp){fb=window.fdecFirebaseApp;}
+    else if(firebase.apps&&firebase.apps.length){fb=firebase.app();}
+    else{fb=firebase.initializeApp(FIREBASE_CONFIG);}
+    if(fb){db=firebase.firestore();auth=firebase.auth();FB_OK=true;try{db.enablePersistence({synchronizeTabs:true}).catch(function(){});}catch(_){}}
+  }
+}catch(e){console.warn('Firebase init issue',e);}})();
+
+let SHEETS=[], ROLE='tech';
+function start(){
+  if(!FB_OK){cloudMsg('warn','Cloud is not available. Open this page from the Quick Hub while signed in.');return;}
+  auth.onAuthStateChanged(async u=>{
+    if(!u){cloudMsg('warn','You are not signed in. Open this page from the Quick Hub.');return;}
+    try{
+      let snap=await db.collection(COL_USERS).doc(u.uid).get();
+      if(!snap.exists&&u.email){const q=await db.collection(COL_USERS).where('email','==',u.email).limit(1).get();if(!q.empty)snap=q.docs[0];}
+      if(snap&&snap.exists)ROLE=String(snap.data().role||'tech').toLowerCase();
+    }catch(e){console.warn('user lookup failed',e);}
+    try{if(window.FDECAuth){if(window.FDECAuth.ready)await window.FDECAuth.ready;
+      if(window.FDECAuth.isAdmin)ROLE='admin';else if(window.FDECAuth.profile&&window.FDECAuth.profile.role)ROLE=String(window.FDECAuth.profile.role).toLowerCase();}}catch(_){}
+    if(ADMIN_EMAILS.map(x=>x.toLowerCase()).includes((u.email||'').toLowerCase()))ROLE='admin';
+    if(!ALLOWED.includes(ROLE)){cloudMsg('error','This page is for office, finance, manager, and administrator accounts.');return;}
+    try{
+      const q=await db.collection(COL).where('status','in',['submitted','reviewed']).get();
+      SHEETS=[];q.forEach(d=>SHEETS.push({id:d.id,...d.data()}));
+    }catch(e){console.error(e);cloudMsg('error','Could not load time sheets: '+(e.message||e));return;}
+    $('cloudMsg').classList.add('hide');$('view').classList.remove('hide');init();
+  });
+}
+function allEntries(){
+  const out=[];
+  SHEETS.forEach(s=>(s.entries||[]).forEach(e=>{const date=entryDate(s,e.day);out.push({s,e,date,p:periodOf(payDate(date))});}));
+  return out;
+}
+function init(){
+  const ents=allEntries();
+  const periods={};ents.forEach(x=>{periods[x.p.key]=x.p;});
+  const keys=Object.keys(periods).sort().reverse();
+  $('period').innerHTML=keys.map(k=>'<option value="'+esc(k)+'">'+esc(periods[k].title)+'</option>').join('')||'<option value="">No time sheets yet</option>';
+  const depts=[...new Set(ents.map(x=>x.e.type).filter(Boolean))].sort();
+  $('dept').innerHTML='<option value="">All departments</option>'+depts.map(d=>'<option>'+esc(d)+'</option>').join('');
+  ['period','dept'].forEach(id=>$(id).onchange=renderPeriod);$('emp').oninput=renderPeriod;
+  $('print').onclick=()=>window.print();$('toHub').onclick=()=>{location.href='index.html';};
+  $('jRun').onclick=runJob;$('jJob').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();runJob();}});$('jNames').onchange=()=>{if($('jOut').innerHTML)runJob();};
+  window.__periods=periods;renderPeriod();
+}
+function renderPeriod(){
+  const key=$('period').value,dept=$('dept').value,emp=$('emp').value.trim().toLowerCase();
+  const p=window.__periods[key];
+  if(!p){$('periodOut').innerHTML='<p class="hint">No submitted or reviewed time sheets are on record yet.</p>';$('periodInfo').textContent='';return;}
+  $('periodInfo').textContent=p.due?'Time sheets due '+payFmt(p.due)+' · payday '+payFmt(p.payday):'';
+  const byEmp={};
+  allEntries().forEach(x=>{
+    if(x.p.key!==key)return;
+    if(dept&&x.e.type!==dept)return;
+    const name=x.s.employee||'Unknown';if(emp&&!name.toLowerCase().includes(emp))return;
+    const o=byEmp[name]=byEmp[name]||{st:0,ot:0,dt:0,sheets:{},rows:[]};
+    const st=+x.e.st||0,ot=+x.e.ot||0,dt=+x.e.dt||0;o.st+=st;o.ot+=ot;o.dt+=dt;o.sheets[x.s.id]=1;o.rows.push({...x,st,ot,dt});
+  });
+  const names=Object.keys(byEmp).sort();
+  if(!names.length){$('periodOut').innerHTML='<p class="hint">No hours match these filters.</p>';return;}
+  const g={st:0,ot:0,dt:0};let h='<table><thead><tr><th>Employee</th><th class="num">Regular (ST)</th><th class="num">Time &amp; half (OT)</th><th class="num">Double (DT)</th><th class="num">Total</th><th class="num">Sheets</th></tr></thead><tbody>';
+  names.forEach(n=>{
+    const o=byEmp[n];g.st+=o.st;g.ot+=o.ot;g.dt+=o.dt;
+    h+='<tr class="emp" data-n="'+esc(n)+'"><td><b>▸ '+esc(n)+'</b></td><td class="num">'+f2(o.st)+'</td><td class="num">'+f2(o.ot)+'</td><td class="num">'+f2(o.dt)+'</td><td class="num">'+f2(o.st+o.ot+o.dt)+'</td><td class="num">'+Object.keys(o.sheets).length+'</td></tr>';
+    o.rows.sort((a,b)=>String(a.date).localeCompare(String(b.date))).forEach(r=>{
+      h+='<tr class="sub'+(isJobNo(r.e.jobNumber)?' alpha':'')+' hide" data-of="'+esc(n)+'"><td>'+esc(r.date||'Undated')+' · '+esc(r.e.type||'')+' · '+esc(r.e.jobName||'')+' · '+esc(r.e.jobNumber||'')+'</td><td class="num">'+f2(r.st)+'</td><td class="num">'+f2(r.ot)+'</td><td class="num">'+f2(r.dt)+'</td><td class="num">'+f2(r.st+r.ot+r.dt)+'</td><td></td></tr>';
+    });
+  });
+  h+='<tr class="tot"><td>Grand total</td><td class="num">'+f2(g.st)+'</td><td class="num">'+f2(g.ot)+'</td><td class="num">'+f2(g.dt)+'</td><td class="num">'+f2(g.st+g.ot+g.dt)+'</td><td></td></tr></tbody></table>';
+  $('periodOut').innerHTML=h;
+  document.querySelectorAll('tr.emp').forEach(tr=>tr.onclick=()=>{const open=!tr.classList.contains('openrow');tr.classList.toggle('openrow',open);
+    tr.querySelector('b').textContent=(open?'▾ ':'▸ ')+tr.dataset.n;
+    document.querySelectorAll('tr.sub').forEach(s=>{if(s.dataset.of===tr.dataset.n)s.classList.toggle('hide',!open);});});
+}
+function runJob(){
+  const q=$('jJob').value.trim(),from=$('jFrom').value,to=$('jTo').value,names=$('jNames').checked;
+  if(!q){$('jOut').innerHTML='<p class="hint">Enter a job number.</p>';return;}
+  const byDept={};let n=0;const sh={};
+  allEntries().forEach(x=>{
+    if(!jhMatches(q,x.e.jobNumber))return;
+    if(from&&(!x.date||x.date<from))return;if(to&&(!x.date||x.date>to))return;
+    const d=byDept[x.e.type||'Unassigned']=byDept[x.e.type||'Unassigned']||{st:0,ot:0,dt:0,emps:{}};
+    const st=+x.e.st||0,ot=+x.e.ot||0,dt=+x.e.dt||0;d.st+=st;d.ot+=ot;d.dt+=dt;
+    const en=x.s.employee||'Unknown',e2=d.emps[en]=d.emps[en]||{st:0,ot:0,dt:0};e2.st+=st;e2.ot+=ot;e2.dt+=dt;sh[x.s.id]=1;n++;
+  });
+  const depts=Object.keys(byDept).sort();
+  if(!depts.length){$('jOut').innerHTML='<p class="hint">No submitted or reviewed time sheets have hours for job number <b>'+esc(q)+'</b>'+((from||to)?' in that date range':'')+'.</p>';return;}
+  const g={st:0,ot:0,dt:0};
+  const head='<thead><tr><th>'+(names?'Employee':'')+'</th><th class="num">ST</th><th class="num">OT</th><th class="num">DT</th><th class="num">Total</th></tr></thead>';
+  let h='<p class="hint">Job '+esc(q)+' · '+Object.keys(sh).length+' time sheet(s)</p>';
+  depts.forEach(k=>{const d=byDept[k];g.st+=d.st;g.ot+=d.ot;g.dt+=d.dt;
+    h+='<h4 class="dept">'+esc(k)+'</h4><table>'+head+'<tbody>';
+    if(names)Object.keys(d.emps).sort().forEach(en=>{const e=d.emps[en];h+='<tr><td>'+esc(en)+'</td><td class="num">'+f2(e.st)+'</td><td class="num">'+f2(e.ot)+'</td><td class="num">'+f2(e.dt)+'</td><td class="num">'+f2(e.st+e.ot+e.dt)+'</td></tr>';});
+    h+='<tr class="tot"><td>'+esc(k)+' total</td><td class="num">'+f2(d.st)+'</td><td class="num">'+f2(d.ot)+'</td><td class="num">'+f2(d.dt)+'</td><td class="num">'+f2(d.st+d.ot+d.dt)+'</td></tr></tbody></table>';});
+  h+='<h4 class="dept">All departments</h4><table>'+head+'<tbody><tr class="tot"><td>Grand total</td><td class="num">'+f2(g.st)+'</td><td class="num">'+f2(g.ot)+'</td><td class="num">'+f2(g.dt)+'</td><td class="num">'+f2(g.st+g.ot+g.dt)+'</td></tr></tbody></table>';
+  $('jOut').innerHTML=h;
+}
+start();
+</script>
+<script type="module" src="fdec-auth.js" data-page="payroll"></script>
+</body></html>

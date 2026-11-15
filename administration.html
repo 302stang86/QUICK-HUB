@@ -505,17 +505,21 @@ window.PERM = (function () {
       ["inventory","Personal Inventory","Open the per-vehicle stock / inventory tracker"],
       ["fleet","Fleet Service","Submit vehicle service requests to managers and administrators"],
       ["timesheet","Weekly Time Sheet","Open and submit the weekly time sheet"],
+      ["payroll","Payroll Hours","Read-only hours by pay period and the job hours report, with no approve or edit buttons"],
+      ["finance","Finance (paid expenses)","Open approved expense reports, print the finance packet, and mark reports paid"],
       ["quoting","Quoting & Proposal Suite","Open the quoting and proposal builder"],
       ["faquoting","Fire Alarm Proposals","Open the fire alarm quoting and proposal builder"],
       ["administration","Administration","Open this Administration page — manage users, quote files, and permissions"]
     ]}
   ];
   /* Role ids MUST match the roster roles and fdec-auth.js (new / tech / temp /
-     manager / admin) — profile.role is compared directly against these. */
+     office / finance / manager / admin) — profile.role is compared directly against these. */
   var ROLES = [
     { id:"new",     name:"New Employee", desc:"Onboarding tier with access while training." },
     { id:"tech",    name:"Technician",   desc:"Field technician performing ITM, reports, and assigned jobs." },
     { id:"temp",    name:"Temp",         desc:"Temporary worker — access limited to the tools you grant below." },
+    { id:"office",  name:"Office",       desc:"Office staff — technician tools, own time sheet and expenses, quoting, and read-only payroll hours." },
+    { id:"finance", name:"Finance",      desc:"Finance — approved expense reports, the packet, marking reports paid, and read-only payroll hours." },
     { id:"manager", name:"Manager",      desc:"Department manager overseeing quoting and approvals." },
     { id:"admin",   name:"Administrator",desc:"Full control. Administrators can always open every page, so these toggles are informational." }
   ];
@@ -525,7 +529,9 @@ window.PERM = (function () {
     new:    ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","pipevolume","bathroom","nicet","timeoff","fleet"],
     tech:   ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","pipevolume","bathroom","nicet","timeoff","itm","servicetrade","oncall","inventory","fleet"],
     temp:   ["home","troubleshooting","frequencies","help","library","pipevolume","bathroom","nicet","fleet"],
-    manager:["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","pipevolume","bathroom","nicet","timeoff","itm","servicetrade","oncall","inventory","quoting","faquoting","administration","fleet"],
+    office: ["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","pipevolume","bathroom","nicet","timeoff","itm","servicetrade","oncall","inventory","fleet","quoting","faquoting","payroll"],
+    finance:["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","pipevolume","bathroom","nicet","timeoff","fleet","finance","payroll"],
+    manager:["home","announcements","sop","dispatch","troubleshooting","frequencies","incident","help","library","pipevolume","bathroom","nicet","timeoff","itm","servicetrade","oncall","inventory","quoting","faquoting","administration","fleet","payroll"],
     admin:null
   };
   var ALL = [];
@@ -540,7 +546,7 @@ window.PERM = (function () {
   function toPages(s){ var out={}; ALL.forEach(function(pg){ var list=[]; ROLES.forEach(function(r){ if(r.id==="admin" || (s[r.id] && s[r.id][pg])) list.push(r.id); }); out[pg]=list; }); return out; }
   /* Convert a saved pages map back into the editor grid, seeded from defaults
      for any page the map doesn't mention. admin always shows all-on. */
-  function fromPages(p){ var base=deepDefault(); if(p){ ALL.forEach(function(pg){ if(Array.isArray(p[pg])){ ROLES.forEach(function(r){ base[r.id][pg]=p[pg].indexOf(r.id)>=0; }); } }); } ALL.forEach(function(pg){ base.admin[pg]=true; }); return base; }
+  function fromPages(p){ var base=deepDefault(); if(p){ var seen={}; ALL.forEach(function(pg){ if(Array.isArray(p[pg])){ p[pg].forEach(function(x){ seen[x]=true; }); } }); ALL.forEach(function(pg){ if(Array.isArray(p[pg])){ ROLES.forEach(function(r){ if(seen[r.id]||r.id==='admin') base[r.id][pg]=p[pg].indexOf(r.id)>=0; }); } }); } ALL.forEach(function(pg){ base.admin[pg]=true; }); return base; }
 
   var state=deepDefault(), active="new", me=null, signedIn=false, isAdmin=false, dirty=false;
   var onSaveCb=null, onSignInCb=null, onSignOutCb=null, onResetToast=null;
@@ -549,7 +555,7 @@ window.PERM = (function () {
   function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function countOn(r){var n=0;ALL.forEach(function(k){if(state[r][k])n++;});return n;}
   function canEdit(){return signedIn && isAdmin;}
-  function roleLabel(role){ if(role==="admin")return"Administrator"; if(role==="manager"||role==="mgr")return"Manager"; if(role==="temp")return"Temp"; if(role==="new")return"New Employee"; return"Technician"; }
+  function roleLabel(role){ if(role==="admin")return"Administrator"; if(role==="manager"||role==="mgr")return"Manager"; if(role==="temp")return"Temp"; if(role==="office")return"Office"; if(role==="finance")return"Finance"; if(role==="new")return"New Employee"; return"Technician"; }
   function toast(msg){var t=$("toast");t.textContent=msg;t.className="show";setTimeout(function(){t.className=t.className.replace("show","");},3000);}
 
   function renderTabs(){ $("tabs").innerHTML = ROLES.map(function(r){ return '<button data-role="'+r.id+'" class="'+(r.id===active?'active':'')+'"><span class="role-name">'+esc(r.name)+'</span><span class="role-count">'+countOn(r.id)+' of '+ALL.length+' tools</span></button>'; }).join(""); }
@@ -1031,7 +1037,7 @@ function renderRoster(filter){
     var st = o.status || "pending";
     var isSelf = me && o.uid===me.uid;
     var isAdm = o.role==="admin";
-    var roleOpts = ["new","tech","temp","manager","admin"].map(function(r){
+    var roleOpts = ["new","tech","temp","office","finance","manager","admin"].map(function(r){
       if(r==="admin" && !canAdmin) return "";   // managers cannot grant admin
       return '<option value="'+r+'"'+(o.role===r?" selected":"")+'>'+r.charAt(0).toUpperCase()+r.slice(1)+'</option>';
     }).join("");

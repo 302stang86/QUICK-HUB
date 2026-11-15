@@ -24,6 +24,8 @@
     phone:'<path d="M6.6 10.8c1.4 2.8 3.8 5.2 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.2c1.1.4 2.4.6 3.6.6a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.6 21 3 13.4 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.2.2 2.5.6 3.6a1 1 0 0 1-.2 1l-2.3 2.2z"/>',
     tower:'<path d="M5 21V9h14v12"/><path d="M4 9V5h2.5v2h3V5h5v2h3V5H20v4"/><path d="M10 21v-5a2 2 0 0 1 4 0v5"/>',
     clock:'<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>',
+    wallet:'<path d="M3.5 7.5h15a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/><path d="M3.5 7.5l12-4v4"/><circle cx="16.5" cy="14" r="1.3"/>',
+    hours:'<path d="M4 20V4"/><path d="M4 20h16"/><path d="M8 16v-5M12 16V8M16 16v-3"/>',
     receipt:'<path d="M5 2.5h14v19l-2.3-1.6-2.3 1.6-2.4-1.6-2.4 1.6-2.3-1.6L5 21.5z"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/>',
     admin:'<circle cx="12" cy="8" r="3.2"/><path d="M5.5 20a6.5 6.5 0 0 1 10-.3"/><circle cx="18" cy="17" r="2.3"/><path d="M18 14.3v-1.1M18 20.8v-1.1M20.3 15.7l-.9.5M16.6 17.8l-.9.5M20.3 18.3l-.9-.5M16.6 16.2l-.9-.5"/>',
     nicet:'<circle cx="12" cy="4.3" r="1.6"/><path d="M12 1.2v1.1M12 6.2v1.1M9 4.3h1.1M13.9 4.3h1.1M9.9 2.2l.8.8M13.3 5.6l.8.8M14.1 2.2l-.8.8M10.7 5.6l-.8.8"/><rect x="3.5" y="8.6" width="17" height="9.4" rx="1.6"/><path d="M2 21h20"/><path d="M6.3 13.4l1.5 1.5 2.6-3"/><path d="M14 12.3l3.2 3.2M17.2 12.3l-3.2 3.2"/>',
@@ -44,6 +46,8 @@
     {name:'Fire Alarm Proposals',cat:'Quoting', access:'Manager only', page:'faquoting',      url:'fire-alarm-quoting.html', color:'#d12f2f', icon:'bell', desc:'Fire alarm ITM quoting, inspection scope, proposals, and deficiency repair quotes.'},
     {name:'Weekly Time Sheet',       cat:'Team',    access:'Admin only · pending release', page:'timesheet', url:'timesheet.html', color:'#6d3bb5', icon:'clock', desc:'Interactive weekly time sheet for technicians. Locked until released by an administrator.'},
     {name:'Expense Reports',          cat:'Team',    access:'Admin only · pending release', page:'timesheet', url:'expense-report.html', color:'#2e7d5b', icon:'receipt', desc:'Submit job expense reports to your manager for review and signature. Managers review them from Administration.'},
+    {name:'Payroll Hours',          cat:'Team',    access:'Office, finance & managers', page:'payroll', url:'payroll-hours.html', color:'#2b6f8f', icon:'hours', desc:'Read-only hours by pay period and the job hours report. No approving or editing.'},
+    {name:'Finance',                 cat:'Team',    access:'Finance & admins', page:'finance', url:'finance.html', color:'#8a5a14', icon:'wallet', desc:'Approved expense reports, the finance packet, and marking reports paid.'},
     {name:'SwitchBack TD',          cat:'Break',   access:'Everyone',     page:'bathroom',       url:'switchback/index.html', color:'#b0306a', icon:'tower', desc:'SwitchBack Defense — a quick tower defense game. Beat the waves and climb the leaderboard.'},
     {name:'Administration',          cat:'Admin',   access:'Admin & managers', page:'administration', url:'administration.html', color:'#c08a1e', icon:'admin', desc:'Quote files for managers; full management tools for admins.'},
     {name:'Help',                    cat:'Help',    access:'Everyone',     page:'help',           url:'help.html', color:'#5b6570', icon:'hammer', desc:'Report a bug with a photo, and find quick help on using Quick Hub.'}

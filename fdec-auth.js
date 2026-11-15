@@ -39,27 +39,29 @@ const ALLOWED_DOMAINS = ["firedefense.com"];
 const DEFAULT_PAGES = {
   // "temp" is a limited tier: only the hub home plus the Troubleshooting Guide
   // and NFPA 25 Frequencies tools. It is intentionally left off every other page.
-  home:            ["new","tech","manager","admin","temp"],
-  announcements:   ["new","tech","manager","admin"],
-  sop:             ["new","tech","manager","admin"],
-  dispatch:        ["new","tech","manager","admin"],
-  troubleshooting: ["new","tech","manager","admin","temp"],
-  frequencies:     ["new","tech","manager","admin","temp"],
-  incident:        ["new","tech","manager","admin"],
-  help:            ["new","tech","manager","admin","temp"],
-  library:         ["new","tech","manager","admin","temp"],
-  pipevolume:      ["new","tech","manager","admin","temp"],   // Pipe Volume Calculator (Field Tools)
-  bathroom:        ["new","tech","manager","admin","temp"],   // SwitchBack TD (hub card)
-  nicet:           ["new","tech","manager","admin","temp"],
-  itm:             ["tech","manager","admin"],
-  servicetrade:    ["tech","manager","admin"],
-  timeoff:         ["new","tech","manager","admin"],
-  oncall:          ["tech","manager","admin"],
-  inventory:       ["tech","manager","admin"],
-  fleet:           ["new","tech","manager","admin","temp"],
+  home:            ["new","tech","manager","admin","temp","office","finance"],
+  announcements:   ["new","tech","manager","admin","office","finance"],
+  sop:             ["new","tech","manager","admin","office","finance"],
+  dispatch:        ["new","tech","manager","admin","office","finance"],
+  troubleshooting: ["new","tech","manager","admin","temp","office","finance"],
+  frequencies:     ["new","tech","manager","admin","temp","office","finance"],
+  incident:        ["new","tech","manager","admin","office","finance"],
+  help:            ["new","tech","manager","admin","temp","office","finance"],
+  library:         ["new","tech","manager","admin","temp","office","finance"],
+  pipevolume:      ["new","tech","manager","admin","temp","office","finance"],   // Pipe Volume Calculator (Field Tools)
+  bathroom:        ["new","tech","manager","admin","temp","office","finance"],   // SwitchBack TD (hub card)
+  nicet:           ["new","tech","manager","admin","temp","office","finance"],
+  itm:             ["tech","manager","admin","office"],
+  servicetrade:    ["tech","manager","admin","office"],
+  timeoff:         ["new","tech","manager","admin","office","finance"],
+  oncall:          ["tech","manager","admin","office"],
+  inventory:       ["tech","manager","admin","office"],
+  fleet:           ["new","tech","manager","admin","temp","office","finance"],
   timesheet:       ["admin"],   // LOCKED to admin until released to technicians
-  quoting:         ["manager","admin"],
-  faquoting:       ["manager","admin"],
+  quoting:         ["office","manager","admin"],
+  faquoting:       ["office","manager","admin"],
+  finance:         ["finance","admin"],   // Finance page: approved expense reports, packet, mark paid
+  payroll:         ["office","finance","manager","admin"],   // Payroll Hours (read only)
   administration:  ["manager","admin"]   // managers reach the quote files here; roster/resets/permissions stay admin-only inside the page
 };
 
@@ -87,8 +89,15 @@ const state = {
     if (this.isAdmin) return true;
     if (!this.profile || this.profile.status !== "approved") return false;
     const pages = (this.permissions && this.permissions.pages) || DEFAULT_PAGES;
-    const roles = pages[page] || DEFAULT_PAGES[page] || [];
-    return roles.includes(this.profile.role || "new");
+    const role = this.profile.role || "new";
+    let roles = pages[page] || DEFAULT_PAGES[page] || [];
+    /* A role added after the permissions were last saved (office, finance) is not in
+       the saved map yet, so use the built-in defaults until an admin saves it. */
+    if (this.permissions && this.permissions.pages &&
+        !Object.keys(pages).some(k => Array.isArray(pages[k]) && pages[k].includes(role))) {
+      roles = DEFAULT_PAGES[page] || [];
+    }
+    return roles.includes(role);
   },
   signOut(){ return signOut(auth); }
 };
