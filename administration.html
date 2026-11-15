@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=1280">
 <title>FDEC Admin — Permissions</title>
 <style>
   :root {
@@ -38,7 +38,7 @@
   .lock-state { font-size: .78rem; color: #aeb6bf; }
   .lock-state.unlocked { color: #ffd27a; }
 
-  .wrap { max-width: 1020px; margin: 0 auto; padding: 16px 14px 70px; }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 16px 14px 70px; }
 
   .bar {
     display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
@@ -155,11 +155,7 @@
   @keyframes fadein { from { bottom: 0; opacity: 0; } to { bottom: 28px; opacity: 1; } }
   @keyframes fadeout { from { bottom: 28px; opacity: 1; } to { bottom: 0; opacity: 0; } }
 
-  @media (max-width: 620px) {
-    .wrap { padding: 12px 10px 56px; }
-    .perm .p-desc { font-size: 11px; }
-    .masthead { padding: 14px 16px; }
-  }
+  
   @media print {
     .bg-layer { display: none !important; }
     .bar, .grp-tool, .grp-tools, .overlay, #toast { display: none !important; }
@@ -197,7 +193,7 @@
   .qf-year .n { opacity:.6; font-weight:600; margin-left:5px; }
   .qf-year.active .n { opacity:.85; }
   .qf-empty { font-size:13px; color:#5c6470; font-style:italic; padding:8px 2px; }
-  @media(max-width:620px){ .qf-row { grid-template-columns:1fr; } .qf-acts { justify-content:flex-start; } }
+  
 
   /* Employee roster */
   .er-wrap { background:#fff; border:1px solid #dfe3e8; border-radius:10px; padding:16px; margin:4px 0 18px; box-shadow:0 1px 3px rgba(16,24,40,.08); }
@@ -234,7 +230,7 @@
   .er-ein { width:100%; border:1.5px solid #cdd9e8; border-radius:7px; padding:8px 10px; font-size:14px; color:#20262d; box-sizing:border-box; }
   .er-ein:focus { outline:2px solid rgba(193,18,28,.24); border-color:#C1121C; }
   .er-edit-acts { grid-column:1 / -1; display:flex; gap:6px; }
-  @media(max-width:620px){ .er-row { grid-template-columns:1fr; } .er-acts { justify-content:flex-start; } .er-edit { grid-template-columns:1fr; } }
+  
   /* Announcement marquee control */
   #mqWrap .mq-prev{overflow:hidden;white-space:nowrap;border-radius:10px;margin:2px 0 14px;min-height:40px;background:linear-gradient(90deg,#C1121C 0%,#6a0c12 40%,#130a0b 78%,#050505 100%)}
   #mqWrap .mq-prev.off{opacity:.4;filter:grayscale(.35)}
@@ -272,8 +268,8 @@
   .adm-card .adm-go{font-size:20px;color:var(--cc,#C1121C);font-weight:700;flex:0 0 auto}
 
   /* Clear raised-glass card look, sized to match the hub home cards */
-  .adm-menu{grid-template-columns:1fr 1fr;gap:14px}
-  @media(max-width:680px){.adm-menu{grid-template-columns:1fr}}
+  .adm-menu{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  
   .adm-card{position:relative;overflow:hidden;gap:15px;background:linear-gradient(90deg,color-mix(in srgb,var(--cc,#5b6570) 62%,transparent) 0%,color-mix(in srgb,var(--cc,#5b6570) 28%,transparent) 28%,color-mix(in srgb,var(--cc,#5b6570) 7%,transparent) 62%,rgba(255,255,255,.04) 100%),linear-gradient(155deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,.035) 48%,rgba(255,255,255,.075) 100%);border:0;border-radius:22px;padding:18px 18px 18px 22px;
     backdrop-filter:blur(2px) saturate(140%) brightness(1.08);-webkit-backdrop-filter:blur(2px) saturate(140%) brightness(1.08);
     box-shadow:inset 0 1.5px 0 rgba(255,255,255,.85),inset 1.5px 0 0 rgba(255,255,255,.45),inset 0 0 0 1px rgba(255,255,255,.16),inset 0 -3px 5px rgba(0,0,0,.28),inset -2px 0 4px rgba(0,0,0,.18),inset 6px 6px 14px rgba(255,255,255,.10),0 2px 3px rgba(0,0,0,.4),0 14px 26px rgba(0,0,0,.45);transition:transform .25s ease,box-shadow .25s ease}
