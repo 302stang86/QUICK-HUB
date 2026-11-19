@@ -301,6 +301,19 @@
   .fdec-mq .mq-x{position:absolute;top:0;right:0;height:42px;width:46px;border:0;background:linear-gradient(90deg,rgba(5,5,5,0),#050505 45%);color:#fff;font-size:24px;line-height:40px;cursor:pointer;opacity:.85;padding:0}
   .fdec-mq .mq-x:hover{opacity:1}
   @media print{.fdec-mq{display:none !important}}
+  #hub-games{
+    width:min(680px,calc(100% - 32px));max-width:none;max-height:calc(100% - 32px);
+    box-sizing:border-box;padding:20px;border:1px solid var(--line);border-radius:16px;
+    background:var(--card);color:var(--ink);box-shadow:var(--shadow);overflow:auto
+  }
+  #hub-games::backdrop{background:rgba(15,23,42,.65)}
+  #hub-games .games-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+  #hub-games h2{margin:0}
+  #hub-games .games-heading button{
+    padding:8px 14px;min-height:44px;border:1px solid var(--line);border-radius:8px;
+    background:var(--card);color:var(--ink);font:inherit;cursor:pointer
+  }
+  #hub-game-links{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:12px}
 </style>
 <script type="module" src="fdec-auth.js" data-page="home"></script>
 <!-- FDEC PWA / offline -->
@@ -340,6 +353,13 @@
 <!-- ============ HOME ============ -->
 <section class="tab active" id="home">
   <div class="hubgrid" id="hubLinks"></div>
+  <dialog id="hub-games" aria-labelledby="hub-games-title">
+    <div class="games-heading">
+      <h2 id="hub-games-title">Games</h2>
+      <form method="dialog"><button type="submit" autofocus>Close</button></form>
+    </div>
+    <div id="hub-game-links"></div>
+  </dialog>
 </section>
 
 <!-- ============ SOP ============ -->
@@ -847,9 +867,41 @@ document.addEventListener('click', function(e){
   // ---------- Home hub links ----------
   // Card data and the card renderer live in fdec-cards.js so the Field Tools and
   // Tech Cards pages share them. Edit a card's url / text there.
-  var LINKS = window.FDEC_CARDS.LINKS;
+  var cards = window.FDEC_CARDS;
+  var hubLinks = document.getElementById('hubLinks');
+  var gamesDialog = document.getElementById('hub-games');
+  var gameLinks = document.getElementById('hub-game-links');
+  var switchBack = cards.LINKS.find(function(card){ return card.url === 'switchback/index.html'; });
+  var links = cards.LINKS.map(function(card){
+    if(card !== switchBack) return card;
+    return Object.assign({}, card, {
+      name:'Games', url:'#hub-games', desc:'Play SwitchBack TD or Stronghold Architect.'
+    });
+  });
+
   function renderHub(auth){
-    window.FDEC_CARDS.render(document.getElementById('hubLinks'), LINKS, auth);
+    cards.render(hubLinks, links, auth);
+    var gamesCard = hubLinks.querySelector('a[href="#hub-games"]');
+    if(gamesCard){
+      gamesCard.setAttribute('aria-haspopup', 'dialog');
+      gamesCard.setAttribute('aria-controls', gamesDialog.id);
+      gamesCard.addEventListener('click', function(event){
+        event.preventDefault();
+        gamesDialog.showModal();
+      });
+      cards.render(gameLinks, [
+        Object.assign({}, switchBack, {cat:'Play', access:''}),
+        {name:'Stronghold Architect', cat:'Play', page:switchBack.page,
+         url:'https://302stang86.github.io/Stronghold-Architect-/',
+         color:'#594376', icon:'tower', desc:'Build and defend a stronghold in a dark fantasy kingdom.'}
+      ], auth);
+      gameLinks.querySelectorAll('a').forEach(function(link){
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.querySelector('.hcat').textContent = 'Play ↗';
+        link.setAttribute('aria-label', link.querySelector('.hname').textContent + ' (opens in a new tab)');
+      });
+    }
     // SOP tab: the ITM-SOP link uses the same card style as the hub cards.
     window.FDEC_CARDS.render(document.getElementById('sopCards'), [
       {name:'ITM-SOP', cat:'SOP', access:'', page:'sop', url:'fdec-itm-sop.html', color:'#1565c0', icon:'doc',
