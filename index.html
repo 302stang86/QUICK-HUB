@@ -302,18 +302,27 @@
   .fdec-mq .mq-x:hover{opacity:1}
   @media print{.fdec-mq{display:none !important}}
   #hub-games{
-    width:min(680px,calc(100% - 32px));max-width:none;max-height:calc(100% - 32px);
-    box-sizing:border-box;padding:20px;border:1px solid var(--line);border-radius:16px;
-    background:var(--card);color:var(--ink);box-shadow:var(--shadow);overflow:auto
+    width:min(760px,calc(100% - 32px));max-width:none;max-height:calc(100% - 32px);
+    box-sizing:border-box;padding:clamp(14px,3vw,24px);overflow:auto;
+    color:#f3f6fb;
+    background:linear-gradient(155deg,rgba(38,54,80,.94),rgba(15,25,44,.97));
+    border:1px solid rgba(211,228,255,.26);border-radius:22px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 18px 48px rgba(0,0,0,.45);
+    -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)
   }
-  #hub-games::backdrop{background:rgba(15,23,42,.65)}
-  #hub-games .games-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
-  #hub-games h2{margin:0}
+  #hub-games::backdrop{background:rgba(8,15,30,.58)}
+  #hub-games .games-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+  #hub-games h2{margin:0;font-size:20px;font-weight:800;letter-spacing:.5px;text-transform:uppercase}
   #hub-games .games-heading button{
-    padding:8px 14px;min-height:44px;border:1px solid var(--line);border-radius:8px;
-    background:var(--card);color:var(--ink);font:inherit;cursor:pointer
+    padding:8px 14px;min-height:44px;border:1px solid rgba(211,228,255,.28);border-radius:10px;
+    background:rgba(255,255,255,.08);color:inherit;font:inherit;font-weight:700;cursor:pointer
   }
-  #hub-game-links{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:12px}
+  #hub-games :focus-visible{outline:2px solid #b9dcff;outline-offset:3px}
+  @media(max-width:400px){
+    #hub-games a.hublink{gap:12px;padding:14px}
+    #hub-games .hubicon{width:48px;height:48px}
+    #hub-games .htop{flex-wrap:wrap}
+  }
 </style>
 <script type="module" src="fdec-auth.js" data-page="home"></script>
 <!-- FDEC PWA / offline -->
@@ -358,7 +367,7 @@
       <h2 id="hub-games-title">Games</h2>
       <form method="dialog"><button type="submit" autofocus>Close</button></form>
     </div>
-    <div id="hub-game-links"></div>
+    <div class="hubgrid" id="hub-game-links"></div>
   </dialog>
 </section>
 
