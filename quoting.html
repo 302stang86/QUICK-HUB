@@ -1287,6 +1287,8 @@ function eqSearchInit(){
   }
   inp.addEventListener('input', render);
   inp.addEventListener('focus', () => { if (!inp.value.trim()) render(); });
+  /* After picking an item the box keeps focus, so clicking it again fires no focus event. Re-open on click. */
+  inp.addEventListener('click', () => { if (box.hidden) render(); });
   inp.addEventListener('keydown', e => {
     if (e.key === 'ArrowDown'){ e.preventDefault(); if (box.hidden) render(); else { hi = Math.min(items.length - 1, hi + 1); paint(); } }
     else if (e.key === 'ArrowUp'){ e.preventDefault(); if (!box.hidden){ hi = Math.max(0, hi - 1); paint(); } }
