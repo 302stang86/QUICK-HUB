@@ -414,6 +414,10 @@ body{display:flex !important; flex-direction:column; min-height:0; overflow:hidd
   button:hover{border-color:var(--steel)}
   button.primary{background:var(--red); border-color:var(--red); color:#fff; font-weight:600}
   button.small{padding:4px 10px; font-size:13px}
+  .order-req{display:inline-flex; align-items:center; gap:8px; font-size:13px; padding:4px 10px; border:1px solid var(--line); background:var(--soft); color:var(--ink); border-radius:6px; cursor:pointer; user-select:none}
+  .order-req:hover{border-color:var(--steel)}
+  .order-req input{width:16px; height:16px; margin:0; cursor:pointer}
+  .order-note{margin:6px 0 10px; padding:8px 12px; border-left:4px solid var(--red); background:#fdf0f0; font-weight:600}
   button.apply-mp{
     font-weight:700;
     background:#d6f0f3;
@@ -827,6 +831,7 @@ body{display:flex !important; flex-direction:column; min-height:0; overflow:hidd
         <button id="matEditToggle" class="small noprint" type="button" onclick="toggleMatEdit()">Edit categories</button>
         <button id="matSaveMaster" class="small noprint" type="button" onclick="saveMasterCatalog()" title="Save the current item names and prices so every new quote starts from this list">Save to master price list</button>
         <button id="matResetMaster" class="small noprint" type="button" onclick="resetMasterCatalog()" title="Reset the list back to the built-in defaults for all new quotes">Reset to built-in</button>
+        <label id="orderReqBtn" class="order-req noprint" title="Check when any non-stock item is listed. Adds a note above the material list in the Quote Summary and the ServiceTrade copy.">Order Required <input type="checkbox" id="orderRequired" onchange="recalc()"></label>
         <span id="matEditHint" class="hint" style="margin:0">Editing categories is locked. Item costs and quantities are always editable.</span>
       </div>
       <div class="mat-twopane" id="matTwoPane">
@@ -2958,6 +2963,9 @@ function buildManpowerText(){
 
   /* ---- Selected Materials & Equipment ---- */
   const sel = collectSelected();
+  if (orderRequired()){
+    blocks.ordernote = [ORDER_NOTE];
+  }
   if (sel.mats.length){
     blocks.materials = ['MATERIALS', ...sel.mats.map(m => `• (${m[1]}) ${m[0]}`)];
   }
@@ -3052,7 +3060,7 @@ function buildManpowerText(){
     blocks.costs = ['COST TOTALS', ...costLines];
   }
 
-  const ORDER = ['manpower','materials','equipment','vendor','rates','admin','trucks','perdiem','hotel','costs'];
+  const ORDER = ['manpower','ordernote','materials','equipment','vendor','rates','admin','trucks','perdiem','hotel','costs'];
   const out = [];
   ORDER.forEach(k => {
     if (!blocks[k]) return;
@@ -3099,14 +3107,18 @@ function collectSelected(){
   return {mats, equip};
 }
 
+const ORDER_NOTE = 'Non-stock items listed, must plan an order';
+function orderRequired(){ const el = $('orderRequired'); return !!(el && el.checked); }
+
 function buildSelected(){
   const {mats, equip} = collectSelected();
   const out = $('selectedOut');
+  const note = orderRequired() ? `<p class="order-note">${ORDER_NOTE}</p>` : '';
   if (!mats.length && !equip.length){
-    out.innerHTML = '<p class="empty">No materials or equipment selected yet.</p>';
+    out.innerHTML = note + '<p class="empty">No materials or equipment selected yet.</p>';
     return;
   }
-  let html = '';
+  let html = note;
   if (mats.length){
     html += '<h3 class="sub">Materials</h3><ul class="selected-list">' +
       mats.map(m => `<li>(${m[1]}) ${m[0]}</li>`).join('') + '</ul>';
@@ -3189,7 +3201,7 @@ function collectDraft(){
 
   /* All simple inputs & selects that carry a value, keyed where possible. */
   document.querySelectorAll('input, select, textarea').forEach(el => {
-    if (el.type === 'file' || el.type === 'button') return;
+    if (el.type === 'file' || el.type === 'button' || el.id === 'orderRequired') return;
     /* Skip dynamic-row controls — captured separately below. */
     if (el.closest('#materialItems') || el.closest('#vendorQuotes') || el.closest('#rentalQuotes') ||
         el.closest('#subQuotes') || el.closest('#poRows') || el.closest('#mpRows') || el.closest('#eqFees')) return;
@@ -3201,6 +3213,7 @@ function collectDraft(){
     d.fields[key] = el.value;
   });
 
+  d.fields.orderRequired = orderRequired() ? '1' : '';
   /* Material catalog (collapsible categories/subcategories/items) */
   d.dynamic.materialCatalog = collectMaterialCatalog();
   /* Money-row groups */
@@ -3283,7 +3296,7 @@ function applyDraft(d){
 
   /* Restore simple field values by the same keys used in collectDraft. */
   document.querySelectorAll('input, select, textarea').forEach(el => {
-    if (el.type === 'file' || el.type === 'button') return;
+    if (el.type === 'file' || el.type === 'button' || el.id === 'orderRequired') return;
     if (el.closest('#materialItems') || el.closest('#vendorQuotes') || el.closest('#rentalQuotes') ||
         el.closest('#subQuotes') || el.closest('#poRows') || el.closest('#mpRows') || el.closest('#eqFees')) return;
     const key = el.id ||
@@ -3293,6 +3306,7 @@ function applyDraft(d){
     if (key && key in d.fields) el.value = d.fields[key];
   });
 
+  { const _or = $('orderRequired'); if (_or) _or.checked = d.fields.orderRequired === '1'; }
   recalc();
   setStatus(`Draft loaded${d.meta && d.meta.savedAt ? ' (saved ' + new Date(d.meta.savedAt).toLocaleString() + ')' : ''}.`);
 }
@@ -3436,7 +3450,8 @@ function pruneEmptyForExport(wrap){
   const mp = wrap.querySelector('#mpSummaryWrap');
   if (mp && !mp.querySelector('#mpSummaryBody tr')) mp.remove();
   const sel = wrap.querySelector('#selectedOut');
-  if (sel && sel.querySelector('p.empty')){
+  const _emp = sel && sel.querySelector('p.empty'); if (_emp && sel.querySelector('.order-note')) _emp.remove();
+  if (sel && sel.querySelector('p.empty') && !sel.querySelector('.order-note')){
     const h = sel.previousElementSibling && sel.previousElementSibling.previousElementSibling;
     const hint = sel.previousElementSibling;
     if (hint && hint.matches('p.hint')) hint.remove();
