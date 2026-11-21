@@ -127,12 +127,12 @@
   .views{flex:1; position:relative; min-height:0}
   .views iframe{
     position:absolute;
-    top:10px;
-    left:max(10px,env(safe-area-inset-left));
-    width:calc(100% - max(10px,env(safe-area-inset-left)) - max(10px,env(safe-area-inset-right)));
-    height:calc(100% - 10px - max(10px,env(safe-area-inset-bottom)));
+    top:4px;
+    left:max(4px,env(safe-area-inset-left));
+    width:calc(100% - max(4px,env(safe-area-inset-left)) - max(4px,env(safe-area-inset-right)));
+    height:calc(100% - 4px - max(4px,env(safe-area-inset-bottom)));
     border:none; background:var(--page);
-    border-radius:12px; box-shadow:0 10px 30px rgba(16,24,40,.30);
+    border-radius:8px; box-shadow:0 6px 20px rgba(16,24,40,.28);
   }
   @media(max-width:680px){
     .views iframe{
@@ -290,7 +290,7 @@ body{display:flex !important; flex-direction:column; min-height:0; overflow:hidd
   body{
     margin:0; background:var(--page); color:var(--ink);
     font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
-    font-variant-numeric:tabular-nums; padding-bottom:calc(84px + env(safe-area-inset-bottom));
+    font-variant-numeric:tabular-nums; padding-bottom:calc(44px + env(safe-area-inset-bottom));
     -webkit-text-size-adjust:100%;
   }
   header.top{
@@ -299,9 +299,9 @@ body{display:flex !important; flex-direction:column; min-height:0; overflow:hidd
   }
   header.top h1{margin:0; font-size:19px; letter-spacing:.04em}
   header.top .sub{font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:#8fa8c9; margin-top:3px}
-  header.top .topflex{display:flex; align-items:flex-end; gap:16px; max-width:1080px; margin:0 auto}
+  header.top .topflex{display:flex; align-items:flex-end; gap:16px; max-width:1760px; margin:0 auto}
   header.top .credit{margin-left:auto; text-align:right; font-size:11px; letter-spacing:.08em; color:#8fa8c9; line-height:1.5; white-space:nowrap}
-  .wrap{max-width:1080px; margin:0 auto; padding:18px 14px}
+  .wrap{max-width:1760px; margin:0 auto; padding:12px 18px}
   .jobbar{display:grid; grid-template-columns:2fr 1fr 1fr; gap:12px; margin-bottom:16px}
   .jobbar label{display:block; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--steel); margin-bottom:4px}
   .jobbar input{width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:6px; font-size:15px; background:var(--card)}
@@ -462,15 +462,16 @@ body{display:flex !important; flex-direction:column; min-height:0; overflow:hidd
   #mpSummaryTable tfoot tr.mp-sum-tot td{border-top:2px solid var(--ink); font-weight:700}
   .totbar{
     position:fixed; left:0; right:0; bottom:0; background:var(--navy); color:#fff;
-    display:flex; gap:26px; align-items:center; padding:12px 22px; font-size:14px;
-    padding-bottom:calc(12px + env(safe-area-inset-bottom));
+    display:flex; gap:6px 20px; align-items:center; padding:4px 22px; font-size:13px;
+    padding-bottom:calc(4px + env(safe-area-inset-bottom));
     padding-left:max(22px, env(safe-area-inset-left));
     padding-right:max(22px, env(safe-area-inset-right));
-    border-top:3px solid var(--red); z-index:50; flex-wrap:wrap;
+    border-top:2px solid var(--red); z-index:50; flex-wrap:wrap;
   }
-  .totbar .lab{font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#8fa8c9; display:block}
-  .totbar .val{font-size:18px; font-weight:700}
-  .totbar .val.big{font-size:22px}
+  .totbar > div{display:flex; align-items:baseline; gap:6px; white-space:nowrap}
+  .totbar .lab{font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; color:#8fa8c9; display:inline}
+  .totbar .val{font-size:15px; font-weight:700}
+  .totbar .val.big{font-size:16px}
   .totbar .val.profit{color:#5fd48b}
   .totbar .grow{margin-left:auto; display:flex; gap:8px}
   .selected-list{columns:2; column-gap:28px; font-size:14px; padding-left:20px; margin:6px 0}
@@ -591,7 +592,7 @@ body{display:flex !important; flex-direction:column; min-height:0; overflow:hidd
   .mat-nav .mn-item:not(.active) .mn-count{background:#9fb3c6}
   .mat-nav .mn-item.active .mn-count{background:#0190a0}
   .mat-nav .mn-count.zero{display:none}
-  .mat-pane{flex:1; min-width:0; overflow-x:auto; padding:10px 12px; max-height:560px; overflow-y:auto}
+  .mat-pane{flex:1; min-width:0; overflow-x:auto; padding:10px 12px; max-height:max(560px, calc(100vh - 190px)); overflow-y:auto}
 
   /* In two-pane mode the category header/collapse is replaced by the rail:
      hide the per-category head bar, always show the body, and show only the
@@ -3575,7 +3576,7 @@ window.addEventListener('message', function(e){
   #backToTop{
     position:fixed; z-index:120;
     right:18px; right:max(18px, env(safe-area-inset-right));
-    bottom:96px; bottom:calc(96px + env(safe-area-inset-bottom));
+    bottom:56px; bottom:calc(56px + env(safe-area-inset-bottom));
     width:46px; height:46px; border-radius:50%;
     background:#010039; color:#fff; border:2px solid #3281b9;
     box-shadow:0 6px 18px rgba(0,0,0,.28); cursor:pointer;
@@ -3597,10 +3598,19 @@ window.addEventListener('message', function(e){
     var y = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
     if (y > 300) btn.classList.add('show'); else btn.classList.remove('show');
   }
+  /* Tell the suite shell where we are so it can collapse its top banner on
+     scroll and bring it back at the top (or on Back to top). */
+  function relay(y, force){
+    try { if (window.parent && window.parent !== window) window.parent.postMessage({ fdec:true, type:'quote-scroll', y:y, force:!!force }, '*'); } catch(_){}
+  }
   window.scrollToTop = function(){
+    relay(0, true);
     try { window.scrollTo({ top:0, behavior:'smooth' }); }
     catch(_){ window.scrollTo(0,0); }
   };
+  window.addEventListener('scroll', function(){
+    relay(window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0, false);
+  }, { passive:true });
   window.addEventListener('scroll', onScroll, { passive:true });
   document.addEventListener('scroll', onScroll, { passive:true, capture:true });
   onScroll();
@@ -10031,7 +10041,46 @@ var VIEWS = [
   { key:'backflow', frame:'view-backflow', tab:'tab-backflow' }
 ];
 
+/* Collapse the top image banner while the Quoting Template is scrolled, and
+   restore it at the top of the page, on Back to top, or on switching tabs. */
+var _ubarCollapsed = false, _ubarHold = false, _ubarHoldT = 0;
+function _ubarEl(){ return document.querySelector('.fdec-ubar'); }
+function _ubarFullH(u){ return Math.round(u.getBoundingClientRect().width * 135 / 1600); }
+function setUbarCollapsed(collapse){
+  var u = _ubarEl();
+  if (!u || collapse === _ubarCollapsed) return;
+  _ubarCollapsed = collapse;
+  u.style.transition = 'height .22s ease';
+  u.style.overflow = 'hidden';
+  if (collapse){
+    u.style.height = u.getBoundingClientRect().height + 'px';
+    u.style.aspectRatio = 'auto';
+    void u.offsetHeight;
+    u.style.height = '0px';
+  } else {
+    u.style.height = _ubarFullH(u) + 'px';
+    var done = function(){
+      u.removeEventListener('transitionend', done);
+      if (!_ubarCollapsed){ u.style.height = u.style.aspectRatio = u.style.transition = ''; }
+    };
+    u.addEventListener('transitionend', done);
+    setTimeout(done, 400);
+  }
+}
+window.addEventListener('message', function(e){
+  var d = e && e.data;
+  if (!d || d.fdec !== true || d.type !== 'quote-scroll') return;
+  var q = document.getElementById('view-quote');
+  if (!q || q.hidden) return;
+  /* Back to top: keep the banner open while the smooth scroll runs up. */
+  if (d.force){ _ubarHold = true; clearTimeout(_ubarHoldT); _ubarHoldT = setTimeout(function(){ _ubarHold = false; }, 1500); setUbarCollapsed(false); return; }
+  if (d.y <= 4){ _ubarHold = false; setUbarCollapsed(false); return; }
+  if (_ubarHold) return;
+  if (d.y > 60) setUbarCollapsed(true);
+});
+
 function showView(which){
+  setUbarCollapsed(false);
   VIEWS.forEach(function(v){
     var active = v.key === which;
     var frame = document.getElementById(v.frame);
