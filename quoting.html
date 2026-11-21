@@ -129,7 +129,7 @@
     position:absolute;
     top:4px;
     left:max(4px,env(safe-area-inset-left));
-    width:calc(100% - max(4px,env(safe-area-inset-left)) - max(4px,env(safe-area-inset-right)));
+    width:calc(100% - max(4px,env(safe-area-inset-left)) - max(14px,env(safe-area-inset-right)));
     height:calc(100% - 4px - max(4px,env(safe-area-inset-bottom)));
     border:none; background:var(--page);
     border-radius:8px; box-shadow:0 6px 20px rgba(16,24,40,.28);
@@ -575,10 +575,10 @@ body{display:flex !important; flex-direction:column; min-height:0; overflow:hidd
   button#matEditToggle.editing{background:var(--red); color:#fff; border-color:var(--red)}
 
   /* ---- Two-pane catalog: category rail (left) + items (right) ---- */
-  .mat-twopane{display:flex; border:1px solid var(--line); border-radius:9px; overflow:hidden; background:#fff; min-height:280px}
+  .mat-twopane{display:flex; gap:14px; align-items:stretch; min-height:280px}
   .mat-nav{
-    width:210px; flex:none; background:var(--soft); border-right:1px solid var(--line);
-    overflow-y:auto; max-height:560px;
+    width:210px; flex:none; background:var(--soft); border:1px solid var(--line); border-radius:9px;
+    overflow-y:auto; max-height:max(560px, calc(100vh - 190px));
   }
   .mat-nav .mn-item{
     display:flex; align-items:center; gap:8px; padding:11px 13px; cursor:pointer;
@@ -594,7 +594,7 @@ body{display:flex !important; flex-direction:column; min-height:0; overflow:hidd
   .mat-nav .mn-item:not(.active) .mn-count{background:#9fb3c6}
   .mat-nav .mn-item.active .mn-count{background:#0190a0}
   .mat-nav .mn-count.zero{display:none}
-  .mat-pane{flex:1; min-width:0; overflow-x:auto; padding:10px 12px; max-height:max(560px, calc(100vh - 190px)); overflow-y:auto}
+  .mat-pane{flex:1; min-width:0; background:#fff; border:1px solid var(--line); border-radius:9px; overflow-x:auto; padding:10px 12px; max-height:max(560px, calc(100vh - 190px)); overflow-y:auto}
 
   /* In two-pane mode the category header/collapse is replaced by the rail:
      hide the per-category head bar, always show the body, and show only the
