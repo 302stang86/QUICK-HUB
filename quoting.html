@@ -329,8 +329,10 @@ body{display:flex !important; flex-direction:column; min-height:0; overflow:hidd
     width:82px; padding:9px 8px; border:1px solid var(--line); border-radius:5px;
     text-align:right; font-size:16px; font-variant-numeric:tabular-nums;
   }
-  input.qty:focus, input.rate:focus, .jobbar input:focus, textarea:focus, select:focus, input.wide:focus{outline:2px solid var(--red); outline-offset:1px; border-color:var(--red)}
+  input.qty:focus, input.rate:focus, .jobbar input:focus, textarea:focus, select:focus, input.wide:focus, textarea.mp-task:focus{outline:2px solid var(--red); outline-offset:1px; border-color:var(--red)}
   input.wide{width:100%; padding:9px 8px; border:1px solid var(--line); border-radius:5px; font-size:16px}
+  textarea.mp-task{width:100%; box-sizing:border-box; padding:9px 8px; border:1px solid var(--line); border-radius:5px; font:inherit; font-size:16px; line-height:1.35; min-height:42px; resize:vertical; overflow:hidden; display:block}
+  #mpSummaryBody td:first-child{white-space:pre-wrap; overflow-wrap:anywhere}
   input.money{width:120px}
   .hint{font-size:12px; color:var(--steel); margin:6px 0 0}
   /* ---- FDEC Equipment Fees: quick search, badges, master-list windows ---- */
@@ -1489,7 +1491,7 @@ function addMoneyRow(containerId, placeholder, name, val){
 function addMpRow(d){
   d = d || {};
   const tr = document.createElement('tr');
-  tr.innerHTML = `<td><input class="wide mp-task" value="${(d.task||'').replace(/"/g,'&quot;')}"></td>
+  tr.innerHTML = `<td><textarea class="wide mp-task" rows="1" spellcheck="true" oninput="mpGrow(this)">${(d.task||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</textarea></td>
     <td><select class="mp-dept">
       <option value="SP">Sprinkler</option><option value="FA">Fire Alarm</option></select></td>
     <td class="num"><input class="qty mp-tech" type="number" min="0" step="1" value="${d.tech||''}"></td>
@@ -1503,7 +1505,19 @@ function addMpRow(d){
   $('mpRows').appendChild(tr);
   if (d.cls) tr.querySelector('.mp-class').value = d.cls;
   if (d.dept) tr.querySelector('.mp-dept').value = d.dept;
+  mpGrow(tr.querySelector('.mp-task'));
 }
+
+/* Task / Phase is a multi-line box that grows with its text. */
+function mpGrow(el){
+  if (!el) return;
+  el.style.height = 'auto';
+  if (el.scrollHeight) el.style.height = (el.scrollHeight + 2) + 'px';
+}
+function mpGrowAll(){ document.querySelectorAll('#mpRows .mp-task').forEach(mpGrow); }
+document.addEventListener('toggle', mpGrowAll, true);   /* sections measure 0 while closed */
+window.addEventListener('resize', mpGrowAll);
+window.addEventListener('load', mpGrowAll);
 
 /* ================= MATERIAL CATALOG (collapsible) ================= */
 const MATERIAL_CATALOG = [
@@ -2948,7 +2962,7 @@ function buildManpowerText(){
   const taskLines = [];
   let totHours = 0;
   document.querySelectorAll('#mpRows tr').forEach(tr => {
-    const task = (tr.querySelector('.mp-task').value || '').trim();
+    const task = (tr.querySelector('.mp-task').value || '').trim().replace(/\s*\n\s*/g, ' ');
     const tech = num(tr.querySelector('.mp-tech'));
     const hrsEach = num(tr.querySelector('.mp-hrs'));
     const hours = tech * hrsEach;
