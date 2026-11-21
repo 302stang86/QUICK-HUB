@@ -3509,6 +3509,15 @@ window.addEventListener('message', function(e){
   }
   if (d.type === 'master-catalog-saved'){ matMasterToast(d.ok ? 'Saved to the master price list \u2014 new quotes will start from it.' : 'Could not save the master price list.', !d.ok); return; }
   if (d.type === 'master-catalog-reset'){ if(d.ok){ try{ buildMaterialCatalog(); }catch(ex){} } matMasterToast(d.ok ? 'Master price list reset to the built-in defaults.' : 'Could not reset the master price list.', !d.ok); return; }
+  if (d.type === 'jobinfo-set'){
+    // A verbiage page edited Job Name / Quote # / Date: keep it here.
+    var v = d.value || {};
+    var jn = document.getElementById('jobName'), qn = document.getElementById('quoteNo'), qd = document.getElementById('quoteDate');
+    if (jn && typeof v.customer === 'string') jn.value = v.customer;
+    if (qn && typeof v.quote === 'string') qn.value = v.quote;
+    if (qd && typeof v.date === 'string' && v.date) qd.value = v.date;
+    return;
+  }
   if (d.type === 'send-jobinfo'){
     // The Quoting Template is the master for Job Name / Quote # / Date.
     // Broadcast current values so the verbiage pages can follow.
@@ -4529,6 +4538,18 @@ var IS_JOBINFO_MASTER = false;
     });
     // Broadcast the initial values (incl. today's date) once the shell is ready.
     setTimeout(broadcastJobInfo, 150);
+  } else {
+    // Follower: edits made on this page are sent back so the Quoting Template
+    // (the master) and the other pages keep them instead of overwriting them.
+    var sendFollowerInfo = function(){
+      if (window.parent && window.parent !== window){
+        window.parent.postMessage({ fdec:true, type:"jobinfo-follower", value: currentJobInfo() }, "*");
+      }
+    };
+    ["jobCustomer","jobQuote","jobDate"].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el){ el.addEventListener("input", sendFollowerInfo); el.addEventListener("change", sendFollowerInfo); }
+    });
   }
 
   /* Auto-save this page to the suite shell (crash protection), debounced.
@@ -6067,6 +6088,18 @@ var IS_JOBINFO_MASTER = false;
     });
     // Broadcast the initial values (incl. today's date) once the shell is ready.
     setTimeout(broadcastJobInfo, 150);
+  } else {
+    // Follower: edits made on this page are sent back so the Quoting Template
+    // (the master) and the other pages keep them instead of overwriting them.
+    var sendFollowerInfo = function(){
+      if (window.parent && window.parent !== window){
+        window.parent.postMessage({ fdec:true, type:"jobinfo-follower", value: currentJobInfo() }, "*");
+      }
+    };
+    ["jobCustomer","jobQuote","jobDate"].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el){ el.addEventListener("input", sendFollowerInfo); el.addEventListener("change", sendFollowerInfo); }
+    });
   }
 
   /* Auto-save this page to the suite shell (crash protection), debounced.
@@ -7572,6 +7605,18 @@ var IS_JOBINFO_MASTER = false;
     });
     // Broadcast the initial values (incl. today's date) once the shell is ready.
     setTimeout(broadcastJobInfo, 150);
+  } else {
+    // Follower: edits made on this page are sent back so the Quoting Template
+    // (the master) and the other pages keep them instead of overwriting them.
+    var sendFollowerInfo = function(){
+      if (window.parent && window.parent !== window){
+        window.parent.postMessage({ fdec:true, type:"jobinfo-follower", value: currentJobInfo() }, "*");
+      }
+    };
+    ["jobCustomer","jobQuote","jobDate"].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el){ el.addEventListener("input", sendFollowerInfo); el.addEventListener("change", sendFollowerInfo); }
+    });
   }
 
   /* Auto-save this page to the suite shell (crash protection), debounced.
@@ -9151,6 +9196,18 @@ var IS_JOBINFO_MASTER = false;
     });
     // Broadcast the initial values (incl. today's date) once the shell is ready.
     setTimeout(broadcastJobInfo, 150);
+  } else {
+    // Follower: edits made on this page are sent back so the Quoting Template
+    // (the master) and the other pages keep them instead of overwriting them.
+    var sendFollowerInfo = function(){
+      if (window.parent && window.parent !== window){
+        window.parent.postMessage({ fdec:true, type:"jobinfo-follower", value: currentJobInfo() }, "*");
+      }
+    };
+    ["jobCustomer","jobQuote","jobDate"].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el){ el.addEventListener("input", sendFollowerInfo); el.addEventListener("change", sendFollowerInfo); }
+    });
   }
 
   /* Auto-save this page to the suite shell (crash protection), debounced.
@@ -10139,6 +10196,17 @@ window.addEventListener('message', function(e){
     ['view-proposal','view-annual','view-install','view-backflow'].forEach(function(id){
       var f = document.getElementById(id);
       if (f && f.contentWindow) f.contentWindow.postMessage(d, '*');
+    });
+    return;
+  }
+  // A verbiage page edited the shared fields: store them in the quote and
+  // relay to the other verbiage pages (not back to the sender).
+  if (d.type === 'jobinfo-follower'){
+    var qf = document.getElementById('view-quote');
+    if (qf && qf.contentWindow) qf.contentWindow.postMessage({ fdec:true, type:'jobinfo-set', value:d.value }, '*');
+    ['view-proposal','view-annual','view-install','view-backflow'].forEach(function(id){
+      var f = document.getElementById(id);
+      if (f && f.contentWindow && f.contentWindow !== e.source) f.contentWindow.postMessage({ fdec:true, type:'jobinfo', value:d.value }, '*');
     });
     return;
   }
